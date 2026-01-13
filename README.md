@@ -37,6 +37,7 @@
 - [ARCH-05: 行程发布与费用定价详细设计](docs/design/ARCH-05-行程发布与费用定价详细设计.md)
 - [ARCH-06: 最终结账与线下结算详细设计](docs/design/ARCH-06-最终结账与线下结算详细设计.md)
 - [ARCH-07: UI 交互与画面布局详细设计](docs/design/ARCH-07-UI交互与画面布局详细设计.md)
+- [ARCH-08: 多语言与AI翻译引擎详细设计](docs/design/ARCH-08-多语言与AI翻译引擎详细设计.md)
 - [系统方案设计 (原始)](docs/BOBBuy%20平台系统方案设计.docx)
 
 ---
