@@ -34,6 +34,7 @@
 - [ARCH-02: 订单确认模块详细设计](docs/design/ARCH-02-订单确认模块详细设计.md)
 - [ARCH-03: 采购执行与商品采集详细设计](docs/design/ARCH-03-采购执行与商品采集详细设计.md)
 - [ARCH-04: 参与者管理与身份认证详细设计](docs/design/ARCH-04-参与者管理与身份认证详细设计.md)
+- [ARCH-05: 行程发布与费用定价详细设计](docs/design/ARCH-05-行程发布与费用定价详细设计.md)
 - [系统方案设计 (原始)](docs/BOBBuy%20平台系统方案设计.docx)
 
 ---
