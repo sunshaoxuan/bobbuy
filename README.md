@@ -36,9 +36,10 @@
 - [ARCH-04: 订单确认模块详细设计](docs/design/ARCH-04-订单确认模块详细设计.md)
 - [ARCH-05: 采购执行与商品采集详细设计](docs/design/ARCH-05-采购执行与商品采集详细设计.md)
 - [ARCH-06: 最终结账与线下结算详细设计](docs/design/ARCH-06-最终结账与线下结算详细设计.md)
-- [ARCH-07: 利润结算与智能路径规划详细设计](docs/design/ARCH-07-利润结算与智能路径规划详细设计.md)
-- [ARCH-08: 多语言与AI翻译引擎详细设计](docs/design/ARCH-08-多语言与AI翻译引擎详细设计.md)
-- [ARCH-09: UI交互与画面布局详细设计](docs/design/ARCH-09-UI交互与画面布局详细设计.md)
+- [ARCH-07: 利润核算与经营分析详细设计](docs/design/ARCH-07-利润核算与经营分析详细设计.md)
+- [ARCH-08: 智能路径规划与配送导航详细设计](docs/design/ARCH-08-智能路径规划与配送导航详细设计.md)
+- [ARCH-09: 多语言与AI翻译引擎详细设计](docs/design/ARCH-09-多语言与AI翻译引擎详细设计.md)
+- [ARCH-10: UI交互与画面布局详细设计](docs/design/ARCH-10-UI交互与画面布局详细设计.md)
 - [系统方案设计 (原始)](docs/BOBBuy%20平台系统方案设计.docx)
 
 ---
