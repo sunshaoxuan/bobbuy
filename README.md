@@ -26,7 +26,9 @@
 3. **Phase 3**：全面扩展至全球其他城市及更多生活服务品类。
 
 ## 📂 文档
-- [原始需求清单](docs/requirements/REQ-01-原始需求清单.md)
+- [PROD-01: 原始需求清单](docs/design/PROD-01-原始需求清单.md)
+- [PROD-02: 业务功能详细说明](docs/design/PROD-02-业务功能详细说明.md)
+- [ARCH-01: 订单确认模块详细设计](docs/design/ARCH-01-订单确认模块详细设计.md)
 - [系统方案设计 (原始)](docs/BOBBuy%20平台系统方案设计.docx)
 
 ---
