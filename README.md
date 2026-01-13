@@ -29,6 +29,7 @@
 - [PROD-01: 原始需求清单](docs/design/PROD-01-原始需求清单.md)
 - [PROD-02: 业务功能详细说明](docs/design/PROD-02-业务功能详细说明.md)
 - [ARCH-01: 订单确认模块详细设计](docs/design/ARCH-01-订单确认模块详细设计.md)
+- [ARCH-02: 平台技术架构选型](docs/design/ARCH-02-平台技术架构选型.md)
 - [系统方案设计 (原始)](docs/BOBBuy%20平台系统方案设计.docx)
 
 ---
