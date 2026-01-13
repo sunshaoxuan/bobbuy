@@ -1,0 +1,9 @@
+# Temporary docx extraction directory
+docs/temp_docx/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Gemini data
+.gemini/
