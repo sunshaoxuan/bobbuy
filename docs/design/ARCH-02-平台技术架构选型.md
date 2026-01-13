@@ -66,4 +66,7 @@
 
 ## 7. 部署与运维
 - **容器化**：Docker + Kubernetes (K8s) 声明式部署。
-- **CI/CD**：GitLab CI 或 GitHub Actions 自动化流水线。
+- **CI/CD (定型)**：使用 **GitHub Actions** 自动化流水线。
+  - **静态检查**：代码规范检测（Lint）。
+  - **构建验证**：后端 Maven/Gradle 构建，前端 NPM 构建。
+  - **集成测试**：自动运行核心业务流程测试。
