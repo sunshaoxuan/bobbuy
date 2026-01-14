@@ -32,7 +32,6 @@
   - Web 面向 PC 段。
   - **移动端**：使用 Ant Design Mobile 或基于 React Native 封装，确保手机端紧凑、易用的触控体验。
 
-## 4. 数据存储与持久化
 ## 4. AI 智能 Agent 中台架构 (Core AI Infrastructure)
 系统不再仅作为 LLM 的调用者，而是作为一个 **AI 原生 (AI-Native)** 驱动的 Agent 系统。
 
@@ -41,7 +40,7 @@
 - **协议栈**：采用 **MCP (Model Context Protocol)** 实现模型与私有工具库（如搜索、库存查询）的标准连接。
 - **双重审计 (Self-Correction)**：通过 Agent 驱动的多模型验证流（生成模型 vs 审计模型），确保 100% 格式对齐与逻辑准确性。
 
-### 4.2 搜索与经验库 (Memory & Search)
+### 4.2 搜索 with 经验库 (Memory & Search)
 - **外部检索**：通过 Google Search API (SerpApi) 与 Agent 协同，补全未知商品元数据。
 - **本地经验库 (Experience Bank)**：利用 **Vector Database (如 Milvus/Pinecone)** 记录历史上模糊描述与正式商品的对应关系，实现“越用越聪明”。
 - **暂存库核销**：针对现场发现的新商品，AI 自动完成“意向暂存库”与“正式商品库”的语义核销与属性迁移。
