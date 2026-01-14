@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  # 预留端到端验证任务
+  # 文档与结构验证任务
   validation:
     runs-on: ubuntu-latest
     steps:
@@ -21,31 +21,29 @@ jobs:
           echo "Checking documentation standards compliant with STD-02..."
           # 这里未来可以集成 markdown-lint
           
-  # 预留后端构建任务
-  # backend-build:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Set up JDK 17
-  #       uses: actions/setup-java@v4
-  #       with:
-  #         java-version: '17'
-  #         distribution: 'temurin'
-  #         cache: maven
-  #     - name: Build with Maven
-  #       run: mvn -B package --file pom.xml
+  backend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Build backend
+        run: mvn -B package --file backend/pom.xml
 
-  # 预留前端构建任务
-  # frontend-build:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Set up Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '20'
-  #         cache: 'npm'
-  #     - name: Install dependencies
-  #       run: npm ci
-  #     - name: Build
-  #       run: npm run build
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install --prefix frontend
+      - name: Build frontend
+        run: npm run build --prefix frontend
