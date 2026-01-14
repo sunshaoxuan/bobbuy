@@ -7,3 +7,10 @@ Thumbs.db
 
 # Gemini data
 .gemini/
+
+# Node & build artifacts
+node_modules/
+frontend/dist/
+
+# Java build artifacts
+backend/target/
