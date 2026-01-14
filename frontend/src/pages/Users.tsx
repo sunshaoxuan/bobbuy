@@ -1,4 +1,5 @@
 import { Button, Card, Form, Input, Rate, Select, Table, Tag, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import { api, User } from '../api';
 
@@ -8,6 +9,20 @@ const roleOptions = ['CUSTOMER', 'AGENT', 'MERCHANT'];
 
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
+
+  const columns: ColumnsType<User> = [
+    { title: '姓名', dataIndex: 'name' },
+    {
+      title: '角色',
+      dataIndex: 'role',
+      render: (role: User['role']) => <Tag color="purple">{role}</Tag>
+    },
+    {
+      title: '评分',
+      dataIndex: 'rating',
+      render: (rating: User['rating']) => rating.toFixed(1)
+    }
+  ];
 
   useEffect(() => {
     api.users().then(setUsers);
@@ -34,22 +49,10 @@ export default function Users() {
       </Card>
 
       <Card bordered={false} title="参与者列表">
-        <Table
+        <Table<User>
           dataSource={users}
           rowKey="id"
-          columns={[
-            { title: '姓名', dataIndex: 'name' },
-            {
-              title: '角色',
-              dataIndex: 'role',
-              render: (role: string) => <Tag color="purple">{role}</Tag>
-            },
-            {
-              title: '评分',
-              dataIndex: 'rating',
-              render: (rating: number) => rating.toFixed(1)
-            }
-          ]}
+          columns={columns}
         />
       </Card>
     </div>

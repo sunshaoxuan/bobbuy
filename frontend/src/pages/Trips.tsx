@@ -1,4 +1,5 @@
 import { Button, Card, Form, Input, InputNumber, Select, Table, Tag, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import { api, Trip } from '../api';
 
@@ -8,6 +9,18 @@ const statusOptions = ['DRAFT', 'PUBLISHED', 'IN_PROGRESS', 'COMPLETED'];
 
 export default function Trips() {
   const [trips, setTrips] = useState<Trip[]>([]);
+
+  const columns: ColumnsType<Trip> = [
+    { title: '出发地', dataIndex: 'origin' },
+    { title: '目的地', dataIndex: 'destination' },
+    { title: '出发日期', dataIndex: 'departDate' },
+    { title: '容量', dataIndex: 'capacity' },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      render: (status: Trip['status']) => <Tag color="blue">{status}</Tag>
+    }
+  ];
 
   useEffect(() => {
     api.trips().then(setTrips);
@@ -37,20 +50,10 @@ export default function Trips() {
       </Card>
 
       <Card bordered={false} title="已发布行程">
-        <Table
+        <Table<Trip>
           dataSource={trips}
           rowKey="id"
-          columns={[
-            { title: '出发地', dataIndex: 'origin' },
-            { title: '目的地', dataIndex: 'destination' },
-            { title: '出发日期', dataIndex: 'departDate' },
-            { title: '容量', dataIndex: 'capacity' },
-            {
-              title: '状态',
-              dataIndex: 'status',
-              render: (status: string) => <Tag color="blue">{status}</Tag>
-            }
-          ]}
+          columns={columns}
         />
       </Card>
     </div>

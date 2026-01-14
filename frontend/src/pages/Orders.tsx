@@ -1,4 +1,5 @@
 import { Button, Card, Form, Input, InputNumber, Select, Table, Tag, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import { api, Order } from '../api';
 
@@ -8,6 +9,21 @@ const statusOptions = ['NEW', 'CONFIRMED', 'PURCHASED', 'DELIVERED', 'SETTLED'];
 
 export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
+
+  const columns: ColumnsType<Order> = [
+    { title: '商品', dataIndex: 'itemName' },
+    { title: '数量', dataIndex: 'quantity' },
+    { title: '单价', dataIndex: 'unitPrice' },
+    {
+      title: '总价',
+      render: (_value: unknown, record) => (record.quantity * record.unitPrice).toFixed(2)
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      render: (status: Order['status']) => <Tag color="gold">{status}</Tag>
+    }
+  ];
 
   useEffect(() => {
     api.orders().then(setOrders);
@@ -37,23 +53,10 @@ export default function Orders() {
       </Card>
 
       <Card bordered={false} title="订单列表">
-        <Table
+        <Table<Order>
           dataSource={orders}
           rowKey="id"
-          columns={[
-            { title: '商品', dataIndex: 'itemName' },
-            { title: '数量', dataIndex: 'quantity' },
-            { title: '单价', dataIndex: 'unitPrice' },
-            {
-              title: '总价',
-              render: (_, record) => (record.quantity * record.unitPrice).toFixed(2)
-            },
-            {
-              title: '状态',
-              dataIndex: 'status',
-              render: (status: string) => <Tag color="gold">{status}</Tag>
-            }
-          ]}
+          columns={columns}
         />
       </Card>
     </div>
