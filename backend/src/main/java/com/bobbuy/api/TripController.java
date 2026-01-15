@@ -1,5 +1,9 @@
 package com.bobbuy.api;
 
+import com.bobbuy.api.response.ApiException;
+import com.bobbuy.api.response.ApiMeta;
+import com.bobbuy.api.response.ApiResponse;
+import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.model.Trip;
 import com.bobbuy.service.BobbuyStore;
 import jakarta.validation.Valid;
@@ -25,34 +29,39 @@ public class TripController {
   }
 
   @GetMapping
-  public List<Trip> list() {
-    return store.listTrips();
+  public ApiResponse<List<Trip>> list() {
+    List<Trip> trips = store.listTrips();
+    return ApiResponse.success(trips, new ApiMeta(trips.size()));
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Trip> get(@PathVariable Long id) {
-    return store.getTrip(id)
-        .map(ResponseEntity::ok)
-        .orElse(ResponseEntity.notFound().build());
+  public ResponseEntity<ApiResponse<Trip>> get(@PathVariable Long id) {
+    Trip trip = store.getTrip(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "行程不存在"));
+    return ResponseEntity.ok(ApiResponse.success(trip));
   }
 
   @PostMapping
-  public ResponseEntity<Trip> create(@Valid @RequestBody Trip trip) {
-    return ResponseEntity.ok(store.createTrip(trip));
+  public ResponseEntity<ApiResponse<Trip>> create(@Valid @RequestBody Trip trip) {
+    return ResponseEntity.ok(ApiResponse.success(store.createTrip(trip)));
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<Trip> update(@PathVariable Long id, @Valid @RequestBody Trip trip) {
+  public ResponseEntity<ApiResponse<Trip>> update(@PathVariable Long id, @Valid @RequestBody Trip trip) {
     return store.updateTrip(id, trip)
-        .map(ResponseEntity::ok)
-        .orElse(ResponseEntity.notFound().build());
+        .map(updated -> ResponseEntity.ok(ApiResponse.success(updated)))
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "行程不存在"));
+  }
+
+  @PostMapping("/{id}/reserve")
+  public ResponseEntity<ApiResponse<Trip>> reserve(@PathVariable Long id, @Valid @RequestBody TripReserveRequest request) {
+    return ResponseEntity.ok(ApiResponse.success(store.reserveTripCapacity(id, request.getQuantity())));
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable Long id) {
+  public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
     if (store.deleteTrip(id)) {
-      return ResponseEntity.noContent().build();
+      return ResponseEntity.ok(ApiResponse.success(null));
     }
-    return ResponseEntity.notFound().build();
+    throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "行程不存在");
   }
 }

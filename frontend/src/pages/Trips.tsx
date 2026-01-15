@@ -15,6 +15,7 @@ export default function Trips() {
     { title: '目的地', dataIndex: 'destination' },
     { title: '出发日期', dataIndex: 'departDate' },
     { title: '容量', dataIndex: 'capacity' },
+    { title: '剩余容量', dataIndex: 'remainingCapacity' },
     {
       title: '状态',
       dataIndex: 'status',
@@ -38,6 +39,9 @@ export default function Trips() {
           </Form.Item>
           <Form.Item label="目的地" required>
             <Input placeholder="例如：Shanghai" />
+          </Form.Item>
+          <Form.Item label="出发日期" required>
+            <Input type="date" />
           </Form.Item>
           <Form.Item label="可承载数量">
             <InputNumber min={1} style={{ width: '100%' }} placeholder="填写可承载订单数" />

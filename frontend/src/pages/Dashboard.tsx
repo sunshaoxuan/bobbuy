@@ -15,6 +15,7 @@ export default function Dashboard() {
     { title: '出发地', dataIndex: 'origin' },
     { title: '目的地', dataIndex: 'destination' },
     { title: '日期', dataIndex: 'departDate' },
+    { title: '剩余容量', dataIndex: 'remainingCapacity' },
     {
       title: '状态',
       dataIndex: 'status',
@@ -86,6 +87,15 @@ export default function Dashboard() {
       <Divider />
 
       <Card bordered={false}>
+        <div className="section-title">订单状态分布</div>
+        <Text className="helper-text">
+          {metrics?.orderStatusCounts
+            ? Object.entries(metrics.orderStatusCounts)
+                .map(([status, count]) => `${status}: ${count}`)
+                .join(' · ')
+            : '--'}
+        </Text>
+        <Divider />
         <Text className="helper-text">
           AI 助手已根据近期聊天记录生成采购建议。下一步可前往订单管理页面确认采购执行。
         </Text>

@@ -30,6 +30,7 @@
 ## 📂 文档索引
 - [PROD-01: 原始需求清单](docs/design/PROD-01-原始需求清单.md)
 - [PROD-02: 业务功能详细说明](docs/design/PROD-02-业务功能详细说明.md)
+- [PLAN-01: 下一阶段开发任务规划](docs/plans/PLAN-01-下一阶段开发任务规划.md)
 - [ARCH-01: 平台技术架构选型](docs/design/ARCH-01-平台技术架构选型.md)
 - [ARCH-02: 参与者管理与身份认证详细设计](docs/design/ARCH-02-参与者管理与身份认证详细设计.md)
 - [ARCH-03: 行程发布与费用定价详细设计](docs/design/ARCH-03-行程发布与费用定价详细设计.md)

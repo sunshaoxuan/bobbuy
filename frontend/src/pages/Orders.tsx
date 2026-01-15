@@ -6,6 +6,7 @@ import { api, Order } from '../api';
 const { Text } = Typography;
 
 const statusOptions = ['NEW', 'CONFIRMED', 'PURCHASED', 'DELIVERED', 'SETTLED'];
+const currencyOptions = ['CNY', 'JPY', 'USD', 'EUR'];
 
 export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -14,9 +15,13 @@ export default function Orders() {
     { title: '商品', dataIndex: 'itemName' },
     { title: '数量', dataIndex: 'quantity' },
     { title: '单价', dataIndex: 'unitPrice' },
+    { title: '服务费', dataIndex: 'serviceFee' },
+    { title: '税费预估', dataIndex: 'estimatedTax' },
+    { title: '币种', dataIndex: 'currency' },
     {
       title: '总价',
-      render: (_value: unknown, record) => (record.quantity * record.unitPrice).toFixed(2)
+      render: (_value: unknown, record) =>
+        (record.quantity * record.unitPrice + record.serviceFee + record.estimatedTax).toFixed(2)
     },
     {
       title: '状态',
@@ -44,6 +49,15 @@ export default function Orders() {
           </Form.Item>
           <Form.Item label="单价">
             <InputNumber min={0} style={{ width: '100%' }} placeholder="填写单价" />
+          </Form.Item>
+          <Form.Item label="服务费">
+            <InputNumber min={0} style={{ width: '100%' }} placeholder="填写服务费" />
+          </Form.Item>
+          <Form.Item label="税费预估">
+            <InputNumber min={0} style={{ width: '100%' }} placeholder="填写税费预估" />
+          </Form.Item>
+          <Form.Item label="币种">
+            <Select options={currencyOptions.map((currency) => ({ value: currency }))} placeholder="选择币种" />
           </Form.Item>
           <Form.Item label="状态">
             <Select options={statusOptions.map((status) => ({ value: status }))} placeholder="选择状态" />

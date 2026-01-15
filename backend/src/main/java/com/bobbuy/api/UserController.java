@@ -1,5 +1,9 @@
 package com.bobbuy.api;
 
+import com.bobbuy.api.response.ApiException;
+import com.bobbuy.api.response.ApiMeta;
+import com.bobbuy.api.response.ApiResponse;
+import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.model.User;
 import com.bobbuy.service.BobbuyStore;
 import jakarta.validation.Valid;
@@ -25,34 +29,34 @@ public class UserController {
   }
 
   @GetMapping
-  public List<User> list() {
-    return store.listUsers();
+  public ApiResponse<List<User>> list() {
+    List<User> users = store.listUsers();
+    return ApiResponse.success(users, new ApiMeta(users.size()));
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<User> get(@PathVariable Long id) {
-    return store.getUser(id)
-        .map(ResponseEntity::ok)
-        .orElse(ResponseEntity.notFound().build());
+  public ResponseEntity<ApiResponse<User>> get(@PathVariable Long id) {
+    User user = store.getUser(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "用户不存在"));
+    return ResponseEntity.ok(ApiResponse.success(user));
   }
 
   @PostMapping
-  public ResponseEntity<User> create(@Valid @RequestBody User user) {
-    return ResponseEntity.ok(store.createUser(user));
+  public ResponseEntity<ApiResponse<User>> create(@Valid @RequestBody User user) {
+    return ResponseEntity.ok(ApiResponse.success(store.createUser(user)));
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<User> update(@PathVariable Long id, @Valid @RequestBody User user) {
+  public ResponseEntity<ApiResponse<User>> update(@PathVariable Long id, @Valid @RequestBody User user) {
     return store.updateUser(id, user)
-        .map(ResponseEntity::ok)
-        .orElse(ResponseEntity.notFound().build());
+        .map(updated -> ResponseEntity.ok(ApiResponse.success(updated)))
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "用户不存在"));
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable Long id) {
+  public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
     if (store.deleteUser(id)) {
-      return ResponseEntity.noContent().build();
+      return ResponseEntity.ok(ApiResponse.success(null));
     }
-    return ResponseEntity.notFound().build();
+    throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "用户不存在");
   }
 }

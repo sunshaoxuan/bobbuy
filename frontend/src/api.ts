@@ -3,6 +3,7 @@ export type Metrics = {
   trips: number;
   orders: number;
   gmV: number;
+  orderStatusCounts?: Record<string, number>;
 };
 
 export type Trip = {
@@ -12,7 +13,10 @@ export type Trip = {
   destination: string;
   departDate: string;
   capacity: number;
+  reservedCapacity: number;
+  remainingCapacity?: number;
   status: string;
+  statusUpdatedAt?: string;
 };
 
 export type Order = {
@@ -22,7 +26,11 @@ export type Order = {
   itemName: string;
   quantity: number;
   unitPrice: number;
+  serviceFee: number;
+  estimatedTax: number;
+  currency: string;
   status: string;
+  statusUpdatedAt?: string;
 };
 
 export type User = {
@@ -33,7 +41,7 @@ export type User = {
 };
 
 const fallback = {
-  metrics: { users: 2, trips: 1, orders: 1, gmV: 65 },
+  metrics: { users: 2, trips: 1, orders: 1, gmV: 65, orderStatusCounts: { CONFIRMED: 1 } },
   trips: [
     {
       id: 2000,
@@ -42,6 +50,8 @@ const fallback = {
       destination: 'Shanghai',
       departDate: new Date().toISOString().slice(0, 10),
       capacity: 6,
+      reservedCapacity: 1,
+      remainingCapacity: 5,
       status: 'PUBLISHED'
     }
   ],
@@ -53,6 +63,9 @@ const fallback = {
       itemName: 'Matcha Kit',
       quantity: 2,
       unitPrice: 32.5,
+      serviceFee: 6,
+      estimatedTax: 2.3,
+      currency: 'CNY',
       status: 'CONFIRMED'
     }
   ],
@@ -62,13 +75,23 @@ const fallback = {
   ]
 };
 
+type ApiResponse<T> = {
+  status: 'success' | 'error';
+  data?: T;
+  meta?: { total?: number };
+};
+
 async function fetchJson<T>(url: string, fallbackValue: T): Promise<T> {
   try {
     const response = await fetch(url);
     if (!response.ok) {
       return fallbackValue;
     }
-    return (await response.json()) as T;
+    const payload = (await response.json()) as ApiResponse<T> | T;
+    if (typeof payload === 'object' && payload !== null && 'status' in payload && 'data' in payload) {
+      return (payload.data ?? fallbackValue) as T;
+    }
+    return payload as T;
   } catch {
     return fallbackValue;
   }

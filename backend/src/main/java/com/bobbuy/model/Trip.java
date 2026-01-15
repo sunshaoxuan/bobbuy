@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class Trip {
   private Long id;
@@ -24,20 +25,28 @@ public class Trip {
   @Min(1)
   private int capacity;
 
+  @Min(0)
+  private int reservedCapacity;
+
   @NotNull
   private TripStatus status;
+
+  private LocalDateTime statusUpdatedAt;
 
   public Trip() {
   }
 
-  public Trip(Long id, Long agentId, String origin, String destination, LocalDate departDate, int capacity, TripStatus status) {
+  public Trip(Long id, Long agentId, String origin, String destination, LocalDate departDate, int capacity, int reservedCapacity,
+              TripStatus status, LocalDateTime statusUpdatedAt) {
     this.id = id;
     this.agentId = agentId;
     this.origin = origin;
     this.destination = destination;
     this.departDate = departDate;
     this.capacity = capacity;
+    this.reservedCapacity = reservedCapacity;
     this.status = status;
+    this.statusUpdatedAt = statusUpdatedAt;
   }
 
   public Long getId() {
@@ -88,11 +97,31 @@ public class Trip {
     this.capacity = capacity;
   }
 
+  public int getReservedCapacity() {
+    return reservedCapacity;
+  }
+
+  public void setReservedCapacity(int reservedCapacity) {
+    this.reservedCapacity = reservedCapacity;
+  }
+
+  public int getRemainingCapacity() {
+    return Math.max(capacity - reservedCapacity, 0);
+  }
+
   public TripStatus getStatus() {
     return status;
   }
 
   public void setStatus(TripStatus status) {
     this.status = status;
+  }
+
+  public LocalDateTime getStatusUpdatedAt() {
+    return statusUpdatedAt;
+  }
+
+  public void setStatusUpdatedAt(LocalDateTime statusUpdatedAt) {
+    this.statusUpdatedAt = statusUpdatedAt;
   }
 }

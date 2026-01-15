@@ -5,12 +5,14 @@ public class Metrics {
   private int trips;
   private int orders;
   private double gmV;
+  private java.util.Map<String, Integer> orderStatusCounts;
 
-  public Metrics(int users, int trips, int orders, double gmV) {
+  public Metrics(int users, int trips, int orders, double gmV, java.util.Map<String, Integer> orderStatusCounts) {
     this.users = users;
     this.trips = trips;
     this.orders = orders;
     this.gmV = gmV;
+    this.orderStatusCounts = orderStatusCounts;
   }
 
   public int getUsers() {
@@ -27,5 +29,9 @@ public class Metrics {
 
   public double getGmV() {
     return gmV;
+  }
+
+  public java.util.Map<String, Integer> getOrderStatusCounts() {
+    return orderStatusCounts;
   }
 }

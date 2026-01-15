@@ -1,5 +1,7 @@
 package com.bobbuy.service;
 
+import com.bobbuy.api.response.ApiException;
+import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.model.Order;
 import com.bobbuy.model.OrderStatus;
 import com.bobbuy.model.Role;
@@ -10,7 +12,9 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,10 +38,12 @@ public class BobbuyStore {
     users.put(agent.getId(), agent);
     users.put(customer.getId(), customer);
 
-    Trip trip = new Trip(tripId.getAndIncrement(), agent.getId(), "Tokyo", "Shanghai", LocalDate.now().plusDays(5), 6, TripStatus.PUBLISHED);
+    Trip trip = new Trip(tripId.getAndIncrement(), agent.getId(), "Tokyo", "Shanghai", LocalDate.now().plusDays(5), 6, 1,
+        TripStatus.PUBLISHED, LocalDateTime.now());
     trips.put(trip.getId(), trip);
 
-    Order order = new Order(orderId.getAndIncrement(), customer.getId(), trip.getId(), "Matcha Kit", 2, 32.5, OrderStatus.CONFIRMED);
+    Order order = new Order(orderId.getAndIncrement(), customer.getId(), trip.getId(), "Matcha Kit", 2, 32.5, 6.0, 2.3, "CNY",
+        OrderStatus.CONFIRMED, LocalDateTime.now());
     orders.put(order.getId(), order);
   }
 
@@ -78,6 +84,8 @@ public class BobbuyStore {
 
   public Trip createTrip(Trip trip) {
     trip.setId(tripId.getAndIncrement());
+    trip.setReservedCapacity(Math.max(trip.getReservedCapacity(), 0));
+    trip.setStatusUpdatedAt(LocalDateTime.now());
     trips.put(trip.getId(), trip);
     return trip;
   }
@@ -87,6 +95,7 @@ public class BobbuyStore {
       return Optional.empty();
     }
     trip.setId(id);
+    trip.setStatusUpdatedAt(LocalDateTime.now());
     trips.put(id, trip);
     return Optional.of(trip);
   }
@@ -105,6 +114,7 @@ public class BobbuyStore {
 
   public Order createOrder(Order order) {
     order.setId(orderId.getAndIncrement());
+    order.setStatusUpdatedAt(LocalDateTime.now());
     orders.put(order.getId(), order);
     return order;
   }
@@ -114,17 +124,60 @@ public class BobbuyStore {
       return Optional.empty();
     }
     order.setId(id);
+    order.setStatusUpdatedAt(LocalDateTime.now());
     orders.put(id, order);
     return Optional.of(order);
+  }
+
+  public Order updateOrderStatus(Long id, OrderStatus nextStatus) {
+    Order order = getOrder(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "订单不存在"));
+    if (!isValidStatusTransition(order.getStatus(), nextStatus)) {
+      throw new ApiException(ErrorCode.INVALID_STATUS, "非法的订单状态流转");
+    }
+    order.setStatus(nextStatus);
+    order.setStatusUpdatedAt(LocalDateTime.now());
+    orders.put(id, order);
+    return order;
   }
 
   public boolean deleteOrder(Long id) {
     return orders.remove(id) != null;
   }
 
+  public Trip reserveTripCapacity(Long id, int quantity) {
+    Trip trip = getTrip(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "行程不存在"));
+    int remaining = trip.getRemainingCapacity();
+    if (quantity <= 0) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "预留数量必须大于 0");
+    }
+    if (remaining < quantity) {
+      throw new ApiException(ErrorCode.CAPACITY_NOT_ENOUGH, "行程容量不足");
+    }
+    trip.setReservedCapacity(trip.getReservedCapacity() + quantity);
+    trip.setStatusUpdatedAt(LocalDateTime.now());
+    trips.put(id, trip);
+    return trip;
+  }
+
   public double calculateGmv() {
     return orders.values().stream()
         .mapToDouble(order -> order.getUnitPrice() * order.getQuantity())
         .sum();
+  }
+
+  public Map<OrderStatus, Integer> orderStatusCounts() {
+    Map<OrderStatus, Integer> counts = new EnumMap<>(OrderStatus.class);
+    orders.values().forEach(order -> counts.merge(order.getStatus(), 1, Integer::sum));
+    return counts;
+  }
+
+  private boolean isValidStatusTransition(OrderStatus current, OrderStatus next) {
+    return switch (current) {
+      case NEW -> next == OrderStatus.CONFIRMED;
+      case CONFIRMED -> next == OrderStatus.PURCHASED;
+      case PURCHASED -> next == OrderStatus.DELIVERED;
+      case DELIVERED -> next == OrderStatus.SETTLED;
+      case SETTLED -> false;
+    };
   }
 }
