@@ -2,7 +2,7 @@ import { Button, Card, Form, Input, InputNumber, Select, Table, Tag, Typography,
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import { api, Trip } from '../api';
-import { useI18n } from '../i18n';
+import { getStoredLocale, useI18n } from '../i18n';
 
 const { Text } = Typography;
 
@@ -12,6 +12,34 @@ export default function Trips() {
   const { t } = useI18n();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [form] = Form.useForm<Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>>();
+
+  const refreshTrips = async () => {
+    const refreshed = await api.trips();
+    setTrips(refreshed);
+  };
+
+  const handleStatusChange = async (tripId: number, newStatus: string, currentStatus: string) => {
+    if (newStatus === currentStatus) {
+      return;
+    }
+    try {
+      const response = await fetch(`/api/trips/${tripId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept-Language': getStoredLocale()
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (!response.ok) {
+        throw new Error('request_failed');
+      }
+      message.success(t('trips.status.updated'));
+      await refreshTrips();
+    } catch {
+      message.error(t('errors.request_failed'));
+    }
+  };
 
   const columns: ColumnsType<Trip> = [
     { title: t('trips.table.origin'), dataIndex: 'origin' },
@@ -23,11 +51,23 @@ export default function Trips() {
       title: t('trips.table.status'),
       dataIndex: 'status',
       render: (status: Trip['status']) => <Tag color="blue">{status}</Tag>
+    },
+    {
+      title: t('trips.table.actions'),
+      render: (_value: unknown, record) => (
+        <Select
+          value={record.status}
+          onChange={(newStatus) => handleStatusChange(record.id, newStatus, record.status)}
+          options={statusOptions.map((status) => ({ value: status, label: status }))}
+          disabled={record.status === 'COMPLETED'}
+          style={{ width: 160 }}
+        />
+      )
     }
   ];
 
   useEffect(() => {
-    api.trips().then(setTrips);
+    refreshTrips();
   }, []);
 
   const handleSubmit = async (values: Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>) => {
@@ -35,8 +75,7 @@ export default function Trips() {
       await api.createTrip(values);
       message.success(t('trips.form.success'));
       form.resetFields();
-      const refreshed = await api.trips();
-      setTrips(refreshed);
+      await refreshTrips();
     } catch {
       // Errors are surfaced in the API layer.
     }
@@ -105,6 +144,7 @@ export default function Trips() {
           dataSource={trips}
           rowKey="id"
           columns={columns}
+          locale={{ emptyText: t('table.empty') }}
         />
       </Card>
     </div>

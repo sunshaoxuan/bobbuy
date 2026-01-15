@@ -3,6 +3,7 @@ package com.bobbuy.service;
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.model.OrderStatus;
+import com.bobbuy.model.Trip;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,10 +18,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class BobbuyStoreTest {
   private BobbuyStore store;
+  private AuditLogService auditLogService;
 
   @BeforeEach
   void setUp() {
-    store = new BobbuyStore(new AuditLogService());
+    auditLogService = new AuditLogService();
+    store = new BobbuyStore(auditLogService);
     store.seed();
   }
 
@@ -39,6 +42,42 @@ class BobbuyStoreTest {
           assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.CAPACITY_NOT_ENOUGH);
           assertThat(ex.getMessageKey()).isEqualTo("error.trip.capacity_not_enough");
         });
+  }
+
+  @Test
+  void updateOrderStatusRejectsMissingOrder() {
+    assertThatThrownBy(() -> store.updateOrderStatus(9999L, OrderStatus.CONFIRMED))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> {
+          ApiException ex = (ApiException) error;
+          assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND);
+          assertThat(ex.getMessageKey()).isEqualTo("error.order.not_found");
+        });
+  }
+
+  @Test
+  void reserveTripCapacityRejectsInvalidQuantity() {
+    assertThatThrownBy(() -> store.reserveTripCapacity(2000L, 0))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> {
+          ApiException ex = (ApiException) error;
+          assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST);
+          assertThat(ex.getMessageKey()).isEqualTo("error.trip.invalid_quantity");
+        });
+
+    assertThatThrownBy(() -> store.reserveTripCapacity(2000L, -2))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> {
+          ApiException ex = (ApiException) error;
+          assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST);
+          assertThat(ex.getMessageKey()).isEqualTo("error.trip.invalid_quantity");
+        });
+  }
+
+  @Test
+  void reserveTripCapacityAllowsExactRemainingCapacity() {
+    Trip trip = store.reserveTripCapacity(2000L, 5);
+    assertThat(trip.getRemainingCapacity()).isEqualTo(0);
   }
 
   @Test
@@ -67,5 +106,13 @@ class BobbuyStoreTest {
 
     assertThat(successCount.get()).isLessThanOrEqualTo(5);
     assertThat(store.getTrip(2000L).orElseThrow().getRemainingCapacity()).isGreaterThanOrEqualTo(0);
+  }
+
+  @Test
+  void updateTripStatusCreatesAuditLogEntry() {
+    int before = auditLogService.listLogs().size();
+    store.updateTripStatus(2000L, com.bobbuy.model.TripStatus.IN_PROGRESS);
+    assertThat(auditLogService.listLogs().size()).isEqualTo(before + 1);
+    assertThat(auditLogService.listLogs().get(before).getEntityType()).isEqualTo("TRIP");
   }
 }

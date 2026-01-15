@@ -175,6 +175,7 @@ export default function Orders() {
           dataSource={orders}
           rowKey="id"
           columns={columns}
+          locale={{ emptyText: t('table.empty') }}
         />
       </Card>
     </div>

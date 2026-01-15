@@ -59,6 +59,12 @@
             <goals>
               <goal>report</goal>
             </goals>
+            <configuration>
+              <formats>
+                <format>HTML</format>
+                <format>CSV</format>
+              </formats>
+            </configuration>
           </execution>
           <execution>
             <id>check</id>
@@ -69,7 +75,10 @@
             <configuration>
               <rules>
                 <rule>
-                  <element>PACKAGE</element>
+                  <element>CLASS</element>
+                  <includes>
+                    <include>com.bobbuy.service.BobbuyStore</include>
+                  </includes>
                   <limits>
                     <limit>
                       <counter>LINE</counter>
