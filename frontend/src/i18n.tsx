@@ -1,0 +1,284 @@
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+
+export type Locale = 'zh-CN' | 'en-US';
+type Dictionary = Record<string, string>;
+
+const STORAGE_KEY = 'bobbuy_locale';
+
+const translations: Record<Locale, Dictionary> = {
+  'zh-CN': {
+    'app.brand_subtitle': '全球代购指挥台',
+    'app.header_title': '产品第一版 · MVP Console',
+    'nav.dashboard': '概览',
+    'nav.trips': '行程管理',
+    'nav.orders': '订单管理',
+    'nav.users': '参与者',
+    'language.label': '语言',
+    'language.zh': '中文',
+    'language.en': 'English',
+    'errors.request_failed': '请求失败，请稍后再试',
+    'dashboard.title': '今日概览',
+    'dashboard.stats.active_users': '活跃参与者',
+    'dashboard.stats.active_users.helper': '过去30天活跃',
+    'dashboard.stats.active_trips': '可承接行程',
+    'dashboard.stats.active_trips.helper': '已发布行程',
+    'dashboard.stats.pending_orders': '待履约订单',
+    'dashboard.stats.pending_orders.helper': '确认中/采购中',
+    'dashboard.stats.gmv': 'GMV',
+    'dashboard.stats.gmv.helper': '含税预估',
+    'dashboard.trips.title': '最新行程',
+    'dashboard.trips.origin': '出发地',
+    'dashboard.trips.destination': '目的地',
+    'dashboard.trips.depart_date': '日期',
+    'dashboard.trips.remaining_capacity': '剩余容量',
+    'dashboard.trips.status': '状态',
+    'dashboard.orders.title': '关键订单',
+    'dashboard.orders.item_name': '商品',
+    'dashboard.orders.quantity': '数量',
+    'dashboard.orders.amount': '金额',
+    'dashboard.orders.status': '状态',
+    'dashboard.status_distribution.title': '订单状态分布',
+    'dashboard.ai_insight': 'AI 助手已根据近期聊天记录生成采购建议。下一步可前往订单管理页面确认采购执行。',
+    'orders.title': '订单确认与采购执行',
+    'orders.helper': '记录委托需求，跟踪采购与交付状态。',
+    'orders.table.item_name': '商品',
+    'orders.table.quantity': '数量',
+    'orders.table.unit_price': '单价',
+    'orders.table.service_fee': '服务费',
+    'orders.table.estimated_tax': '税费预估',
+    'orders.table.currency': '币种',
+    'orders.table.total': '总价',
+    'orders.table.status': '状态',
+    'orders.list.title': '订单列表',
+    'orders.form.customer_id.label': '客户编号',
+    'orders.form.customer_id.placeholder': '填写客户编号',
+    'orders.form.customer_id.required': '请输入客户编号',
+    'orders.form.trip_id.label': '行程编号',
+    'orders.form.trip_id.placeholder': '填写行程编号',
+    'orders.form.trip_id.required': '请输入行程编号',
+    'orders.form.item_name.label': '商品名称',
+    'orders.form.item_name.placeholder': '例如：Limited Edition Sneakers',
+    'orders.form.item_name.required': '请输入商品名称',
+    'orders.form.quantity.label': '数量',
+    'orders.form.quantity.placeholder': '填写需求数量',
+    'orders.form.quantity.required': '请输入数量',
+    'orders.form.unit_price.label': '单价',
+    'orders.form.unit_price.placeholder': '填写单价',
+    'orders.form.unit_price.required': '请输入单价',
+    'orders.form.service_fee.label': '服务费',
+    'orders.form.service_fee.placeholder': '填写服务费',
+    'orders.form.service_fee.required': '请输入服务费',
+    'orders.form.estimated_tax.label': '税费预估',
+    'orders.form.estimated_tax.placeholder': '填写税费预估',
+    'orders.form.estimated_tax.required': '请输入税费预估',
+    'orders.form.currency.label': '币种',
+    'orders.form.currency.placeholder': '选择币种',
+    'orders.form.currency.required': '请选择币种',
+    'orders.form.status.label': '状态',
+    'orders.form.status.placeholder': '选择状态',
+    'orders.form.status.required': '请选择状态',
+    'orders.form.submit': '创建订单',
+    'orders.form.success': '订单创建成功',
+    'trips.title': '行程发布与费用定价',
+    'trips.helper': '快速创建新的代购行程，支持设置容量与状态。',
+    'trips.table.origin': '出发地',
+    'trips.table.destination': '目的地',
+    'trips.table.depart_date': '出发日期',
+    'trips.table.capacity': '容量',
+    'trips.table.remaining_capacity': '剩余容量',
+    'trips.table.status': '状态',
+    'trips.list.title': '已发布行程',
+    'trips.form.agent_id.label': '代购员编号',
+    'trips.form.agent_id.placeholder': '填写代购员编号',
+    'trips.form.agent_id.required': '请输入代购员编号',
+    'trips.form.origin.label': '出发地',
+    'trips.form.origin.placeholder': '例如：Tokyo',
+    'trips.form.origin.required': '请输入出发地',
+    'trips.form.destination.label': '目的地',
+    'trips.form.destination.placeholder': '例如：Shanghai',
+    'trips.form.destination.required': '请输入目的地',
+    'trips.form.depart_date.label': '出发日期',
+    'trips.form.depart_date.required': '请选择出发日期',
+    'trips.form.capacity.label': '可承载数量',
+    'trips.form.capacity.placeholder': '填写可承载订单数',
+    'trips.form.capacity.required': '请输入容量',
+    'trips.form.status.label': '状态',
+    'trips.form.status.placeholder': '选择状态',
+    'trips.form.status.required': '请选择状态',
+    'trips.form.submit': '保存行程',
+    'trips.form.success': '行程创建成功',
+    'users.title': '参与者管理与身份认证',
+    'users.helper': '维护客户、代理人与商户的基础信息与信用评分。',
+    'users.table.name': '姓名',
+    'users.table.role': '角色',
+    'users.table.rating': '评分',
+    'users.form.name.label': '姓名',
+    'users.form.name.placeholder': '填写姓名',
+    'users.form.role.label': '角色',
+    'users.form.role.placeholder': '选择角色',
+    'users.form.rating.label': '评分',
+    'users.form.submit': '保存参与者',
+    'users.list.title': '参与者列表'
+  },
+  'en-US': {
+    'app.brand_subtitle': 'Global Personal Shopping Console',
+    'app.header_title': 'Product v1 · MVP Console',
+    'nav.dashboard': 'Overview',
+    'nav.trips': 'Trips',
+    'nav.orders': 'Orders',
+    'nav.users': 'Participants',
+    'language.label': 'Language',
+    'language.zh': '中文',
+    'language.en': 'English',
+    'errors.request_failed': 'Request failed, please try again later.',
+    'dashboard.title': 'Today Overview',
+    'dashboard.stats.active_users': 'Active Participants',
+    'dashboard.stats.active_users.helper': 'Active in the last 30 days',
+    'dashboard.stats.active_trips': 'Available Trips',
+    'dashboard.stats.active_trips.helper': 'Published trips',
+    'dashboard.stats.pending_orders': 'Pending Orders',
+    'dashboard.stats.pending_orders.helper': 'Confirmed / purchasing',
+    'dashboard.stats.gmv': 'GMV',
+    'dashboard.stats.gmv.helper': 'Estimated tax included',
+    'dashboard.trips.title': 'Latest Trips',
+    'dashboard.trips.origin': 'Origin',
+    'dashboard.trips.destination': 'Destination',
+    'dashboard.trips.depart_date': 'Date',
+    'dashboard.trips.remaining_capacity': 'Remaining Capacity',
+    'dashboard.trips.status': 'Status',
+    'dashboard.orders.title': 'Key Orders',
+    'dashboard.orders.item_name': 'Item',
+    'dashboard.orders.quantity': 'Quantity',
+    'dashboard.orders.amount': 'Amount',
+    'dashboard.orders.status': 'Status',
+    'dashboard.status_distribution.title': 'Order Status Distribution',
+    'dashboard.ai_insight': 'The AI assistant generated purchasing recommendations. Review them in Orders for next steps.',
+    'orders.title': 'Order Confirmation & Purchasing',
+    'orders.helper': 'Log requests and track purchasing and delivery status.',
+    'orders.table.item_name': 'Item',
+    'orders.table.quantity': 'Quantity',
+    'orders.table.unit_price': 'Unit Price',
+    'orders.table.service_fee': 'Service Fee',
+    'orders.table.estimated_tax': 'Estimated Tax',
+    'orders.table.currency': 'Currency',
+    'orders.table.total': 'Total',
+    'orders.table.status': 'Status',
+    'orders.list.title': 'Order List',
+    'orders.form.customer_id.label': 'Customer ID',
+    'orders.form.customer_id.placeholder': 'Enter customer ID',
+    'orders.form.customer_id.required': 'Please enter customer ID',
+    'orders.form.trip_id.label': 'Trip ID',
+    'orders.form.trip_id.placeholder': 'Enter trip ID',
+    'orders.form.trip_id.required': 'Please enter trip ID',
+    'orders.form.item_name.label': 'Item Name',
+    'orders.form.item_name.placeholder': 'e.g. Limited Edition Sneakers',
+    'orders.form.item_name.required': 'Please enter item name',
+    'orders.form.quantity.label': 'Quantity',
+    'orders.form.quantity.placeholder': 'Enter quantity',
+    'orders.form.quantity.required': 'Please enter quantity',
+    'orders.form.unit_price.label': 'Unit Price',
+    'orders.form.unit_price.placeholder': 'Enter unit price',
+    'orders.form.unit_price.required': 'Please enter unit price',
+    'orders.form.service_fee.label': 'Service Fee',
+    'orders.form.service_fee.placeholder': 'Enter service fee',
+    'orders.form.service_fee.required': 'Please enter service fee',
+    'orders.form.estimated_tax.label': 'Estimated Tax',
+    'orders.form.estimated_tax.placeholder': 'Enter estimated tax',
+    'orders.form.estimated_tax.required': 'Please enter estimated tax',
+    'orders.form.currency.label': 'Currency',
+    'orders.form.currency.placeholder': 'Select currency',
+    'orders.form.currency.required': 'Please select currency',
+    'orders.form.status.label': 'Status',
+    'orders.form.status.placeholder': 'Select status',
+    'orders.form.status.required': 'Please select status',
+    'orders.form.submit': 'Create Order',
+    'orders.form.success': 'Order created successfully',
+    'trips.title': 'Trip Publishing & Pricing',
+    'trips.helper': 'Create new trips with capacity and status.',
+    'trips.table.origin': 'Origin',
+    'trips.table.destination': 'Destination',
+    'trips.table.depart_date': 'Departure Date',
+    'trips.table.capacity': 'Capacity',
+    'trips.table.remaining_capacity': 'Remaining Capacity',
+    'trips.table.status': 'Status',
+    'trips.list.title': 'Published Trips',
+    'trips.form.agent_id.label': 'Agent ID',
+    'trips.form.agent_id.placeholder': 'Enter agent ID',
+    'trips.form.agent_id.required': 'Please enter agent ID',
+    'trips.form.origin.label': 'Origin',
+    'trips.form.origin.placeholder': 'e.g. Tokyo',
+    'trips.form.origin.required': 'Please enter origin',
+    'trips.form.destination.label': 'Destination',
+    'trips.form.destination.placeholder': 'e.g. Shanghai',
+    'trips.form.destination.required': 'Please enter destination',
+    'trips.form.depart_date.label': 'Departure Date',
+    'trips.form.depart_date.required': 'Please select departure date',
+    'trips.form.capacity.label': 'Capacity',
+    'trips.form.capacity.placeholder': 'Enter capacity',
+    'trips.form.capacity.required': 'Please enter capacity',
+    'trips.form.status.label': 'Status',
+    'trips.form.status.placeholder': 'Select status',
+    'trips.form.status.required': 'Please select status',
+    'trips.form.submit': 'Save Trip',
+    'trips.form.success': 'Trip created successfully',
+    'users.title': 'Participant Management & Identity',
+    'users.helper': 'Maintain customer, agent, and merchant profiles and ratings.',
+    'users.table.name': 'Name',
+    'users.table.role': 'Role',
+    'users.table.rating': 'Rating',
+    'users.form.name.label': 'Name',
+    'users.form.name.placeholder': 'Enter name',
+    'users.form.role.label': 'Role',
+    'users.form.role.placeholder': 'Select role',
+    'users.form.rating.label': 'Rating',
+    'users.form.submit': 'Save Participant',
+    'users.list.title': 'Participant List'
+  }
+};
+
+export const getStoredLocale = (): Locale => {
+  if (typeof window === 'undefined') {
+    return 'zh-CN';
+  }
+  const stored = window.localStorage.getItem(STORAGE_KEY);
+  return stored === 'en-US' ? 'en-US' : 'zh-CN';
+};
+
+export const translate = (locale: Locale, key: string): string => {
+  return translations[locale][key] ?? translations['zh-CN'][key] ?? key;
+};
+
+type I18nContextValue = {
+  locale: Locale;
+  setLocale: (next: Locale) => void;
+  t: (key: string) => string;
+};
+
+const I18nContext = createContext<I18nContextValue | undefined>(undefined);
+
+export function I18nProvider({ children }: { children: React.ReactNode }) {
+  const [locale, setLocaleState] = useState<Locale>(getStoredLocale());
+
+  const setLocale = useCallback((next: Locale) => {
+    setLocaleState(next);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(STORAGE_KEY, next);
+    }
+  }, []);
+
+  const t = useCallback((key: string) => translate(locale, key), [locale]);
+
+  const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
+
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+export function useI18n() {
+  const context = useContext(I18nContext);
+  if (!context) {
+    throw new Error('useI18n must be used within I18nProvider');
+  }
+  return context;
+}
+
+export const supportedLocales: Locale[] = ['zh-CN', 'en-US'];

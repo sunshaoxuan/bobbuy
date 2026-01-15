@@ -3,35 +3,37 @@ import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import { api, Metrics, Order, Trip } from '../api';
 import StatCard from '../components/StatCard';
+import { useI18n } from '../i18n';
 
 const { Text } = Typography;
 
 export default function Dashboard() {
+  const { t } = useI18n();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
   const tripColumns: ColumnsType<Trip> = [
-    { title: '出发地', dataIndex: 'origin' },
-    { title: '目的地', dataIndex: 'destination' },
-    { title: '日期', dataIndex: 'departDate' },
-    { title: '剩余容量', dataIndex: 'remainingCapacity' },
+    { title: t('dashboard.trips.origin'), dataIndex: 'origin' },
+    { title: t('dashboard.trips.destination'), dataIndex: 'destination' },
+    { title: t('dashboard.trips.depart_date'), dataIndex: 'departDate' },
+    { title: t('dashboard.trips.remaining_capacity'), dataIndex: 'remainingCapacity' },
     {
-      title: '状态',
+      title: t('dashboard.trips.status'),
       dataIndex: 'status',
       render: (status: Trip['status']) => <Tag color="blue">{status}</Tag>
     }
   ];
 
   const orderColumns: ColumnsType<Order> = [
-    { title: '商品', dataIndex: 'itemName' },
-    { title: '数量', dataIndex: 'quantity' },
+    { title: t('dashboard.orders.item_name'), dataIndex: 'itemName' },
+    { title: t('dashboard.orders.quantity'), dataIndex: 'quantity' },
     {
-      title: '金额',
+      title: t('dashboard.orders.amount'),
       render: (_value: unknown, record) => `¥ ${(record.unitPrice * record.quantity).toFixed(2)}`
     },
     {
-      title: '状态',
+      title: t('dashboard.orders.status'),
       dataIndex: 'status',
       render: (status: Order['status']) => <Tag color="gold">{status}</Tag>
     }
@@ -45,15 +47,27 @@ export default function Dashboard() {
 
   return (
     <div className="page-card">
-      <div className="section-title">今日概览</div>
+      <div className="section-title">{t('dashboard.title')}</div>
       <div className="dashboard-grid">
-        <StatCard label="活跃参与者" value={metrics ? String(metrics.users) : '--'} helper="过去30天活跃" />
-        <StatCard label="可承接行程" value={metrics ? String(metrics.trips) : '--'} helper="已发布行程" />
-        <StatCard label="待履约订单" value={metrics ? String(metrics.orders) : '--'} helper="确认中/采购中" />
         <StatCard
-          label="GMV"
+          label={t('dashboard.stats.active_users')}
+          value={metrics ? String(metrics.users) : '--'}
+          helper={t('dashboard.stats.active_users.helper')}
+        />
+        <StatCard
+          label={t('dashboard.stats.active_trips')}
+          value={metrics ? String(metrics.trips) : '--'}
+          helper={t('dashboard.stats.active_trips.helper')}
+        />
+        <StatCard
+          label={t('dashboard.stats.pending_orders')}
+          value={metrics ? String(metrics.orders) : '--'}
+          helper={t('dashboard.stats.pending_orders.helper')}
+        />
+        <StatCard
+          label={t('dashboard.stats.gmv')}
           value={metrics ? `¥ ${metrics.gmV.toFixed(2)}` : '--'}
-          helper="含税预估"
+          helper={t('dashboard.stats.gmv.helper')}
         />
       </div>
 
@@ -61,7 +75,7 @@ export default function Dashboard() {
 
       <Row gutter={16}>
         <Col span={12}>
-          <Card bordered={false} title="最新行程">
+          <Card bordered={false} title={t('dashboard.trips.title')}>
             <Table<Trip>
               size="small"
               pagination={false}
@@ -72,7 +86,7 @@ export default function Dashboard() {
           </Card>
         </Col>
         <Col span={12}>
-          <Card bordered={false} title="关键订单">
+          <Card bordered={false} title={t('dashboard.orders.title')}>
             <Table<Order>
               size="small"
               pagination={false}
@@ -87,7 +101,7 @@ export default function Dashboard() {
       <Divider />
 
       <Card bordered={false}>
-        <div className="section-title">订单状态分布</div>
+        <div className="section-title">{t('dashboard.status_distribution.title')}</div>
         <Text className="helper-text">
           {metrics?.orderStatusCounts
             ? Object.entries(metrics.orderStatusCounts)
@@ -96,9 +110,7 @@ export default function Dashboard() {
             : '--'}
         </Text>
         <Divider />
-        <Text className="helper-text">
-          AI 助手已根据近期聊天记录生成采购建议。下一步可前往订单管理页面确认采购执行。
-        </Text>
+        <Text className="helper-text">{t('dashboard.ai_insight')}</Text>
       </Card>
     </div>
   );

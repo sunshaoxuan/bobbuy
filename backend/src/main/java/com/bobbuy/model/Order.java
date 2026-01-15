@@ -9,31 +9,31 @@ import java.time.LocalDateTime;
 public class Order {
   private Long id;
 
-  @NotNull
+  @NotNull(message = "{validation.order.customer_id.required}")
   private Long customerId;
 
-  @NotNull
+  @NotNull(message = "{validation.order.trip_id.required}")
   private Long tripId;
 
-  @NotBlank
+  @NotBlank(message = "{validation.order.item_name.required}")
   private String itemName;
 
-  @Min(1)
+  @Min(value = 1, message = "{validation.order.quantity.min}")
   private int quantity;
 
-  @Min(0)
+  @Min(value = 0, message = "{validation.order.unit_price.min}")
   private double unitPrice;
 
-  @Min(0)
+  @Min(value = 0, message = "{validation.order.service_fee.min}")
   private double serviceFee;
 
-  @Min(0)
+  @Min(value = 0, message = "{validation.order.estimated_tax.min}")
   private double estimatedTax;
 
-  @NotBlank
+  @NotBlank(message = "{validation.order.currency.required}")
   private String currency;
 
-  @NotNull
+  @NotNull(message = "{validation.order.status.required}")
   private OrderStatus status;
 
   private LocalDateTime statusUpdatedAt;

@@ -10,25 +10,25 @@ import java.time.LocalDateTime;
 public class Trip {
   private Long id;
 
-  @NotNull
+  @NotNull(message = "{validation.trip.agent_id.required}")
   private Long agentId;
 
-  @NotBlank
+  @NotBlank(message = "{validation.trip.origin.required}")
   private String origin;
 
-  @NotBlank
+  @NotBlank(message = "{validation.trip.destination.required}")
   private String destination;
 
-  @NotNull
+  @NotNull(message = "{validation.trip.depart_date.required}")
   private LocalDate departDate;
 
-  @Min(1)
+  @Min(value = 1, message = "{validation.trip.capacity.min}")
   private int capacity;
 
-  @Min(0)
+  @Min(value = 0, message = "{validation.trip.reserved_capacity.min}")
   private int reservedCapacity;
 
-  @NotNull
+  @NotNull(message = "{validation.trip.status.required}")
   private TripStatus status;
 
   private LocalDateTime statusUpdatedAt;

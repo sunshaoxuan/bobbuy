@@ -37,7 +37,8 @@ public class OrderController {
 
   @GetMapping("/{id}")
   public ResponseEntity<ApiResponse<Order>> get(@PathVariable Long id) {
-    Order order = store.getOrder(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "订单不存在"));
+    Order order = store.getOrder(id)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
     return ResponseEntity.ok(ApiResponse.success(order));
   }
 
@@ -50,7 +51,7 @@ public class OrderController {
   public ResponseEntity<ApiResponse<Order>> update(@PathVariable Long id, @Valid @RequestBody Order order) {
     return store.updateOrder(id, order)
         .map(updated -> ResponseEntity.ok(ApiResponse.success(updated)))
-        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "订单不存在"));
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
   }
 
   @PatchMapping("/{id}/status")
@@ -63,6 +64,6 @@ public class OrderController {
     if (store.deleteOrder(id)) {
       return ResponseEntity.ok(ApiResponse.success(null));
     }
-    throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "订单不存在");
+    throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found");
   }
 }

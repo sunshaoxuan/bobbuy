@@ -23,13 +23,19 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class BobbuyStore {
+  private static final Long SYSTEM_USER_ID = 0L;
   private final Map<Long, User> users = new ConcurrentHashMap<>();
   private final Map<Long, Trip> trips = new ConcurrentHashMap<>();
   private final Map<Long, Order> orders = new ConcurrentHashMap<>();
+  private final AuditLogService auditLogService;
 
   private final AtomicLong userId = new AtomicLong(1000);
   private final AtomicLong tripId = new AtomicLong(2000);
   private final AtomicLong orderId = new AtomicLong(3000);
+
+  public BobbuyStore(AuditLogService auditLogService) {
+    this.auditLogService = auditLogService;
+  }
 
   @PostConstruct
   public void seed() {
@@ -130,13 +136,16 @@ public class BobbuyStore {
   }
 
   public Order updateOrderStatus(Long id, OrderStatus nextStatus) {
-    Order order = getOrder(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "订单不存在"));
+    Order order = getOrder(id)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
     if (!isValidStatusTransition(order.getStatus(), nextStatus)) {
-      throw new ApiException(ErrorCode.INVALID_STATUS, "非法的订单状态流转");
+      throw new ApiException(ErrorCode.INVALID_STATUS, "error.order.invalid_status");
     }
+    String previousStatus = order.getStatus().name();
     order.setStatus(nextStatus);
     order.setStatusUpdatedAt(LocalDateTime.now());
     orders.put(id, order);
+    auditLogService.logStatusChange("ORDER", id, previousStatus, nextStatus.name(), SYSTEM_USER_ID);
     return order;
   }
 
@@ -144,14 +153,15 @@ public class BobbuyStore {
     return orders.remove(id) != null;
   }
 
-  public Trip reserveTripCapacity(Long id, int quantity) {
-    Trip trip = getTrip(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "行程不存在"));
+  public synchronized Trip reserveTripCapacity(Long id, int quantity) {
+    Trip trip = getTrip(id)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
     int remaining = trip.getRemainingCapacity();
     if (quantity <= 0) {
-      throw new ApiException(ErrorCode.INVALID_REQUEST, "预留数量必须大于 0");
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.trip.invalid_quantity");
     }
     if (remaining < quantity) {
-      throw new ApiException(ErrorCode.CAPACITY_NOT_ENOUGH, "行程容量不足");
+      throw new ApiException(ErrorCode.CAPACITY_NOT_ENOUGH, "error.trip.capacity_not_enough");
     }
     trip.setReservedCapacity(trip.getReservedCapacity() + quantity);
     trip.setStatusUpdatedAt(LocalDateTime.now());

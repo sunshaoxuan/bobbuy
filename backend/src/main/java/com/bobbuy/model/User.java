@@ -6,10 +6,10 @@ import jakarta.validation.constraints.NotNull;
 public class User {
   private Long id;
 
-  @NotBlank
+  @NotBlank(message = "{validation.user.name.required}")
   private String name;
 
-  @NotNull
+  @NotNull(message = "{validation.user.role.required}")
   private Role role;
 
   private double rating;
