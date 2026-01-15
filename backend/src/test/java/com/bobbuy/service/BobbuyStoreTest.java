@@ -2,11 +2,17 @@ package com.bobbuy.service;
 
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
+import com.bobbuy.model.User;
+import com.bobbuy.model.Role;
+import com.bobbuy.model.Order;
 import com.bobbuy.model.OrderStatus;
 import com.bobbuy.model.Trip;
+import com.bobbuy.model.TripStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -25,6 +31,106 @@ class BobbuyStoreTest {
     auditLogService = new AuditLogService();
     store = new BobbuyStore(auditLogService);
     store.seed();
+  }
+
+  @Test
+  void userLifecycleTests() {
+    // List
+    assertThat(store.listUsers()).hasSize(2);
+
+    // Create
+    User newUser = new User(null, "Test User", Role.CUSTOMER, 5.0);
+    User created = store.createUser(newUser);
+    assertThat(created.getId()).isEqualTo(1002L);
+    assertThat(store.getUser(1002L)).isPresent();
+
+    // Update
+    created.setName("Updated Name");
+    Optional<User> updated = store.updateUser(1002L, created);
+    assertThat(updated).isPresent();
+    assertThat(updated.get().getName()).isEqualTo("Updated Name");
+
+    // Update missing
+    assertThat(store.updateUser(9999L, created)).isEmpty();
+
+    // Delete
+    assertThat(store.deleteUser(1002L)).isTrue();
+    assertThat(store.deleteUser(1002L)).isFalse();
+  }
+
+  @Test
+  void tripLifecycleTests() {
+    // List
+    assertThat(store.listTrips()).hasSize(1);
+
+    // Create
+    Trip newTrip = new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 5, -1, TripStatus.DRAFT, null);
+    Trip created = store.createTrip(newTrip);
+    assertThat(created.getId()).isEqualTo(2001L);
+    assertThat(created.getReservedCapacity()).isEqualTo(0); // Test Math.max logic
+
+    // Update
+    created.setOrigin("Macau");
+    Optional<Trip> updated = store.updateTrip(2001L, created);
+    assertThat(updated).isPresent();
+    assertThat(updated.get().getOrigin()).isEqualTo("Macau");
+
+    // Update missing
+    assertThat(store.updateTrip(9999L, created)).isEmpty();
+
+    // Update status missing
+    assertThatThrownBy(() -> store.updateTripStatus(9999L, TripStatus.COMPLETED))
+        .isInstanceOf(ApiException.class);
+
+    // Delete
+    assertThat(store.deleteTrip(2001L)).isTrue();
+    assertThat(store.deleteTrip(2001L)).isFalse();
+  }
+
+  @Test
+  void orderLifecycleAndCalculations() {
+    // List & GMV
+    assertThat(store.listOrders()).hasSize(1);
+    assertThat(store.calculateGmv()).isEqualTo(32.5 * 2);
+
+    // Create
+    Order newOrder = new Order(null, 1001L, 2000L, "Tea", 1, 10.0, 1.0, 0.5, "USD", OrderStatus.NEW, null);
+    Order created = store.createOrder(newOrder);
+    assertThat(created.getId()).isEqualTo(3001L);
+
+    // Update
+    created.setItemName("Green Tea");
+    Optional<Order> updated = store.updateOrder(3001L, created);
+    assertThat(updated).isPresent();
+
+    // Update missing
+    assertThat(store.updateOrder(9999L, created)).isEmpty();
+
+    // Valid transitions (Switch case coverage)
+    store.updateOrderStatus(3001L, OrderStatus.CONFIRMED);
+    store.updateOrderStatus(3001L, OrderStatus.PURCHASED);
+    store.updateOrderStatus(3001L, OrderStatus.DELIVERED);
+    store.updateOrderStatus(3001L, OrderStatus.SETTLED);
+
+    // Invalid transitions
+    assertThatThrownBy(() -> store.updateOrderStatus(3001L, OrderStatus.NEW))
+        .isInstanceOf(ApiException.class);
+
+    // Delete
+    assertThat(store.deleteOrder(3001L)).isTrue();
+    assertThat(store.deleteOrder(3001L)).isFalse();
+  }
+
+  @Test
+  void orderStatusCountsWithEmpty() {
+    store.deleteOrder(3000L);
+    assertThat(store.orderStatusCounts()).isEmpty();
+  }
+
+  @Test
+  void reserveTripCapacityNotFound() {
+    assertThatThrownBy(() -> store.reserveTripCapacity(9999L, 1))
+        .isInstanceOf(ApiException.class);
   }
 
   @Test
