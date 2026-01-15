@@ -2,7 +2,7 @@ import { Button, Card, Form, Input, InputNumber, Select, Table, Tag, Typography,
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import { api, Order } from '../api';
-import { useI18n } from '../i18n';
+import { getStoredLocale, useI18n } from '../i18n';
 
 const { Text } = Typography;
 
@@ -13,6 +13,34 @@ export default function Orders() {
   const { t } = useI18n();
   const [orders, setOrders] = useState<Order[]>([]);
   const [form] = Form.useForm<Omit<Order, 'id' | 'statusUpdatedAt'>>();
+
+  const refreshOrders = async () => {
+    const refreshed = await api.orders();
+    setOrders(refreshed);
+  };
+
+  const handleStatusChange = async (orderId: number, newStatus: string, currentStatus: string) => {
+    if (newStatus === currentStatus) {
+      return;
+    }
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept-Language': getStoredLocale()
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (!response.ok) {
+        throw new Error('request_failed');
+      }
+      message.success(t('orders.status.updated'));
+      await refreshOrders();
+    } catch {
+      message.error(t('errors.request_failed'));
+    }
+  };
 
   const columns: ColumnsType<Order> = [
     { title: t('orders.table.item_name'), dataIndex: 'itemName' },
@@ -30,11 +58,23 @@ export default function Orders() {
       title: t('orders.table.status'),
       dataIndex: 'status',
       render: (status: Order['status']) => <Tag color="gold">{status}</Tag>
+    },
+    {
+      title: t('orders.table.actions'),
+      render: (_value: unknown, record) => (
+        <Select
+          value={record.status}
+          onChange={(newStatus) => handleStatusChange(record.id, newStatus, record.status)}
+          options={statusOptions.map((status) => ({ value: status, label: status }))}
+          disabled={record.status === 'SETTLED'}
+          style={{ width: 160 }}
+        />
+      )
     }
   ];
 
   useEffect(() => {
-    api.orders().then(setOrders);
+    refreshOrders();
   }, []);
 
   const handleSubmit = async (values: Omit<Order, 'id' | 'statusUpdatedAt'>) => {
@@ -42,8 +82,7 @@ export default function Orders() {
       await api.createOrder(values);
       message.success(t('orders.form.success'));
       form.resetFields();
-      const refreshed = await api.orders();
-      setOrders(refreshed);
+      await refreshOrders();
     } catch {
       // Errors are surfaced in the API layer.
     }

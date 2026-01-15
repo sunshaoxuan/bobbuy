@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -51,6 +52,11 @@ public class TripController {
     return store.updateTrip(id, trip)
         .map(updated -> ResponseEntity.ok(ApiResponse.success(updated)))
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+  }
+
+  @PatchMapping("/{id}/status")
+  public ResponseEntity<ApiResponse<Trip>> updateStatus(@PathVariable Long id, @Valid @RequestBody TripStatusRequest request) {
+    return ResponseEntity.ok(ApiResponse.success(store.updateTripStatus(id, request.getStatus())));
   }
 
   @PostMapping("/{id}/reserve")

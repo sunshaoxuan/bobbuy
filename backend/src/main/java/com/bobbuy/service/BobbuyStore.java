@@ -106,6 +106,17 @@ public class BobbuyStore {
     return Optional.of(trip);
   }
 
+  public Trip updateTripStatus(Long id, TripStatus nextStatus) {
+    Trip trip = getTrip(id)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    String previousStatus = trip.getStatus().name();
+    trip.setStatus(nextStatus);
+    trip.setStatusUpdatedAt(LocalDateTime.now());
+    trips.put(id, trip);
+    auditLogService.logStatusChange("TRIP", id, previousStatus, nextStatus.name(), SYSTEM_USER_ID);
+    return trip;
+  }
+
   public boolean deleteTrip(Long id) {
     return trips.remove(id) != null;
   }
