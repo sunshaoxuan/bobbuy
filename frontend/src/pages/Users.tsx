@@ -2,23 +2,25 @@ import { Button, Card, Form, Input, Rate, Select, Table, Tag, Typography } from 
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import { api, User } from '../api';
+import { useI18n } from '../i18n';
 
 const { Text } = Typography;
 
 const roleOptions = ['CUSTOMER', 'AGENT', 'MERCHANT'];
 
 export default function Users() {
+  const { t } = useI18n();
   const [users, setUsers] = useState<User[]>([]);
 
   const columns: ColumnsType<User> = [
-    { title: '姓名', dataIndex: 'name' },
+    { title: t('users.table.name'), dataIndex: 'name' },
     {
-      title: '角色',
+      title: t('users.table.role'),
       dataIndex: 'role',
       render: (role: User['role']) => <Tag color="purple">{role}</Tag>
     },
     {
-      title: '评分',
+      title: t('users.table.rating'),
       dataIndex: 'rating',
       render: (rating: User['rating']) => rating.toFixed(1)
     }
@@ -30,25 +32,28 @@ export default function Users() {
 
   return (
     <div className="page-card">
-      <div className="section-title">参与者管理与身份认证</div>
-      <Text className="helper-text">维护客户、代理人与商户的基础信息与信用评分。</Text>
+      <div className="section-title">{t('users.title')}</div>
+      <Text className="helper-text">{t('users.helper')}</Text>
 
       <Card style={{ marginTop: 16, marginBottom: 24 }} bordered={false}>
         <Form layout="vertical">
-          <Form.Item label="姓名" required>
-            <Input placeholder="填写姓名" />
+          <Form.Item label={t('users.form.name.label')} required>
+            <Input placeholder={t('users.form.name.placeholder')} />
           </Form.Item>
-          <Form.Item label="角色">
-            <Select options={roleOptions.map((role) => ({ value: role }))} placeholder="选择角色" />
+          <Form.Item label={t('users.form.role.label')}>
+            <Select
+              options={roleOptions.map((role) => ({ value: role }))}
+              placeholder={t('users.form.role.placeholder')}
+            />
           </Form.Item>
-          <Form.Item label="评分">
+          <Form.Item label={t('users.form.rating.label')}>
             <Rate allowHalf defaultValue={4.5} />
           </Form.Item>
-          <Button type="primary">保存参与者</Button>
+          <Button type="primary">{t('users.form.submit')}</Button>
         </Form>
       </Card>
 
-      <Card bordered={false} title="参与者列表">
+      <Card bordered={false} title={t('users.list.title')}>
         <Table<User>
           dataSource={users}
           rowKey="id"

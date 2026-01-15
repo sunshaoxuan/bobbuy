@@ -4,7 +4,7 @@ import com.bobbuy.model.OrderStatus;
 import jakarta.validation.constraints.NotNull;
 
 public class OrderStatusRequest {
-  @NotNull(message = "订单状态不能为空")
+  @NotNull(message = "{validation.order_status.required}")
   private OrderStatus status;
 
   public OrderStatus getStatus() {

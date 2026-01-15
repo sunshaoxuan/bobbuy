@@ -1,22 +1,24 @@
-import { Layout, Menu, Typography } from 'antd';
+import { Layout, Menu, Select, Space, Typography } from 'antd';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Trips from './pages/Trips';
 import Orders from './pages/Orders';
 import Users from './pages/Users';
+import type { Locale } from './i18n';
+import { supportedLocales, useI18n } from './i18n';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
 
-const menuItems = [
-  { key: '/', label: <NavLink to="/">概览</NavLink> },
-  { key: '/trips', label: <NavLink to="/trips">行程管理</NavLink> },
-  { key: '/orders', label: <NavLink to="/orders">订单管理</NavLink> },
-  { key: '/users', label: <NavLink to="/users">参与者</NavLink> }
-];
-
 export default function App() {
   const location = useLocation();
+  const { locale, setLocale, t } = useI18n();
+  const menuItems = [
+    { key: '/', label: <NavLink to="/">{t('nav.dashboard')}</NavLink> },
+    { key: '/trips', label: <NavLink to="/trips">{t('nav.trips')}</NavLink> },
+    { key: '/orders', label: <NavLink to="/orders">{t('nav.orders')}</NavLink> },
+    { key: '/users', label: <NavLink to="/users">{t('nav.users')}</NavLink> }
+  ];
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider width={220} theme="light">
@@ -24,15 +26,30 @@ export default function App() {
           <Title level={4} style={{ margin: 0 }}>
             BOBBuy
           </Title>
-          <Text type="secondary">全球代购指挥台</Text>
+          <Text type="secondary">{t('app.brand_subtitle')}</Text>
         </div>
         <Menu mode="inline" selectedKeys={[location.pathname]} items={menuItems} />
       </Sider>
       <Layout>
         <Header style={{ background: '#fff', padding: '0 24px' }}>
-          <Title level={5} style={{ margin: 0 }}>
-            产品第一版 · MVP Console
-          </Title>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Title level={5} style={{ margin: 0 }}>
+              {t('app.header_title')}
+            </Title>
+            <Space>
+              <Text type="secondary">{t('language.label')}</Text>
+              <Select
+                popupMatchSelectWidth={false}
+                size="small"
+                value={locale}
+                onChange={(value) => setLocale(value as Locale)}
+                options={supportedLocales.map((value) => ({
+                  value,
+                  label: value === 'zh-CN' ? t('language.zh') : t('language.en')
+                }))}
+              />
+            </Space>
+          </div>
         </Header>
         <Content style={{ padding: 24 }}>
           <Routes>

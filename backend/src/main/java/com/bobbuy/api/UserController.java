@@ -36,7 +36,8 @@ public class UserController {
 
   @GetMapping("/{id}")
   public ResponseEntity<ApiResponse<User>> get(@PathVariable Long id) {
-    User user = store.getUser(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "用户不存在"));
+    User user = store.getUser(id)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.user.not_found"));
     return ResponseEntity.ok(ApiResponse.success(user));
   }
 
@@ -49,7 +50,7 @@ public class UserController {
   public ResponseEntity<ApiResponse<User>> update(@PathVariable Long id, @Valid @RequestBody User user) {
     return store.updateUser(id, user)
         .map(updated -> ResponseEntity.ok(ApiResponse.success(updated)))
-        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "用户不存在"));
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.user.not_found"));
   }
 
   @DeleteMapping("/{id}")
@@ -57,6 +58,6 @@ public class UserController {
     if (store.deleteUser(id)) {
       return ResponseEntity.ok(ApiResponse.success(null));
     }
-    throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "用户不存在");
+    throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.user.not_found");
   }
 }

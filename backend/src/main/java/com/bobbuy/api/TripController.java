@@ -36,7 +36,8 @@ public class TripController {
 
   @GetMapping("/{id}")
   public ResponseEntity<ApiResponse<Trip>> get(@PathVariable Long id) {
-    Trip trip = store.getTrip(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "行程不存在"));
+    Trip trip = store.getTrip(id)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
     return ResponseEntity.ok(ApiResponse.success(trip));
   }
 
@@ -49,7 +50,7 @@ public class TripController {
   public ResponseEntity<ApiResponse<Trip>> update(@PathVariable Long id, @Valid @RequestBody Trip trip) {
     return store.updateTrip(id, trip)
         .map(updated -> ResponseEntity.ok(ApiResponse.success(updated)))
-        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "行程不存在"));
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
   }
 
   @PostMapping("/{id}/reserve")
@@ -62,6 +63,6 @@ public class TripController {
     if (store.deleteTrip(id)) {
       return ResponseEntity.ok(ApiResponse.success(null));
     }
-    throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "行程不存在");
+    throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found");
   }
 }

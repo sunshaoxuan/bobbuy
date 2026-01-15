@@ -1,3 +1,6 @@
+import { message } from 'antd';
+import { getStoredLocale, translate } from './i18n';
+
 export type Metrics = {
   users: number;
   trips: number;
@@ -81,10 +84,34 @@ type ApiResponse<T> = {
   meta?: { total?: number };
 };
 
+type ApiErrorResponse = {
+  status: 'error';
+  errorCode?: string;
+  message?: string;
+};
+
+const genericErrorMessage = () => translate(getStoredLocale(), 'errors.request_failed');
+
+async function parseErrorMessage(response: Response): Promise<string> {
+  try {
+    const payload = (await response.json()) as ApiErrorResponse;
+    if (payload?.message) {
+      return payload.message;
+    }
+  } catch {
+    // Ignore parse errors and fall back to status text.
+  }
+  return response.statusText || genericErrorMessage();
+}
+
 async function fetchJson<T>(url: string, fallbackValue: T): Promise<T> {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: { 'Accept-Language': getStoredLocale() }
+    });
     if (!response.ok) {
+      const errorMessage = await parseErrorMessage(response);
+      message.error(errorMessage);
       return fallbackValue;
     }
     const payload = (await response.json()) as ApiResponse<T> | T;
@@ -93,13 +120,39 @@ async function fetchJson<T>(url: string, fallbackValue: T): Promise<T> {
     }
     return payload as T;
   } catch {
+    message.error(genericErrorMessage());
     return fallbackValue;
   }
+}
+
+async function postJson<TResponse, TBody>(url: string, body: TBody): Promise<TResponse> {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept-Language': getStoredLocale()
+    },
+    body: JSON.stringify(body)
+  });
+  if (!response.ok) {
+    const errorMessage = await parseErrorMessage(response);
+    message.error(errorMessage);
+    throw new Error(errorMessage);
+  }
+  const payload = (await response.json()) as ApiResponse<TResponse> | TResponse;
+  if (typeof payload === 'object' && payload !== null && 'status' in payload && 'data' in payload) {
+    return (payload.data ?? ({} as TResponse)) as TResponse;
+  }
+  return payload as TResponse;
 }
 
 export const api = {
   metrics: () => fetchJson<Metrics>('/api/metrics', fallback.metrics),
   trips: () => fetchJson<Trip[]>('/api/trips', fallback.trips),
   orders: () => fetchJson<Order[]>('/api/orders', fallback.orders),
-  users: () => fetchJson<User[]>('/api/users', fallback.users)
+  users: () => fetchJson<User[]>('/api/users', fallback.users),
+  createTrip: (trip: Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>) =>
+    postJson<Trip, Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>>('/api/trips', trip),
+  createOrder: (order: Omit<Order, 'id' | 'statusUpdatedAt'>) =>
+    postJson<Order, Omit<Order, 'id' | 'statusUpdatedAt'>>('/api/orders', order)
 };
