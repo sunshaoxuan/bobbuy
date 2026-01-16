@@ -13,6 +13,7 @@
 | [PLAN-02](file:///c:/workspace/bobbuy/docs/plans/PLAN-02-测试覆盖率提升计划.md) | 质量与债务专项 | ✅ 已完成 | 100% | 铁律攻坚 90/70 达标 | 全栈团队 |
 | [PLAN-03](file:///c:/workspace/bobbuy/docs/plans/PLAN-03-第一周开发任务优先级与实施计划.md) | 第1周执行计划 | ✅ 已完成 | 100% | P0任务激活与质量红线 | 全栈团队 |
 | [PLAN-04](file:///c:/workspace/bobbuy/docs/plans/PLAN-04-Sprint-3执行计划.md) | Sprint 3 执行计划 | ✅ 已完成 | 100% | 核心业务链路 E2E 验证 | 全栈团队 |
+| [PLAN-05](file:///c:/workspace/bobbuy/docs/plans/PLAN-05-Sprint-4执行计划.md) | Sprint 4 执行计划 | ⏳ 待开始 | 0% | 性能加固与生产就绪 | 全栈团队 |
 
 ### 📖 计划体系说明
 - **PLAN-01 (战略)**: 业务功能的宏观路线图，定义 Sprint 1-3 的业务目标。
@@ -78,7 +79,7 @@
 
 ---
 
-### Sprint 3（质量与验收）- 🔄 进行中
+### Sprint 3（质量与验收）- ✅ 已完成
 
 #### 后端开发
 - [x] **测试用例攻坚**
@@ -88,9 +89,8 @@
   - [x] 全量 API 日志规范化 (拦截器全量覆盖)
   - [x] 并发场景验证 (reserveTripCapacity 锁机制验证)
 
-#### 前端开发
-- [ ] **端到端验收列表**
-  - [ ] MVP 核心链路操作清单
+- [x] **端到端验收列表**
+  - [x] MVP 核心链路操作清单 (Playwright 已覆盖)
   
 ---
 
@@ -204,7 +204,7 @@
 - **PLAN-01 Sprint 1**: 100% ✅
 - **PLAN-01 Sprint 2**: 100% ✅
 - **PLAN-01 Sprint 3**: 100% ✅
-- **PLAN-02 Phase 1-4**: 100% ✅
+- **PLAN-05 Sprint 4**: 0% ⏳ (规划中)
 
 ### 测试覆盖率进度
 | 模块 | 当前 | 铁律目标 | 长期目标 |
