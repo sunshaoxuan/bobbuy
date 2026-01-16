@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 import org.springframework.web.servlet.LocaleResolver;
@@ -13,12 +14,23 @@ import java.util.Locale;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+  private final RequestLoggingInterceptor requestLoggingInterceptor;
+
+  public WebConfig(RequestLoggingInterceptor requestLoggingInterceptor) {
+    this.requestLoggingInterceptor = requestLoggingInterceptor;
+  }
+
   @Override
   public void addCorsMappings(CorsRegistry registry) {
     registry.addMapping("/api/**")
         .allowedOrigins("http://localhost:5173", "http://localhost:4173")
-        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+        .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         .allowedHeaders("*");
+  }
+
+  @Override
+  public void addInterceptors(InterceptorRegistry registry) {
+    registry.addInterceptor(requestLoggingInterceptor).addPathPatterns("/api/**");
   }
 
   @Bean

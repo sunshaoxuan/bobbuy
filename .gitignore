@@ -11,6 +11,11 @@ Thumbs.db
 # Node & build artifacts
 node_modules/
 frontend/dist/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+blob-report/
+playwright/.cache/
 
 # Java build artifacts
 backend/target/
