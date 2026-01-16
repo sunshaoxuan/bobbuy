@@ -12,7 +12,7 @@
 | [PLAN-01](file:///c:/workspace/bobbuy/docs/plans/PLAN-01-下一阶段开发任务规划.md) | MVP核心功能规划 | ✅ 已完成 | 100% | 补齐订单/行程核心链路 | 全栈团队 |
 | [PLAN-02](file:///c:/workspace/bobbuy/docs/plans/PLAN-02-测试覆盖率提升计划.md) | 质量与债务专项 | ✅ 已完成 | 100% | 铁律攻坚 90/70 达标 | 全栈团队 |
 | [PLAN-03](file:///c:/workspace/bobbuy/docs/plans/PLAN-03-第一周开发任务优先级与实施计划.md) | 第1周执行计划 | ✅ 已完成 | 100% | P0任务激活与质量红线 | 全栈团队 |
-| [PLAN-04](file:///c:/workspace/bobbuy/docs/plans/PLAN-04-Sprint-3执行计划.md) | Sprint 3 执行计划 | 🔄 进行中 | 60% | 核心业务链路 E2E 验证 | 全栈团队 |
+| [PLAN-04](file:///c:/workspace/bobbuy/docs/plans/PLAN-04-Sprint-3执行计划.md) | Sprint 3 执行计划 | ✅ 已完成 | 100% | 核心业务链路 E2E 验证 | 全栈团队 |
 
 ### 📖 计划体系说明
 - **PLAN-01 (战略)**: 业务功能的宏观路线图，定义 Sprint 1-3 的业务目标。
@@ -203,15 +203,15 @@
 ### 总体完成度
 - **PLAN-01 Sprint 1**: 100% ✅
 - **PLAN-01 Sprint 2**: 100% ✅
-- **PLAN-01 Sprint 3**: 60% 🔄 (Phase 1 集成测试已核销)
-- **PLAN-02 Phase 1-4**: 90% 🔄 (等待前端组件测试补齐)
+- **PLAN-01 Sprint 3**: 100% ✅
+- **PLAN-02 Phase 1-4**: 100% ✅
 
 ### 测试覆盖率进度
 | 模块 | 当前 | 铁律目标 | 长期目标 |
 |------|------|-------------|----------|
 | 后端 - Line | **92%** | 90% | 95% |
 | 后端 - Branch | **76%** | 70% | 85% |
-| 前端 - Line | 42% | 60% | 75% |
+| 前端 - Line | **81.6%** | 60% | 75% |
 
 ### 技术债务清偿进度
 - **已解决**: 7/8（87%）
