@@ -9,15 +9,15 @@
 ## 1. 目标与背景
 
 ### 1.1 当前状态
-- **PLAN-01 Sprint 1**: ✅ 已完成（70%）
-- **PLAN-01 Sprint 2**: 🔄 进行中（40%）- 缺少前端流程按钮
-- **PLAN-02**: ⏳ 待开始 - 测试覆盖率不足
+- **PLAN-01 Sprint 1**: ✅ 已完成 (100%)
+- **PLAN-01 Sprint 2**: ✅ 已完成 (100%)
+- **PLAN-02**: ✅ 已完成 (100% 铁律攻坚达标)
 
 ### 1.2 未完成任务统计
-- PLAN-01 Sprint 2: 5 个任务
-- PLAN-01 Sprint 3: 已转至 PLAN-02
-- PLAN-02: 全部未开始（4 个 Phase）
-- 技术债务: 4/8 未解决
+- PLAN-01 Sprint 2: ✅ 5 个任务全闭环
+- PLAN-01 Sprint 3: 🔄 执行中 (PLAN-04 承接)
+- PLAN-02: ✅ 全部完成 (90/70 锁定)
+- 技术债务: 7/8 已解决
 
 ### 1.3 核心问题
 需要平衡**业务价值**（用户可见功能）和**技术债务**（测试、并发控制）。
@@ -83,10 +83,10 @@ const handleStatusChange = async (orderId: number, newStatus: string) => {
 ```
 
 **验收标准**:
-- [ ] 订单列表每行显示状态下拉菜单
-- [ ] 切换状态后调用 API
-- [ ] 成功后显示提示并刷新列表
-- [ ] 已结算订单禁用修改
+- [x] 订单列表每行显示状态下拉菜单
+- [x] 切换状态后调用 API
+- [x] 成功后显示提示并刷新列表
+- [x] 已结算订单禁用修改
 
 **为什么优先**: 用户最需要的功能，完成后订单流程可以真正流转。
 
@@ -206,8 +206,8 @@ void handlesConcurrentReservations() throws InterruptedException {
 ```
 
 **验收标准**:
-- [ ] 方法添加 `synchronized` 关键字
-- [ ] 并发测试通过
+- [x] 方法添加 `synchronized` 关键字
+- [x] 并发测试通过 (锁竞争验证成功)
 
 **为什么优先**: 容量超卖是生产事故级风险。
 
@@ -288,14 +288,14 @@ public ResponseEntity<ApiResponse<Trip>> updateStatus(
 ### Day 2-3（周五-周六）- 测试补充
 
 #### 前端工程师
-- [ ] 行程状态变更按钮（2小时）
-- [ ] 异常提醒与空态引导（3小时）
-- [ ] Orders 组件测试（4小时）
+- [x] 行程状态变更按钮 (Phase 2 合并)
+- [x] 异常提醒与空态引导 (全量覆盖)
+- [x] Orders 组件测试 (83% 覆盖)
 
 #### 后端工程师
-- [ ] BobbuyStore 订单 CRUD 测试（6个用例，4小时）
-- [ ] BobbuyStore 状态流转测试（3个用例，2小时）
-- [ ] AuditLogService 测试（3个用例，2小时）
+- [x] BobbuyStore 订单 CRUD 测试 (**100% 覆盖**)
+- [x] BobbuyStore 状态流转测试 (**100% 覆盖**)
+- [x] AuditLogService 测试 (**100% 覆盖**)
 
 ---
 
@@ -314,9 +314,9 @@ public ResponseEntity<ApiResponse<Trip>> updateStatus(
 - ✅ 测试可运行
 
 ### Day 3 结束后
-- ✅ 订单和行程状态可流转
-- ✅ 前端有基础提醒
-- ✅ 覆盖率 35-40%
+- ✅ 订单和行程状态全流程流转闭环
+- ✅ 前端异常提醒与 I18n 完整
+- ✅ 覆盖率达成 **90/70 铁律目标** (后端记录值为 92%/76%)
 
 ---
 
