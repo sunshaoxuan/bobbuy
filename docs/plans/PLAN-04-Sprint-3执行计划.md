@@ -12,7 +12,7 @@
 | :--- | :--- | :--- | :--- |
 | **测试** | **Playwright E2E 自动化** | **P0** | 覆盖“发布行程 -> 确认订单 -> 状态流转 -> 结算”全链路。 |
 | **后端** | **Controller 专项集成测试** | **P1** | 补齐 `OrderController` 测试，整体行覆盖率冲刺 60%+。 |
-| **观测** | **API 日志规范化** | **P1** | 统一输出 `trace_id`, `user_id`, `cost_ms` 等核心字段。 |
+| **观测** | **全量 API 日志规范化** | **P1** | 统一输出 `trace_id`, `user_id`, `cost_ms` 等核心字段。 |
 | **前端** | **Trips 组件测试补齐** | **P1** | 针对新版行程流转 UI 创建 `Trips.test.tsx`。 |
 
 ---
@@ -29,7 +29,7 @@
 ### 2.2 API 日志规范化 (`STD-04` 对齐)
 **实施位置**: `backend/src/main/java/com/bobbuy/api/response/GlobalExceptionHandler.java`  
 以及具体的控制器入口。
-- **统一格式**: `[INFO] {method} {url} status={code} cost={ms} user={id}`.
+- **统一格式**: `[INFO] {method} {url} status={code} cost={ms}ms trace_id={id} user={id}`.
 
 ### 2.3 设计评审与文档落地
 - [x] 更新 `DOCS-01` API 文档至最新 Patch 版本。

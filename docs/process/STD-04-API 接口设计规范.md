@@ -58,13 +58,17 @@ CATCH (UnexpectedException ex)
 }
 ```
 
-## 4. 日志规范
-
+## 4. 日志规范 (Logging Standard)
+- **架构原则**: 严禁在 Controller 层重复编写基础请求日志。必须通过全局拦截器（HandlerInterceptor）实现全量 API 的统一记录。
+- **强制字段**:
+    - `trace_id`: 全链路追踪标识。
+    - `cost_ms`: 接口响应耗时。
+    - `status`: HTTP 状态码。
+    - `user`: 当前操作者（支持 anonymous）。
 - **日志级别**:
-    - `INFO`: 重要的业务里程碑（如“订单已支付”）。
-    - `WARN`: 非中断性问题或可重试错误。
-    - `ERROR`: 功能性故障。
-- **内容要求**: 必须包含上下文标识（如 RequestID, UserID）以及操作结果。
+    - `INFO`: 全量 API 的入参/出参记录。
+    - `WARN`: 业务边界告警。
+    - `ERROR`: 系统故障及未捕获异常。
 
 ---
-**统一的 API 交互标准是前后端协作的基础。**
+**统一的 API 架构规范严禁任何“特例”实现。**

@@ -65,7 +65,7 @@
 - [ ] **可观测性**
   - [x] 健康检查接口（HealthController）
   - [x] 指标接口（MetricsController）
-  - [ ] 关键 API 统一日志字段输出（待规范化）
+  - [x] 全量 API 统一日志规范化实现 (通过 RequestLoggingInterceptor 架构锁定)
 
 #### 前端开发
 - [x] **流程动作按钮**
