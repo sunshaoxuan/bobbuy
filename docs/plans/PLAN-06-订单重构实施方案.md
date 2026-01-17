@@ -34,4 +34,6 @@
 ---
 
 **负责人**: 开发团队  
-**关联设计**: [ARCH-11-订单头行模型与业务幂等详细设计](../design/ARCH-11-%E8%AE%A2%E5%8D%95%E5%A4%B4%E8%A1%8C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E4%B8%9A%E5%8A%A1%E5%B9%82%E7%AD%89%E8%AF%A6%E7%BB%86%E8%AE%BE%E8%AE%A1.md)
+**关联文档**: 
+- 需求: [PROD-03-订单业务幂等与合并需求说明书](../design/PROD-03-%E8%AE%A2%E5%8D%95%E4%B8%9A%E5%8A%A1%E5%B9%82%E7%AD%89%E4%B8%8E%E5%90%88%E5%B9%B6%E9%9C%80%E6%B1%82%E8%AF%B4%E6%98%8E%E4%B9%A6.md)
+- 设计: [ARCH-11-订单头行模型与业务幂等详细设计](../design/ARCH-11-%E8%AE%A2%E5%8D%95%E5%A4%B4%E8%A1%8C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E4%B8%9A%E5%8A%A1%E5%B9%82%E7%AD%89%E8%AF%A6%E7%BB%86%E8%AE%BE%E8%AE%A1.md)

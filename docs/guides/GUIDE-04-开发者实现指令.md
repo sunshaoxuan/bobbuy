@@ -3,15 +3,11 @@
 请根据以下指令对现有的订单系统进行深度重构。**实现需严格遵守 ARCH-11 设计文档。**
 
 ## 1. 核心模型重构 (Backend Core)
-- **拆分 Order**: 将 `com.bobbuy.model.Order` 拆分为 `OrderHeader` (头) 与 `OrderLine` (行)。
-  - `OrderHeader` 必须包含 `businessId` (String), `customerId` (Long), `tripId` (Long), `status`, `totalAmount` 等。
-  - `OrderLine` 包含 `skuId`, `spec`, `quantity`, `unitPrice` 等，并通过 `headerId` 关联。
-- **存储适配 (`BobbuyStore.java`)**:
-  - 内部存储改为 `Map<String, OrderHeader>` (Key = `businessId`)。
-  - 创建 `upsertOrder` 方法：
-    - 若 `businessId` 已存在，找到对应 Header，并根据 `skuId + spec` 匹配准则对行进行合并（Quantity 合计）。
-    - 若 `businessId` 不存在，执行全量创建。
-    - **合并细节**: 同一产品不同重量（`spec` 不同）必须视为独立行，严禁误合并。
+- **实现依据**: 严格遵循 [ARCH-11](file:///c:/workspace/bobbuy/docs/design/ARCH-11-%E8%AE%A2%E5%8D%95%E5%A4%B4%E8%A1%8C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E4%B8%9A%E5%8A%A1%E5%B9%82%E7%AD%89%E8%AF%A6%E7%BB%86%E8%AE%BE%E8%AE%A1.md) 中的对象定义与合并算法。
+- **任务**:
+  - 将 `com.bobbuy.model.Order` 物理拆分为 `OrderHeader.java` 与 `OrderLine.java`。
+  - 在 `BobbuyStore.java` 实现 `upsertOrder` 方法，执行 SKU + Spec 维度的幂等合并。
+  - 核心计算逻辑参照 `ARCH-11` 第 2.1 节伪代码。
 
 ## 2. API 契约升级
 - 修改 `OrderController.java`:
