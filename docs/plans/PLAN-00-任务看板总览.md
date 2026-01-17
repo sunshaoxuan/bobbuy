@@ -15,8 +15,8 @@
 | [PLAN-04](file:///c:/workspace/bobbuy/docs/plans/PLAN-04-Sprint-3执行计划.md) | Sprint 3 执行计划 | ✅ 已完成 | 100% | 核心业务链路 E2E 验证 | 全栈团队 |
 | [PLAN-05](file:///c:/workspace/bobbuy/docs/plans/PLAN-05-Sprint-4执行计划.md) | Sprint 4 执行计划 | 🔄 进行中 | 50% | 性能加固与生产就绪 | 全栈团队 |
 | [PLAN-06](file:///c:/workspace/bobbuy/docs/plans/PLAN-06-订单重构实施方案.md) | 订单重构实施 | 🔄 进行中 | 10% | 详设驱动的头行架构重构 | 开发团队 |
-| [PROD-03](file:///c:/workspace/bobbuy/docs/design/PROD-03-订单业务幂等与合并需求说明书.md) | 业务幂等需求书 | ✅ 已发布 | 100% | 明确业务合并与幂等定义 | 产品经理 |
-| [PROD-03](file:///c:/workspace/bobbuy/docs/design/PROD-03-订单业务幂等与合并需求说明书.md) | 业务幂等需求书 | ✅ 已发布 | 100% | 明确业务合并与幂等定义 | 产品经理 |
+| [PROD-03](file:///c:/workspace/bobbuy/docs/requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |
+| [ARCH-11](file:///c:/workspace/bobbuy/docs/architecture/ARCH-11-订单头行模型与业务幂等详细设计说明书.md) | 系统详细设计 | ✅ 已发布 | 100% | 类设计/算法/并发控制方案 | 架构师 |
 
 ### 📖 计划体系说明
 - **PLAN-01 (战略)**: 业务功能的宏观路线图，定义 Sprint 1-3 的业务目标。

@@ -3,11 +3,13 @@
 请根据以下指令对现有的订单系统进行深度重构。**实现需严格遵守 ARCH-11 设计文档。**
 
 ## 1. 核心模型重构 (Backend Core)
-- **实现依据**: 严格遵循 [ARCH-11](file:///c:/workspace/bobbuy/docs/design/ARCH-11-%E8%AE%A2%E5%8D%95%E5%A4%B4%E8%A1%8C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E4%B8%9A%E5%8A%A1%E5%B9%82%E7%AD%89%E8%AF%A6%E7%BB%86%E8%AE%BE%E8%AE%A1.md) 中的对象定义与合并算法。
-- **任务**:
-  - 将 `com.bobbuy.model.Order` 物理拆分为 `OrderHeader.java` 与 `OrderLine.java`。
-  - 在 `BobbuyStore.java` 实现 `upsertOrder` 方法，执行 SKU + Spec 维度的幂等合并。
-  - 核心计算逻辑参照 `ARCH-11` 第 2.1 节伪代码。
+- **实现依据**: 
+  - 业务规则：[PROD-03](file:///c:/workspace/bobbuy/docs/design/PROD-03-%E8%AE%A2%E5%8D%95%E4%B8%9A%E5%8A%A1%E5%B9%82%E7%AD%89%E4%B8%8E%E5%90%88%E5%B9%B6%E9%9C%80%E6%B1%82%E8%AF%A6%E7%BB%86%E8%A7%84%E6%A0%BC%E8%AF%B4%E6%98%8E%E4%B9%A6.md)
+  - 技术详设：[ARCH-11](file:///c:/workspace/bobbuy/docs/design/ARCH-11-%E8%AE%A2%E5%8D%95%E5%A4%B4%E8%A1%8C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E4%B8%9A%E5%8A%A1%E5%B9%82%E7%AD%89%E8%AF%A6%E7%BB%86%E8%AE%BE%E8%AE%A1%E8%AF%B4%E6%98%8E%E4%B9%A6.md)
+- **任务清单**:
+  - 创建 `OrderHeader` 与 `OrderLine` 模型（依据 ARCH-11 第 2.1 节）。
+  - 在 `BobbuyStore` 实现 `upsertOrder`（依据 ARCH-11 第 3.1 节伪代码）。
+  - 更新 `OrderController` 以支持嵌套 JSON 提交。
 
 ## 2. API 契约升级
 - 修改 `OrderController.java`:
