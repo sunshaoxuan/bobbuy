@@ -13,7 +13,8 @@
 | [PLAN-02](file:///c:/workspace/bobbuy/docs/plans/PLAN-02-测试覆盖率提升计划.md) | 质量与债务专项 | ✅ 已完成 | 100% | 铁律攻坚 90/70 达标 | 全栈团队 |
 | [PLAN-03](file:///c:/workspace/bobbuy/docs/plans/PLAN-03-第一周开发任务优先级与实施计划.md) | 第1周执行计划 | ✅ 已完成 | 100% | P0任务激活与质量红线 | 全栈团队 |
 | [PLAN-04](file:///c:/workspace/bobbuy/docs/plans/PLAN-04-Sprint-3执行计划.md) | Sprint 3 执行计划 | ✅ 已完成 | 100% | 核心业务链路 E2E 验证 | 全栈团队 |
-| [PLAN-05](file:///c:/workspace/bobbuy/docs/plans/PLAN-05-Sprint-4执行计划.md) | Sprint 4 执行计划 | ⏳ 待开始 | 0% | 性能加固与生产就绪 | 全栈团队 |
+| [PLAN-05](file:///c:/workspace/bobbuy/docs/plans/PLAN-05-Sprint-4执行计划.md) | Sprint 4 执行计划 | 🔄 进行中 | 50% | 性能加固与生产就绪 | 全栈团队 |
+| [PLAN-06](file:///c:/workspace/bobbuy/docs/plans/PLAN-06-订单重构实施方案.md) | 订单重构实施 | 🔄 进行中 | 10% | 头行架构与逻辑幂等 | 开发团队 |
 
 ### 📖 计划体系说明
 - **PLAN-01 (战略)**: 业务功能的宏观路线图，定义 Sprint 1-3 的业务目标。
