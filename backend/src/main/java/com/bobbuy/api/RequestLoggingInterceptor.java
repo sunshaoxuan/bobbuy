@@ -15,6 +15,11 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
   private static final String TRACE_HEADER = "X-Trace-Id";
   private static final String USER_HEADER = "X-User-Id";
   private static final String START_TIME = "requestStartTimeMs";
+  private final RequestMetricsService requestMetricsService;
+
+  public RequestLoggingInterceptor(RequestMetricsService requestMetricsService) {
+    this.requestMetricsService = requestMetricsService;
+  }
 
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
@@ -38,6 +43,7 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
     if (userId == null || userId.isBlank()) {
       userId = "anonymous";
     }
+    requestMetricsService.record(request.getMethod(), request.getRequestURI(), costMs);
     log.info("[INFO] {} {} status={} cost={}ms trace_id={} user={}",
         request.getMethod(),
         request.getRequestURI(),

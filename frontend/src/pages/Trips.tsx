@@ -11,6 +11,7 @@ const statusOptions = ['DRAFT', 'PUBLISHED', 'IN_PROGRESS', 'COMPLETED'];
 export default function Trips() {
   const { t } = useI18n();
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm<Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>>();
 
   const refreshTrips = async () => {
@@ -71,13 +72,19 @@ export default function Trips() {
   }, []);
 
   const handleSubmit = async (values: Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>) => {
+    if (submitting) {
+      return;
+    }
     try {
+      setSubmitting(true);
       await api.createTrip(values);
       message.success(t('trips.form.success'));
       form.resetFields();
       await refreshTrips();
     } catch {
       // Errors are surfaced in the API layer.
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -135,7 +142,9 @@ export default function Trips() {
           >
             <Select options={statusOptions.map((status) => ({ value: status }))} placeholder={t('trips.form.status.placeholder')} />
           </Form.Item>
-          <Button type="primary" htmlType="submit">{t('trips.form.submit')}</Button>
+          <Button type="primary" htmlType="submit" loading={submitting} disabled={submitting}>
+            {t('trips.form.submit')}
+          </Button>
         </Form>
       </Card>
 

@@ -9,20 +9,16 @@ import java.time.LocalDateTime;
 public class Order {
   private Long id;
 
+  @NotBlank(message = "{validation.order.business_key.required}")
+  private String businessKey; // customerId-eventId
+
   @NotNull(message = "{validation.order.customer_id.required}")
   private Long customerId;
 
   @NotNull(message = "{validation.order.trip_id.required}")
   private Long tripId;
 
-  @NotBlank(message = "{validation.order.item_name.required}")
-  private String itemName;
-
-  @Min(value = 1, message = "{validation.order.quantity.min}")
-  private int quantity;
-
-  @Min(value = 0, message = "{validation.order.unit_price.min}")
-  private double unitPrice;
+  private java.util.List<OrderItem> items = new java.util.ArrayList<>();
 
   @Min(value = 0, message = "{validation.order.service_fee.min}")
   private double serviceFee;
@@ -41,14 +37,13 @@ public class Order {
   public Order() {
   }
 
-  public Order(Long id, Long customerId, Long tripId, String itemName, int quantity, double unitPrice, double serviceFee,
-               double estimatedTax, String currency, OrderStatus status, LocalDateTime statusUpdatedAt) {
+  public Order(Long id, String businessKey, Long customerId, Long tripId, java.util.List<OrderItem> items,
+      double serviceFee, double estimatedTax, String currency, OrderStatus status, LocalDateTime statusUpdatedAt) {
     this.id = id;
+    this.businessKey = businessKey;
     this.customerId = customerId;
     this.tripId = tripId;
-    this.itemName = itemName;
-    this.quantity = quantity;
-    this.unitPrice = unitPrice;
+    this.items = items != null ? items : new java.util.ArrayList<>();
     this.serviceFee = serviceFee;
     this.estimatedTax = estimatedTax;
     this.currency = currency;
@@ -62,6 +57,14 @@ public class Order {
 
   public void setId(Long id) {
     this.id = id;
+  }
+
+  public String getBusinessKey() {
+    return businessKey;
+  }
+
+  public void setBusinessKey(String businessKey) {
+    this.businessKey = businessKey;
   }
 
   public Long getCustomerId() {
@@ -80,28 +83,19 @@ public class Order {
     this.tripId = tripId;
   }
 
-  public String getItemName() {
-    return itemName;
+  public java.util.List<OrderItem> getItems() {
+    return items;
   }
 
-  public void setItemName(String itemName) {
-    this.itemName = itemName;
+  public void setItems(java.util.List<OrderItem> items) {
+    this.items = items;
   }
 
-  public int getQuantity() {
-    return quantity;
-  }
-
-  public void setQuantity(int quantity) {
-    this.quantity = quantity;
-  }
-
-  public double getUnitPrice() {
-    return unitPrice;
-  }
-
-  public void setUnitPrice(double unitPrice) {
-    this.unitPrice = unitPrice;
+  public void addItem(OrderItem item) {
+    if (this.items == null) {
+      this.items = new java.util.ArrayList<>();
+    }
+    this.items.add(item);
   }
 
   public double getServiceFee() {

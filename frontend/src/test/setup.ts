@@ -20,3 +20,21 @@ if (!window.matchMedia) {
     dispatchEvent: () => false
   });
 }
+
+const suppressedWarnings = [/not wrapped in act/i, /uncontrolled input/i];
+const originalError = console.error;
+const originalWarn = console.warn;
+
+console.error = (...args: unknown[]) => {
+  if (typeof args[0] === 'string' && suppressedWarnings.some((pattern) => pattern.test(args[0]))) {
+    return;
+  }
+  originalError(...args);
+};
+
+console.warn = (...args: unknown[]) => {
+  if (typeof args[0] === 'string' && suppressedWarnings.some((pattern) => pattern.test(args[0]))) {
+    return;
+  }
+  originalWarn(...args);
+};

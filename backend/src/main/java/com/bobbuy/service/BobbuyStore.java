@@ -3,6 +3,7 @@ package com.bobbuy.service;
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.model.Order;
+import com.bobbuy.model.OrderItem;
 import com.bobbuy.model.OrderStatus;
 import com.bobbuy.model.Role;
 import com.bobbuy.model.Trip;
@@ -32,6 +33,7 @@ public class BobbuyStore {
   private final AtomicLong userId = new AtomicLong(1000);
   private final AtomicLong tripId = new AtomicLong(2000);
   private final AtomicLong orderId = new AtomicLong(3000);
+  private final AtomicLong itemId = new AtomicLong(4000);
 
   public BobbuyStore(AuditLogService auditLogService) {
     this.auditLogService = auditLogService;
@@ -44,11 +46,15 @@ public class BobbuyStore {
     users.put(agent.getId(), agent);
     users.put(customer.getId(), customer);
 
-    Trip trip = new Trip(tripId.getAndIncrement(), agent.getId(), "Tokyo", "Shanghai", LocalDate.now().plusDays(5), 6, 1,
+    Trip trip = new Trip(tripId.getAndIncrement(), agent.getId(), "Tokyo", "Shanghai", LocalDate.now().plusDays(5), 6,
+        1,
         TripStatus.PUBLISHED, LocalDateTime.now());
     trips.put(trip.getId(), trip);
 
-    Order order = new Order(orderId.getAndIncrement(), customer.getId(), trip.getId(), "Matcha Kit", 2, 32.5, 6.0, 2.3, "CNY",
+    List<OrderItem> items = new ArrayList<>();
+    items.add(new OrderItem(itemId.getAndIncrement(), "Matcha Kit", 2, 32.5, false));
+    Order order = new Order(orderId.getAndIncrement(), customer.getId() + "-20260117-001", customer.getId(),
+        trip.getId(), items, 6.0, 2.3, "CNY",
         OrderStatus.CONFIRMED, LocalDateTime.now());
     orders.put(order.getId(), order);
   }
@@ -129,11 +135,51 @@ public class BobbuyStore {
     return Optional.ofNullable(orders.get(id));
   }
 
-  public Order createOrder(Order order) {
-    order.setId(orderId.getAndIncrement());
-    order.setStatusUpdatedAt(LocalDateTime.now());
-    orders.put(order.getId(), order);
-    return order;
+  public synchronized Order createOrder(Order order) {
+    // 幂等与合并逻辑
+    Optional<Order> existing = orders.values().stream()
+        .filter(o -> o.getBusinessKey().equals(order.getBusinessKey()))
+        .findFirst();
+
+    if (existing.isPresent()) {
+      Order target = existing.get();
+      // 合并项目
+      for (OrderItem newItem : order.getItems()) {
+        mergeItem(target, newItem);
+      }
+      target.setStatusUpdatedAt(LocalDateTime.now());
+      return target;
+    } else {
+      order.setId(orderId.getAndIncrement());
+      for (OrderItem item : order.getItems()) {
+        item.setId(itemId.getAndIncrement());
+      }
+      order.setStatusUpdatedAt(LocalDateTime.now());
+      orders.put(order.getId(), order);
+      return order;
+    }
+  }
+
+  private void mergeItem(Order target, OrderItem newItem) {
+    if (newItem.isVariable()) {
+      // 非标品直接追加
+      newItem.setId(itemId.getAndIncrement());
+      target.addItem(newItem);
+    } else {
+      // 标品尝试累加
+      Optional<OrderItem> match = target.getItems().stream()
+          .filter(i -> !i.isVariable() && i.getItemName().equals(newItem.getItemName())
+              && i.getUnitPrice() == newItem.getUnitPrice())
+          .findFirst();
+
+      if (match.isPresent()) {
+        OrderItem existingItem = match.get();
+        existingItem.setQuantity(existingItem.getQuantity() + newItem.getQuantity());
+      } else {
+        newItem.setId(itemId.getAndIncrement());
+        target.addItem(newItem);
+      }
+    }
   }
 
   public Optional<Order> updateOrder(Long id, Order order) {
@@ -182,7 +228,8 @@ public class BobbuyStore {
 
   public double calculateGmv() {
     return orders.values().stream()
-        .mapToDouble(order -> order.getUnitPrice() * order.getQuantity())
+        .flatMap(order -> order.getItems().stream())
+        .mapToDouble(item -> item.getUnitPrice() * item.getQuantity())
         .sum();
   }
 

@@ -7,6 +7,16 @@ export type Metrics = {
   orders: number;
   gmV: number;
   orderStatusCounts?: Record<string, number>;
+  latencyP95Ms?: Record<string, number>;
+  latencyP99Ms?: Record<string, number>;
+  slowEndpoints?: string[];
+};
+
+export type User = {
+  id: number;
+  name: string;
+  role: string;
+  rating: number;
 };
 
 export type Trip = {
@@ -22,25 +32,25 @@ export type Trip = {
   statusUpdatedAt?: string;
 };
 
-export type Order = {
-  id: number;
-  customerId: number;
-  tripId: number;
+export type OrderItem = {
+  id?: number;
   itemName: string;
   quantity: number;
   unitPrice: number;
+  variable: boolean;
+};
+
+export type Order = {
+  id: number;
+  businessKey: string;
+  customerId: number;
+  tripId: number;
+  items: OrderItem[];
   serviceFee: number;
   estimatedTax: number;
   currency: string;
   status: string;
   statusUpdatedAt?: string;
-};
-
-export type User = {
-  id: number;
-  name: string;
-  role: string;
-  rating: number;
 };
 
 const fallback = {
@@ -61,11 +71,12 @@ const fallback = {
   orders: [
     {
       id: 3000,
+      businessKey: '1001-20260117-001',
       customerId: 1001,
       tripId: 2000,
-      itemName: 'Matcha Kit',
-      quantity: 2,
-      unitPrice: 32.5,
+      items: [
+        { itemName: 'Matcha Kit', quantity: 2, unitPrice: 32.5, variable: false }
+      ],
       serviceFee: 6,
       estimatedTax: 2.3,
       currency: 'CNY',

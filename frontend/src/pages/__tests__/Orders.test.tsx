@@ -28,9 +28,34 @@ vi.mock('antd', async () => {
         ))}
       </select>
     ),
+    InputNumber: ({ value, onChange, ...props }: any) => {
+      const safeValue = Number.isFinite(value) ? value : '';
+      return (
+        <input
+          type="number"
+          value={safeValue}
+          onChange={(event) => {
+            const next = event.target.value;
+            onChange?.(next === '' ? undefined : Number(next));
+          }}
+          {...props}
+        />
+      );
+    },
     Table: ({ dataSource = [], locale }: any) => (
       <div data-testid="table">
-        {dataSource.length === 0 ? locale?.emptyText : null}
+        {dataSource.length === 0 ? locale?.emptyText : (
+          <table>
+            <tbody>
+              {dataSource.map((item: any) => (
+                <tr key={item.id}>
+                  <td>{item.businessKey}</td>
+                  <td>{item.items.map((i: any) => i.itemName).join(', ')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     )
   };
@@ -57,6 +82,8 @@ const renderOrders = () =>
 
 const fillRequiredFields = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.type(screen.getByPlaceholderText('Enter customer ID'), '1001');
+  await user.clear(screen.getByPlaceholderText('e.g. 2026011701'));
+  await user.type(screen.getByPlaceholderText('e.g. 2026011701'), 'EV-01');
   await user.type(screen.getByPlaceholderText('Enter trip ID'), '2000');
   await user.type(screen.getByPlaceholderText('e.g. Limited Edition Sneakers'), 'Headphones');
   await user.clear(screen.getByPlaceholderText('Enter unit price'));
@@ -81,11 +108,10 @@ describe('Orders page', () => {
     const user = userEvent.setup();
     const createdOrder = {
       id: 4000,
+      businessKey: '1001-EV-01',
       customerId: 1001,
       tripId: 2000,
-      itemName: 'Headphones',
-      quantity: 1,
-      unitPrice: 32,
+      items: [{ itemName: 'Headphones', quantity: 1, unitPrice: 32, variable: false }],
       serviceFee: 5,
       estimatedTax: 1,
       currency: 'CNY',
@@ -101,6 +127,10 @@ describe('Orders page', () => {
     await user.click(screen.getByRole('button', { name: 'Create Order' }));
 
     await waitFor(() => expect(mockApi.createOrder).toHaveBeenCalled());
+    // Verify businessKey construction
+    expect(mockApi.createOrder).toHaveBeenCalledWith(expect.objectContaining({
+      businessKey: '1001-EV-01'
+    }));
     expect(mockApi.orders).toHaveBeenCalledTimes(2);
   });
 
@@ -120,11 +150,10 @@ describe('Orders page', () => {
     const user = userEvent.setup();
     mockApi.createOrder.mockResolvedValue({
       id: 4001,
+      businessKey: '1001-EV-02',
       customerId: 1001,
       tripId: 2000,
-      itemName: 'Headphones',
-      quantity: 1,
-      unitPrice: 32,
+      items: [{ itemName: 'Headphones', quantity: 1, unitPrice: 32, variable: false }],
       serviceFee: 5,
       estimatedTax: 1,
       currency: 'CNY',

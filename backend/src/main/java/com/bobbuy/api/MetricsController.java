@@ -12,9 +12,11 @@ import java.util.stream.Collectors;
 @RestController
 public class MetricsController {
   private final BobbuyStore store;
+  private final RequestMetricsService requestMetricsService;
 
-  public MetricsController(BobbuyStore store) {
+  public MetricsController(BobbuyStore store, RequestMetricsService requestMetricsService) {
     this.store = store;
+    this.requestMetricsService = requestMetricsService;
   }
 
   @GetMapping("/api/metrics")
@@ -26,7 +28,10 @@ public class MetricsController {
         store.listTrips().size(),
         store.listOrders().size(),
         store.calculateGmv(),
-        statusCounts);
+        statusCounts,
+        requestMetricsService.p95ByEndpoint(),
+        requestMetricsService.p99ByEndpoint(),
+        requestMetricsService.topSlowEndpoints(3));
     return ApiResponse.success(metrics);
   }
 }

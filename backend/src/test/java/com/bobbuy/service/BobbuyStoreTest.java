@@ -11,7 +11,11 @@ import com.bobbuy.model.TripStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.bobbuy.model.OrderItem;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -94,19 +98,23 @@ class BobbuyStoreTest {
     assertThat(store.calculateGmv()).isEqualTo(32.5 * 2);
 
     // Create
-    Order newOrder = new Order(null, 1001L, 2000L, "Tea", 1, 10.0, 1.0, 0.5, "USD", OrderStatus.NEW, null);
+    OrderItem item = new OrderItem(null, "Tea", 1, 10.0, false);
+    Order newOrder = new Order(null, "1001-EVENT-001", 1001L, 2000L, List.of(item), 1.0, 0.5, "USD", OrderStatus.NEW,
+        null);
     Order created = store.createOrder(newOrder);
     assertThat(created.getId()).isEqualTo(3001L);
+    assertThat(created.getItems()).hasSize(1);
+    assertThat(created.getItems().get(0).getId()).isNotNull();
 
     // Update
-    created.setItemName("Green Tea");
+    created.setBusinessKey("1001-EVENT-UPDATED");
     Optional<Order> updated = store.updateOrder(3001L, created);
     assertThat(updated).isPresent();
 
     // Update missing
     assertThat(store.updateOrder(9999L, created)).isEmpty();
 
-    // Valid transitions (Switch case coverage)
+    // Valid transitions
     store.updateOrderStatus(3001L, OrderStatus.CONFIRMED);
     store.updateOrderStatus(3001L, OrderStatus.PURCHASED);
     store.updateOrderStatus(3001L, OrderStatus.DELIVERED);
@@ -119,6 +127,32 @@ class BobbuyStoreTest {
     // Delete
     assertThat(store.deleteOrder(3001L)).isTrue();
     assertThat(store.deleteOrder(3001L)).isFalse();
+  }
+
+  @Test
+  void orderBusinessKeyMergeLogic() {
+    // 1. Create initial order
+    OrderItem item1 = new OrderItem(null, "Milk", 1, 5.0, false); // Standard
+    OrderItem item2 = new OrderItem(null, "Meat", 1, 12.0, true); // Variable
+    Order order1 = new Order(null, "C1-E1", 1001L, 2000L, new ArrayList<>(List.of(item1, item2)), 1.0, 0.5, "CNY",
+        OrderStatus.NEW, null);
+    store.createOrder(order1);
+
+    // 2. Submit same business key with same standard item and new variable item
+    OrderItem item3 = new OrderItem(null, "Milk", 2, 5.0, false); // Same standard
+    OrderItem item4 = new OrderItem(null, "Meat", 1, 15.0, true); // New variable
+    Order order2 = new Order(null, "C1-E1", 1001L, 2000L, new ArrayList<>(List.of(item3, item4)), 1.0, 0.5, "CNY",
+        OrderStatus.NEW, null);
+    Order merged = store.createOrder(order2);
+
+    assertThat(store.listOrders()).hasSize(2); // Seed(1) + Created(1) = 2
+    assertThat(merged.getItems()).hasSize(3); // Milk(merged) + Meat1 + Meat2
+
+    OrderItem milk = merged.getItems().stream().filter(i -> i.getItemName().equals("Milk")).findFirst().get();
+    assertThat(milk.getQuantity()).isEqualTo(3); // 1 + 2
+
+    long meatCount = merged.getItems().stream().filter(i -> i.getItemName().equals("Meat")).count();
+    assertThat(meatCount).isEqualTo(2); // Variable items don't merge
   }
 
   @Test

@@ -3,6 +3,7 @@ package com.bobbuy.api;
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ApiResponse;
 import com.bobbuy.model.Order;
+import com.bobbuy.model.OrderItem;
 import com.bobbuy.model.OrderStatus;
 import com.bobbuy.service.AuditLogService;
 import com.bobbuy.service.BobbuyStore;
@@ -11,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -43,7 +46,9 @@ class OrderControllerTest {
 
   @Test
   void createsOrder() {
-    Order order = new Order(null, 1002L, 2000L, "Camera", 1, 120.0, 10.0, 5.0, "CNY",
+    List<OrderItem> items = new ArrayList<>();
+    items.add(new OrderItem(null, "Camera", 1, 120.0, false));
+    Order order = new Order(null, "C1002-E1", 1002L, 2000L, items, 10.0, 5.0, "CNY",
         OrderStatus.NEW, LocalDateTime.now());
     ResponseEntity<ApiResponse<Order>> response = controller.create(order);
     assertThat(response.getBody()).isNotNull();
@@ -53,11 +58,13 @@ class OrderControllerTest {
 
   @Test
   void updatesOrder() {
-    Order order = new Order(3000L, 1001L, 2000L, "Updated Item", 2, 32.5, 6.0, 2.3, "CNY",
+    List<OrderItem> items = new ArrayList<>();
+    items.add(new OrderItem(null, "Updated Item", 2, 32.5, false));
+    Order order = new Order(3000L, "3000-KEY", 1001L, 2000L, items, 6.0, 2.3, "CNY",
         OrderStatus.CONFIRMED, LocalDateTime.now());
     ResponseEntity<ApiResponse<Order>> response = controller.update(3000L, order);
     assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getData().getItemName()).isEqualTo("Updated Item");
+    assertThat(response.getBody().getData().getItems().get(0).getItemName()).isEqualTo("Updated Item");
   }
 
   @Test
