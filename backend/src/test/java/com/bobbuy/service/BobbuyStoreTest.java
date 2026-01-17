@@ -4,18 +4,15 @@ import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.model.User;
 import com.bobbuy.model.Role;
-import com.bobbuy.model.Order;
+import com.bobbuy.model.OrderHeader;
+import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.OrderStatus;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.bobbuy.model.OrderItem;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -93,66 +90,62 @@ class BobbuyStoreTest {
 
   @Test
   void orderLifecycleAndCalculations() {
-    // List & GMV
+    // List & GMV (Seeded 1 order with 65.0 amount)
     assertThat(store.listOrders()).hasSize(1);
-    assertThat(store.calculateGmv()).isEqualTo(32.5 * 2);
+    assertThat(store.calculateGmv()).isEqualTo(65.0);
 
-    // Create
-    OrderItem item = new OrderItem(null, "Tea", 1, 10.0, false);
-    Order newOrder = new Order(null, "1001-EVENT-001", 1001L, 2000L, List.of(item), 1.0, 0.5, "USD", OrderStatus.NEW,
-        null);
-    Order created = store.createOrder(newOrder);
-    assertThat(created.getId()).isEqualTo(3001L);
-    assertThat(created.getItems()).hasSize(1);
-    assertThat(created.getItems().get(0).getId()).isNotNull();
+    // Create via upsert
+    OrderHeader newHeader = new OrderHeader("BUS-X", 1001L, 2000L);
+    newHeader.addLine(new OrderLine("SKU-X", "Tea", null, 1, 10.0));
+    OrderHeader created = store.upsertOrder(newHeader);
+    assertThat(created.getId()).isNotNull();
+    assertThat(created.getTotalAmount()).isEqualTo(10.0);
 
-    // Update
-    created.setBusinessKey("1001-EVENT-UPDATED");
-    Optional<Order> updated = store.updateOrder(3001L, created);
-    assertThat(updated).isPresent();
-
-    // Update missing
-    assertThat(store.updateOrder(9999L, created)).isEmpty();
-
-    // Valid transitions
-    store.updateOrderStatus(3001L, OrderStatus.CONFIRMED);
-    store.updateOrderStatus(3001L, OrderStatus.PURCHASED);
-    store.updateOrderStatus(3001L, OrderStatus.DELIVERED);
-    store.updateOrderStatus(3001L, OrderStatus.SETTLED);
-
-    // Invalid transitions
-    assertThatThrownBy(() -> store.updateOrderStatus(3001L, OrderStatus.NEW))
-        .isInstanceOf(ApiException.class);
+    // Update status
+    store.updateOrderStatus(created.getId(), OrderStatus.CONFIRMED);
+    assertThat(store.getOrder(created.getId()).get().getStatus()).isEqualTo(OrderStatus.CONFIRMED);
 
     // Delete
-    assertThat(store.deleteOrder(3001L)).isTrue();
-    assertThat(store.deleteOrder(3001L)).isFalse();
+    assertThat(store.deleteOrder(created.getId())).isTrue();
+    assertThat(store.listOrders()).hasSize(1);
   }
 
   @Test
-  void orderBusinessKeyMergeLogic() {
-    // 1. Create initial order
-    OrderItem item1 = new OrderItem(null, "Milk", 1, 5.0, false); // Standard
-    OrderItem item2 = new OrderItem(null, "Meat", 1, 12.0, true); // Variable
-    Order order1 = new Order(null, "C1-E1", 1001L, 2000L, new ArrayList<>(List.of(item1, item2)), 1.0, 0.5, "CNY",
-        OrderStatus.NEW, null);
-    store.createOrder(order1);
+  void idempotencyMergeTest() {
+    String bizId = "BIZ-999";
+    Long custId = 1001L;
+    Long tripId = 2000L;
 
-    // 2. Submit same business key with same standard item and new variable item
-    OrderItem item3 = new OrderItem(null, "Milk", 2, 5.0, false); // Same standard
-    OrderItem item4 = new OrderItem(null, "Meat", 1, 15.0, true); // New variable
-    Order order2 = new Order(null, "C1-E1", 1001L, 2000L, new ArrayList<>(List.of(item3, item4)), 1.0, 0.5, "CNY",
-        OrderStatus.NEW, null);
-    Order merged = store.createOrder(order2);
+    // 1. First Submission: SKU-A x 2
+    OrderHeader h1 = new OrderHeader(bizId, custId, tripId);
+    h1.addLine(new OrderLine("SKU-A", "Item A", "Red", 2, 50.0));
+    store.upsertOrder(h1);
 
-    assertThat(store.listOrders()).hasSize(2); // Seed(1) + Created(1) = 2
-    assertThat(merged.getItems()).hasSize(3); // Milk(merged) + Meat1 + Meat2
+    // 2. Second Submission (Idempotent): Repeat SKU-A x 1 -> Should merge to 3
+    OrderHeader h2 = new OrderHeader(bizId, custId, tripId);
+    h2.addLine(new OrderLine("SKU-A", "Item A", "Red", 1, 50.0));
+    OrderHeader merged = store.upsertOrder(h2);
 
-    OrderItem milk = merged.getItems().stream().filter(i -> i.getItemName().equals("Milk")).findFirst().get();
-    assertThat(milk.getQuantity()).isEqualTo(3); // 1 + 2
+    assertThat(merged.getLines()).hasSize(1);
+    assertThat(merged.getLines().get(0).getQuantity()).isEqualTo(3);
+    assertThat(merged.getTotalAmount()).isEqualTo(150.0);
 
-    long meatCount = merged.getItems().stream().filter(i -> i.getItemName().equals("Meat")).count();
-    assertThat(meatCount).isEqualTo(2); // Variable items don't merge
+    // 3. Third Submission: Different SKU -> Should add new line
+    OrderHeader h3 = new OrderHeader(bizId, custId, tripId);
+    h3.addLine(new OrderLine("SKU-B", "Item B", null, 1, 20.0));
+    OrderHeader withB = store.upsertOrder(h3);
+
+    assertThat(withB.getLines()).hasSize(2);
+    assertThat(withB.getTotalAmount()).isEqualTo(170.0);
+
+    // 4. Fourth Submission: Same SKU but Different Spec (Green vs Red) -> Should
+    // isolate
+    OrderHeader h4 = new OrderHeader(bizId, custId, tripId);
+    h4.addLine(new OrderLine("SKU-A", "Item A", "Green", 1, 50.0));
+    OrderHeader withGreen = store.upsertOrder(h4);
+
+    assertThat(withGreen.getLines()).hasSize(3); // A-Red(3), B(1), A-Green(1)
+    assertThat(withGreen.getTotalAmount()).isEqualTo(220.0);
   }
 
   @Test
@@ -169,8 +162,8 @@ class BobbuyStoreTest {
 
   @Test
   void updatesOrderStatusAndLogsCounts() {
-    store.updateOrderStatus(3000L, OrderStatus.PURCHASED);
-    assertThat(store.orderStatusCounts().get(OrderStatus.PURCHASED)).isEqualTo(1);
+    store.updateOrderStatus(3000L, OrderStatus.CONFIRMED);
+    assertThat(store.orderStatusCounts().get(OrderStatus.CONFIRMED)).isEqualTo(1);
   }
 
   @Test

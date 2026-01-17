@@ -4,7 +4,7 @@ import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ApiMeta;
 import com.bobbuy.api.response.ApiResponse;
 import com.bobbuy.api.response.ErrorCode;
-import com.bobbuy.model.Order;
+import com.bobbuy.model.OrderHeader;
 import com.bobbuy.service.BobbuyStore;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -30,32 +30,33 @@ public class OrderController {
   }
 
   @GetMapping
-  public ApiResponse<List<Order>> list() {
-    List<Order> orders = store.listOrders();
+  public ApiResponse<List<OrderHeader>> list() {
+    List<OrderHeader> orders = store.listOrders();
     return ApiResponse.success(orders, new ApiMeta(orders.size()));
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<ApiResponse<Order>> get(@PathVariable Long id) {
-    Order order = store.getOrder(id)
+  public ResponseEntity<ApiResponse<OrderHeader>> get(@PathVariable Long id) {
+    OrderHeader order = store.getOrder(id)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
     return ResponseEntity.ok(ApiResponse.success(order));
   }
 
   @PostMapping
-  public ResponseEntity<ApiResponse<Order>> create(@Valid @RequestBody Order order) {
-    return ResponseEntity.ok(ApiResponse.success(store.createOrder(order)));
+  public ResponseEntity<ApiResponse<OrderHeader>> create(@Valid @RequestBody OrderHeader order) {
+    return ResponseEntity.ok(ApiResponse.success(store.upsertOrder(order)));
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<ApiResponse<Order>> update(@PathVariable Long id, @Valid @RequestBody Order order) {
+  public ResponseEntity<ApiResponse<OrderHeader>> update(@PathVariable Long id, @Valid @RequestBody OrderHeader order) {
     return store.updateOrder(id, order)
         .map(updated -> ResponseEntity.ok(ApiResponse.success(updated)))
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
   }
 
   @PatchMapping("/{id}/status")
-  public ResponseEntity<ApiResponse<Order>> updateStatus(@PathVariable Long id, @Valid @RequestBody OrderStatusRequest request) {
+  public ResponseEntity<ApiResponse<OrderHeader>> updateStatus(@PathVariable Long id,
+      @Valid @RequestBody OrderStatusRequest request) {
     return ResponseEntity.ok(ApiResponse.success(store.updateOrderStatus(id, request.getStatus())));
   }
 

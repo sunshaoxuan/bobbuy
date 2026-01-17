@@ -1,15 +1,5 @@
 package com.bobbuy.model;
 
-import com.bobbuy.model.User;
-import com.bobbuy.model.Trip;
-import com.bobbuy.model.Order;
-import com.bobbuy.model.AuditLog;
-import com.bobbuy.model.Role;
-import com.bobbuy.model.TripStatus;
-import com.bobbuy.model.OrderStatus;
-import java.util.Optional;
-import java.util.List;
-import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -49,20 +39,22 @@ class ModelTest {
     }
 
     @Test
-    void orderTest() {
-        LocalDateTime now = LocalDateTime.now();
-        List<OrderItem> items = new ArrayList<>();
-        items.add(new OrderItem(10L, "Item", 2, 10.0, false));
-        Order order = new Order(1L, "KEY-1", 100L, 200L, items, 1.0, 0.5, "USD", OrderStatus.NEW, now);
-        assertThat(order.getBusinessKey()).isEqualTo("KEY-1");
-        assertThat(order.getItems()).hasSize(1);
-        assertThat(order.getItems().get(0).getItemName()).isEqualTo("Item");
-        assertThat(order.getServiceFee()).isEqualTo(1.0);
-        assertThat(order.getEstimatedTax()).isEqualTo(0.5);
-        assertThat(order.getCurrency()).isEqualTo("USD");
+    void orderHeaderAndLineTest() {
+        OrderHeader header = new OrderHeader("BUS-001", 100L, 200L);
+        header.setId(10L);
 
-        order.setStatus(OrderStatus.CONFIRMED);
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        OrderLine line1 = new OrderLine("SKU-1", "A", "Red", 1, 10.0);
+        OrderLine line2 = new OrderLine("SKU-1", "A", "Red", 2, 10.0);
+        OrderLine line3 = new OrderLine("SKU-1", "A", "Blue", 1, 10.0);
+
+        header.addLine(line1);
+        assertThat(header.getLines()).hasSize(1);
+        assertThat(line1.getHeaderId()).isEqualTo(10L);
+
+        // Test merge logic
+        assertThat(line1.canMergeWith(line2)).isTrue();
+        assertThat(line1.canMergeWith(line3)).isFalse(); // Different spec
+        assertThat(line1.canMergeWith(null)).isFalse();
     }
 
     @Test

@@ -13,7 +13,7 @@ export default function Orders() {
   const { t } = useI18n();
   const [orders, setOrders] = useState<Order[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<Omit<Order, 'id' | 'statusUpdatedAt'>>();
 
   const refreshOrders = async () => {
     const refreshed = await api.orders();
@@ -44,23 +44,28 @@ export default function Orders() {
   };
 
   const columns: ColumnsType<Order> = [
-    { title: 'Business Key', dataIndex: 'businessKey' },
+    {
+      title: 'Business ID',
+      dataIndex: 'businessId',
+      render: (text) => <Text copyable>{text}</Text>
+    },
     {
       title: t('orders.table.item_name'),
-      render: (_, record: Order) => record.items.map(i => i.itemName).join(', ')
+      render: (_, record) => record.lines?.[0]?.itemName || '-'
     },
     {
       title: t('orders.table.quantity'),
-      render: (_, record: Order) => record.items.reduce((sum: number, i) => sum + i.quantity, 0)
+      render: (_, record) => record.lines?.[0]?.quantity || 0
+    },
+    {
+      title: t('orders.table.unit_price'),
+      render: (_, record) => record.lines?.[0]?.unitPrice || 0
     },
     {
       title: t('orders.table.total'),
-      render: (_value: unknown, record: Order) => {
-        const itemsTotal = record.items.reduce((sum: number, i) => sum + i.unitPrice * i.quantity, 0);
-        return (itemsTotal + record.serviceFee + record.estimatedTax).toFixed(2);
-      }
+      dataIndex: 'totalAmount',
+      render: (val) => val?.toFixed(2)
     },
-    { title: t('orders.table.currency'), dataIndex: 'currency' },
     {
       title: t('orders.table.status'),
       dataIndex: 'status',
@@ -74,7 +79,7 @@ export default function Orders() {
           onChange={(newStatus) => handleStatusChange(record.id, newStatus, record.status)}
           options={statusOptions.map((status) => ({ value: status, label: status }))}
           disabled={record.status === 'SETTLED'}
-          style={{ width: 140 }}
+          style={{ width: 160 }}
         />
       )
     }
@@ -90,26 +95,30 @@ export default function Orders() {
     }
     try {
       setSubmitting(true);
-      // Map flat form values to Order + OrderItem structure
-      const orderPayload = {
-        businessKey: `${values.customerId}-${values.eventId}`,
+
+      // 生成符合 PROD-03 规范的 Business ID (日期+序列号)
+      const now = new Date();
+      const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const timePart = now.toTimeString().slice(0, 8).replace(/:/g, '');
+      const businessId = `${datePart}${timePart}${Math.floor(Math.random() * 100)}`;
+
+      // 转换为头行结构
+      const payload = {
+        businessId,
         customerId: values.customerId,
         tripId: values.tripId,
-        items: [
+        status: values.status,
+        lines: [
           {
+            skuId: `SKU-${values.itemName.toUpperCase().replace(/\s+/g, '-')}`,
             itemName: values.itemName,
             quantity: values.quantity,
-            unitPrice: values.unitPrice,
-            variable: !!values.variable
+            unitPrice: values.unitPrice
           }
-        ],
-        serviceFee: values.serviceFee,
-        estimatedTax: values.estimatedTax,
-        currency: values.currency,
-        status: values.status
+        ]
       };
 
-      await api.createOrder(orderPayload as any);
+      await api.createOrder(payload as any);
       message.success(t('orders.form.success'));
       form.resetFields();
       await refreshOrders();
@@ -130,25 +139,15 @@ export default function Orders() {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          initialValues={{ currency: 'CNY', status: 'NEW', quantity: 1, unitPrice: 0, serviceFee: 0, estimatedTax: 0, eventId: new Date().toISOString().slice(0, 10).replace(/-/g, ''), variable: false }}
+          initialValues={{ currency: 'CNY', status: 'NEW', quantity: 1, unitPrice: 0, serviceFee: 0, estimatedTax: 0 }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <Form.Item
-              label={t('orders.form.customer_id.label')}
-              name="customerId"
-              rules={[{ required: true, message: t('orders.form.customer_id.required') }]}
-            >
-              <InputNumber min={1} style={{ width: '100%' }} placeholder={t('orders.form.customer_id.placeholder')} />
-            </Form.Item>
-            <Form.Item
-              label="Event ID (Idempotency Key)"
-              name="eventId"
-              rules={[{ required: true, message: 'Please enter event ID' }]}
-            >
-              <Input placeholder="e.g. 2026011701" />
-            </Form.Item>
-          </div>
-
+          <Form.Item
+            label={t('orders.form.customer_id.label')}
+            name="customerId"
+            rules={[{ required: true, message: t('orders.form.customer_id.required') }]}
+          >
+            <InputNumber min={1} style={{ width: '100%' }} placeholder={t('orders.form.customer_id.placeholder')} />
+          </Form.Item>
           <Form.Item
             label={t('orders.form.trip_id.label')}
             name="tripId"
@@ -163,54 +162,44 @@ export default function Orders() {
           >
             <Input placeholder={t('orders.form.item_name.placeholder')} />
           </Form.Item>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-            <Form.Item
-              label={t('orders.form.quantity.label')}
-              name="quantity"
-              rules={[{ required: true, message: t('orders.form.quantity.required') }]}
-            >
-              <InputNumber min={1} style={{ width: '100%' }} placeholder={t('orders.form.quantity.placeholder')} />
-            </Form.Item>
-            <Form.Item
-              label={t('orders.form.unit_price.label')}
-              name="unitPrice"
-              rules={[{ required: true, message: t('orders.form.unit_price.required') }]}
-            >
-              <InputNumber min={0} style={{ width: '100%' }} placeholder={t('orders.form.unit_price.placeholder')} />
-            </Form.Item>
-            <Form.Item label="Variable (Weight?)" name="variable" valuePropName="checked">
-              <Select options={[{ value: false, label: 'Standard' }, { value: true, label: 'Weight/Variable' }]} />
-            </Form.Item>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-            <Form.Item
-              label={t('orders.form.service_fee.label')}
-              name="serviceFee"
-              rules={[{ required: true, message: t('orders.form.service_fee.required') }]}
-            >
-              <InputNumber min={0} style={{ width: '100%' }} placeholder={t('orders.form.service_fee.placeholder')} />
-            </Form.Item>
-            <Form.Item
-              label={t('orders.form.estimated_tax.label')}
-              name="estimatedTax"
-              rules={[{ required: true, message: t('orders.form.estimated_tax.required') }]}
-            >
-              <InputNumber min={0} style={{ width: '100%' }} placeholder={t('orders.form.estimated_tax.placeholder')} />
-            </Form.Item>
-            <Form.Item
-              label={t('orders.form.currency.label')}
-              name="currency"
-              rules={[{ required: true, message: t('orders.form.currency.required') }]}
-            >
-              <Select
-                options={currencyOptions.map((currency) => ({ value: currency }))}
-                placeholder={t('orders.form.currency.placeholder')}
-              />
-            </Form.Item>
-          </div>
-
+          <Form.Item
+            label={t('orders.form.quantity.label')}
+            name="quantity"
+            rules={[{ required: true, message: t('orders.form.quantity.required') }]}
+          >
+            <InputNumber min={1} style={{ width: '100%' }} placeholder={t('orders.form.quantity.placeholder')} />
+          </Form.Item>
+          <Form.Item
+            label={t('orders.form.unit_price.label')}
+            name="unitPrice"
+            rules={[{ required: true, message: t('orders.form.unit_price.required') }]}
+          >
+            <InputNumber min={0} style={{ width: '100%' }} placeholder={t('orders.form.unit_price.placeholder')} />
+          </Form.Item>
+          <Form.Item
+            label={t('orders.form.service_fee.label')}
+            name="serviceFee"
+            rules={[{ required: true, message: t('orders.form.service_fee.required') }]}
+          >
+            <InputNumber min={0} style={{ width: '100%' }} placeholder={t('orders.form.service_fee.placeholder')} />
+          </Form.Item>
+          <Form.Item
+            label={t('orders.form.estimated_tax.label')}
+            name="estimatedTax"
+            rules={[{ required: true, message: t('orders.form.estimated_tax.required') }]}
+          >
+            <InputNumber min={0} style={{ width: '100%' }} placeholder={t('orders.form.estimated_tax.placeholder')} />
+          </Form.Item>
+          <Form.Item
+            label={t('orders.form.currency.label')}
+            name="currency"
+            rules={[{ required: true, message: t('orders.form.currency.required') }]}
+          >
+            <Select
+              options={currencyOptions.map((currency) => ({ value: currency }))}
+              placeholder={t('orders.form.currency.placeholder')}
+            />
+          </Form.Item>
           <Form.Item
             label={t('orders.form.status.label')}
             name="status"
