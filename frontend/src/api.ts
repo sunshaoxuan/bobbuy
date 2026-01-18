@@ -159,6 +159,27 @@ async function postJson<TResponse, TBody>(url: string, body: TBody): Promise<TRe
     return payload as TResponse;
 }
 
+async function patchJson<TResponse, TBody>(url: string, body: TBody): Promise<TResponse> {
+    const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept-Language': getStoredLocale()
+        },
+        body: JSON.stringify(body)
+    });
+    if (!response.ok) {
+        const errorMessage = await parseErrorMessage(response);
+        message.error(errorMessage);
+        throw new Error(errorMessage);
+    }
+    const payload = (await response.json()) as ApiResponse<TResponse> | TResponse;
+    if (typeof payload === 'object' && payload !== null && 'status' in payload && 'data' in payload) {
+        return (payload.data ?? ({} as TResponse)) as TResponse;
+    }
+    return payload as TResponse;
+}
+
 export const api = {
     metrics: () => fetchJson<Metrics>('/api/metrics', fallback.metrics),
     trips: () => fetchJson<Trip[]>('/api/trips', fallback.trips),
@@ -171,5 +192,9 @@ export const api = {
     createTrip: (trip: Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>) =>
         postJson<Trip, Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>>('/api/trips', trip),
     createOrder: (order: Omit<Order, 'id' | 'statusUpdatedAt' | 'totalAmount'>) =>
-        postJson<Order, Omit<Order, 'id' | 'statusUpdatedAt' | 'totalAmount'>>('/api/orders', order)
+        postJson<Order, Omit<Order, 'id' | 'statusUpdatedAt' | 'totalAmount'>>('/api/orders', order),
+    updateOrderStatus: (orderId: number, status: string) =>
+        patchJson<Order, { status: string }>(`/api/orders/${orderId}/status`, { status }),
+    bulkUpdateTripOrderStatus: (tripId: number, targetStatus: string) =>
+        patchJson<Order[], { targetStatus: string }>(`/api/trips/${tripId}/orders/bulk-status`, { targetStatus })
 };

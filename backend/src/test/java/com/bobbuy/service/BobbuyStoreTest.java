@@ -112,6 +112,42 @@ class BobbuyStoreTest {
   }
 
   @Test
+  void updateOrderStatusReservesCapacityWhenConfirmed() {
+    Trip tripBefore = store.getTrip(2000L).orElseThrow();
+    int reservedBefore = tripBefore.getReservedCapacity();
+
+    OrderHeader newHeader = new OrderHeader("BUS-CAP-1", 1001L, 2000L);
+    newHeader.addLine(new OrderLine("SKU-CAP", "Capacity", null, 2, 10.0));
+    OrderHeader created = store.upsertOrder(newHeader);
+
+    store.updateOrderStatus(created.getId(), OrderStatus.CONFIRMED);
+
+    Trip tripAfter = store.getTrip(2000L).orElseThrow();
+    assertThat(tripAfter.getReservedCapacity()).isEqualTo(reservedBefore + 2);
+  }
+
+  @Test
+  void upsertOrderReservesCapacityForConfirmedMerges() {
+    Trip tripBefore = store.getTrip(2000L).orElseThrow();
+    int reservedBefore = tripBefore.getReservedCapacity();
+
+    OrderHeader confirmed = new OrderHeader("BUS-CAP-2", 1001L, 2000L);
+    confirmed.setStatus(OrderStatus.CONFIRMED);
+    confirmed.addLine(new OrderLine("SKU-CAP", "Capacity", null, 1, 10.0));
+    store.upsertOrder(confirmed);
+
+    Trip tripAfterCreate = store.getTrip(2000L).orElseThrow();
+    assertThat(tripAfterCreate.getReservedCapacity()).isEqualTo(reservedBefore + 1);
+
+    OrderHeader merged = new OrderHeader("BUS-CAP-2", 1001L, 2000L);
+    merged.addLine(new OrderLine("SKU-CAP", "Capacity", null, 3, 10.0));
+    store.upsertOrder(merged);
+
+    Trip tripAfterMerge = store.getTrip(2000L).orElseThrow();
+    assertThat(tripAfterMerge.getReservedCapacity()).isEqualTo(reservedBefore + 4);
+  }
+
+  @Test
   void idempotencyMergeTest() {
     String bizId = "BIZ-999";
     Long custId = 1001L;

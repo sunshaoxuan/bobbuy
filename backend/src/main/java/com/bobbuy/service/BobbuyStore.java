@@ -161,6 +161,9 @@ public class BobbuyStore {
 
         if (existing == null) {
             // 新建逻辑
+            if (isAtLeastConfirmed(headerInput.getStatus())) {
+                reserveTripCapacity(headerInput.getTripId(), calculateTotalQuantity(headerInput));
+            }
             headerInput.setId(orderId.getAndIncrement());
             headerInput.setStatusUpdatedAt(LocalDateTime.now());
             // 处理行 ID
@@ -174,6 +177,10 @@ public class BobbuyStore {
             return headerInput;
         } else {
             // 合并逻辑 - 业务规则: SKU + Spec 匹配则累加
+            int additionalQuantity = calculateTotalQuantity(headerInput);
+            if (additionalQuantity > 0 && isAtLeastConfirmed(existing.getStatus())) {
+                reserveTripCapacity(existing.getTripId(), additionalQuantity);
+            }
             for (OrderLine newLine : headerInput.getLines()) {
                 Optional<OrderLine> match = existing.getLines().stream()
                         .filter(l -> l.canMergeWith(newLine))
@@ -214,16 +221,7 @@ public class BobbuyStore {
     public OrderHeader updateOrderStatus(Long id, OrderStatus nextStatus) {
         OrderHeader order = getOrder(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
-        if (!isValidStatusTransition(order.getStatus(), nextStatus)) {
-            throw new ApiException(ErrorCode.INVALID_STATUS, "error.order.invalid_status");
-        }
-        String previousStatus = order.getStatus().name();
-        order.setStatus(nextStatus);
-        order.setStatusUpdatedAt(LocalDateTime.now());
-        orders.put(order.getBusinessId(), order);
-        ordersById.put(id, order);
-        auditLogService.logStatusChange("ORDER", id, previousStatus, nextStatus.name(), SYSTEM_USER_ID);
-        return order;
+        return applyOrderStatusTransition(order, nextStatus, true);
     }
 
     public boolean deleteOrder(Long id) {
@@ -251,6 +249,31 @@ public class BobbuyStore {
         return trip;
     }
 
+    public synchronized List<OrderHeader> bulkUpdateOrderStatus(Long tripId, OrderStatus targetStatus) {
+        getTrip(tripId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+        List<OrderHeader> eligible = listOrders(tripId).stream()
+                .filter(order -> isValidStatusTransition(order.getStatus(), targetStatus))
+                .collect(Collectors.toList());
+        if (eligible.isEmpty()) {
+            return new ArrayList<>();
+        }
+        if (targetStatus == OrderStatus.CONFIRMED) {
+            int totalQuantity = eligible.stream()
+                    .mapToInt(this::calculateTotalQuantity)
+                    .sum();
+            if (totalQuantity > 0) {
+                reserveTripCapacity(tripId, totalQuantity);
+            }
+        }
+        List<OrderHeader> updated = new ArrayList<>();
+        boolean applyCapacity = targetStatus != OrderStatus.CONFIRMED;
+        for (OrderHeader order : eligible) {
+            updated.add(applyOrderStatusTransition(order, targetStatus, applyCapacity));
+        }
+        return updated;
+    }
+
     public double calculateGmv() {
         return orders.values().stream()
                 .mapToDouble(OrderHeader::getTotalAmount)
@@ -271,5 +294,38 @@ public class BobbuyStore {
             case DELIVERED -> next == OrderStatus.SETTLED;
             case SETTLED -> false;
         };
+    }
+
+    private OrderHeader applyOrderStatusTransition(OrderHeader order, OrderStatus nextStatus, boolean applyCapacity) {
+        if (!isValidStatusTransition(order.getStatus(), nextStatus)) {
+            throw new ApiException(ErrorCode.INVALID_STATUS, "error.order.invalid_status");
+        }
+        if (applyCapacity && shouldReserveCapacity(order.getStatus(), nextStatus)) {
+            reserveTripCapacity(order.getTripId(), calculateTotalQuantity(order));
+        }
+        String previousStatus = order.getStatus().name();
+        order.setStatus(nextStatus);
+        order.setStatusUpdatedAt(LocalDateTime.now());
+        orders.put(order.getBusinessId(), order);
+        ordersById.put(order.getId(), order);
+        auditLogService.logStatusChange("ORDER", order.getId(), previousStatus, nextStatus.name(), SYSTEM_USER_ID);
+        return order;
+    }
+
+    private boolean shouldReserveCapacity(OrderStatus current, OrderStatus nextStatus) {
+        return !isAtLeastConfirmed(current) && isAtLeastConfirmed(nextStatus);
+    }
+
+    private boolean isAtLeastConfirmed(OrderStatus status) {
+        return status != null && status.ordinal() >= OrderStatus.CONFIRMED.ordinal();
+    }
+
+    private int calculateTotalQuantity(OrderHeader header) {
+        if (header == null || header.getLines() == null) {
+            return 0;
+        }
+        return header.getLines().stream()
+                .mapToInt(OrderLine::getQuantity)
+                .sum();
     }
 }

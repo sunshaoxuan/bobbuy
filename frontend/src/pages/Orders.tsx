@@ -1,8 +1,8 @@
-import { Button, Card, Collapse, Form, Input, InputNumber, Select, Table, Tag, Typography, message } from 'antd';
+import { Button, Card, Collapse, Form, Input, InputNumber, Select, Space, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import { api, Order, OrderLine, Trip } from '../api';
-import { getStoredLocale, useI18n } from '../i18n';
+import { useI18n } from '../i18n';
 
 const { Text } = Typography;
 
@@ -15,6 +15,7 @@ export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState<string | null>(null);
   const [form] = Form.useForm<Omit<Order, 'id' | 'statusUpdatedAt'>>();
 
   const refreshOrders = async (tripId?: number | null) => {
@@ -43,21 +44,29 @@ export default function Orders() {
       return;
     }
     try {
-      const response = await fetch(`/api/orders/${orderId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept-Language': getStoredLocale()
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      if (!response.ok) {
-        throw new Error('request_failed');
-      }
+      await api.updateOrderStatus(orderId, newStatus);
       message.success(t('orders.status.updated'));
-      await refreshOrders();
+      await refreshOrders(selectedTripId);
+      await refreshTrips();
     } catch {
-      message.error(t('errors.request_failed'));
+      // Errors are surfaced in the API layer.
+    }
+  };
+
+  const handleBulkStatusUpdate = async (targetStatus: string) => {
+    if (typeof selectedTripId !== 'number' || bulkUpdating) {
+      return;
+    }
+    try {
+      setBulkUpdating(targetStatus);
+      await api.bulkUpdateTripOrderStatus(selectedTripId, targetStatus);
+      message.success(t('orders.bulk_status.updated'));
+      await refreshOrders(selectedTripId);
+      await refreshTrips();
+    } catch {
+      // Errors are surfaced in the API layer.
+    } finally {
+      setBulkUpdating(null);
     }
   };
 
@@ -146,6 +155,7 @@ export default function Orders() {
   };
 
   const selectedTrip = trips.find((trip) => trip.id === selectedTripId);
+  const bulkDisabled = typeof selectedTripId !== 'number' || orders.length === 0;
 
   const orderPanels = orders.map((order) => ({
     key: order.businessId,
@@ -229,6 +239,34 @@ export default function Orders() {
               <div>
                 <Text type="secondary">{t('orders.trip.status')}</Text>
                 <div><Tag color="blue">{selectedTrip.status}</Tag></div>
+              </div>
+              <div>
+                <Text type="secondary">{t('orders.trip.actions.title')}</Text>
+                <div>
+                  <Space wrap>
+                    <Button
+                      onClick={() => handleBulkStatusUpdate('CONFIRMED')}
+                      disabled={bulkDisabled || bulkUpdating !== null}
+                      loading={bulkUpdating === 'CONFIRMED'}
+                    >
+                      {t('orders.trip.actions.confirm_all')}
+                    </Button>
+                    <Button
+                      onClick={() => handleBulkStatusUpdate('PURCHASED')}
+                      disabled={bulkDisabled || bulkUpdating !== null}
+                      loading={bulkUpdating === 'PURCHASED'}
+                    >
+                      {t('orders.trip.actions.mark_purchased')}
+                    </Button>
+                    <Button
+                      onClick={() => handleBulkStatusUpdate('DELIVERED')}
+                      disabled={bulkDisabled || bulkUpdating !== null}
+                      loading={bulkUpdating === 'DELIVERED'}
+                    >
+                      {t('orders.trip.actions.mark_delivered')}
+                    </Button>
+                  </Space>
+                </div>
               </div>
             </div>
           ) : (

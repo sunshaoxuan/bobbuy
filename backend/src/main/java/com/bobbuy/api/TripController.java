@@ -4,6 +4,7 @@ import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ApiMeta;
 import com.bobbuy.api.response.ApiResponse;
 import com.bobbuy.api.response.ErrorCode;
+import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.Trip;
 import com.bobbuy.service.BobbuyStore;
 import jakarta.validation.Valid;
@@ -62,6 +63,14 @@ public class TripController {
   @PostMapping("/{id}/reserve")
   public ResponseEntity<ApiResponse<Trip>> reserve(@PathVariable Long id, @Valid @RequestBody TripReserveRequest request) {
     return ResponseEntity.ok(ApiResponse.success(store.reserveTripCapacity(id, request.getQuantity())));
+  }
+
+  @PatchMapping("/{tripId}/orders/bulk-status")
+  public ResponseEntity<ApiResponse<List<OrderHeader>>> bulkUpdateOrderStatus(
+      @PathVariable Long tripId,
+      @Valid @RequestBody TripOrderBulkStatusRequest request) {
+    List<OrderHeader> updated = store.bulkUpdateOrderStatus(tripId, request.getTargetStatus());
+    return ResponseEntity.ok(ApiResponse.success(updated, new ApiMeta(updated.size())));
   }
 
   @DeleteMapping("/{id}")

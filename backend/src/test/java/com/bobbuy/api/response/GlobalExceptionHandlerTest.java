@@ -29,7 +29,8 @@ class GlobalExceptionHandlerTest {
   @Test
   void handlesApiException() {
     ApiException ex = new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.test");
-    Mockito.when(messageSource.getMessage(eq("error.test"), any(), any(Locale.class))).thenReturn("Not Found Message");
+    Mockito.when(messageSource.getMessage(eq("error.test"), any(), any(), any(Locale.class)))
+        .thenReturn("Not Found Message");
 
     ResponseEntity<ApiError> response = handler.handleApiException(ex);
     assertThat(response.getStatusCode().value()).isEqualTo(404);
