@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Service
 public class BobbuyStore {
@@ -131,7 +132,16 @@ public class BobbuyStore {
     }
 
     public List<OrderHeader> listOrders() {
-        return new ArrayList<>(orders.values());
+        return listOrders(null);
+    }
+
+    public List<OrderHeader> listOrders(Long tripId) {
+        if (tripId == null) {
+            return new ArrayList<>(orders.values());
+        }
+        return orders.values().stream()
+                .filter(order -> tripId.equals(order.getTripId()))
+                .collect(Collectors.toList());
     }
 
     public Optional<OrderHeader> getOrder(Long id) {

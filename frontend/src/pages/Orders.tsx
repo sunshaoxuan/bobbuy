@@ -1,7 +1,7 @@
-import { Button, Card, Form, Input, InputNumber, Select, Table, Tag, Typography, message } from 'antd';
+import { Button, Card, Collapse, Form, Input, InputNumber, Select, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
-import { api, Order } from '../api';
+import { api, Order, OrderLine, Trip } from '../api';
 import { getStoredLocale, useI18n } from '../i18n';
 
 const { Text } = Typography;
@@ -11,13 +11,31 @@ const currencyOptions = ['CNY', 'JPY', 'USD', 'EUR'];
 
 export default function Orders() {
   const { t } = useI18n();
+  const [trips, setTrips] = useState<Trip[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [selectedTripId, setSelectedTripId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm<Omit<Order, 'id' | 'statusUpdatedAt'>>();
 
-  const refreshOrders = async () => {
-    const refreshed = await api.orders();
+  const refreshOrders = async (tripId?: number | null) => {
+    if (typeof tripId !== 'number') {
+      setOrders([]);
+      return;
+    }
+    const refreshed = await api.orders(tripId);
     setOrders(refreshed);
+  };
+
+  const refreshTrips = async () => {
+    const refreshed = await api.trips();
+    setTrips(refreshed);
+    if (refreshed.length === 0) {
+      setSelectedTripId(null);
+      return;
+    }
+    if (!refreshed.some((trip) => trip.id === selectedTripId)) {
+      setSelectedTripId(refreshed[0].id);
+    }
   };
 
   const handleStatusChange = async (orderId: number, newStatus: string, currentStatus: string) => {
@@ -43,51 +61,48 @@ export default function Orders() {
     }
   };
 
-  const columns: ColumnsType<Order> = [
+  const lineColumns: ColumnsType<OrderLine> = [
     {
-      title: 'Business ID',
-      dataIndex: 'businessId',
-      render: (text) => <Text copyable>{text}</Text>
+      title: t('orders.lines.item_name'),
+      dataIndex: 'itemName'
     },
     {
-      title: t('orders.table.item_name'),
-      render: (_, record) => record.lines?.[0]?.itemName || '-'
+      title: t('orders.lines.sku_id'),
+      dataIndex: 'skuId'
     },
     {
-      title: t('orders.table.quantity'),
-      render: (_, record) => record.lines?.[0]?.quantity || 0
+      title: t('orders.lines.spec'),
+      dataIndex: 'spec',
+      render: (value) => value || '-'
     },
     {
-      title: t('orders.table.unit_price'),
-      render: (_, record) => record.lines?.[0]?.unitPrice || 0
+      title: t('orders.lines.quantity'),
+      dataIndex: 'quantity'
     },
     {
-      title: t('orders.table.total'),
-      dataIndex: 'totalAmount',
-      render: (val) => val?.toFixed(2)
+      title: t('orders.lines.unit_price'),
+      dataIndex: 'unitPrice',
+      render: (value) => (typeof value === 'number' ? value.toFixed(2) : '0.00')
     },
     {
-      title: t('orders.table.status'),
-      dataIndex: 'status',
-      render: (status: Order['status']) => <Tag color="gold">{status}</Tag>
-    },
-    {
-      title: t('orders.table.actions'),
-      render: (_value: unknown, record) => (
-        <Select
-          value={record.status}
-          onChange={(newStatus) => handleStatusChange(record.id, newStatus, record.status)}
-          options={statusOptions.map((status) => ({ value: status, label: status }))}
-          disabled={record.status === 'SETTLED'}
-          style={{ width: 160 }}
-        />
-      )
+      title: t('orders.lines.total'),
+      render: (_value, record) => {
+        const total = (record.unitPrice ?? 0) * (record.quantity ?? 0);
+        return total.toFixed(2);
+      }
     }
   ];
 
   useEffect(() => {
-    refreshOrders();
+    refreshTrips();
   }, []);
+
+  useEffect(() => {
+    refreshOrders(selectedTripId);
+    if (typeof selectedTripId === 'number') {
+      form.setFieldsValue({ tripId: selectedTripId });
+    }
+  }, [selectedTripId, form]);
 
   const handleSubmit = async (values: any) => {
     if (submitting) {
@@ -121,7 +136,8 @@ export default function Orders() {
       await api.createOrder(payload as any);
       message.success(t('orders.form.success'));
       form.resetFields();
-      await refreshOrders();
+      setSelectedTripId(values.tripId);
+      await refreshOrders(values.tripId);
     } catch {
       // Errors are surfaced in the API layer.
     } finally {
@@ -129,10 +145,97 @@ export default function Orders() {
     }
   };
 
+  const selectedTrip = trips.find((trip) => trip.id === selectedTripId);
+
+  const orderPanels = orders.map((order) => ({
+    key: order.businessId,
+    label: (
+      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+        <div>
+          <Text strong>{order.businessId}</Text>
+          <Text type="secondary" style={{ marginLeft: 12 }}>
+            {t('orders.header.customer_id')}: {order.customerId}
+          </Text>
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <Text>
+            {t('orders.header.total')}: {order.totalAmount?.toFixed(2)}
+          </Text>
+          <Tag color="gold">{order.status}</Tag>
+        </div>
+      </div>
+    ),
+    children: (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <Text type="secondary">{t('orders.header.status')}</Text>
+          <Select
+            value={order.status}
+            onChange={(newStatus) => handleStatusChange(order.id, newStatus, order.status)}
+            options={statusOptions.map((status) => ({ value: status, label: status }))}
+            disabled={order.status === 'SETTLED'}
+            style={{ width: 160 }}
+          />
+        </div>
+        <Table<OrderLine>
+          dataSource={order.lines}
+          rowKey={(record) => record.id ?? `${record.skuId}-${record.spec ?? 'default'}`}
+          columns={lineColumns}
+          pagination={false}
+          locale={{ emptyText: t('table.empty') }}
+        />
+      </div>
+    )
+  }));
+
   return (
     <div className="page-card">
       <div className="section-title">{t('orders.title')}</div>
       <Text className="helper-text">{t('orders.helper')}</Text>
+
+      <Card style={{ marginTop: 16, marginBottom: 24 }} bordered={false} title={t('orders.trip.title')}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center' }}>
+          <div style={{ minWidth: 200 }}>
+            <Text type="secondary">{t('orders.trip.select.label')}</Text>
+            <div>
+              <Select
+                value={selectedTripId ?? undefined}
+                onChange={(value) => setSelectedTripId(value)}
+                placeholder={t('orders.trip.select.placeholder')}
+                options={trips.map((trip) => ({
+                  value: trip.id,
+                  label: `${trip.origin} → ${trip.destination} (${trip.departDate})`
+                }))}
+                style={{ width: '100%' }}
+              />
+            </div>
+          </div>
+          {selectedTrip ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center' }}>
+              <div>
+                <Text type="secondary">{t('orders.trip.route')}</Text>
+                <div>{selectedTrip.origin} → {selectedTrip.destination}</div>
+              </div>
+              <div>
+                <Text type="secondary">{t('orders.trip.depart_date')}</Text>
+                <div>{selectedTrip.departDate}</div>
+              </div>
+              <div>
+                <Text type="secondary">{t('orders.trip.capacity')}</Text>
+                <div>
+                  {selectedTrip.reservedCapacity}/{selectedTrip.capacity} ({selectedTrip.remainingCapacity ?? 0})
+                </div>
+              </div>
+              <div>
+                <Text type="secondary">{t('orders.trip.status')}</Text>
+                <div><Tag color="blue">{selectedTrip.status}</Tag></div>
+              </div>
+            </div>
+          ) : (
+            <Text type="secondary">{t('table.empty')}</Text>
+          )}
+        </div>
+      </Card>
 
       <Card style={{ marginTop: 16, marginBottom: 24 }} bordered={false}>
         <Form
@@ -214,12 +317,11 @@ export default function Orders() {
       </Card>
 
       <Card bordered={false} title={t('orders.list.title')}>
-        <Table<Order>
-          dataSource={orders}
-          rowKey="id"
-          columns={columns}
-          locale={{ emptyText: t('table.empty') }}
-        />
+        {orders.length === 0 ? (
+          <Text type="secondary">{t('table.empty')}</Text>
+        ) : (
+          <Collapse items={orderPanels} defaultActiveKey={orders[0]?.businessId} />
+        )}
       </Card>
     </div>
   );

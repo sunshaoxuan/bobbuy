@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -24,7 +23,8 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ApiException.class)
   public ResponseEntity<ApiError> handleApiException(ApiException ex) {
     log.warn("API error: {}", ex.getMessage());
-    String message = messageSource.getMessage(ex.getMessageKey(), ex.getMessageArgs(), LocaleContextHolder.getLocale());
+    String message = messageSource.getMessage(ex.getMessageKey(), ex.getMessageArgs(), "Error",
+        LocaleContextHolder.getLocale());
     return ResponseEntity.status(resolveStatus(ex.getErrorCode()))
         .body(new ApiError(ex.getErrorCode().name(), message));
   }

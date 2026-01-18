@@ -4,6 +4,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -22,7 +24,8 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
   }
 
   @Override
-  public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+  public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+      @NonNull Object handler) {
     String traceId = request.getHeader(TRACE_HEADER);
     if (traceId == null || traceId.isBlank()) {
       traceId = UUID.randomUUID().toString();
@@ -34,7 +37,9 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
   }
 
   @Override
-  public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+  public void afterCompletion(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+      @NonNull Object handler,
+      @Nullable Exception ex) {
     Object start = request.getAttribute(START_TIME);
     long startTime = start instanceof Long ? (Long) start : System.currentTimeMillis();
     long costMs = System.currentTimeMillis() - startTime;

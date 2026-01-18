@@ -13,10 +13,10 @@ if (!window.matchMedia) {
     matches: false,
     media: query,
     onchange: null,
-    addListener: () => {},
-    removeListener: () => {},
-    addEventListener: () => {},
-    removeEventListener: () => {},
+    addListener: () => { },
+    removeListener: () => { },
+    addEventListener: () => { },
+    removeEventListener: () => { },
     dispatchEvent: () => false
   });
 }
@@ -26,14 +26,16 @@ const originalError = console.error;
 const originalWarn = console.warn;
 
 console.error = (...args: unknown[]) => {
-  if (typeof args[0] === 'string' && suppressedWarnings.some((pattern) => pattern.test(args[0]))) {
+  const firstArg = args[0];
+  if (typeof firstArg === 'string' && suppressedWarnings.some((pattern) => pattern.test(firstArg))) {
     return;
   }
   originalError(...args);
 };
 
 console.warn = (...args: unknown[]) => {
-  if (typeof args[0] === 'string' && suppressedWarnings.some((pattern) => pattern.test(args[0]))) {
+  const firstArg = args[0];
+  if (typeof firstArg === 'string' && suppressedWarnings.some((pattern) => pattern.test(firstArg))) {
     return;
   }
   originalWarn(...args);

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -30,8 +31,8 @@ public class OrderController {
   }
 
   @GetMapping
-  public ApiResponse<List<OrderHeader>> list() {
-    List<OrderHeader> orders = store.listOrders();
+  public ApiResponse<List<OrderHeader>> list(@RequestParam(required = false) Long tripId) {
+    List<OrderHeader> orders = store.listOrders(tripId);
     return ApiResponse.success(orders, new ApiMeta(orders.size()));
   }
 

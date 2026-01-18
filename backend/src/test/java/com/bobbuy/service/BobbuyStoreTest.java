@@ -108,6 +108,7 @@ class BobbuyStoreTest {
     // Delete
     assertThat(store.deleteOrder(created.getId())).isTrue();
     assertThat(store.listOrders()).hasSize(1);
+    assertThat(store.deleteOrder(created.getId())).isFalse();
   }
 
   @Test
@@ -152,6 +153,70 @@ class BobbuyStoreTest {
   void orderStatusCountsWithEmpty() {
     store.deleteOrder(3000L);
     assertThat(store.orderStatusCounts()).isEmpty();
+  }
+
+  @Test
+  void listOrdersFiltersByTripId() {
+    OrderHeader otherTrip = new OrderHeader("BIZ-TRIP", 1001L, 9999L);
+    otherTrip.addLine(new OrderLine("SKU-T", "Tea", null, 1, 10.0));
+    store.upsertOrder(otherTrip);
+
+    assertThat(store.listOrders(2000L)).allMatch(order -> order.getTripId().equals(2000L));
+    assertThat(store.listOrders(9999L)).allMatch(order -> order.getTripId().equals(9999L));
+  }
+
+  @Test
+  void updateOrderUpdatesExistingAndRejectsMissing() {
+    OrderHeader header = new OrderHeader("BIZ-UPDATE", 1001L, 2000L);
+    header.addLine(new OrderLine("SKU-U", "Update", null, 1, 8.0));
+    OrderHeader created = store.upsertOrder(header);
+
+    OrderHeader updated = new OrderHeader(created.getBusinessId(), 1001L, 2000L);
+    updated.setStatus(OrderStatus.CONFIRMED);
+    assertThat(store.updateOrder(created.getId(), updated)).isPresent();
+    assertThat(store.getOrder(created.getId()).orElseThrow().getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+
+    assertThat(store.updateOrder(9999L, updated)).isEmpty();
+  }
+
+  @Test
+  void getOrderByBusinessIdReturnsOptional() {
+    assertThat(store.getOrderByBusinessId("20260117001")).isPresent();
+    assertThat(store.getOrderByBusinessId("MISSING")).isEmpty();
+  }
+
+  @Test
+  void updateOrderStatusRejectsInvalidTransitions() {
+    OrderHeader header = new OrderHeader("BIZ-INVALID", 1001L, 2000L);
+    header.addLine(new OrderLine("SKU-I", "Invalid", null, 1, 8.0));
+    OrderHeader created = store.upsertOrder(header);
+
+    assertThatThrownBy(() -> store.updateOrderStatus(created.getId(), OrderStatus.PURCHASED))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> {
+          ApiException ex = (ApiException) error;
+          assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.INVALID_STATUS);
+        });
+
+    created.setStatus(OrderStatus.CONFIRMED);
+    store.updateOrder(created.getId(), created);
+    assertThatThrownBy(() -> store.updateOrderStatus(created.getId(), OrderStatus.DELIVERED))
+        .isInstanceOf(ApiException.class);
+
+    created.setStatus(OrderStatus.PURCHASED);
+    store.updateOrder(created.getId(), created);
+    assertThatThrownBy(() -> store.updateOrderStatus(created.getId(), OrderStatus.SETTLED))
+        .isInstanceOf(ApiException.class);
+
+    created.setStatus(OrderStatus.DELIVERED);
+    store.updateOrder(created.getId(), created);
+    assertThatThrownBy(() -> store.updateOrderStatus(created.getId(), OrderStatus.CONFIRMED))
+        .isInstanceOf(ApiException.class);
+
+    created.setStatus(OrderStatus.SETTLED);
+    store.updateOrder(created.getId(), created);
+    assertThatThrownBy(() -> store.updateOrderStatus(created.getId(), OrderStatus.NEW))
+        .isInstanceOf(ApiException.class);
   }
 
   @Test

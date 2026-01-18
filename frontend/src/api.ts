@@ -162,7 +162,11 @@ async function postJson<TResponse, TBody>(url: string, body: TBody): Promise<TRe
 export const api = {
     metrics: () => fetchJson<Metrics>('/api/metrics', fallback.metrics),
     trips: () => fetchJson<Trip[]>('/api/trips', fallback.trips),
-    orders: () => fetchJson<Order[]>('/api/orders', fallback.orders),
+    orders: (tripId?: number) =>
+        fetchJson<Order[]>(
+            typeof tripId === 'number' ? `/api/orders?tripId=${tripId}` : '/api/orders',
+            fallback.orders
+        ),
     users: () => fetchJson<User[]>('/api/users', fallback.users),
     createTrip: (trip: Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>) =>
         postJson<Trip, Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>>('/api/trips', trip),
