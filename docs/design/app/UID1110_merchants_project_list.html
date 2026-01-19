@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Merchant: Active Trip Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f9f506",
+                        "background-light": "#ffffff",
+                        "background-dark": "#18181b",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Spline Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-[#1c1c0d] dark:text-gray-100 antialiased selection:bg-primary selection:text-black">
+<div class="relative flex h-screen w-full flex-col max-w-[430px] mx-auto overflow-hidden border-x border-gray-100 dark:border-zinc-800 shadow-2xl bg-gray-50 dark:bg-background-dark">
+<div class="flex items-center bg-white/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-40 p-4 pb-2 justify-between">
+<div class="flex size-10 shrink-0 items-center justify-center bg-gray-100 dark:bg-zinc-800 rounded-full">
+<span class="material-symbols-outlined text-xl">storefront</span>
+</div>
+<h2 class="text-[#1c1c0d] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center font-display">My Shopping Trips</h2>
+<div class="flex w-10 items-center justify-end">
+<button class="flex cursor-pointer items-center justify-center rounded-full h-10 w-10 bg-transparent text-[#1c1c0d] dark:text-white">
+<span class="material-symbols-outlined text-2xl">history</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto no-scrollbar pb-32">
+<div class="px-4 py-6">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest px-1">Active Trip</h3>
+<div class="flex items-center gap-1.5 bg-red-500 text-white px-2.5 py-0.5 rounded-full">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Live</span>
+</div>
+</div>
+<div class="relative overflow-hidden rounded-3xl bg-black dark:bg-zinc-900 text-white p-6 shadow-xl">
+<div class="relative z-10 flex flex-col gap-6">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="text-2xl font-bold leading-tight">Costco Wholesale</h4>
+<p class="text-gray-400 font-medium">Chiba, Japan</p>
+</div>
+<div class="bg-primary/20 p-2 rounded-xl">
+<span class="material-symbols-outlined text-primary text-3xl">shopping_cart_checkout</span>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-1 bg-white/10 rounded-2xl p-4">
+<p class="text-xs text-gray-400 font-bold uppercase tracking-tight mb-1">Items to Pick</p>
+<p class="text-2xl font-bold tracking-tight">24 <span class="text-xs font-normal text-gray-400">/ 32</span></p>
+</div>
+<div class="flex-1 bg-white/10 rounded-2xl p-4">
+<p class="text-xs text-gray-400 font-bold uppercase tracking-tight mb-1">Time Left</p>
+<p class="text-2xl font-bold tracking-tight text-primary">0:42<span class="text-sm">m</span></p>
+</div>
+</div>
+<button class="w-full bg-primary text-black font-bold py-4 rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+                            Resume Trip
+                        </button>
+</div>
+<div class="absolute top-0 right-0 -mr-12 -mt-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl"></div>
+</div>
+</div>
+<div class="px-4">
+<h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest px-1 mb-4">Upcoming Trips</h3>
+<div class="flex flex-col gap-4">
+<div class="bg-white dark:bg-zinc-900 rounded-2xl p-4 flex items-center gap-4 border border-gray-100 dark:border-zinc-800 shadow-sm active:bg-gray-50 dark:active:bg-zinc-800 transition-colors cursor-pointer">
+<div class="size-16 bg-gray-50 dark:bg-zinc-800 rounded-xl flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-3xl text-gray-400">local_mall</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h5 class="font-bold text-lg leading-none mb-1">IKEA Funabashi</h5>
+<span class="text-primary text-[10px] font-bold bg-primary/10 px-2 py-0.5 rounded-full uppercase">12 Orders</span>
+</div>
+<p class="text-sm text-gray-500 font-medium">Tomorrow, 10:00 AM</p>
+<div class="mt-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-gray-400">calendar_month</span>
+<span class="text-xs text-gray-400">Jan 24, 2024</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-gray-300">chevron_right</span>
+</div>
+<div class="bg-white dark:bg-zinc-900 rounded-2xl p-4 flex items-center gap-4 border border-gray-100 dark:border-zinc-800 shadow-sm active:bg-gray-50 dark:active:bg-zinc-800 transition-colors cursor-pointer">
+<div class="size-16 bg-gray-50 dark:bg-zinc-800 rounded-xl flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-3xl text-gray-400">bakery_dining</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h5 class="font-bold text-lg leading-none mb-1">Dean &amp; DeLuca</h5>
+<span class="text-gray-400 text-[10px] font-bold bg-gray-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full uppercase">5 Orders</span>
+</div>
+<p class="text-sm text-gray-500 font-medium">Friday, 08:30 AM</p>
+<div class="mt-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-gray-400">calendar_month</span>
+<span class="text-xs text-gray-400">Jan 26, 2024</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-gray-300">chevron_right</span>
+</div>
+<div class="bg-white dark:bg-zinc-900 rounded-2xl p-4 flex items-center gap-4 border border-gray-100 dark:border-zinc-800 shadow-sm active:bg-gray-50 dark:active:bg-zinc-800 transition-colors cursor-pointer">
+<div class="size-16 bg-gray-50 dark:bg-zinc-800 rounded-xl flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-3xl text-gray-400">shopping_basket</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h5 class="font-bold text-lg leading-none mb-1">Local Market Run</h5>
+<span class="text-gray-400 text-[10px] font-bold bg-gray-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full uppercase">8 Orders</span>
+</div>
+<p class="text-sm text-gray-500 font-medium">Next Monday, 09:00 AM</p>
+<div class="mt-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-gray-400">calendar_month</span>
+<span class="text-xs text-gray-400">Jan 29, 2024</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-gray-300">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+<div class="absolute bottom-24 right-6 z-50">
+<button class="bg-primary hover:bg-[#ece605] text-black w-16 h-16 rounded-2xl shadow-2xl shadow-primary/40 flex items-center justify-center group active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined text-3xl font-bold group-hover:rotate-90 transition-transform">add</span>
+<span class="absolute right-full mr-4 bg-black text-white px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">New Trip</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-0 right-0 px-6 py-4 pb-8 bg-white/90 dark:bg-background-dark/90 backdrop-blur-xl border-t border-gray-100 dark:border-zinc-800 flex justify-between items-center z-40">
+<div class="flex flex-col items-center gap-1 group cursor-pointer">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-black dark:group-hover:text-white transition-colors">home</span>
+<span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter group-hover:text-black dark:group-hover:text-white">Home</span>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-pointer">
+<div class="flex flex-col items-center text-primary">
+<span class="material-symbols-outlined">assignment</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Trips</span>
+</div>
+</div>
+<div class="flex flex-col items-center -mt-8">
+<div class="size-14 bg-primary rounded-full shadow-lg shadow-primary/30 flex items-center justify-center border-4 border-white dark:border-background-dark">
+<span class="material-symbols-outlined text-black font-bold">qr_code_scanner</span>
+</div>
+<span class="text-[10px] font-bold text-black dark:text-white mt-1 uppercase tracking-tighter">Scan</span>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-pointer">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-black dark:group-hover:text-white transition-colors">analytics</span>
+<span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter group-hover:text-black dark:group-hover:text-white">Stats</span>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-pointer">
+<div class="size-6 bg-gray-200 dark:bg-zinc-800 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-gray-400 font-bold">person</span>
+</div>
+<span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter group-hover:text-black dark:group-hover:text-white">Profile</span>
+</div>
+</div>
+<div class="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-32 h-1 bg-gray-200 dark:bg-zinc-800 rounded-full"></div>
+</div>
+
+</body></html>

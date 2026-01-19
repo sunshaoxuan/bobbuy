@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BOBBuy - AI 小票识别与结算系统</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1fad7e",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#12201b",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .receipt-container {
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1e5df;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#0f1a16] transition-colors duration-300">
+<div class="relative flex h-screen w-full flex-col overflow-hidden">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-[#e8f2ef] dark:border-[#2a3a35] bg-white dark:bg-[#1a2a24] px-10 py-3 z-10">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-[#0f1a16] dark:text-white">
+<div class="size-6 text-primary">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em]">BOBBuy 宝宝败</h2>
+</div>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-sm font-medium hover:text-primary transition-colors dark:text-gray-300" href="#">代购大厅</a>
+<a class="text-sm font-medium hover:text-primary transition-colors dark:text-gray-300" href="#">任务管理</a>
+<a class="text-sm font-medium text-primary" href="#">结算中心</a>
+<a class="text-sm font-medium hover:text-primary transition-colors dark:text-gray-300" href="#">账户中心</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-[#e8f2ef] dark:bg-[#2a3a35] rounded-lg px-3 py-1.5">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-40 placeholder:text-[#53937d]" placeholder="搜索订单或客户"/>
+</div>
+<div class="flex items-center gap-3 border-l border-[#e8f2ef] dark:border-[#2a3a35] ml-2 pl-4">
+<div class="size-9 rounded-full bg-cover bg-center" data-alt="User avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAjJ8AqU5HLR6sB2Ya7SI9o1gq-QbNA3bqFwlZydQY_7c9dqihHrA-bJiaXTe7pkvPhsX3th9lD8_r3WDQL6Uw4ghe6E80HdqEax5XUkEkCVx5EdvSaYfhfKUem1h3bvsveSJ4mB6jcIwYzQWCPA2MW5VtK6CFEtLD9iM-xE2yF8UWu_lvxbBffJviuFVKiYw0t5RtCrzQLQKQz2nvz2sBVsa-l487RSyhXP0GNcQAfGZudxjDoBJ0hi_7amGKDCLUS24bG0sSyClI");'></div>
+</div>
+</div>
+</header>
+<!-- Breadcrumbs -->
+<div class="px-10 py-3 flex items-center justify-between bg-white dark:bg-[#1a2a24] border-b border-[#e8f2ef] dark:border-[#2a3a35]">
+<div class="flex items-center gap-2 text-sm">
+<a class="text-[#53937d] hover:text-primary transition-colors" href="#">BOBBuy</a>
+<span class="text-[#53937d] material-symbols-outlined text-xs">chevron_right</span>
+<a class="text-[#53937d] hover:text-primary transition-colors" href="#">结算中心</a>
+<span class="text-[#53937d] material-symbols-outlined text-xs">chevron_right</span>
+<span class="font-semibold text-primary">Costco 自动核销</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-[#53937d]">最后识别时间: 2023-10-24 14:32</span>
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#e8f2ef] dark:bg-[#2a3a35] text-xs font-bold hover:bg-[#d1e5df] transition-colors">
+<span class="material-symbols-outlined text-sm">refresh</span> 重新上传
+                </button>
+</div>
+</div>
+<!-- Main Content Area (Split Screen) -->
+<main class="flex-1 flex overflow-hidden">
+<!-- Left: Receipt Viewer -->
+<section class="w-[40%] bg-zinc-100 dark:bg-black relative flex flex-col border-r border-[#e8f2ef] dark:border-[#2a3a35]">
+<div class="absolute top-4 left-4 z-10 flex flex-col gap-2">
+<button class="p-2 bg-white/90 dark:bg-zinc-800/90 rounded-lg shadow-sm hover:bg-white"><span class="material-symbols-outlined">zoom_in</span></button>
+<button class="p-2 bg-white/90 dark:bg-zinc-800/90 rounded-lg shadow-sm hover:bg-white"><span class="material-symbols-outlined">zoom_out</span></button>
+<button class="p-2 bg-white/90 dark:bg-zinc-800/90 rounded-lg shadow-sm hover:bg-white"><span class="material-symbols-outlined">rotate_right</span></button>
+</div>
+<div class="flex-1 overflow-auto p-8 flex justify-center receipt-container">
+<div class="w-full max-w-sm bg-white dark:bg-zinc-200 shadow-2xl origin-top transition-transform p-6 relative">
+<!-- Simulated Costco Receipt -->
+<div class="text-center font-mono text-[10px] text-zinc-800 uppercase tracking-widest mb-4">
+<p class="font-bold text-sm">Costco Wholesale</p>
+<p>#1234 Issaquah, WA</p>
+<p>Store: 001  OP: 42  TE: 01  TR: 9982</p>
+</div>
+<div class="border-y border-dashed border-zinc-400 py-4 font-mono text-[11px] text-zinc-900">
+<div class="flex justify-between mb-1 group relative">
+<div class="absolute -left-2 top-0 w-full h-full bg-primary/20 rounded hidden group-hover:block"></div>
+<span>123456 CHICKEN ROT</span>
+<span>4.99 A</span>
+</div>
+<div class="flex justify-between mb-1">
+<span>234567 KIRK WATER 40PK</span>
+<span>3.50 A</span>
+</div>
+<div class="flex justify-between mb-1">
+<span>345678 VITA-C 500CT</span>
+<span>12.99 A</span>
+</div>
+<div class="flex justify-between mb-1">
+<span>456789 KS BATH TISSUE</span>
+<span>18.99 A</span>
+</div>
+<div class="flex justify-between mb-1">
+<span>567890 ORGANIC EGGS</span>
+<span>7.49 A</span>
+</div>
+<div class="flex justify-between mb-1">
+<span>678901 RIBEYE STEAK</span>
+<span>45.82 A</span>
+</div>
+<div class="flex justify-between mt-4 font-bold border-t border-dashed border-zinc-400 pt-2">
+<span>SUBTOTAL</span>
+<span>93.78</span>
+</div>
+<div class="flex justify-between font-bold">
+<span>TAX</span>
+<span>8.22</span>
+</div>
+<div class="flex justify-between text-sm mt-2 border-t-2 border-double border-zinc-800 pt-1">
+<span>TOTAL</span>
+<span>102.00</span>
+</div>
+</div>
+<div class="mt-4 flex flex-col items-center">
+<div class="w-24 h-12 bg-zinc-300 rounded flex items-center justify-center opacity-50">
+<span class="material-symbols-outlined text-2xl text-zinc-500">barcode</span>
+</div>
+<p class="text-[8px] mt-2 text-zinc-400">THANK YOU FOR SHOPPING AT COSTCO</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Right: Data Extraction & Settlement -->
+<section class="flex-1 flex flex-col bg-[#f8fbfa] dark:bg-[#12201b] overflow-y-auto">
+<div class="p-8 max-w-[1100px] mx-auto w-full space-y-6">
+<!-- Page Heading -->
+<div class="flex items-end justify-between">
+<div class="space-y-1">
+<h1 class="text-3xl font-black tracking-tight dark:text-white">AI 核销工作台</h1>
+<p class="text-[#53937d] flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">verified_user</span>
+                                系统已提取 6 个商品，并自动匹配了 4 名客户
+                            </p>
+</div>
+<div class="flex gap-2">
+<button class="bg-white dark:bg-[#1a2a24] border border-[#d1e5df] dark:border-[#2a3a35] px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors dark:text-gray-200">
+                                手动纠错
+                            </button>
+<button class="bg-primary text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+                                一键生成账单
+                            </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Main Table Card -->
+<div class="col-span-12 bg-white dark:bg-[#1a2a24] rounded-xl border border-[#e8f2ef] dark:border-[#2a3a35] shadow-sm overflow-hidden">
+<div class="p-4 border-b border-[#e8f2ef] dark:border-[#2a3a35] flex justify-between items-center">
+<h3 class="font-bold text-sm uppercase tracking-wider text-[#53937d]">明细提取</h3>
+<div class="flex gap-4">
+<div class="flex items-center gap-1 text-xs">
+<span class="size-2 rounded-full bg-primary"></span>
+<span class="dark:text-gray-400">AI 匹配</span>
+</div>
+<div class="flex items-center gap-1 text-xs text-orange-400">
+<span class="material-symbols-outlined text-xs">warning</span>
+<span>低置信度</span>
+</div>
+</div>
+</div>
+<table class="w-full text-left text-sm">
+<thead>
+<tr class="bg-[#f8fbfa] dark:bg-[#12201b] text-[#53937d]">
+<th class="px-6 py-3 font-medium">商品名称 (Costco SKU)</th>
+<th class="px-4 py-3 font-medium">单价</th>
+<th class="px-4 py-3 font-medium">数量</th>
+<th class="px-4 py-3 font-medium">所属客户</th>
+<th class="px-4 py-3 font-medium text-right">状态</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#e8f2ef] dark:divide-[#2a3a35]">
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-4 dark:text-white">
+<div class="font-semibold text-primary">Costco 烤鸡</div>
+<div class="text-[10px] text-gray-400 uppercase tracking-tight">123456 CHICKEN ROT</div>
+</td>
+<td class="px-4 py-4 dark:text-gray-300 font-mono">$4.99</td>
+<td class="px-4 py-4 dark:text-gray-300 font-mono">1</td>
+<td class="px-4 py-4">
+<button class="flex items-center gap-2 bg-[#e8f2ef] dark:bg-[#2a3a35] px-3 py-1.5 rounded-lg w-full group-hover:bg-white dark:group-hover:bg-[#344841] transition-colors border border-transparent group-hover:border-primary/20">
+<div class="size-5 rounded-full bg-zinc-400"></div>
+<span class="flex-1 truncate">张晓敏</span>
+<span class="material-symbols-outlined text-xs">keyboard_arrow_down</span>
+</button>
+</td>
+<td class="px-4 py-4 text-right">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+<span class="material-symbols-outlined text-[10px]">check_circle</span> 已匹配
+                                            </span>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-4 dark:text-white">
+<div class="font-semibold">Kirkland 矿泉水 40PK</div>
+<div class="text-[10px] text-gray-400 uppercase tracking-tight">234567 KIRK WATER 40PK</div>
+</td>
+<td class="px-4 py-4 dark:text-gray-300 font-mono">$3.50</td>
+<td class="px-4 py-4 dark:text-gray-300 font-mono">1</td>
+<td class="px-4 py-4">
+<button class="flex items-center gap-2 bg-[#e8f2ef] dark:bg-[#2a3a35] px-3 py-1.5 rounded-lg w-full">
+<div class="size-5 rounded-full bg-zinc-400"></div>
+<span class="flex-1 truncate">李华 (Li Hua)</span>
+<span class="material-symbols-outlined text-xs">keyboard_arrow_down</span>
+</button>
+</td>
+<td class="px-4 py-4 text-right">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+<span class="material-symbols-outlined text-[10px]">check_circle</span> 已匹配
+                                            </span>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors group bg-orange-50/50 dark:bg-orange-900/5">
+<td class="px-6 py-4 dark:text-white">
+<div class="font-semibold flex items-center gap-2">
+                                                维他命 C (500片)
+                                                <span class="material-symbols-outlined text-orange-400 text-sm" title="价格识别不确定">warning</span>
+</div>
+<div class="text-[10px] text-gray-400 uppercase tracking-tight">345678 VITA-C 500CT</div>
+</td>
+<td class="px-4 py-4 font-mono">
+<input class="bg-white border-orange-200 focus:ring-orange-200 rounded text-xs w-16 p-1 dark:bg-[#2a3a35] dark:border-transparent" type="text" value="$12.99"/>
+</td>
+<td class="px-4 py-4 dark:text-gray-300 font-mono">1</td>
+<td class="px-4 py-4">
+<button class="flex items-center gap-2 border-dashed border border-orange-300 bg-orange-50/50 dark:bg-orange-900/10 px-3 py-1.5 rounded-lg w-full">
+<span class="flex-1 truncate text-orange-600 dark:text-orange-400 text-xs">待指定客户</span>
+<span class="material-symbols-outlined text-xs text-orange-600">add_circle</span>
+</button>
+</td>
+<td class="px-4 py-4 text-right">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-100 text-orange-600 text-[10px] font-bold">
+                                                待确认
+                                            </span>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-4 dark:text-white">
+<div class="font-semibold">Kirkland 卷纸 (30卷)</div>
+<div class="text-[10px] text-gray-400 uppercase tracking-tight">456789 KS BATH TISSUE</div>
+</td>
+<td class="px-4 py-4 dark:text-gray-300 font-mono">$18.99</td>
+<td class="px-4 py-4 dark:text-gray-300 font-mono">1</td>
+<td class="px-4 py-4">
+<button class="flex items-center gap-2 bg-[#e8f2ef] dark:bg-[#2a3a35] px-3 py-1.5 rounded-lg w-full">
+<span class="material-symbols-outlined text-sm">group</span>
+<span class="flex-1 truncate">公共费用 / 多人分摊</span>
+<span class="material-symbols-outlined text-xs">settings</span>
+</button>
+</td>
+<td class="px-4 py-4 text-right">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/20 text-[10px] font-bold">
+                                                共享费用
+                                            </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Shared Fee Bento Card -->
+<div class="col-span-12 lg:col-span-7 bg-white dark:bg-[#1a2a24] rounded-xl border border-[#e8f2ef] dark:border-[#2a3a35] shadow-sm p-6">
+<h3 class="font-bold text-sm uppercase tracking-wider text-[#53937d] mb-4">共享杂费分摊</h3>
+<div class="grid grid-cols-3 gap-4">
+<div class="space-y-2">
+<label class="text-xs font-bold text-gray-500 dark:text-gray-400">油费 / 运输</label>
+<div class="relative">
+<span class="absolute left-3 top-2 text-sm text-gray-400">$</span>
+<input class="w-full bg-[#f8fbfa] dark:bg-[#12201b] border-none rounded-lg pl-6 py-2 text-sm focus:ring-primary" type="number" value="15.00"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-gray-500 dark:text-gray-400">停车费</label>
+<div class="relative">
+<span class="absolute left-3 top-2 text-sm text-gray-400">$</span>
+<input class="w-full bg-[#f8fbfa] dark:bg-[#12201b] border-none rounded-lg pl-6 py-2 text-sm focus:ring-primary" type="number" value="2.00"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-gray-500 dark:text-gray-400">会员费折算</label>
+<div class="relative">
+<span class="absolute left-3 top-2 text-sm text-gray-400">$</span>
+<input class="w-full bg-[#f8fbfa] dark:bg-[#12201b] border-none rounded-lg pl-6 py-2 text-sm focus:ring-primary" type="number" value="5.00"/>
+</div>
+</div>
+</div>
+<div class="mt-6 p-4 bg-primary/5 rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-primary/10 rounded-full text-primary">
+<span class="material-symbols-outlined">calculate</span>
+</div>
+<div>
+<p class="text-xs font-bold dark:text-gray-200">分摊策略: 按商品金额比例</p>
+<p class="text-[10px] text-[#53937d]">当前系统自动将 $22.00 杂费按比例分配至 4 位客户</p>
+</div>
+</div>
+<button class="text-xs font-bold text-primary hover:underline">切换到均分</button>
+</div>
+</div>
+<!-- Settlement Summary Card -->
+<div class="col-span-12 lg:col-span-5 bg-primary dark:bg-[#1fad7e] rounded-xl shadow-xl shadow-primary/20 p-6 text-white flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-6">
+<h3 class="font-bold text-lg">结算总计</h3>
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-white/80 text-sm">
+<span>小票商品总计 (Subtotal)</span>
+<span class="font-mono font-bold">$93.78</span>
+</div>
+<div class="flex justify-between text-white/80 text-sm">
+<span>消费税 (Estimated Tax)</span>
+<span class="font-mono font-bold">$8.22</span>
+</div>
+<div class="flex justify-between text-white/80 text-sm">
+<span>自定义杂费 (Extra Fees)</span>
+<span class="font-mono font-bold">$22.00</span>
+</div>
+<div class="h-px bg-white/20 my-4"></div>
+<div class="flex justify-between text-xl font-black">
+<span>应收总额</span>
+<span class="font-mono">$124.00</span>
+</div>
+</div>
+</div>
+<div class="mt-8 flex gap-3">
+<button class="flex-1 bg-white text-primary font-bold py-3 rounded-lg hover:bg-gray-50 transition-colors shadow-lg">
+                                    生成并发布账单
+                                </button>
+<button class="p-3 bg-primary-dark/20 border border-white/20 rounded-lg hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined">save</span>
+</button>
+</div>
+</div>
+<!-- Settlement Breakdown per User -->
+<div class="col-span-12 bg-white dark:bg-[#1a2a24] rounded-xl border border-[#e8f2ef] dark:border-[#2a3a35] shadow-sm p-6">
+<h3 class="font-bold text-sm uppercase tracking-wider text-[#53937d] mb-4">待生成账单预览 (4 份)</h3>
+<div class="flex flex-wrap gap-4">
+<div class="flex-1 min-w-[200px] border border-[#e8f2ef] dark:border-[#2a3a35] rounded-lg p-4 bg-[#f8fbfa] dark:bg-[#12201b] hover:border-primary/40 transition-colors cursor-pointer group">
+<div class="flex justify-between mb-2">
+<span class="font-bold dark:text-white">张晓敏</span>
+<span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">已就绪</span>
+</div>
+<p class="text-[10px] text-gray-500 dark:text-gray-400 mb-2">1件商品 + 杂费比例 (5.3%)</p>
+<div class="text-xl font-black text-primary">$6.15</div>
+</div>
+<div class="flex-1 min-w-[200px] border border-[#e8f2ef] dark:border-[#2a3a35] rounded-lg p-4 bg-[#f8fbfa] dark:bg-[#12201b] hover:border-primary/40 transition-colors cursor-pointer">
+<div class="flex justify-between mb-2">
+<span class="font-bold dark:text-white">李华</span>
+<span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">已就绪</span>
+</div>
+<p class="text-[10px] text-gray-500 dark:text-gray-400 mb-2">1件商品 + 杂费比例 (3.7%)</p>
+<div class="text-xl font-black text-primary">$4.32</div>
+</div>
+<div class="flex-1 min-w-[200px] border border-[#e8f2ef] dark:border-[#2a3a35] rounded-lg p-4 bg-orange-50/50 dark:bg-orange-900/5 border-orange-200 dark:border-orange-900/40">
+<div class="flex justify-between mb-2">
+<span class="font-bold text-orange-600 dark:text-orange-400">未知客户</span>
+<span class="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-bold">待完善</span>
+</div>
+<p class="text-[10px] text-gray-500 dark:text-gray-400 mb-2">1件商品 (维他命 C)</p>
+<div class="text-xl font-black text-gray-400">$16.02</div>
+</div>
+<div class="flex-1 min-w-[200px] border border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-4 flex items-center justify-center text-gray-400 hover:text-primary hover:border-primary transition-all cursor-pointer">
+<div class="text-center">
+<span class="material-symbols-outlined text-2xl mb-1">person_add</span>
+<p class="text-xs font-bold">添加更多客户</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body></html>

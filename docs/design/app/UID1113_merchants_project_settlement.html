@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trip Settlement - BobBuy</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f9f506",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#23220f",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#1c1c0d] dark:text-white min-h-screen">
+<!-- Top Navigation Bar -->
+<div class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-[#e9e8ce] dark:border-[#3a391a]">
+<div class="flex items-center p-4 justify-between max-w-md mx-auto">
+<div class="flex size-10 items-center justify-center cursor-pointer">
+<span class="material-symbols-outlined">arrow_back_ios</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight flex-1 text-center">Trip Settlement</h2>
+<div class="flex w-10 items-center justify-end">
+<span class="material-symbols-outlined">info</span>
+</div>
+</div>
+</div>
+<main class="max-w-md mx-auto pb-32">
+<!-- Trip Summary Header -->
+<div class="p-4">
+<div class="flex flex-col items-stretch justify-start rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] bg-white dark:bg-[#2d2c14] overflow-hidden border border-[#e9e8ce] dark:border-[#3a391a]">
+<div class="w-full bg-center bg-no-repeat aspect-[21/9] bg-cover" data-alt="Blurred close up of a grocery receipt with highlighted numbers" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB2KXtQkkr7LY28obLobV1AGgP9yomTY6Kj_YhtLTvZsL4V6X0w5sz7upH2xDcg-Mdx_doeDcU3MSwZmTh8D6FOUuTQhCIwFg5n_39ZPBONx5kct8MB0gzblQWQLRdDxyGISqXJpp1BdJ60wTHcn-t9xzTy_tztsOm_sZ6nd2nbPFCl4_CRlz0iPDV2-xmunN_1OPVvFdb3IwmwuiOADcwVWxdHOl6WMze2wyGiOTHoYiBYMAA0OfOm461ZbUdHBtU3e1F3ysLYjkFD");'>
+</div>
+<div class="flex w-full flex-col gap-1 p-4">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-[#9e9d47] text-xs font-bold uppercase tracking-wider">AI Parsed Receipt</p>
+<p class="text-xl font-bold">Costco Wholesale</p>
+</div>
+<span class="bg-primary/20 text-[#1c1c0d] dark:text-primary px-3 py-1 rounded-full text-xs font-bold">VERIFIED</span>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="material-symbols-outlined text-sm text-[#9e9d47]">calendar_today</span>
+<p class="text-[#9e9d47] text-sm">Aug 24, 2023 • Issaquah Warehouse</p>
+</div>
+</div>
+</div>
+</div>
+<!-- High Level Stats -->
+<div class="flex gap-4 px-4">
+<div class="flex-1 flex flex-col gap-1 rounded-2xl p-4 bg-white dark:bg-[#2d2c14] border border-[#e9e8ce] dark:border-[#3a391a]">
+<p class="text-[#9e9d47] text-xs font-semibold uppercase">Total Register</p>
+<p class="text-2xl font-bold tracking-tight">$432.50</p>
+</div>
+<div class="flex-1 flex flex-col gap-1 rounded-2xl p-4 bg-white dark:bg-[#2d2c14] border border-[#e9e8ce] dark:border-[#3a391a]">
+<p class="text-[#9e9d47] text-xs font-semibold uppercase">Items Found</p>
+<p class="text-2xl font-bold tracking-tight">18 <span class="text-sm font-normal text-[#9e9d47]">/ 20</span></p>
+</div>
+</div>
+<!-- Section: Customer Splits -->
+<div class="px-4 pt-8 pb-2">
+<div class="flex justify-between items-end">
+<h2 class="text-xl font-bold tracking-tight">Customer Splits</h2>
+<button class="text-sm font-bold text-[#9e9d47] flex items-center gap-1">
+                    Review All <span class="material-symbols-outlined text-xs">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Customer List -->
+<div class="flex flex-col gap-3 px-4">
+<!-- Customer 1 -->
+<div class="flex flex-col bg-white dark:bg-[#2d2c14] p-4 rounded-2xl border border-[#e9e8ce] dark:border-[#3a391a]">
+<div class="flex gap-4 justify-between mb-3">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-primary/30" data-alt="Portrait of Alice Chen" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCJO-q3g8XtFjUKBKONo9oiYnBiR5oqFolDPbrpIiQc3DtknNiHbCQVxpYmgja6Wpo-lNAaAyqnjvLPStW5gvR70q3iB8tnG7p5kjNyBZrkvVAbiOLiCOW2thoWkvgWW6rX7p4IfB6qYQnmeHOSABmDSTn1Mf06dQ8e7wz47b9i449mbcguZguajRxwyqir0QXWSMmodFiN2Tpr-VR7ZwT2eLERgGRlBDdkOJXIc-FtWXxldQd3XfIQRmp2HdxaRds1T7O9qto-v6Z3");'></div>
+<div>
+<p class="font-bold">Alice Chen</p>
+<p class="text-[#9e9d47] text-xs">6 items purchased</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-lg font-bold text-[#1c1c0d] dark:text-white">$137.00</p>
+<span class="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full font-bold">READY</span>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-3 border-t border-[#f0efdb] dark:border-[#3a391a]">
+<div class="text-center">
+<p class="text-[10px] text-[#9e9d47] font-semibold uppercase">Base</p>
+<p class="text-sm font-bold">$120.00</p>
+</div>
+<div class="text-center border-x border-[#f0efdb] dark:border-[#3a391a]">
+<p class="text-[10px] text-[#9e9d47] font-semibold uppercase">Fee</p>
+<p class="text-sm font-bold">$12.00</p>
+</div>
+<div class="text-center">
+<p class="text-[10px] text-[#9e9d47] font-semibold uppercase">Gas Share</p>
+<p class="text-sm font-bold">$5.00</p>
+</div>
+</div>
+</div>
+<!-- Customer 2 -->
+<div class="flex flex-col bg-white dark:bg-[#2d2c14] p-4 rounded-2xl border border-[#e9e8ce] dark:border-[#3a391a]">
+<div class="flex gap-4 justify-between mb-3">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-primary/30" data-alt="Portrait of Marcus Wright" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD5MnuLEVNgfd_XnjtPhr4UMLIEUizpS1kFIk4_r8-jdvEBIOK5cZrCqb3D3wDZtiQ875D22IrYMJJuR1iEEEEvfPRCZ_fwFYyN0zp3JvmfwxtPSqYthsSRqW-CIO0N4TZ_U6FSLx3AUEzmvNaXYxfCBxZlvjt9aStf4mwB5TJuX5ecOooCmvw3TAOx3G8GWQJ0gZ_HV5Hk5ayVq3DLr2Iv4miEkvTRVwk6eME3ZU5_e8a9GN4nkahAC_3j4MgO5pm1rS2r5PMx8JCB");'></div>
+<div>
+<p class="font-bold">Marcus Wright</p>
+<p class="text-[#9e9d47] text-xs">8 items purchased</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-lg font-bold text-[#1c1c0d] dark:text-white">$215.50</p>
+<span class="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full font-bold">READY</span>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-3 border-t border-[#f0efdb] dark:border-[#3a391a]">
+<div class="text-center">
+<p class="text-[10px] text-[#9e9d47] font-semibold uppercase">Base</p>
+<p class="text-sm font-bold">$190.00</p>
+</div>
+<div class="text-center border-x border-[#f0efdb] dark:border-[#3a391a]">
+<p class="text-[10px] text-[#9e9d47] font-semibold uppercase">Fee</p>
+<p class="text-sm font-bold">$19.00</p>
+</div>
+<div class="text-center">
+<p class="text-[10px] text-[#9e9d47] font-semibold uppercase">Gas Share</p>
+<p class="text-sm font-bold">$6.50</p>
+</div>
+</div>
+</div>
+<!-- Customer 3 -->
+<div class="flex flex-col bg-white dark:bg-[#2d2c14] p-4 rounded-2xl border border-[#e9e8ce] dark:border-[#3a391a]">
+<div class="flex gap-4 justify-between mb-3">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-primary/30" data-alt="Portrait of Sarah Jenkins" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAeXC1AKNWSvjFuxCyVIKqXVLk1Z8qEANp4m-Wc3FR4PONnljgEVBLUGWtnhUmpOG9_0I4vkq2S6A-fT49s9MR-VQYSx4CZ7zTaasLN5EDKfFSTm066RDZjs8K9gBlnuylWGg1AtxqTsp1H9RMTedRx9HO5PU628G99aV0kZYVuSIdz07VDlhbrW7-fPOjerfpA39-JJxKODwdPWGHF4CSCNmRVLdmGGZUixv4YxxBjvarZ7TqLC-2rYehQ8VuITupSGvA_AE35tKyR");'></div>
+<div>
+<p class="font-bold">Sarah Jenkins</p>
+<p class="text-[#9e9d47] text-xs">4 items purchased</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-lg font-bold text-[#1c1c0d] dark:text-white">$80.00</p>
+<span class="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full font-bold">READY</span>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-3 border-t border-[#f0efdb] dark:border-[#3a391a]">
+<div class="text-center">
+<p class="text-[10px] text-[#9e9d47] font-semibold uppercase">Base</p>
+<p class="text-sm font-bold">$68.00</p>
+</div>
+<div class="text-center border-x border-[#f0efdb] dark:border-[#3a391a]">
+<p class="text-[10px] text-[#9e9d47] font-semibold uppercase">Fee</p>
+<p class="text-sm font-bold">$8.50</p>
+</div>
+<div class="text-center">
+<p class="text-[10px] text-[#9e9d47] font-semibold uppercase">Gas Share</p>
+<p class="text-sm font-bold">$3.50</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Merchant Profit Analysis -->
+<div class="px-4 mt-8">
+<div class="bg-[#2d2c14] dark:bg-black p-6 rounded-3xl text-white overflow-hidden relative">
+<!-- Decorative element -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+<div class="flex justify-between items-start relative z-10">
+<div>
+<p class="text-primary text-xs font-bold uppercase tracking-widest mb-1">Your Trip Earnings</p>
+<h3 class="text-3xl font-bold tracking-tighter">Net Profit</h3>
+</div>
+<div class="text-right">
+<p class="text-4xl font-bold text-primary tracking-tighter">$39.50</p>
+<p class="text-[10px] opacity-60">Calculated after gas share</p>
+</div>
+</div>
+<div class="mt-6 space-y-2 relative z-10">
+<div class="flex justify-between text-sm">
+<span class="opacity-70">Gross Shopping Fees</span>
+<span class="font-bold">$39.50</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="opacity-70">Gas Reimbursement</span>
+<span class="font-bold">$15.00</span>
+</div>
+<div class="flex justify-between text-sm text-red-400">
+<span class="opacity-70">Est. Fuel &amp; Platform Expense</span>
+<span class="font-bold">-$15.00</span>
+</div>
+<div class="pt-2 border-t border-white/10 flex justify-between items-center">
+<span class="text-xs italic opacity-50">AI Logic: Shared gas cost matches estimated usage.</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Fixed Bottom Action Area -->
+<div class="fixed bottom-0 left-0 right-0 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-lg border-t border-[#e9e8ce] dark:border-[#3a391a] p-4 pb-8 z-50">
+<div class="max-w-md mx-auto">
+<button class="w-full bg-primary hover:bg-[#e6e205] text-[#1c1c0d] font-bold h-16 rounded-full flex items-center justify-center gap-3 shadow-lg transition-transform active:scale-95">
+<span class="material-symbols-outlined font-bold">send_money</span>
+<span class="text-lg">Send Payment Requests</span>
+</button>
+<p class="text-center text-[10px] text-[#9e9d47] mt-3 font-medium uppercase tracking-widest">3 Customers • Total $432.50 to collect</p>
+</div>
+</div>
+</body></html>

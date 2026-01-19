@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BOBBuy 高级利润核算与分账系统</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0f6c61",
+                        "background-light": "#f9fafb",
+                        "background-dark": "#14181f",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "Noto Sans SC", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Manrope', 'Noto Sans SC', sans-serif;
+        }
+        .bento-card {
+            @apply bg-white dark:bg-background-dark border border-gray-100 dark:border-gray-800 shadow-sm rounded-xl overflow-hidden transition-all;
+        }
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 min-h-screen">
+<div class="flex flex-col h-screen overflow-hidden">
+<!-- Top Navigation -->
+<header class="h-16 flex items-center justify-between px-8 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark z-30">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-lg">account_balance_wallet</span>
+</div>
+<h1 class="text-lg font-bold tracking-tight text-primary">BOBBuy <span class="text-gray-500 font-medium">Finance</span></h1>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-sm font-semibold text-primary border-b-2 border-primary pb-5 pt-5" href="#">概览</a>
+<a class="text-sm font-medium text-gray-500 hover:text-primary transition-colors" href="#">费用详情</a>
+<a class="text-sm font-medium text-gray-500 hover:text-primary transition-colors" href="#">分账中心</a>
+<a class="text-sm font-medium text-gray-500 hover:text-primary transition-colors" href="#">报表导出</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-gray-400 text-sm">search</span>
+<input class="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-none rounded-full text-sm w-64 focus:ring-2 focus:ring-primary/20" placeholder="搜索订单或客户..." type="text"/>
+</div>
+<button class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-gray-600 dark:text-gray-300">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary/20">
+<img class="w-full h-full object-cover" data-alt="User profile avatar circle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMfv8esrAfMrdiE8T29q1qNK_khtsSavP-o1HJQ4VUM6Ahmep0EWzlA3gyMLxx0E-21KnISqQq9RziBRavD6Jh2ILdwNv_utf4OP3uv2Hi-hb1nYXQftTwu1bhHKhFCvObT0jY_r8g6qg6w-Mae1K63pqxpyJsnakyPc6kQQr5Jhdgo04qQf5VwGt9BJheNn-wMpMTlyD932Uxk4uz-dtBfuJAF9b_0r4srjTdOLigQx3M-Hud9qKXooaCDWU58OnEpqox3_eEjPI"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark overflow-y-auto hidden lg:block">
+<div class="p-6">
+<p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">当前行程</p>
+<div class="space-y-1">
+<div class="p-3 bg-primary/10 rounded-lg flex items-center justify-between group cursor-pointer border border-primary/20">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">flight_takeoff</span>
+<span class="text-sm font-semibold text-primary">JP-TOKYO-MAR24</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+</div>
+<div class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex items-center gap-3 cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-gray-400">history</span>
+<span class="text-sm text-gray-600 dark:text-gray-400">FR-PARIS-FEB24</span>
+</div>
+</div>
+<p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-10 mb-4">财务工具</p>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span> 佣金核算
+                        </a>
+<a class="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">receipt_long</span> 支出流水
+                        </a>
+<a class="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">group</span> 客户余额
+                        </a>
+<a class="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span> 汇率设置
+                        </a>
+</nav>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-8">
+<div class="max-w-7xl mx-auto space-y-8">
+<!-- Header Stats Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bento-card p-6 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-4">
+<span class="text-xs font-bold text-gray-400 uppercase">总佣金收入</span>
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+</div>
+</div>
+<div>
+<h3 class="text-3xl font-bold tabular-nums">¥45,280.00</h3>
+<p class="text-xs text-green-600 mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">arrow_upward</span> 比上月增长 12.5%
+                                </p>
+</div>
+</div>
+<div class="bento-card p-6 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-4">
+<span class="text-xs font-bold text-gray-400 uppercase">运营支出</span>
+<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+<span class="material-symbols-outlined text-sm">local_gas_station</span>
+</div>
+</div>
+<div>
+<h3 class="text-3xl font-bold tabular-nums">¥3,420.00</h3>
+<p class="text-xs text-red-600 mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">arrow_downward</span> 支出控制在 8% 以内
+                                </p>
+</div>
+</div>
+<div class="bento-card p-6 bg-primary text-white border-none">
+<div class="flex items-center justify-between mb-4 text-white/70">
+<span class="text-xs font-bold uppercase">预计净利润</span>
+<span class="material-symbols-outlined text-sm">stars</span>
+</div>
+<div>
+<h3 class="text-3xl font-bold tabular-nums">¥41,860.00</h3>
+<p class="text-xs text-white/80 mt-2">扣除：油费、路费、停车费</p>
+</div>
+</div>
+<div class="bento-card p-6 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-4">
+<span class="text-xs font-bold text-gray-400 uppercase">待结算总额</span>
+<div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+<span class="material-symbols-outlined text-sm">pending_actions</span>
+</div>
+</div>
+<div>
+<h3 class="text-3xl font-bold tabular-nums">¥12,850.00</h3>
+<p class="text-xs text-gray-500 mt-2">涉及 8 位未结清客户</p>
+</div>
+</div>
+</div>
+<!-- Middle Section: Input and Summary -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Expense Input -->
+<div class="lg:col-span-1 bento-card p-6">
+<h2 class="text-lg font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">add_circle</span> 快速录入费用
+                            </h2>
+<form class="space-y-4">
+<div>
+<label class="block text-xs font-bold text-gray-400 uppercase mb-2">费用类别</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="py-2 border-2 border-primary bg-primary/5 text-primary rounded-lg text-xs font-bold" type="button">油费</button>
+<button class="py-2 border border-gray-200 text-gray-500 rounded-lg text-xs font-medium hover:border-primary/50" type="button">路费</button>
+<button class="py-2 border border-gray-200 text-gray-500 rounded-lg text-xs font-medium hover:border-primary/50" type="button">停车费</button>
+</div>
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-400 uppercase mb-2">金额 (CNY)</label>
+<input class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 rounded-lg h-12 px-4 focus:ring-primary focus:border-primary" placeholder="0.00" type="number"/>
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-400 uppercase mb-2">备注</label>
+<textarea class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 rounded-lg p-4 focus:ring-primary focus:border-primary" placeholder="输入用途..." rows="2"></textarea>
+</div>
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2" type="submit">
+<span class="material-symbols-outlined text-sm">save</span> 保存记录
+                                </button>
+</form>
+</div>
+<!-- Automatic Calculation & Charts -->
+<div class="lg:col-span-2 bento-card p-6 flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-lg font-bold">利润模型自动核算</h2>
+<div class="flex gap-2">
+<span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-[10px] font-bold text-gray-500">实时计算中</span>
+</div>
+</div>
+<div class="flex-1 flex flex-col justify-center">
+<div class="flex items-end gap-1 mb-8">
+<div class="flex-1 space-y-2">
+<div class="h-4 bg-primary rounded-full" style="width: 100%;"></div>
+<div class="flex justify-between text-[10px] font-bold text-gray-400 uppercase">
+<span>总佣金 (¥45k)</span>
+<span>100%</span>
+</div>
+</div>
+<div class="flex-none w-1 h-8 bg-gray-200 dark:bg-gray-700 mx-2"></div>
+<div class="flex-1 space-y-2">
+<div class="h-4 bg-red-400 rounded-full" style="width: 8%;"></div>
+<div class="flex justify-between text-[10px] font-bold text-gray-400 uppercase">
+<span>支出 (¥3.4k)</span>
+<span>7.5%</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-6 text-center">
+<div>
+<p class="text-xs text-gray-400 font-medium mb-1">毛利率</p>
+<p class="text-xl font-bold text-gray-800 dark:text-gray-100">92.4%</p>
+</div>
+<div>
+<p class="text-xs text-gray-400 font-medium mb-1">平均每单利润</p>
+<p class="text-xl font-bold text-gray-800 dark:text-gray-100">¥186.2</p>
+</div>
+<div>
+<p class="text-xs text-gray-400 font-medium mb-1">投资回报率</p>
+<p class="text-xl font-bold text-primary">1,120%</p>
+</div>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-gray-50 dark:border-gray-800">
+<div class="flex items-center justify-between text-sm">
+<span class="text-gray-500">汇率基准: 1 JPY = 0.048 CNY</span>
+<button class="text-primary font-bold hover:underline flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">refresh</span> 刷新汇率
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Customer Settlement Table -->
+<div class="bento-card overflow-hidden">
+<div class="p-6 border-b border-gray-50 dark:border-gray-800 flex flex-wrap items-center justify-between gap-4">
+<div>
+<h2 class="text-lg font-bold">客户结算明细 (多平台)</h2>
+<p class="text-xs text-gray-400 font-medium">管理预付、实支与结转余额</p>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">filter_list</span> 筛选状态
+                                </button>
+<button class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-sm">send</span> 一键发送账单
+                                </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-gray-50 dark:bg-gray-800/50">
+<tr>
+<th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase">客户名称 / 平台</th>
+<th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase">预付金额 (Pre-paid)</th>
+<th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase">实际支出 (Actual)</th>
+<th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase">应补 / 结转</th>
+<th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase text-right">快捷链接</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-50 dark:divide-gray-800">
+<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-[10px] font-bold">W</div>
+<div>
+<p class="text-sm font-bold">张小凡</p>
+<p class="text-[10px] text-gray-400 uppercase">WeChat Platform</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm font-semibold tabular-nums">¥2,000.00</td>
+<td class="px-6 py-4 text-sm font-semibold tabular-nums text-gray-600 dark:text-gray-400">¥1,850.50</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-[10px] font-bold">结转 ¥149.50</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-green-600 hover:bg-green-50" title="WeChat Pay Link">
+<span class="material-symbols-outlined text-sm">qr_code_2</span>
+</button>
+<button class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50" title="Copy Link">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-bold">FB</div>
+<div>
+<p class="text-sm font-bold">Chen Lin</p>
+<p class="text-[10px] text-gray-400 uppercase">Facebook Messenger</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm font-semibold tabular-nums">¥5,000.00</td>
+<td class="px-6 py-4 text-sm font-semibold tabular-nums text-gray-600 dark:text-gray-400">¥5,420.00</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-red-100 text-red-700 rounded text-[10px] font-bold">待补 ¥420.00</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-blue-600 hover:bg-blue-50" title="FB Messenger Link">
+<span class="material-symbols-outlined text-sm">link</span>
+</button>
+<button class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50" title="Copy Link">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-[10px] font-bold">L</div>
+<div>
+<p class="text-sm font-bold">Sato Kenji</p>
+<p class="text-[10px] text-gray-400 uppercase">LINE Platform</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm font-semibold tabular-nums">¥10,000.00</td>
+<td class="px-6 py-4 text-sm font-semibold tabular-nums text-gray-600 dark:text-gray-400">¥8,200.00</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-[10px] font-bold">结转 ¥1,800.00</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-primary hover:bg-primary/5" title="Line Pay Link">
+<span class="material-symbols-outlined text-sm">share</span>
+</button>
+<button class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50" title="Copy Link">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Payment Link Generator Banner -->
+<div class="bg-gradient-to-r from-primary to-teal-800 rounded-xl p-8 text-white relative overflow-hidden group">
+<div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+<div class="max-w-xl">
+<h2 class="text-2xl font-bold mb-2">多平台全渠道结算生成器</h2>
+<p class="text-white/80 text-sm">一键生成包含所有明细的专属结算链接。支持 Line, WeChat, WhatsApp 及 Facebook Messenger。自动识别汇率差并包含运费预估。</p>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-3 bg-white text-primary font-bold rounded-lg hover:shadow-xl transition-all active:scale-95">
+                                    批量生成支付链接
+                                </button>
+<button class="px-6 py-3 bg-white/20 border border-white/30 backdrop-blur-md text-white font-bold rounded-lg hover:bg-white/30 transition-all">
+                                    导出 PDF 报告
+                                </button>
+</div>
+</div>
+<!-- Abstract Design Element -->
+<div class="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all"></div>
+<div class="absolute -left-10 -bottom-10 w-48 h-48 bg-teal-400/20 rounded-full blur-2xl"></div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

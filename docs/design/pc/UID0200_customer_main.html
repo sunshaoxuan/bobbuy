@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BOBBuy 宝宝败 - 发现行程与商场</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1f7a4d",
+                        "accent-coral": "#CC684C",
+                        "background-light": "#fafafa",
+                        "background-dark": "#17191c",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-[#2E3238] dark:text-gray-200 transition-colors duration-200">
+<div class="layout-container flex flex-col min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
+<div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-8">
+<!-- Logo & Brand -->
+<div class="flex items-center gap-3 shrink-0">
+<div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white">
+<span class="material-symbols-outlined">shopping_basket</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-xl font-bold leading-none tracking-tight text-primary">BOBBuy</h1>
+<span class="text-[10px] font-bold tracking-widest uppercase opacity-60">宝宝败代理</span>
+</div>
+</div>
+<!-- Search Bar - Integrated in Nav -->
+<div class="flex-1 max-w-2xl">
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-gray-400 group-focus-within:text-primary transition-colors">search</span>
+</div>
+<input class="block w-full pl-11 pr-4 py-2.5 bg-gray-100 dark:bg-gray-800 border-transparent focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-gray-700 focus:border-primary rounded-xl text-sm transition-all" placeholder="搜索商品、Costco仓库或目的地城市..." type="text"/>
+</div>
+</div>
+<!-- Nav Links & Profile -->
+<div class="flex items-center gap-6 shrink-0">
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-sm font-semibold text-primary" href="#">发现行程</a>
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">我的订单</a>
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">仓库分布</a>
+</nav>
+<div class="h-6 w-[1px] bg-gray-200 dark:bg-gray-700"></div>
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-cover bg-center border-2 border-white dark:border-gray-700 shadow-sm" data-alt="User profile avatar of a smiling man" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAgeImxSSkamLeV3kd7LsQxq9YmOOX7MfgbpE62-W2EfZI-7Px-jyifMCuX5wSJE5YusHrbZUBHxwT__uRdyD1oQCjjzbhhNacFzz9fl_GLOMr2_C9PMaGO44cs8FuVUdmSzlr9LSKv-ItXE0AoS8lx6dx344SCLPtOD3bv7yPMeVpC-AhyIFNPf9bMXiIYGA4HVN-IroqxD1u8gTcAk-cZT-MOG9LuNieh7zgcNiKXza5v19aehi2zxa6NxrunGq0gGpPK2RYfbNs')">
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+<!-- Hero Header -->
+<div class="mb-8">
+<h2 class="text-3xl font-bold tracking-tight mb-2">发现全球代购行程</h2>
+<p class="text-gray-500 dark:text-gray-400">在您附近的 Costco 仓库寻找可靠的宝宝达人，开启便捷的全球购物体验。</p>
+</div>
+<!-- Filters & Chips -->
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+<div class="flex flex-wrap gap-2">
+<button class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium shadow-sm shadow-primary/20">
+<span class="material-symbols-outlined text-sm">location_on</span>
+<span>全部地区</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary rounded-full text-sm font-medium transition-colors">
+<span>西雅图 (Seattle)</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary rounded-full text-sm font-medium transition-colors">
+<span>东京 (Tokyo)</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary rounded-full text-sm font-medium transition-colors">
+<span>首尔 (Seoul)</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary rounded-full text-sm font-medium transition-colors">
+<span>温哥华 (Vancouver)</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-sm text-gray-400">排序:</span>
+<select class="bg-transparent border-none text-sm font-semibold focus:ring-0 cursor-pointer">
+<option>最新出发</option>
+<option>容量优先</option>
+<option>高分达人</option>
+</select>
+</div>
+</div>
+<!-- Trip Grid (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Trip Card 1 -->
+<div class="group flex flex-col bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300">
+<div class="relative h-48 w-full bg-cover bg-center" data-alt="Interior of a large Costco warehouse showing aisles" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAP8fRUzkDroAzrrBkI_0DkM51n58hkcwZxrS4XlioL6fIG7yyIuLq99vRHezfgcU1QfHW7DY7TqfPiPWBXSSYLxc0bEqQbJ7tbXnF84EWzmn5F7DKe1h-sfy246da3fcTLy94YtxQgNNU6xmzv4N3Tafnv0auICVMkhZF9rfBEfY7funqwH9TUKiEfIrtdho2zKRoumRX63Zl4v151i9CDuh7c0920s9ljFkQPmxUEiUwZqhSQLp7LG6yjpvsrTJRnYCdOR_5yTbE')">
+<div class="absolute top-3 left-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+<span class="material-symbols-outlined text-primary text-base">verified</span>
+<span class="text-xs font-bold uppercase">已验证达人</span>
+</div>
+<div class="absolute bottom-3 right-3 flex -space-x-2">
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-cover" data-alt="User avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDqeoOlI7lTu5SzR05Pjcv78-31q512Id6N9l6sfsatZUTpP926b6xMOe9AnBoaepW3TC72BQfLponR8DxTNX43nJBKzCbipG_m6Z2nAfCAgvW_-WV38vM6Nk_9KG51sUW9C5V-j410ZIFrsWsj7tmRbbzib5ntpLpfiE9i7jwzpvq0YuJOdBjEFDJ__cVWDG7fNvylxlOIpWvT7KdEcrUUkN0Sp0jadhH4r0yP2aoDzAx8d3ByxgoFcoH0hwcuDMcb4lvR-2F_geo')"></div>
+</div>
+</div>
+<div class="p-5 flex flex-col gap-4">
+<div>
+<div class="flex items-center justify-between mb-1">
+<h3 class="font-bold text-lg">Costco Issaquah</h3>
+<span class="text-xs font-bold text-primary">西雅图, WA</span>
+</div>
+<div class="flex items-center gap-1 text-sm text-gray-500">
+<span class="material-symbols-outlined text-sm">calendar_month</span>
+<span>出发日期: 2023-11-25</span>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-bold">
+<span class="text-gray-400 uppercase tracking-wider">当前容量</span>
+<span class="text-accent-coral">12/20 KG</span>
+</div>
+<div class="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 60%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mt-2 pt-4 border-t border-gray-50 dark:border-gray-700">
+<div class="flex flex-col">
+<span class="text-[10px] text-gray-400 uppercase font-bold tracking-tight">宝宝达人</span>
+<span class="text-sm font-semibold">Alex Wong</span>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                                查看详情
+                            </button>
+</div>
+</div>
+</div>
+<!-- Trip Card 2 -->
+<div class="group flex flex-col bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300">
+<div class="relative h-48 w-full bg-cover bg-center" data-alt="Costco parking lot with busy shoppers" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB3I_IRShicnvMdMOl_dVPwlXBLxzbztU5A8oV1oalS4aySiWRCUlxfuy6KeEOaYHS0wIQqEUhYMc7Fx5fH8p8uwLdQ2YiCKyegTYrIL6lgWlRcjxvhsJvUeen12dvH3kViXxz0j8eAJjgCfvoRm5gJuy2cVkkov06M7lre1rpwUr-RaGfHhnKEZLrw3JU93tF-Ackg01Z3ck96ojSBoeKWynWLSM8qUH0regxGk3iVy7ndSqncJKbw2ust4VUdq6PJPuyWp4QpJDg')">
+<div class="absolute top-3 left-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+<span class="material-symbols-outlined text-primary text-base">local_shipping</span>
+<span class="text-xs font-bold uppercase">极速拼团</span>
+</div>
+<div class="absolute bottom-3 right-3">
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-cover" data-alt="User avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAJ-77p07XHshEWgy09Vh46_V-Q1vqQL871l-ZCuInOKwlyHZzNzfR3KjzG30XRkTJbBCGTozNWLEH_LYOlOyu0mZA11BEfDdIrUVFfoFkKUiRn8AdRX3Ifhjk0inH-NyK3075K4ldhRX_8IakNHUrpI4rIBJtNRVnF5BBK1BhpmEE0etGxgLNaE2P5f-MjRzCOtDRPEs3NomB26tye0-_7QtsL06Vbcu6l2gts-yvecC-5sCH4kv0Q9TWFPWjIT1vUzBlriZAyXVA')"></div>
+</div>
+</div>
+<div class="p-5 flex flex-col gap-4">
+<div>
+<div class="flex items-center justify-between mb-1">
+<h3 class="font-bold text-lg">Costco Tokyo Bay</h3>
+<span class="text-xs font-bold text-primary">东京, 日本</span>
+</div>
+<div class="flex items-center gap-1 text-sm text-gray-500">
+<span class="material-symbols-outlined text-sm">calendar_month</span>
+<span>出发日期: 2023-11-26</span>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-bold">
+<span class="text-gray-400 uppercase tracking-wider">当前容量</span>
+<span class="text-accent-coral">18/25 KG</span>
+</div>
+<div class="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 72%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mt-2 pt-4 border-t border-gray-50 dark:border-gray-700">
+<div class="flex flex-col">
+<span class="text-[10px] text-gray-400 uppercase font-bold tracking-tight">宝宝达人</span>
+<span class="text-sm font-semibold">Sarah Lee</span>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                                查看详情
+                            </button>
+</div>
+</div>
+</div>
+<!-- Trip Card 3 -->
+<div class="group flex flex-col bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300">
+<div class="relative h-48 w-full bg-cover bg-center" data-alt="Costco exterior facade with clear skies" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBDXteDfxYpnYNlCKYRD9VxJewdAS1P1D3qXDdis_e29FhtKtCxuEY9oqlmUaYOOzejqLfUtPNoA33LpDJMewrGuLQvzK_CTXiR5m2NRIeNEAi27BrT4urVtd-AVo0oIeTPkvFuw77ZYlGYsWhEyPZd-gGCmn9VAE3c8mN5cDYV1HIvMdz8K7gDzuCw3RRBTvZ9xIuRH-l7Rsphd0tETss70_CCgdvpewrdfUu6rtqogorLGMalXZGgBhWv2VVG57xAFf_LCf-7orI')">
+<div class="absolute top-3 left-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+<span class="material-symbols-outlined text-primary text-base">star</span>
+<span class="text-xs font-bold uppercase">金牌达人</span>
+</div>
+<div class="absolute bottom-3 right-3">
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-cover" data-alt="User avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAdWwpz_iUsoNJRbdT1Y8Z_t-FQoC9z-TYn-tEVhru1apCph4k9vHQ2RfT30cjBrxtje6QyfXc6Wr4F8wa_aLuQKLVtgPc2MSwrbwSSY220PoLIifSbOFelkAxrx_iVAFX-4N779dVrqhrf0abZCdAmNf7I3N9KnIzlpXyYQqDAa-B6O2vWpfk17yuETKY8w7Zuw0hc8qn0gIuJnm4aleAZkO42bcryLG_vqnuo4P-o_QXuFNLbX1X5Kza9t6bTSrhYGe5Rhy0dWCM')"></div>
+</div>
+</div>
+<div class="p-5 flex flex-col gap-4">
+<div>
+<div class="flex items-center justify-between mb-1">
+<h3 class="font-bold text-lg">Costco Seattle</h3>
+<span class="text-xs font-bold text-primary">西雅图, WA</span>
+</div>
+<div class="flex items-center gap-1 text-sm text-gray-500">
+<span class="material-symbols-outlined text-sm">calendar_month</span>
+<span>出发日期: 2023-11-28</span>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-bold">
+<span class="text-gray-400 uppercase tracking-wider">当前容量</span>
+<span class="text-accent-coral">5/30 KG</span>
+</div>
+<div class="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 16%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mt-2 pt-4 border-t border-gray-50 dark:border-gray-700">
+<div class="flex flex-col">
+<span class="text-[10px] text-gray-400 uppercase font-bold tracking-tight">宝宝达人</span>
+<span class="text-sm font-semibold">Kevin Jiang</span>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                                查看详情
+                            </button>
+</div>
+</div>
+</div>
+<!-- Trip Card 4 -->
+<div class="group flex flex-col bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300">
+<div class="relative h-48 w-full bg-cover bg-center" data-alt="Modern retail store environment" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBzUpc5zM4Ypk8tQQYqkGzft3l1HadtP2-0uSykM6W0jXJKC4ie5jLEHxU3l40P_rg8XYCDW3ykGf3LIReG3NSr639vY2eDDb7CfDQjuztTi9VO5Lc7feHymIhOJIf6VeA5_UfV_BRe_VlRDtJtWINHC_8_e-NDDKXJS1BH8Qq1XWecmLsxA_uKsD2RWbnYxA-bi3S3zxyI4948AfiSRv1FXJganuwTXvHNkj19mhtyDUEsOPajT-uM4GMToE4BcZwZYs8oPGtI19Y')">
+<div class="absolute bottom-3 right-3">
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-cover" data-alt="User avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC0PiONQghax45MD2x3qrbg2tIYBbG1zTUbwBMkTDEsO1P0s7-Axtz7PINxDFOUSNbzjhL1Y38IOtB2jwXEUMi5pZNZpndy2dZpeZs1DayG4ZLr7uoyNKo2NnEwdOITa9uKZLKmHlkBa1VG6d0eiL7i-57IBpsdaaDhmT-dX737LwhAMdDVHwuYE8UDkYhDmzJTPndtPUTnQ-Ix5-7J6t5GM9N7XQTwDefiavCLgYVAcaYwCvsQIoTIB_tfWi2jxEqrx3bwpzNxKHs')"></div>
+</div>
+</div>
+<div class="p-5 flex flex-col gap-4">
+<div>
+<div class="flex items-center justify-between mb-1">
+<h3 class="font-bold text-lg">Costco Richmond</h3>
+<span class="text-xs font-bold text-primary">温哥华, BC</span>
+</div>
+<div class="flex items-center gap-1 text-sm text-gray-500">
+<span class="material-symbols-outlined text-sm">calendar_month</span>
+<span>出发日期: 2023-11-30</span>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-bold">
+<span class="text-gray-400 uppercase tracking-wider">当前容量</span>
+<span class="text-accent-coral text-xs uppercase">即将满员</span>
+</div>
+<div class="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-accent-coral" style="width: 95%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mt-2 pt-4 border-t border-gray-50 dark:border-gray-700">
+<div class="flex flex-col">
+<span class="text-[10px] text-gray-400 uppercase font-bold tracking-tight">宝宝达人</span>
+<span class="text-sm font-semibold">Miya S.</span>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                                查看详情
+                            </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Load More / Empty State Mockup Section -->
+<div class="mt-16 text-center">
+<button class="px-8 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl font-bold hover:shadow-lg transition-all">
+                    加载更多行程
+                </button>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 py-12 mt-12">
+<div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
+<div class="col-span-1 md:col-span-2">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-sm">shopping_basket</span>
+</div>
+<h2 class="text-lg font-bold text-primary leading-none">BOBBuy 宝宝败</h2>
+</div>
+<p class="text-sm text-gray-500 dark:text-gray-400 max-w-xs leading-relaxed">
+                        全球领先的 Costco 拼购及任务委托平台。连接全球购物达人，为您带回心仪商品。
+                    </p>
+</div>
+<div>
+<h4 class="font-bold mb-4 text-sm uppercase tracking-wider">探索</h4>
+<ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
+<li><a class="hover:text-primary transition-colors" href="#">热门目的地</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">达人招募</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">常见问题</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-bold mb-4 text-sm uppercase tracking-wider">联系我们</h4>
+<ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">mail</span>
+                            support@bobbuy.com
+                        </li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">public</span>
+                            微信公众号: BOBBuy官方
+                        </li>
+</ul>
+</div>
+</div>
+<div class="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-gray-50 dark:border-gray-800 text-center">
+<p class="text-xs text-gray-400 font-medium">
+                    © 2023 BOBBuy Global. All rights reserved. 隐私政策 | 服务条款
+                </p>
+</div>
+</footer>
+</div>
+</body></html>

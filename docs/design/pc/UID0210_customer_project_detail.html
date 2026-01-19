@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BOBBuy - 行程详情与商品选购</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1fad7e",
+                        "background-light": "#f9fafa",
+                        "background-dark": "#1a1f23",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', 'Noto Sans SC', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-[#0f1a16] dark:text-white transition-colors duration-200">
+<div class="relative flex min-h-screen flex-col overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-[#e8f2ef] dark:border-gray-800 px-6 py-3">
+<div class="max-w-[1280px] mx-auto flex items-center justify-between gap-8">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<div class="bg-primary text-white p-1.5 rounded-lg">
+<span class="material-symbols-outlined block text-2xl">shopping_basket</span>
+</div>
+<h2 class="text-lg font-extrabold tracking-tight">BOBBuy 宝宝败</h2>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-sm font-semibold text-primary hover:text-primary/80 transition-colors" href="#">首页</a>
+<a class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors" href="#">发现行程</a>
+<a class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors" href="#">代购榜单</a>
+<a class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors" href="#">关于我们</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<div class="relative w-full max-w-xs group hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary">search</span>
+<input class="w-full bg-[#f0f4f3] dark:bg-gray-800 border-none rounded-xl pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 transition-all" placeholder="搜索全球好物..."/>
+</div>
+<button class="relative p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="absolute top-1 right-1 w-4 h-4 bg-primary text-white text-[10px] flex items-center justify-center rounded-full font-bold border-2 border-white dark:border-background-dark">2</span>
+</button>
+<div class="h-10 w-10 rounded-full border-2 border-primary/20 bg-cover bg-center overflow-hidden" data-alt="User profile avatar with a friendly face" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBMhTuf_QS1zIluZSKa3FrBoKK0h2PWrhBpLvA-eB7VNW5w9AlfXO6mlwyB78jJ-C1y6wcNyuDKPa0qQi5BK0_RDN7flGrtLt94yzjK4zf3yOTpH7ANGnise_kABGQZ3T1NkdmsOtm_4Zzk4WznsC_B0xcPph9D4JzwepNLVINwShLrgn1qufDVPXTUAob-0Jaruw9Uj8I39NV64R5VL2BdIVlSzhj-ItVRmBE55hOfShkRd-SGiXlNVOoW-CY2UU18dkUef-vNBPc");'>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-[1280px] mx-auto w-full px-6 py-8">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 mb-6">
+<a class="text-primary text-sm font-medium hover:underline" href="#">所有行程</a>
+<span class="material-symbols-outlined text-sm text-gray-400">chevron_right</span>
+<span class="text-gray-500 dark:text-gray-400 text-sm font-medium">东京 Costco 采购专场</span>
+</div>
+<!-- Page Heading -->
+<div class="flex flex-wrap justify-between items-end gap-4 mb-10">
+<div class="space-y-2">
+<div class="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+                    正在接单中
+                </div>
+<h1 class="text-4xl md:text-5xl font-black tracking-tight leading-tight">东京 Costco 采购专场</h1>
+<div class="flex items-center gap-4 text-gray-600 dark:text-gray-400">
+<div class="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+<span class="material-symbols-outlined text-primary text-lg">person_pin_circle</span>
+<span class="text-sm font-semibold">买手: 小王在日本</span>
+</div>
+<div class="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+<span class="material-symbols-outlined text-primary text-lg">location_on</span>
+<span class="text-sm font-semibold">Tokyo, Japan</span>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 hover:border-primary px-6 py-3 rounded-xl transition-all font-bold">
+<span class="material-symbols-outlined">chat_bubble</span>
+                    联系买手
+                </button>
+<button class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl shadow-lg shadow-primary/20 transition-all font-bold">
+<span class="material-symbols-outlined">add_task</span>
+                    参与行程
+                </button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Sidebar: Itinerary & Stats -->
+<aside class="lg:col-span-3 space-y-8">
+<div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+<h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">schedule</span>
+                        行程时间线
+                    </h3>
+<div class="relative space-y-0">
+<!-- Timeline Item 1 -->
+<div class="flex gap-4 pb-8 relative">
+<div class="absolute left-3 top-6 bottom-0 w-px bg-gray-100 dark:bg-gray-700"></div>
+<div class="relative z-10 size-6 bg-primary text-white rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-xs">event_busy</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-bold">停止接单</span>
+<span class="text-xs text-gray-500 font-medium">2023-10-25</span>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="flex gap-4 pb-8 relative">
+<div class="absolute left-3 top-6 bottom-0 w-px bg-gray-100 dark:bg-gray-700"></div>
+<div class="relative z-10 size-6 bg-primary/20 text-primary rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-xs">storefront</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-bold">现场采买</span>
+<span class="text-xs text-gray-500 font-medium">2023-10-27</span>
+</div>
+</div>
+<!-- Timeline Item 3 -->
+<div class="flex gap-4">
+<div class="relative z-10 size-6 bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-xs">local_shipping</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-bold">预计发货</span>
+<span class="text-xs text-gray-500 font-medium">2023-10-30</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-primary/5 dark:bg-primary/10 rounded-2xl p-6 border border-primary/20">
+<h3 class="font-bold mb-4 text-sm text-primary uppercase tracking-widest">代购规则</h3>
+<ul class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-primary text-base">verified</span>
+<span>汇率：1 JPY = 0.048 CNY (实时)</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-primary text-base">verified</span>
+<span>代购费：商品金额的 10%</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-primary text-base">verified</span>
+<span>物流：拼邮/直邮可选</span>
+</li>
+</ul>
+</div>
+</aside>
+<!-- Main Content: Product Selection -->
+<section class="lg:col-span-9">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-2xl font-bold tracking-tight">爆款推荐 (Hot Picks)</h2>
+<div class="flex items-center gap-2">
+<span class="text-sm text-gray-500">根据您的位置推荐</span>
+<div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+<button class="p-1.5 bg-white dark:bg-gray-700 rounded shadow-sm text-primary">
+<span class="material-symbols-outlined text-lg">grid_view</span>
+</button>
+<button class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+<span class="material-symbols-outlined text-lg">format_list_bulleted</span>
+</button>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+<!-- Product Card 1 -->
+<div class="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all">
+<div class="aspect-[4/5] bg-gray-100 relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Costco Kirkland Vitamin C bottles stacked" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD87xLKaaIJ6eIEUKY40CVYpymY9GKZzKGvPgvI8dqSahN-G7dJKoG40aq2sObSEnasTP9fvz7Zj6Mj43Lh27H57nYqAkvFMVN9td3C_lD6kTPu0NY1480bjDTrOh9vxYRAaxOm1q2BDTf0k8A4l5t_-TYIfwYoZ3O-3rT4Cvcs0Dr_mJoYnG8tx8GJ547tTWGnHkLD0dApXhHwK-rM6tz2q7kZKZXT3ZJbwe155Hyq0EVALvRWzydVbRkFYHpFq-O97OHADAl04Ok"/>
+<div class="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-tighter">必入款</div>
+</div>
+<div class="p-5">
+<h4 class="font-bold text-lg mb-1 truncate">Kirkland 维他命 C</h4>
+<p class="text-sm text-gray-500 mb-4">500片大容量装，抗氧增强免疫</p>
+<div class="flex items-center justify-between">
+<div>
+<span class="text-primary font-black text-xl">¥128</span>
+<span class="text-gray-400 text-xs line-through ml-2">¥158</span>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white p-2 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 transition-transform active:scale-95">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all">
+<div class="aspect-[4/5] bg-gray-100 relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Premium Japanese Matcha tea set from Costco" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTFD2oKkuiANEFh8w4fuIDKDC5u66wvFDkuzLEmeUEL0_j0rRM26MNAhk9qT3gi2zBSbvpQguG79VcS6OQ6VoROIotju5R5dSmd4hCseGjTia-HUwiuBNmGTATQ_SVzPcT4Q141AXNAyEfaTJuRi6fsmtq4phjp7OnfhKgmGraNw2vllEAFXky8T1Th4y1-l7r6bT_SeZJPyleHEQb8KAtC5orYtqb_5nvkgIdrlIra_PodOYilKZI43WsTQHsQZtCkwQdlA5-0fY"/>
+</div>
+<div class="p-5">
+<h4 class="font-bold text-lg mb-1 truncate">伊藤园 抹茶粉</h4>
+<p class="text-sm text-gray-500 mb-4">Costco 限定款，醇厚正宗日本味</p>
+<div class="flex items-center justify-between">
+<div>
+<span class="text-primary font-black text-xl">¥85</span>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white p-2 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 transition-transform active:scale-95">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Custom Item Trigger -->
+<button class="group flex flex-col items-center justify-center bg-transparent rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary/5 transition-all p-8 min-h-[400px]">
+<div class="size-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-4xl">post_add</span>
+</div>
+<h4 class="text-lg font-bold mb-2">添加自定义商品</h4>
+<p class="text-sm text-gray-400 text-center max-w-[180px]">如果您想买的商品不在列表中，请点此上传</p>
+</button>
+<!-- Product Card 3 -->
+<div class="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all">
+<div class="aspect-[4/5] bg-gray-100 relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Clean white skincare product bottles" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuHF14PcdcyWaKll3CNOBO8tD8JWs1EZ4J10uJzqwWtgFCWL1w3lDPzOyx44338Jd4FYA3_7dIkoewg4SSjHbvJBMTNG_dcWB9NdQNJNMWaPv7W9yv4oc7uvtxOkI6srLdy4ABRDwDseP8874mCLudhe-q3iZdaA9bYDLtmaqYT9m3gbgPRra_jzXXLN7Z5nL0YCHcIRlXHDftKPPfscfN7uEjxJcabf9vZPlRDvGS6UsYF355GuZr0SszM3AVTKSFvtqIyGWhvUc"/>
+</div>
+<div class="p-5">
+<h4 class="font-bold text-lg mb-1 truncate">SK-II 神仙水双支装</h4>
+<p class="text-sm text-gray-500 mb-4">免税店/Costco 专供超值规格</p>
+<div class="flex items-center justify-between">
+<div>
+<span class="text-primary font-black text-xl">¥1850</span>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white p-2 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 transition-transform active:scale-95">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 4 -->
+<div class="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all">
+<div class="aspect-[4/5] bg-gray-100 relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Traditional Japanese snacks assortment in Costco packaging" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmJZJLq4T6uzztytQ87y76RFtJUX1tt321VdHMZkZ5u_H_KrW1jLBdx7sWpEnQHRQ3lorVr8jgK2tGseUSpEgBLbha4WfhFt03OvQef-AY77wvfAef87S5dRjYeLisjlVFWHIhVs25B8kLmD4vLhLHIt-flE91YBZUabyfvlkPOI-RfuIY1_GbEzm5gFlK3NID0m6htpCjNGi2Gjv69xvk1UaHAC8cdkLQ3eWitJH60vCeYE-EQetOwYQEjFLkXkxnAZEKPyJ7ui8"/>
+<div class="absolute top-3 left-3 bg-primary text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-tighter">店主推荐</div>
+</div>
+<div class="p-5">
+<h4 class="font-bold text-lg mb-1 truncate">日本限定米果拼盘</h4>
+<p class="text-sm text-gray-500 mb-4">30小包，多种口味一次满足</p>
+<div class="flex items-center justify-between">
+<div>
+<span class="text-primary font-black text-xl">¥69</span>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white p-2 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 transition-transform active:scale-95">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Sticky Shopping Bag & Join Trip CTA -->
+<div class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-4xl z-[100]">
+<div class="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-100 dark:border-gray-800 shadow-2xl rounded-2xl px-8 py-4 flex flex-wrap items-center justify-between gap-6">
+<div class="flex items-center gap-6 overflow-x-auto no-scrollbar py-1">
+<div class="flex -space-x-3">
+<div class="size-10 rounded-full border-2 border-white dark:border-gray-900 bg-cover bg-center shadow-sm" data-alt="Miniature of Kirkland Vitamin C" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAYpwEZ0aT3HdcGnA09tI7nVU653xGaACucOoe2lTxgkMYphlefAJg4h-gKwMJAjq4BWAHZDZGA24RUPkxuRzrMILGYmZNmVYJIuue4BtlidFVLJNkT-MxsAt9woQyePKJMHbeCTZA5fRI64MgoWEtJ1FFrGBZqpPjnr0yAajxAllSfcjB6IdVBqDmUHaDSKvd4gEza6X2-Elu9Zuefd_RzT78j1ItAhyIde14z84Z5HFU6-wwXXtsVIOvq8Rpft0upiN9wQ5Bedxc");'></div>
+<div class="size-10 rounded-full border-2 border-white dark:border-gray-900 bg-cover bg-center shadow-sm" data-alt="Miniature of Matcha Tea" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA_kuPnfmNC3nqYqcFoyPyC8pK1GbnDbAtvWlSOnP7woU8rI9YIfNtjOiZ7gvMoefTyE-N_NBfoLRMCN--NW15sMFb1p-IHnmm5B3PrJOD1WilRyPQrXd2wXMhNXZQsPtt2G0WcYr4qAtDghjmNHWhw37L2rl9kGsTdnn5CqWbkGUU1NsV13HA-lyUdQlaAulgohhmlZW5agD5O6Tyt4yaVbxlsNorfszmCtQnS2a9RaTc64a4l63AjLIVkNs5V2bN1Y9MzF96sfmI");'></div>
+</div>
+<div>
+<p class="text-xs text-gray-500 font-bold uppercase tracking-widest">已选购 2 件商品</p>
+<p class="text-lg font-black text-primary">预计合计: ¥213.00</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-gray-500 dark:text-gray-400 font-bold px-4 py-2 hover:text-gray-700 dark:hover:text-white transition-colors">
+                    清空列表
+                </button>
+<button class="bg-primary hover:bg-primary/90 text-white px-10 py-4 rounded-2xl shadow-xl shadow-primary/30 flex items-center gap-3 transition-all transform hover:-translate-y-1 active:scale-95">
+<span class="font-black text-lg">加入行程并提交请求</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Modal Overlay (Mockup Hidden) -->
+<div class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+<div class="bg-white dark:bg-gray-800 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
+<div class="px-8 py-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+<h3 class="text-xl font-bold">添加自定义请求</h3>
+<button class="material-symbols-outlined text-gray-400">close</button>
+</div>
+<div class="p-8 space-y-6">
+<div class="space-y-2">
+<label class="text-sm font-bold text-gray-600 dark:text-gray-400">商品名称</label>
+<input class="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-4" placeholder="例如：LV新款钱包"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="text-sm font-bold text-gray-600 dark:text-gray-400">预估价格</label>
+<input class="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-4" placeholder="¥ 0.00"/>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-bold text-gray-600 dark:text-gray-400">购买数量</label>
+<input class="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-4" value="1"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-bold text-gray-600 dark:text-gray-400">商品描述/图片链接</label>
+<textarea class="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-4 h-32" placeholder="详细说明型号、颜色等要求..."></textarea>
+</div>
+<button class="w-full bg-primary text-white py-4 rounded-2xl font-black text-lg">保存商品</button>
+</div>
+</div>
+</div>
+</body></html>

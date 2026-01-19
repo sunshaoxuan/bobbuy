@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Customer: Bill &amp; QR Verify</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f9f506",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#23220f",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Spline Sans', sans-serif;
+            @apply bg-background-light dark:bg-background-dark;
+        }
+        .qr-gradient {
+            background: linear-gradient(135deg, #f9f506 0%, #e5e105 100%);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e5e7eb;
+            border-radius: 10px;
+        }.pb-safe {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-[#1c1c0d] dark:text-white transition-colors duration-300">
+<div class="relative flex flex-col h-screen w-full max-w-[430px] mx-auto shadow-2xl bg-background-light dark:bg-background-dark overflow-hidden">
+<div class="flex items-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md p-4 pb-2 justify-between shrink-0 z-10">
+<div class="text-[#1c1c0d] dark:text-white flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-black/5 transition-colors" data-icon="ArrowLeft">
+<span class="material-symbols-outlined">arrow_back_ios_new</span>
+</div>
+<h2 class="text-[#1c1c0d] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Bill &amp; Verification</h2>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<div class="flex flex-col gap-6 px-4 pb-32">
+<div class="flex flex-col items-center gap-2 mt-2">
+<div class="px-4 py-1 bg-primary text-[#1c1c0d] rounded-full text-xs font-bold uppercase tracking-wider">
+                    Awaiting Payment
+                </div>
+<h4 class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-bold leading-normal tracking-[0.015em] text-center">Costco Shopping Summary</h4>
+</div>
+<div class="bg-white dark:bg-[#2d2c14] rounded-lg shadow-sm overflow-hidden">
+<div class="flex flex-col divide-y divide-gray-100 dark:divide-gray-800">
+<div class="flex items-center gap-4 px-4 min-h-[72px] py-3 justify-between">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-14 border border-gray-100 dark:border-gray-700" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB-qIu-znfAg8ymEirmz30grlO1Tut5lywcZK9SrMeo7V-NkQCtEezRaOYeywNryJaO4uRNKe3ZnNwDqGC5Dr-HjJPZAMZFRwNw1Bk-HGHF_1jzPd-9DSEe66-CRdQo7MRnI7L-PZmWlUVNl_vpaok0Ln2poQwCuaaaSoQCXikc5ms7Vy8y0PGAjLQi3jR6LqKyEYeJamhJlHvLrTj9GGEhyN_duqCHaAc4mJaa1YGMHQhnGOtu_7VW-v2cu_EVyGOxRf6L_T9vucOv");'></div>
+<div class="flex flex-col justify-center">
+<p class="text-[#1c1c0d] dark:text-white text-base font-medium leading-normal line-clamp-1">Organic Bananas</p>
+<p class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-normal leading-normal">2 x $2.99</p>
+</div>
+</div>
+<div class="shrink-0"><p class="text-[#1c1c0d] dark:text-white text-base font-semibold leading-normal">$5.98</p></div>
+</div>
+<div class="flex items-center gap-4 px-4 min-h-[72px] py-3 justify-between">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-14 border border-gray-100 dark:border-gray-700" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBBVmbnmg_RWvkh98VBe8PPMri7VpXwyCefRh0Ca0PjjjVsUtzSZw8GhC8of1vtZWrs-mPMLX674v36nXn0triacyHEb1Fs56_POSgdbDGWKsrfomJ07musUP2ERWsBCd7T4wlAm-Qt_4TOx-1_LHuE4Wt-nc-dPaXBBix5aeHUbqVdeI2eslfl5-EKL1UwtfLIVrognSkflhHGAP2tjZEaogDObn2eUQRHikC7atAQ8dHZhz0L-7bkhseszCVX8qkLGnTN3dRKL1o6");'></div>
+<div class="flex flex-col justify-center">
+<p class="text-[#1c1c0d] dark:text-white text-base font-medium leading-normal line-clamp-1">Kirkland Paper Towels</p>
+<p class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-normal leading-normal">1 x $19.99</p>
+</div>
+</div>
+<div class="shrink-0"><p class="text-[#1c1c0d] dark:text-white text-base font-semibold leading-normal">$19.99</p></div>
+</div>
+<div class="flex items-center gap-4 px-4 min-h-[72px] py-3 justify-between">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-14 border border-gray-100 dark:border-gray-700" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC6y_MjBg1gwx8L-9XPFlfypcRRp1ryrFF-VPKO1ffH8ywQP2IKHIz77IB16XfxHZKr0AEExQO363Md_ZRhTbVh-f0AhUlWATeRspoYD3xZIidXV9Mqz-cM-dVDcGe7OOxYWSwR4LZi30-cYKMRKpurMioHMxAmlJD7Ugg0dfFJ2RcxIAegIrD8v-uuNNR6D-_WiwPSdw44RGYpxIr2z1y6aZQXWYkYmgl35zqc0DY6ynTjzpgM_wU_Lc94zawP-OLH2NrLD2ReTZkj");'></div>
+<div class="flex flex-col justify-center">
+<p class="text-[#1c1c0d] dark:text-white text-base font-medium leading-normal line-clamp-1">Rotisserie Chicken</p>
+<p class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-normal leading-normal">1 x $4.99</p>
+</div>
+</div>
+<div class="shrink-0"><p class="text-[#1c1c0d] dark:text-white text-base font-semibold leading-normal">$4.99</p></div>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-[#2d2c14] rounded-lg p-5 shadow-sm">
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<p class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-normal">Subtotal</p>
+<p class="text-[#1c1c0d] dark:text-white text-sm font-medium">$30.96</p>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-normal">Service Fee</p>
+<p class="text-[#1c1c0d] dark:text-white text-sm font-medium">$5.00</p>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-normal">Tax</p>
+<p class="text-[#1c1c0d] dark:text-white text-sm font-medium">$2.78</p>
+</div>
+<div class="pt-3 mt-3 border-t border-dashed border-gray-200 dark:border-gray-700 flex justify-between items-center">
+<p class="text-[#1c1c0d] dark:text-white text-lg font-bold">Grand Total</p>
+<p class="text-[#1c1c0d] dark:text-white text-2xl font-black">$38.74</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-[#9e9d47] px-1">Payment Method</h3>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 p-4 bg-white dark:bg-[#2d2c14] border-2 border-primary rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-black dark:text-white">ios</span>
+<span class="font-bold">Apple Pay</span>
+</button>
+<button class="flex items-center justify-center gap-2 p-4 bg-white dark:bg-[#2d2c14] border-2 border-transparent rounded-lg shadow-sm hover:border-gray-200 transition-all">
+<span class="material-symbols-outlined text-gray-500">credit_card</span>
+<span class="font-medium text-gray-600 dark:text-gray-300">Card</span>
+</button>
+</div>
+<button class="w-full bg-primary text-[#1c1c0d] py-5 rounded-full font-bold text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                    Pay Now $38.74
+                    <span class="material-symbols-outlined">bolt</span>
+</button>
+</div>
+<div class="mt-4 p-8 bg-white dark:bg-white rounded-lg flex flex-col items-center gap-6 shadow-xl border border-gray-100 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-2 bg-primary/20 rounded-bl-lg">
+<span class="material-symbols-outlined text-primary scale-75">verified_user</span>
+</div>
+<div class="text-center">
+<h3 class="text-[#1c1c0d] text-lg font-black tracking-tight mb-1">Delivery Verification</h3>
+<p class="text-gray-500 text-xs font-medium max-w-[200px] leading-relaxed">Show this QR to your shopper to confirm you received your items</p>
+</div>
+<div class="relative p-4 bg-white border-[12px] border-primary rounded-lg shadow-inner">
+<div class="size-40 bg-white flex items-center justify-center relative">
+<div class="grid grid-cols-4 gap-1 w-full h-full opacity-90">
+<div class="bg-black rounded-sm"></div><div class="bg-black rounded-sm"></div><div class="bg-transparent"></div><div class="bg-black rounded-sm"></div>
+<div class="bg-black rounded-sm"></div><div class="bg-transparent"></div><div class="bg-black rounded-sm"></div><div class="bg-black rounded-sm"></div>
+<div class="bg-transparent"></div><div class="bg-black rounded-sm"></div><div class="bg-black rounded-sm"></div><div class="bg-transparent"></div>
+<div class="bg-black rounded-sm"></div><div class="bg-black rounded-sm"></div><div class="bg-transparent"></div><div class="bg-black rounded-sm"></div>
+</div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="bg-white p-2 rounded-full shadow-md">
+<span class="material-symbols-outlined text-black font-black">qr_code_2</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full">
+<span class="material-symbols-outlined text-gray-400 text-sm">lock</span>
+<span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Encrypted Verification Code</span>
+</div>
+</div>
+<div class="flex flex-col items-center gap-4 text-center mt-4">
+<div class="flex items-center gap-6 opacity-40 grayscale">
+<span class="material-symbols-outlined">security</span>
+<span class="material-symbols-outlined">payments</span>
+<span class="material-symbols-outlined">support_agent</span>
+</div>
+<p class="text-[11px] text-[#9e9d47] max-w-[280px]">
+                    Your payment is processed securely. BobBuy holds funds until you verify the delivery using the QR code above.
+                </p>
+</div>
+</div>
+</div>
+<div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white/95 dark:bg-[#1c1c0d]/95 backdrop-blur-lg border-t border-gray-100 dark:border-gray-800 shrink-0 z-50">
+<div class="flex items-center justify-between px-6 pt-3 pb-safe">
+<div class="flex flex-col items-center gap-1 group cursor-pointer">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">store</span>
+<span class="text-[10px] font-bold text-gray-400 group-hover:text-primary uppercase tracking-tighter">Mall</span>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-pointer">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">assignment</span>
+<span class="text-[10px] font-bold text-gray-400 group-hover:text-primary uppercase tracking-tighter">My Tasks</span>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-pointer">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">chat_bubble</span>
+<span class="text-[10px] font-bold text-gray-400 group-hover:text-primary uppercase tracking-tighter">Chat</span>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-pointer">
+<span class="material-symbols-outlined text-primary fill-1">account_balance_wallet</span>
+<span class="text-[10px] font-bold text-primary uppercase tracking-tighter">Wallet</span>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-pointer">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">person</span>
+<span class="text-[10px] font-bold text-gray-400 group-hover:text-primary uppercase tracking-tighter">Me</span>
+</div>
+</div>
+<div class="h-6"></div>
+</div>
+</div>
+
+</body></html>

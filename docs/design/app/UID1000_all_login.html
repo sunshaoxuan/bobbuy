@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Refined Native Login - BobBuy</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1b9898",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#122020",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        .map-overlay {
+            background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuDf7Om3EGfAw7AtxhIbQmVJoMoapgvb7q27a9y4hkvp-eIA6bwzrtgazPtOeXnGTjdz9XCUuzxJKWeRtf17aFCZAgK0VLmZ6lW_W7CNi07DbMqwjMog7wdQKbx7BRqM0hbjyyMfOWVBswz3ndbuvhakDiE-DIxaJx2O2SvtsFfUKwFCGvg43mOsft9B-PDC-e_nkPs67uewtXj1oD7dMV6ZFSFt44-Jaly59oIGXndShlTSc1cYm2prRxFqVTNJB9rjs11Ouw3lKDRs);
+            opacity: 0.04
+        }
+        .ios-blur {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px)
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#0f1a1a] dark:text-white transition-colors duration-300">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<div class="absolute inset-0 map-overlay pointer-events-none"></div>
+<div class="relative flex flex-col w-full max-w-[480px] mx-auto px-6 pt-16 pb-10 flex-1">
+<div class="flex flex-col items-center mb-12">
+<div class="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center shadow-xl shadow-primary/25 mb-4">
+<span class="text-white text-3xl font-extrabold tracking-tighter">宝宝</span>
+</div>
+<h1 class="text-3xl font-800 tracking-tight text-center">BobBuy</h1>
+<p class="text-[#539393] font-medium text-sm mt-1 uppercase tracking-[0.15em]">Global Proxy Shopping</p>
+</div>
+<div class="flex flex-col gap-5 mb-10">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-bold px-1 text-[#3a6868] dark:text-[#a0c4c4]">Email or User ID</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#539393] text-xl">person</span>
+<input class="w-full h-15 py-4 pl-12 pr-4 bg-white dark:bg-zinc-800/40 border border-[#d1e5e5] dark:border-zinc-700 rounded-2xl focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all placeholder:text-[#539393]/40" placeholder="e.g. bob@example.com" type="text"/>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between px-1">
+<label class="text-sm font-bold text-[#3a6868] dark:text-[#a0c4c4]">Password</label>
+<button class="text-xs font-bold text-primary">Forgot Password?</button>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#539393] text-xl">lock</span>
+<input class="w-full h-15 py-4 pl-12 pr-12 bg-white dark:bg-zinc-800/40 border border-[#d1e5e5] dark:border-zinc-700 rounded-2xl focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all placeholder:text-[#539393]/40" placeholder="••••••••" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-[#539393]">
+<span class="material-symbols-outlined text-xl">visibility</span>
+</button>
+</div>
+</div>
+<button class="w-full h-16 bg-primary text-white rounded-2xl font-bold text-lg shadow-lg shadow-primary/30 mt-4 transition-all active:scale-[0.98] active:brightness-95">
+                    Login
+                </button>
+</div>
+<div class="flex flex-col items-center gap-6 mb-12">
+<div class="flex items-center gap-4 w-full">
+<div class="h-[1px] flex-1 bg-[#d1e5e5] dark:bg-zinc-800"></div>
+<span class="text-[10px] font-bold text-[#539393] uppercase tracking-[0.2em]">Quick Login</span>
+<div class="h-[1px] flex-1 bg-[#d1e5e5] dark:bg-zinc-800"></div>
+</div>
+<div class="flex items-center justify-center gap-6">
+<button class="flex items-center justify-center w-14 h-14 bg-white dark:bg-zinc-800/50 border border-[#d1e5e5] dark:border-zinc-700 rounded-full transition-all active:scale-90 hover:border-primary/50">
+<span class="material-symbols-outlined text-[#07C160] text-2xl">chat</span>
+</button>
+<button class="flex items-center justify-center w-14 h-14 bg-white dark:bg-zinc-800/50 border border-[#d1e5e5] dark:border-zinc-700 rounded-full transition-all active:scale-90 hover:border-primary/50">
+<span class="material-symbols-outlined text-[#06C755] text-2xl">chat_bubble</span>
+</button>
+<button class="flex items-center justify-center w-14 h-14 bg-white dark:bg-zinc-800/50 border border-[#d1e5e5] dark:border-zinc-700 rounded-full transition-all active:scale-90 hover:border-primary/50">
+<span class="material-symbols-outlined text-[#1877F2] text-2xl">social_leaderboard</span>
+</button>
+</div>
+</div>
+<div class="mt-auto pt-8 border-t border-[#d1e5e5] dark:border-zinc-800">
+<div class="grid grid-cols-2 gap-4">
+<button class="flex flex-col items-center p-4 bg-white/50 dark:bg-zinc-800/20 border border-[#d1e5e5] dark:border-zinc-700 rounded-2xl group transition-all hover:border-primary active:scale-[0.97]">
+<span class="material-symbols-outlined text-primary mb-2 text-2xl group-hover:scale-110 transition-transform">person_add</span>
+<span class="text-[10px] font-bold text-[#539393] mb-0.5 uppercase tracking-wide">New Shopper</span>
+<span class="text-sm font-bold text-[#0f1a1a] dark:text-white">Register User</span>
+</button>
+<button class="flex flex-col items-center p-4 bg-white/50 dark:bg-zinc-800/20 border border-[#d1e5e5] dark:border-zinc-700 rounded-2xl group transition-all hover:border-primary active:scale-[0.97]">
+<span class="material-symbols-outlined text-primary mb-2 text-2xl group-hover:scale-110 transition-transform">storefront</span>
+<span class="text-[10px] font-bold text-[#539393] mb-0.5 uppercase tracking-wide">Business</span>
+<span class="text-sm font-bold text-[#0f1a1a] dark:text-white">Apply Merchant</span>
+</button>
+</div>
+</div>
+<div class="flex justify-center gap-6 mt-8">
+<button class="text-[11px] font-bold text-[#539393] hover:text-primary transition-colors uppercase tracking-widest">Terms</button>
+<div class="w-1 h-1 rounded-full bg-[#d1e5e5] self-center"></div>
+<button class="text-[11px] font-bold text-[#539393] hover:text-primary transition-colors uppercase tracking-widest">Privacy</button>
+</div>
+<div class="h-6"></div>
+</div>
+</div>
+<div class="fixed top-[-10%] right-[-10%] w-72 h-72 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+<div class="fixed bottom-[-5%] left-[-5%] w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+
+</body></html>
