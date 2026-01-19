@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -243,6 +244,8 @@ class BobbuyStoreTest {
     store.updateOrder(created.getId(), created);
     assertThatThrownBy(() -> store.updateOrderStatus(created.getId(), OrderStatus.SETTLED))
         .isInstanceOf(ApiException.class);
+    assertThatThrownBy(() -> store.updateOrderStatus(created.getId(), OrderStatus.CANCELLED))
+        .isInstanceOf(ApiException.class);
 
     created.setStatus(OrderStatus.DELIVERED);
     store.updateOrder(created.getId(), created);
@@ -312,6 +315,56 @@ class BobbuyStoreTest {
   void reserveTripCapacityAllowsExactRemainingCapacity() {
     Trip trip = store.reserveTripCapacity(2000L, 5);
     assertThat(trip.getRemainingCapacity()).isEqualTo(0);
+  }
+
+  @Test
+  void cancelOrderReleasesReservedCapacity() {
+    Trip before = store.getTrip(2000L).orElseThrow();
+    int reservedBefore = before.getReservedCapacity();
+
+    OrderHeader header = new OrderHeader("BIZ-CANCEL", 1001L, 2000L);
+    header.setStatus(OrderStatus.CONFIRMED);
+    header.addLine(new OrderLine("SKU-C", "Cancel Item", null, 2, 10.0));
+    OrderHeader created = store.upsertOrder(header);
+
+    Trip afterConfirm = store.getTrip(2000L).orElseThrow();
+    assertThat(afterConfirm.getReservedCapacity()).isEqualTo(reservedBefore + 2);
+
+    store.updateOrderStatus(created.getId(), OrderStatus.CANCELLED);
+    Trip afterCancel = store.getTrip(2000L).orElseThrow();
+    assertThat(afterCancel.getReservedCapacity()).isEqualTo(reservedBefore);
+  }
+
+  @Test
+  void cancelFromNewDoesNotReleaseCapacity() {
+    Trip before = store.getTrip(2000L).orElseThrow();
+    int reservedBefore = before.getReservedCapacity();
+
+    OrderHeader header = new OrderHeader("BIZ-CANCEL-NEW", 1001L, 2000L);
+    header.addLine(new OrderLine("SKU-N", "New Item", null, 1, 5.0));
+    OrderHeader created = store.upsertOrder(header);
+
+    store.updateOrderStatus(created.getId(), OrderStatus.CANCELLED);
+    Trip afterCancel = store.getTrip(2000L).orElseThrow();
+    assertThat(afterCancel.getReservedCapacity()).isEqualTo(reservedBefore);
+  }
+
+  @Test
+  void procurementListAggregatesBySku() {
+    OrderHeader first = new OrderHeader("BIZ-PROC-1", 1001L, 2000L);
+    first.addLine(new OrderLine("SKU-P", "Proc Item", null, 2, 10.0));
+    store.upsertOrder(first);
+
+    OrderHeader second = new OrderHeader("BIZ-PROC-2", 1001L, 2000L);
+    second.addLine(new OrderLine("SKU-P", "Proc Item", null, 3, 10.0));
+    store.upsertOrder(second);
+
+    List<com.bobbuy.api.ProcurementItemResponse> list = store.getProcurementList(2000L);
+    assertThat(list).anyMatch(item ->
+        item.getSkuId().equals("SKU-P")
+            && item.getTotalQuantity() == 5
+            && item.getBusinessIds().contains("BIZ-PROC-1")
+            && item.getBusinessIds().contains("BIZ-PROC-2"));
   }
 
   @Test

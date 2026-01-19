@@ -53,6 +53,8 @@ class ModelTest {
         header.setStatus(OrderStatus.CONFIRMED);
         header.setTotalAmount(99.5);
         header.setStatusUpdatedAt(LocalDateTime.now());
+        header.setPaymentMethod(PaymentMethod.ALIPAY);
+        header.setPaymentStatus(PaymentStatus.PAID);
 
         OrderLine line1 = new OrderLine("SKU-1", "A", "Red", 1, 10.0);
         OrderLine line2 = new OrderLine("SKU-1", "A", "Red", 2, 10.0);
@@ -66,6 +68,8 @@ class ModelTest {
         assertThat(header.getTripId()).isEqualTo(200L);
         assertThat(header.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
         assertThat(header.getTotalAmount()).isEqualTo(99.5);
+        assertThat(header.getPaymentMethod()).isEqualTo(PaymentMethod.ALIPAY);
+        assertThat(header.getPaymentStatus()).isEqualTo(PaymentStatus.PAID);
 
         // Test merge logic
         assertThat(line1.canMergeWith(line2)).isTrue();

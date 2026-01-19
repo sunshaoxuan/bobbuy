@@ -15,6 +15,8 @@ public class OrderHeader {
     private Long tripId; // 行程 ID
     private OrderStatus status; // 订单状态
     private LocalDateTime statusUpdatedAt;
+    private PaymentMethod paymentMethod; // 支付方式
+    private PaymentStatus paymentStatus; // 支付状态
     private double totalAmount; // 冗余汇总金额
     private List<OrderLine> lines = new ArrayList<>(); // 嵌套行条目
 
@@ -27,6 +29,7 @@ public class OrderHeader {
         this.tripId = tripId;
         this.status = OrderStatus.NEW;
         this.statusUpdatedAt = LocalDateTime.now();
+        this.paymentStatus = PaymentStatus.UNPAID;
     }
 
     // Getters and Setters
@@ -76,6 +79,22 @@ public class OrderHeader {
 
     public void setStatusUpdatedAt(LocalDateTime statusUpdatedAt) {
         this.statusUpdatedAt = statusUpdatedAt;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
     }
 
     public double getTotalAmount() {

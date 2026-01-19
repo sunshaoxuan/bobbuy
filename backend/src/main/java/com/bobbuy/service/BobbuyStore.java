@@ -2,9 +2,11 @@ package com.bobbuy.service;
 
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
+import com.bobbuy.api.ProcurementItemResponse;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.OrderStatus;
+import com.bobbuy.model.PaymentStatus;
 import com.bobbuy.model.Role;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
@@ -157,6 +159,9 @@ public class BobbuyStore {
      * 严格遵循 ARCH-11 第 3 节
      */
     public synchronized OrderHeader upsertOrder(OrderHeader headerInput) {
+        if (headerInput.getPaymentStatus() == null) {
+            headerInput.setPaymentStatus(PaymentStatus.UNPAID);
+        }
         OrderHeader existing = orders.get(headerInput.getBusinessId());
 
         if (existing == null) {
@@ -211,6 +216,9 @@ public class BobbuyStore {
         if (!ordersById.containsKey(id)) {
             return Optional.empty();
         }
+        if (order.getPaymentStatus() == null) {
+            order.setPaymentStatus(PaymentStatus.UNPAID);
+        }
         order.setId(id);
         order.setStatusUpdatedAt(LocalDateTime.now());
         ordersById.put(id, order);
@@ -249,6 +257,22 @@ public class BobbuyStore {
         return trip;
     }
 
+    public synchronized Trip releaseTripCapacity(Long id, int quantity) {
+        Trip trip = getTrip(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+        if (quantity <= 0) {
+            return trip;
+        }
+        int releaseQuantity = Math.min(quantity, trip.getReservedCapacity());
+        if (releaseQuantity == 0) {
+            return trip;
+        }
+        trip.setReservedCapacity(trip.getReservedCapacity() - releaseQuantity);
+        trip.setStatusUpdatedAt(LocalDateTime.now());
+        trips.put(id, trip);
+        return trip;
+    }
+
     public synchronized List<OrderHeader> bulkUpdateOrderStatus(Long tripId, OrderStatus targetStatus) {
         getTrip(tripId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
@@ -274,6 +298,28 @@ public class BobbuyStore {
         return updated;
     }
 
+    public List<ProcurementItemResponse> getProcurementList(Long tripId) {
+        getTrip(tripId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+        Map<String, ProcurementItemResponse> aggregated = new ConcurrentHashMap<>();
+        listOrders(tripId).forEach(order -> order.getLines().forEach(line -> {
+            String key = line.getSkuId() + "||" + line.getItemName();
+            aggregated.compute(key, (_key, existing) -> {
+                if (existing == null) {
+                    return new ProcurementItemResponse(
+                            line.getSkuId(),
+                            line.getItemName(),
+                            line.getQuantity(),
+                            List.of(order.getBusinessId()));
+                }
+                existing.addQuantity(line.getQuantity());
+                existing.addBusinessId(order.getBusinessId());
+                return existing;
+            });
+        }));
+        return new ArrayList<>(aggregated.values());
+    }
+
     public double calculateGmv() {
         return orders.values().stream()
                 .mapToDouble(OrderHeader::getTotalAmount)
@@ -288,11 +334,11 @@ public class BobbuyStore {
 
     private boolean isValidStatusTransition(OrderStatus current, OrderStatus next) {
         return switch (current) {
-            case NEW -> next == OrderStatus.CONFIRMED;
-            case CONFIRMED -> next == OrderStatus.PURCHASED;
+            case NEW -> next == OrderStatus.CONFIRMED || next == OrderStatus.CANCELLED;
+            case CONFIRMED -> next == OrderStatus.PURCHASED || next == OrderStatus.CANCELLED;
             case PURCHASED -> next == OrderStatus.DELIVERED;
             case DELIVERED -> next == OrderStatus.SETTLED;
-            case SETTLED -> false;
+            case SETTLED, CANCELLED -> false;
         };
     }
 
@@ -302,6 +348,9 @@ public class BobbuyStore {
         }
         if (applyCapacity && shouldReserveCapacity(order.getStatus(), nextStatus)) {
             reserveTripCapacity(order.getTripId(), calculateTotalQuantity(order));
+        }
+        if (applyCapacity && shouldReleaseCapacity(order.getStatus(), nextStatus)) {
+            releaseTripCapacity(order.getTripId(), calculateTotalQuantity(order));
         }
         String previousStatus = order.getStatus().name();
         order.setStatus(nextStatus);
@@ -317,7 +366,14 @@ public class BobbuyStore {
     }
 
     private boolean isAtLeastConfirmed(OrderStatus status) {
-        return status != null && status.ordinal() >= OrderStatus.CONFIRMED.ordinal();
+        return status == OrderStatus.CONFIRMED
+                || status == OrderStatus.PURCHASED
+                || status == OrderStatus.DELIVERED
+                || status == OrderStatus.SETTLED;
+    }
+
+    private boolean shouldReleaseCapacity(OrderStatus current, OrderStatus nextStatus) {
+        return nextStatus == OrderStatus.CANCELLED && isAtLeastConfirmed(current);
     }
 
     private int calculateTotalQuantity(OrderHeader header) {

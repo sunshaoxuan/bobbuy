@@ -58,4 +58,26 @@ class TripControllerIntegrationTest {
     int reservedAfter = store.getTrip(trip.getId()).orElseThrow().getReservedCapacity();
     assertThat(reservedAfter).isEqualTo(reservedBefore + 10);
   }
+
+  @Test
+  void procurementListAggregatesItems() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader first = new OrderHeader("PROC-1", 1001L, trip.getId());
+    first.addLine(new OrderLine("SKU-1", "Item A", null, 2, 10.0));
+    store.upsertOrder(first);
+    OrderHeader second = new OrderHeader("PROC-2", 1001L, trip.getId());
+    second.addLine(new OrderLine("SKU-1", "Item A", null, 3, 10.0));
+    store.upsertOrder(second);
+
+    mockMvc.perform(patch("/api/trips/{tripId}/orders/bulk-status", trip.getId())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(Map.of("targetStatus", "CONFIRMED"))))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+            "/api/trips/{tripId}/procurement-list", trip.getId()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].skuId").value("SKU-1"))
+        .andExpect(jsonPath("$.data[0].totalQuantity").value(5));
+  }
 }

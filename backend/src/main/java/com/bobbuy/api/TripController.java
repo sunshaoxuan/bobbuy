@@ -5,6 +5,7 @@ import com.bobbuy.api.response.ApiMeta;
 import com.bobbuy.api.response.ApiResponse;
 import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.model.OrderHeader;
+import com.bobbuy.api.ProcurementItemResponse;
 import com.bobbuy.model.Trip;
 import com.bobbuy.service.BobbuyStore;
 import jakarta.validation.Valid;
@@ -71,6 +72,12 @@ public class TripController {
       @Valid @RequestBody TripOrderBulkStatusRequest request) {
     List<OrderHeader> updated = store.bulkUpdateOrderStatus(tripId, request.getTargetStatus());
     return ResponseEntity.ok(ApiResponse.success(updated, new ApiMeta(updated.size())));
+  }
+
+  @GetMapping("/{tripId}/procurement-list")
+  public ResponseEntity<ApiResponse<List<ProcurementItemResponse>>> procurementList(@PathVariable Long tripId) {
+    List<ProcurementItemResponse> items = store.getProcurementList(tripId);
+    return ResponseEntity.ok(ApiResponse.success(items, new ApiMeta(items.size())));
   }
 
   @DeleteMapping("/{id}")
