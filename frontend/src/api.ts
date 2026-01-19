@@ -41,6 +41,8 @@ export type Order = {
     tripId: number;
     status: string;
     statusUpdatedAt?: string;
+    paymentMethod?: string;
+    paymentStatus?: string;
     totalAmount: number;
     lines: OrderLine[];
 };
@@ -74,6 +76,8 @@ const fallback = {
             customerId: 1001,
             tripId: 2000,
             status: 'CONFIRMED',
+            paymentMethod: 'ALIPAY',
+            paymentStatus: 'UNPAID',
             totalAmount: 65,
             lines: [
                 {

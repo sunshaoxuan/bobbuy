@@ -6,8 +6,9 @@ import { useI18n } from '../i18n';
 
 const { Text } = Typography;
 
-const statusOptions = ['NEW', 'CONFIRMED', 'PURCHASED', 'DELIVERED', 'SETTLED'];
+const statusOptions = ['NEW', 'CONFIRMED', 'PURCHASED', 'DELIVERED', 'SETTLED', 'CANCELLED'];
 const currencyOptions = ['CNY', 'JPY', 'USD', 'EUR'];
+const paymentMethodOptions = ['ALIPAY', 'WECHAT', 'CASH'];
 
 export default function Orders() {
   const { t } = useI18n();
@@ -132,6 +133,8 @@ export default function Orders() {
         customerId: values.customerId,
         tripId: values.tripId,
         status: values.status,
+        paymentMethod: values.paymentMethod,
+        paymentStatus: 'UNPAID',
         lines: [
           {
             skuId: `SKU-${values.itemName.toUpperCase().replace(/\s+/g, '-')}`,
@@ -179,14 +182,18 @@ export default function Orders() {
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Text type="secondary">{t('orders.header.status')}</Text>
-          <Select
-            value={order.status}
-            onChange={(newStatus) => handleStatusChange(order.id, newStatus, order.status)}
-            options={statusOptions.map((status) => ({ value: status, label: status }))}
-            disabled={order.status === 'SETTLED'}
-            style={{ width: 160 }}
-          />
-        </div>
+            <Select
+              value={order.status}
+              onChange={(newStatus) => handleStatusChange(order.id, newStatus, order.status)}
+              options={statusOptions.map((status) => ({ value: status, label: status }))}
+              disabled={order.status === 'SETTLED' || order.status === 'CANCELLED'}
+              style={{ width: 160 }}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text type="secondary">{t('orders.header.payment_status')}</Text>
+            <Tag color="blue">{order.paymentStatus ?? 'UNPAID'}</Tag>
+          </div>
         <Table<OrderLine>
           dataSource={order.lines}
           rowKey={(record) => record.id ?? `${record.skuId}-${record.spec ?? 'default'}`}
@@ -280,7 +287,15 @@ export default function Orders() {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          initialValues={{ currency: 'CNY', status: 'NEW', quantity: 1, unitPrice: 0, serviceFee: 0, estimatedTax: 0 }}
+          initialValues={{
+            currency: 'CNY',
+            status: 'NEW',
+            quantity: 1,
+            unitPrice: 0,
+            serviceFee: 0,
+            estimatedTax: 0,
+            paymentMethod: 'ALIPAY'
+          }}
         >
           <Form.Item
             label={t('orders.form.customer_id.label')}
@@ -339,6 +354,16 @@ export default function Orders() {
             <Select
               options={currencyOptions.map((currency) => ({ value: currency }))}
               placeholder={t('orders.form.currency.placeholder')}
+            />
+          </Form.Item>
+          <Form.Item
+            label={t('orders.form.payment_method.label')}
+            name="paymentMethod"
+            rules={[{ required: true, message: t('orders.form.payment_method.required') }]}
+          >
+            <Select
+              options={paymentMethodOptions.map((method) => ({ value: method }))}
+              placeholder={t('orders.form.payment_method.placeholder')}
             />
           </Form.Item>
           <Form.Item
