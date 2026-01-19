@@ -340,5 +340,17 @@
         "zt": "刪除商品",
         "en": "Delete Product",
         "ja": "商品を削除"
+    },
+    "LBL_MERCHANT_NO": {
+        "zh": "商家编号",
+        "zt": "商家編號",
+        "en": "Merchant No.",
+        "ja": "加盟店番号"
+    },
+    "LBL_OTHER_NO": {
+        "zh": "其他编号",
+        "zt": "其他編號",
+        "en": "Other No.",
+        "ja": "その他の番号"
     }
 }
