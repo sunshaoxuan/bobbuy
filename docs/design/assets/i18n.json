@@ -294,10 +294,10 @@
         "ja": "価格"
     },
     "LBL_PRODUCT_DESC": {
-        "zh": "描述",
-        "zt": "描述",
+        "zh": "商品描述",
+        "zt": "商品描述",
         "en": "Description",
-        "ja": "説明"
+        "ja": "商品説明"
     },
     "BTN_CONFIRM_ADD": {
         "zh": "确认并入库",
@@ -310,5 +310,35 @@
         "zt": "輸入或選擇分類...",
         "en": "Type or select category...",
         "ja": "カテゴリーを入力..."
+    },
+    "LBL_INVENTORY": {
+        "zh": "库存数量",
+        "zt": "庫存數量",
+        "en": "Inventory Qty",
+        "ja": "在庫数"
+    },
+    "LBL_VARIANTS": {
+        "zh": "规格参数",
+        "zt": "規格參數",
+        "en": "Specifications",
+        "ja": "仕様"
+    },
+    "LBL_PRODUCT_IMAGES": {
+        "zh": "商品图片",
+        "zt": "商品圖片",
+        "en": "Product Images",
+        "ja": "商品画像"
+    },
+    "BTN_SAVE_CHANGES": {
+        "zh": "保存更改",
+        "zt": "保存更改",
+        "en": "Save Changes",
+        "ja": "変更を保存"
+    },
+    "BTN_DELETE_PRODUCT": {
+        "zh": "删除商品",
+        "zt": "刪除商品",
+        "en": "Delete Product",
+        "ja": "商品を削除"
     }
 }
