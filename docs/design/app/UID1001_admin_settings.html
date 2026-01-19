@@ -1,185 +1,81 @@
 <!DOCTYPE html>
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Settings: AI Translation Engine</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
+<html class="light" lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/ui-core.css">
+    <script id="tailwind-config">
         tailwind.config = {
-            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#195de6",
-                        "background-light": "#f6f7f8",
-                        "background-dark": "#21242c",
+                        "primary": "#C14B3B",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
                     },
-                    fontFamily: {
-                        "display": ["Manrope"]
-                    },
-                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
-                },
-            },
+                    borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
+                }
+            }
         }
     </script>
-<style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        body {height: 100dvh;
-            overflow: hidden;
-        }
-    </style>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
-    }
-  </style>
-  </head>
-<body class="bg-background-light dark:bg-background-dark font-display text-[#0e121b] dark:text-white transition-colors duration-200">
-<div class="relative flex h-full w-full flex-col max-w-[430px] mx-auto bg-background-light dark:bg-background-dark overflow-hidden shadow-2xl">
-<div class="flex items-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md p-4 pb-2 justify-between sticky top-0 z-20 border-b border-gray-200 dark:border-gray-800">
-<div class="text-[#0e121b] dark:text-white flex size-12 shrink-0 items-center cursor-pointer">
-<span class="material-symbols-outlined">arrow_back_ios</span>
-</div>
-<h2 class="text-[#0e121b] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">AI Translation Engine</h2>
-<div class="flex w-12 items-center justify-end">
-<p class="text-primary text-base font-bold leading-normal tracking-[0.015em] shrink-0 cursor-pointer">Done</p>
-</div>
-</div>
-<div class="flex-1 overflow-y-auto pb-24">
-<div class="flex flex-col gap-1">
-<h3 class="text-[#4e6797] dark:text-[#a0aec0] text-xs font-bold leading-tight tracking-[0.05em] px-4 pb-2 pt-6 uppercase">CORE SETTINGS</h3>
-<div class="bg-white dark:bg-gray-900 border-y border-gray-200 dark:border-gray-800">
-<div class="flex items-center gap-4 px-4 min-h-[72px] py-2 justify-between border-b border-gray-100 dark:border-gray-800">
-<div class="flex items-center gap-4">
-<div class="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-10">
-<span class="material-symbols-outlined">translate</span>
-</div>
-<div class="flex flex-col justify-center">
-<p class="text-[#0e121b] dark:text-white text-base font-medium leading-normal">Real-time AI Chat</p>
-<p class="text-[#4e6797] dark:text-[#a0aec0] text-xs font-normal leading-normal">Instant incoming/outgoing translation</p>
-</div>
-</div>
-<div class="shrink-0">
-<label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-[#e7ebf3] dark:bg-gray-700 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary transition-all">
-<div class="h-full w-[27px] rounded-full bg-white shadow-md"></div>
-<input checked="" class="invisible absolute" type="checkbox"/>
-</label>
-</div>
-</div>
-<div class="flex items-center gap-4 px-4 min-h-[72px] py-2 justify-between">
-<div class="flex items-center gap-4">
-<div class="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-10">
-<span class="material-symbols-outlined">psychology</span>
-</div>
-<div class="flex flex-col justify-center">
-<p class="text-[#0e121b] dark:text-white text-base font-medium leading-normal">Intelligent Context</p>
-<p class="text-[#4e6797] dark:text-[#a0aec0] text-xs font-normal leading-normal">Uses history to improve accuracy</p>
-</div>
-</div>
-<div class="shrink-0">
-<label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-[#e7ebf3] dark:bg-gray-700 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary transition-all">
-<div class="h-full w-[27px] rounded-full bg-white shadow-md"></div>
-<input checked="" class="invisible absolute" type="checkbox"/>
-</label>
-</div>
-</div>
-</div>
-<h3 class="text-[#4e6797] dark:text-[#a0aec0] text-xs font-bold leading-tight tracking-[0.05em] px-4 pb-2 pt-6 uppercase">LANGUAGE PREFERENCES</h3>
-<div class="bg-white dark:bg-gray-900 border-y border-gray-200 dark:border-gray-800">
-<div class="flex items-center gap-4 px-4 min-h-[64px] py-2 justify-between border-b border-gray-100 dark:border-gray-800 cursor-pointer">
-<div class="flex items-center gap-4">
-<div class="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-10">
-<span class="material-symbols-outlined">language</span>
-</div>
-<p class="text-[#0e121b] dark:text-white text-base font-medium leading-normal">Primary Language</p>
-</div>
-<div class="flex items-center gap-2">
-<span class="text-[#4e6797] dark:text-[#a0aec0] text-sm font-medium">Simplified Chinese</span>
-<span class="material-symbols-outlined text-[#4e6797] text-lg">chevron_right</span>
-</div>
-</div>
-<div class="flex items-center gap-4 px-4 min-h-[64px] py-2 justify-between cursor-pointer">
-<div class="flex items-center gap-4">
-<div class="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-10">
-<span class="material-symbols-outlined">layers</span>
-</div>
-<p class="text-[#0e121b] dark:text-white text-base font-medium leading-normal">Secondary Targets</p>
-</div>
-<div class="flex items-center gap-2">
-<span class="text-[#4e6797] dark:text-[#a0aec0] text-sm font-medium">JP, EN, TW</span>
-<span class="material-symbols-outlined text-[#4e6797] text-lg">chevron_right</span>
-</div>
-</div>
-</div>
-<h3 class="text-[#4e6797] dark:text-[#a0aec0] text-xs font-bold leading-tight tracking-[0.05em] px-4 pb-2 pt-6 uppercase">AI PERFORMANCE &amp; CACHE</h3>
-<div class="px-4">
-<div class="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm">
-<div class="flex items-start gap-4 mb-4">
-<div class="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-10">
-<span class="material-symbols-outlined">database</span>
-</div>
-<div class="flex flex-col">
-<div class="flex items-center gap-2">
-<h4 class="text-[#0e121b] dark:text-white text-base font-bold">History Cache Engine</h4>
-<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 uppercase tracking-wider">Active</span>
-</div>
-<p class="text-[#4e6797] dark:text-[#a0aec0] text-xs leading-relaxed mt-1">
-                                    Our HASH-based LLM caching reduces API latency by 40% and minimizes token consumption for recurring phrases.
-                                </p>
-</div>
-</div>
-<div class="grid grid-cols-2 gap-3 mb-4">
-<div class="bg-background-light dark:bg-background-dark p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-<p class="text-[10px] text-[#4e6797] uppercase font-bold tracking-tight">Cache Hit Rate</p>
-<p class="text-lg font-bold text-primary">82.4%</p>
-</div>
-<div class="bg-background-light dark:bg-background-dark p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-<p class="text-[10px] text-[#4e6797] uppercase font-bold tracking-tight">Memory Load</p>
-<p class="text-lg font-bold text-primary">124 MB</p>
-</div>
-</div>
-<button class="w-full py-3 px-4 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
-<span class="material-symbols-outlined text-lg">mop</span>
-                            Clear Translation Cache
-                        </button>
-</div>
-<p class="px-2 py-4 text-[#4e6797] dark:text-[#a0aec0] text-[11px] leading-normal text-center italic">
-                        All translations are encrypted end-to-end. Caching happens locally on your device to ensure maximum privacy.
-                    </p>
-</div>
-<div class="flex justify-center pt-4 opacity-20 grayscale mb-12">
-<img alt="Abstract technology pattern" class="h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0jBRD187w5xYwg4RxUY02Us5kjMeG1cei8S1l3OG8tzomsDoARKPaPqsr4-NtxLrTfl-D3M4NoCWSEs2OPx22T4IVC0ZbMuD-NdPo9ST0xC6iyg6nQ7FRfNRsyHUOegzK2Po5MMe4GEiwAVJUTiz0jA5acOgkTZV3wJgRBUCyFZ8XJAxt98Wt8J_z6p123pOdOLRnnJc45tbIxldWBdX9eKuqBQoxOjjRJu8ucfxyzHpmzIs6a0Gb9Ypv6r3jZv-rHhkUalv4FI4K"/>
-</div>
-</div>
-</div>
-<nav class="absolute bottom-0 left-0 right-0 z-30 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-t border-gray-200 dark:border-gray-800 px-2 pt-2 pb-6">
-<div class="flex items-center justify-around">
-<div class="flex flex-col items-center gap-1 cursor-pointer">
-<span class="material-symbols-outlined text-[#4e6797] dark:text-[#a0aec0]">storefront</span>
-<span class="text-[10px] font-medium text-[#4e6797] dark:text-[#a0aec0]">Mall</span>
-</div>
-<div class="flex flex-col items-center gap-1 cursor-pointer">
-<span class="material-symbols-outlined text-[#4e6797] dark:text-[#a0aec0]">assignment</span>
-<span class="text-[10px] font-medium text-[#4e6797] dark:text-[#a0aec0]">My Tasks</span>
-</div>
-<div class="flex flex-col items-center gap-1 cursor-pointer">
-<span class="material-symbols-outlined text-[#4e6797] dark:text-[#a0aec0]">forum</span>
-<span class="text-[10px] font-medium text-[#4e6797] dark:text-[#a0aec0]">Chat</span>
-</div>
-<div class="flex flex-col items-center gap-1 cursor-pointer">
-<span class="material-symbols-outlined text-[#4e6797] dark:text-[#a0aec0]">account_balance_wallet</span>
-<span class="text-[10px] font-medium text-[#4e6797] dark:text-[#a0aec0]">Wallet</span>
-</div>
-<div class="flex flex-col items-center gap-1 cursor-pointer">
-<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">person</span>
-<span class="text-[10px] font-bold text-primary">Me</span>
-</div>
-</div>
-</nav>
-</div>
+</head>
 
-</body></html>
+<body class="bg-gray-100 flex justify-center min-h-screen">
+    <div class="w-full max-w-[480px] bg-base min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
+        <header class="p-6 bg-white border-b border-surface flex items-center justify-between sticky top-0 z-50">
+            <button class="material-symbols-outlined text-text-sub" onclick="history.back()">arrow_back_ios</button>
+            <h1 class="font-black tracking-tight" data-i18n="TITLE_ADMIN">UID1001 系统管理</h1>
+            <div class="w-10"></div>
+        </header>
+
+        <main class="flex-1 p-6 space-y-8 overflow-y-auto pb-32">
+            <section class="space-y-4">
+                <h3 class="text-xs font-black text-text-sub uppercase tracking-widest pl-2">核心设置</h3>
+                <div
+                    class="bg-white rounded-3xl overflow-hidden border border-surface shadow-sm divide-y divide-surface">
+                    <div class="p-5 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <span class="material-symbols-outlined text-primary">translate</span>
+                            <div>
+                                <p class="text-sm font-bold">实时 AI 翻译</p>
+                                <p class="text-[10px] text-text-sub">自动翻译聊天与商品信息</p>
+                            </div>
+                        </div>
+                        <input type="checkbox" checked class="text-primary focus:ring-primary rounded">
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-4">
+                <h3 class="text-xs font-black text-text-sub uppercase tracking-widest pl-2">环境与性能</h3>
+                <div class="bg-white rounded-3xl p-6 border border-surface space-y-6">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold text-text-sub">缓存命中率</span>
+                        <span class="text-primary font-black">82.4%</span>
+                    </div>
+                    <button class="btn-ghost w-full py-3 text-xs border-2 border-surface">清除翻译缓存</button>
+                </div>
+            </section>
+        </main>
+
+        <nav
+            class="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-surface p-4 pb-8 flex justify-around">
+            <span class="material-symbols-outlined text-text-sub">home</span>
+            <span class="material-symbols-outlined text-text-sub">chat_bubble</span>
+            <span class="material-symbols-outlined text-primary font-black">person</span>
+        </nav>
+    </div>
+    <script src="../assets/ui-core.js"></script>
+</body>
+
+</html>

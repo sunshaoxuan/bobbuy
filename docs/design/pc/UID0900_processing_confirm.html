@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BoBB - Payment Success</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/ui-core.css">
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#C14B3B",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
+                    },
+                    borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-base font-sans text-text-main flex items-center justify-center min-h-screen overflow-hidden">
+    <!-- PC Specific Container: Immersive Full-Screen Card -->
+    <div
+        class="max-w-4xl w-full mx-8 bg-primary h-[600px] rounded-[40px] shadow-2xl flex relative overflow-hidden text-white">
+
+        <!-- Left Side: Visual Illustration Area -->
+        <div
+            class="w-1/2 bg-white/5 flex flex-col items-center justify-center p-12 border-r border-white/10 relative overflow-hidden">
+            <!-- Abstract Graphic or Large Icon -->
+            <div class="relative scale-125">
+                <div class="size-48 rounded-full border-4 border-white/20 animate-ping absolute inset-0"></div>
+                <div
+                    class="size-48 rounded-full bg-white flex items-center justify-center text-primary shadow-2xl relative">
+                    <span class="material-symbols-outlined text-8xl">verified_user</span>
+                </div>
+            </div>
+
+            <div class="mt-16 text-center space-y-4">
+                <div class="flex items-center justify-center gap-2 text-white/50">
+                    <span class="material-symbols-outlined text-sm">security</span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest">End-to-End Encryption</span>
+                </div>
+                <p class="text-xs text-white/30">Your data is being processed securely across our global node network.
+                </p>
+            </div>
+        </div>
+
+        <!-- Right Side: Interaction Area -->
+        <div class="flex-1 flex flex-col justify-center p-16 space-y-10">
+            <div class="space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-white/10 rounded flex items-center justify-center">
+                        <img src="../assets/logo.svg" alt="Logo" class="w-5 h-5 brightness-200">
+                    </div>
+                    <span class="text-lg font-black tracking-tight" data-i18n="APP_BRAND_NAME">BoBB</span>
+                </div>
+                <h1 class="text-4xl font-black tracking-tight" data-i18n="TXT_PAYMENT_SUCCESS">支付成功！</h1>
+                <p class="text-white/70 text-base leading-relaxed">
+                    您的订单款项已成功结算。系统正在通知代购专家执行后续流程，您可以前往订单管理中心查看详细的物流或面交状态。
+                </p>
+            </div>
+
+            <!-- Progress Indicator -->
+            <div class="space-y-4">
+                <div class="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                    <div class="h-full bg-white w-1/3 rounded-full animate-[progress_2s_ease-in-out_infinite]"></div>
+                </div>
+                <div class="flex justify-between text-[10px] font-bold text-white/50 uppercase tracking-widest">
+                    <span>Synchronizing...</span>
+                    <span>UID0900</span>
+                </div>
+            </div>
+
+            <div class="flex gap-4 pt-4">
+                <button
+                    class="btn-primary !bg-white !text-primary !shadow-2xl px-10 py-5 text-sm font-black hover:scale-105 transition-transform"
+                    onclick="location.href='UID0215_customer_project_bill.html'">
+                    返回订单列表 / BACK TO ORDERS
+                </button>
+            </div>
+        </div>
+
+        <!-- Decorative Elements -->
+        <div class="absolute -top-24 -right-24 size-64 bg-white/5 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-24 -left-24 size-64 bg-white/5 rounded-full blur-3xl"></div>
+
+        <style>
+            @keyframes progress {
+                0% {
+                    transform: translateX(-100%);
+                }
+
+                100% {
+                    transform: translateX(300%);
+                }
+            }
+        </style>
+    </div>
+    <script src="../assets/ui-core.js"></script>
+</body>
+
+</html>

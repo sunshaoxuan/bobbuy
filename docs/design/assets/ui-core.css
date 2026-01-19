@@ -1,0 +1,117 @@
+:root {
+    /* PROD-04 Color Palette */
+    --color-primary: #C14B3B;       /* 砖红 */
+    --color-bg-base: #FAF7F2;       /* 暖米白 */
+    --color-bg-surface: #F0E9E0;    /* 浅杏 */
+    --color-text-main: #2D2926;     /* 炭黑 */
+    --color-text-sub: #706860;      /* 暖灰 */
+    --color-accent: #D4A373;        /* 琥珀金 */
+    
+    /* Functional Colors */
+    --color-success: #1fad7e;
+    --color-warning: #f59e0b;
+    --color-error: #dc2626;
+    
+    /* Shadows & Radius */
+    --shadow-soft: 0 4px 12px rgba(193, 75, 59, 0.1);
+    --shadow-hover: 0 10px 25px rgba(193, 75, 59, 0.2);
+    --radius-btn: 12px;
+    --radius-card: 16px;
+}
+
+/* Base Adjustments */
+body {
+    background-color: var(--color-bg-base);
+    color: var(--color-text-main);
+    font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Typography Overrides */
+h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+    color: var(--color-text-main);
+}
+
+.price-text {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+/* Premium Components */
+.btn-primary {
+    background-color: var(--color-primary);
+    color: white;
+    padding: 10px 24px;
+    border-radius: var(--radius-btn);
+    font-weight: 700;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    filter: brightness(1.1);
+}
+
+.btn-ghost {
+    border: 2px solid var(--color-primary);
+    color: var(--color-primary);
+    background: transparent;
+    padding: 8px 22px;
+    border-radius: var(--radius-btn);
+    font-weight: 700;
+    transition: all 0.2s;
+}
+
+.btn-ghost:hover {
+    background-color: rgba(193, 75, 59, 0.05);
+}
+
+.premium-card {
+    background: white;
+    border-radius: var(--radius-card);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+    transition: transform 0.3s;
+}
+
+.premium-card:hover {
+    transform: scale(1.02);
+}
+
+/* Language Selector Styles */
+.lang-selector {
+    display: flex;
+    gap: 8px;
+    font-size: 10px;
+}
+
+.lang-btn {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--color-bg-surface);
+    color: var(--color-text-sub);
+    cursor: pointer;
+}
+
+.lang-btn.active {
+    background: var(--color-primary);
+    color: white;
+}
+
+/* Noise overlay for texture */
+.noise-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    opacity: 0.015;
+    pointer-events: none;
+    z-index: 9999;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}

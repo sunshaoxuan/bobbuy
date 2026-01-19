@@ -1,293 +1,185 @@
 <!DOCTYPE html>
+<html class="light" lang="zh-CN">
 
-<html class="light" lang="zh-CN"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/ui-core.css">
+    <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#1fad7e",
-                        "background-light": "#f6f8f7",
-                        "background-dark": "#12201b",
+                        "primary": "#C14B3B",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
                     },
-                    fontFamily: {
-                        "display": ["Manrope", "Noto Sans SC", "sans-serif"]
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                },
-            },
+                    borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
+                }
+            }
         }
     </script>
-<style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #e2e8f0;
-            border-radius: 10px;
-        }
-    </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display text-[#0f1a16] transition-colors duration-300">
-<div class="relative flex h-screen w-full overflow-hidden">
-<!-- Sidebar Navigation -->
-<aside class="w-64 flex flex-col border-r border-[#e8f2ef] bg-white dark:bg-background-dark dark:border-primary/20">
-<div class="p-6 flex items-center gap-3">
-<div class="bg-primary text-white p-1.5 rounded-lg">
-<span class="material-symbols-outlined text-2xl">shopping_basket</span>
-</div>
-<h2 class="text-lg font-bold tracking-tight dark:text-white">BOBBuy 宝宝败</h2>
-</div>
-<nav class="flex-1 px-4 py-4 space-y-1">
-<a class="flex items-center gap-3 px-3 py-2 text-[#53937d] hover:bg-primary/10 hover:text-primary rounded-lg transition-colors" href="#">
-<span class="material-symbols-outlined">dashboard</span>
-<span class="text-sm font-medium">仪表盘</span>
-</a>
-<a class="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg" href="#">
-<span class="material-symbols-outlined">calendar_today</span>
-<span class="text-sm font-medium">行程管理</span>
-</a>
-<a class="flex items-center gap-3 px-3 py-2 text-[#53937d] hover:bg-primary/10 hover:text-primary rounded-lg transition-colors" href="#">
-<span class="material-symbols-outlined">list_alt</span>
-<span class="text-sm font-medium">订单列表</span>
-</a>
-<a class="flex items-center gap-3 px-3 py-2 text-[#53937d] hover:bg-primary/10 hover:text-primary rounded-lg transition-colors" href="#">
-<span class="material-symbols-outlined">chat_bubble</span>
-<span class="text-sm font-medium">消息中心</span>
-</a>
-<a class="flex items-center gap-3 px-3 py-2 text-[#53937d] hover:bg-primary/10 hover:text-primary rounded-lg transition-colors" href="#">
-<span class="material-symbols-outlined">account_balance_wallet</span>
-<span class="text-sm font-medium">财务钱包</span>
-</a>
-</nav>
-<div class="p-4 border-t border-[#e8f2ef] dark:border-primary/20">
-<div class="flex items-center gap-3 p-2 rounded-xl bg-background-light dark:bg-background-dark/50">
-<div class="size-10 rounded-full bg-cover bg-center" data-alt="User avatar placeholder" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBApXLL_EeqJYCFSY98pssqfXDstRPyIRIPdtLqT2jV3rln4EcgXqQuHeYNycYFbh3pw3bK-2qF9y-4ifvDQ7E-eDAbNcT4RVkQ3G3T_YHA7_O2QvMQDmzHT6SsEYCJUE_UU5xS9kF_-NKx2v9URVVecuFmWfCQ-nteDJpKJHVE3ZrpsozMKzuBFZLgkkE71mMJYGKElKuP8wpUwBRO_wxbUF6aJKOQp-QIlRDNV1HjsP_agxGUurs05Gi79xpj33g37t3lLKBdX5M')"></div>
-<div class="flex-1 overflow-hidden">
-<p class="text-xs font-bold truncate dark:text-white">Costco 采买专员</p>
-<p class="text-[10px] text-[#53937d] truncate">商家认证会员</p>
-</div>
-<span class="material-symbols-outlined text-[#53937d] text-sm">settings</span>
-</div>
-</div>
-</aside>
-<!-- Main Content Area -->
-<main class="flex-1 flex flex-col h-full overflow-hidden">
-<!-- Top Navbar -->
-<header class="h-16 border-b border-[#e8f2ef] bg-white dark:bg-background-dark dark:border-primary/20 flex items-center justify-between px-8">
-<div class="flex items-center gap-4">
-<div class="flex items-center gap-2 text-sm text-[#53937d]">
-<span>控制台</span>
-<span class="material-symbols-outlined text-xs">chevron_right</span>
-<span class="text-[#0f1a16] font-semibold dark:text-white">行程发布与计划管理</span>
-</div>
-</div>
-<div class="flex items-center gap-6">
-<div class="relative">
-<input class="bg-[#e8f2ef] border-none rounded-lg pl-10 pr-4 py-2 text-sm w-64 focus:ring-2 focus:ring-primary/50 transition-all" placeholder="搜索行程或订单..." type="text"/>
-<span class="material-symbols-outlined absolute left-3 top-2 text-[#53937d] text-xl">search</span>
-</div>
-<button class="relative p-2 text-[#53937d]">
-<span class="material-symbols-outlined">notifications</span>
-<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white"></span>
-</button>
-</div>
-</header>
-<!-- Scrollable Body -->
-<div class="flex-1 overflow-y-auto custom-scrollbar p-8">
-<div class="max-w-6xl mx-auto space-y-8">
-<!-- Page Heading -->
-<div class="flex justify-between items-end">
-<div class="space-y-1">
-<h1 class="text-3xl font-black text-[#0f1a16] dark:text-white tracking-tight">行程发布与计划管理</h1>
-<p class="text-[#53937d]">计划您的下一次 Costco 采买行程，实时管理全球订单</p>
-</div>
-<div class="flex gap-3">
-<button class="px-4 py-2 bg-white border border-[#e8f2ef] text-[#0f1a16] rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-50 transition-colors">
-<span class="material-symbols-outlined text-sm">history</span> 历史记录
-                            </button>
-</div>
-</div>
-<!-- Main Grid -->
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-<!-- Left Column: New Trip Planning (Bento Card) -->
-<div class="lg:col-span-7 flex flex-col gap-6">
-<div class="bg-white dark:bg-background-dark border border-[#e8f2ef] dark:border-primary/20 rounded-xl overflow-hidden shadow-sm">
-<div class="p-5 border-b border-[#e8f2ef] dark:border-primary/20 flex justify-between items-center">
-<h2 class="font-bold flex items-center gap-2 dark:text-white">
-<span class="material-symbols-outlined text-primary">add_location_alt</span>
-                                        发布新行程
-                                    </h2>
-<span class="text-[10px] uppercase font-bold tracking-widest text-[#53937d]">New Shopping Session</span>
-</div>
-<div class="p-6 space-y-6">
-<!-- Map Integration -->
-<div class="space-y-3">
-<label class="text-sm font-semibold text-[#53937d]">1. 选择代购 Costco 门店</label>
-<div class="relative rounded-lg overflow-hidden border border-[#e8f2ef] dark:border-primary/20 group">
-<div class="w-full h-[240px] bg-cover bg-center" data-alt="Interactive map showing Costco locations in Los Angeles area" data-location="Los Angeles Costco Warehouse" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDaDYvv2vnOhegGQqLvSZPtCAbl24YlyrcKG2Fz92TL_ecXOvj1JQMgFOBsZiBrZQZCHPmHXgP-kmiYUjPYEsSZ2DK8DDeKgIKTGQhT7qta8kwAuTQWlY7wOFsfJ5iplJGqYpjNpTc72lJCzsVm4SjilWvXV_VsBvb6NBHcQ53YIBF-WFJiO7az-RM_-yKwaiSLPpJewnl_5hz0yhxNEQtqPrNrqYY2i6rto1qiCMWZC3XkK6KWy2K8wlTCn_Dd_Ajd33zMuNowiII')"></div>
-<div class="absolute inset-0 bg-black/5 pointer-events-none"></div>
-<div class="absolute top-4 left-4 bg-white/95 p-3 rounded-lg shadow-lg flex items-center gap-3 max-w-[280px]">
-<div class="bg-primary/20 text-primary p-2 rounded-full">
-<span class="material-symbols-outlined">storefront</span>
-</div>
-<div>
-<p class="text-xs font-bold leading-none mb-1">已选门店</p>
-<p class="text-xs text-[#53937d] truncate">Costco Wholesale, Alhambra, CA</p>
-</div>
-</div>
-</div>
-</div>
-<!-- Form Inputs -->
-<div class="grid grid-cols-2 gap-4">
-<div class="space-y-2">
-<label class="text-sm font-semibold text-[#53937d]">采买开始时间</label>
-<div class="relative">
-<input class="w-full bg-[#f8fbfa] border-[#e8f2ef] rounded-lg text-sm py-2.5 focus:ring-primary focus:border-primary" type="datetime-local"/>
-<span class="material-symbols-outlined absolute right-3 top-2.5 text-xs text-primary">event</span>
-</div>
-</div>
-<div class="space-y-2">
-<label class="text-sm font-semibold text-[#53937d]">预计配送时间</label>
-<div class="relative">
-<input class="w-full bg-[#f8fbfa] border-[#e8f2ef] rounded-lg text-sm py-2.5 focus:ring-primary focus:border-primary" type="datetime-local"/>
-<span class="material-symbols-outlined absolute right-3 top-2.5 text-xs text-primary">schedule</span>
-</div>
-</div>
-</div>
-<!-- Capacity & Advanced -->
-<div class="p-4 bg-background-light dark:bg-background-dark/50 rounded-lg space-y-4">
-<div class="flex justify-between items-center">
-<label class="text-sm font-semibold text-[#53937d]">接单容量上限 (订单数)</label>
-<span class="bg-primary text-white text-xs font-bold px-2 py-1 rounded">25 封顶</span>
-</div>
-<input class="w-full h-2 bg-[#e8f2ef] rounded-lg appearance-none cursor-pointer accent-primary" max="50" min="1" type="range" value="25"/>
-<div class="flex justify-between text-[10px] font-bold text-[#53937d] px-1">
-<span>1 订单</span>
-<span>50 订单</span>
-</div>
-</div>
-<div class="flex gap-4 pt-2">
-<button class="flex-1 bg-primary text-white font-bold py-3 rounded-lg shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95">
-                                            立即发布行程
-                                        </button>
-<button class="px-6 border-2 border-primary/20 text-primary font-bold rounded-lg hover:bg-primary/5 transition-colors">
-                                            存为草稿
-                                        </button>
-</div>
-</div>
-</div>
-</div>
-<!-- Right Column: Scheduled Trips -->
-<div class="lg:col-span-5 flex flex-col gap-6">
-<!-- Section Title -->
-<div class="flex items-center justify-between">
-<h2 class="text-xl font-bold dark:text-white flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">format_list_bulleted</span>
-                                    即将开始的行程
-                                </h2>
-<span class="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">3 个活动计划</span>
-</div>
-<!-- Trip Cards Container -->
-<div class="space-y-4">
-<!-- Active Card -->
-<div class="bg-white dark:bg-background-dark border-l-4 border-primary border p-5 rounded-xl shadow-sm space-y-4">
-<div class="flex justify-between items-start">
-<div>
-<div class="flex items-center gap-2 mb-1">
-<span class="text-[10px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded uppercase">进行中</span>
-<span class="text-xs text-[#53937d] font-medium">ID: #TRP-89201</span>
-</div>
-<h3 class="font-bold text-lg dark:text-white leading-tight">Costco Alhambra 采买</h3>
-</div>
-<button class="text-[#53937d] hover:text-primary transition-colors">
-<span class="material-symbols-outlined">more_vert</span>
-</button>
-</div>
-<div class="flex items-center gap-4 text-sm">
-<div class="flex items-center gap-1.5 text-[#53937d]">
-<span class="material-symbols-outlined text-lg">calendar_month</span>
-<span>今天 14:00</span>
-</div>
-<div class="flex items-center gap-1.5 text-[#53937d]">
-<span class="material-symbols-outlined text-lg">local_shipping</span>
-<span>预计明天送达</span>
-</div>
-</div>
-<div class="space-y-2">
-<div class="flex justify-between text-xs font-bold">
-<span class="text-[#53937d]">接单进度 (18/20)</span>
-<span class="text-primary">90%</span>
-</div>
-<div class="w-full bg-[#e8f2ef] h-2 rounded-full overflow-hidden">
-<div class="bg-primary h-full w-[90%]"></div>
-</div>
-</div>
-</div>
-<!-- Planned Card -->
-<div class="bg-white dark:bg-background-dark border border-[#e8f2ef] dark:border-primary/20 p-5 rounded-xl shadow-sm space-y-4 opacity-80 hover:opacity-100 transition-opacity">
-<div class="flex justify-between items-start">
-<div>
-<div class="flex items-center gap-2 mb-1">
-<span class="text-[10px] font-black bg-gray-100 text-gray-500 px-2 py-0.5 rounded uppercase">已计划</span>
-<span class="text-xs text-[#53937d] font-medium">ID: #TRP-89205</span>
-</div>
-<h3 class="font-bold text-lg dark:text-white leading-tight">Costco Monterey Park</h3>
-</div>
-<button class="text-[#53937d] hover:text-primary transition-colors">
-<span class="material-symbols-outlined">more_vert</span>
-</button>
-</div>
-<div class="flex items-center gap-4 text-sm">
-<div class="flex items-center gap-1.5 text-[#53937d]">
-<span class="material-symbols-outlined text-lg">calendar_month</span>
-<span>周五 09:30</span>
-</div>
-</div>
-<div class="flex gap-3">
-<button class="flex-1 py-2 text-xs font-bold text-primary bg-primary/5 rounded-lg border border-primary/10 hover:bg-primary/10 transition-colors">编辑计划</button>
-<button class="flex-1 py-2 text-xs font-bold text-red-400 bg-red-50 rounded-lg border border-red-100 hover:bg-red-100 transition-colors">取消行程</button>
-</div>
-</div>
-<!-- Empty/Add Placeholder -->
-<div class="border-2 border-dashed border-[#e8f2ef] dark:border-primary/20 rounded-xl p-8 flex flex-col items-center justify-center text-center space-y-3 group cursor-pointer hover:bg-white transition-all">
-<div class="size-12 rounded-full bg-background-light dark:bg-background-dark/50 flex items-center justify-center text-[#53937d] group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-<span class="material-symbols-outlined text-3xl">add</span>
-</div>
-<div>
-<p class="font-bold text-[#0f1a16] dark:text-white">暂无更多计划</p>
-<p class="text-xs text-[#53937d]">点击此处快速创建一个新的代购行程</p>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</main>
-</div>
-<!-- Mobile/Small Screen Overlay (Not functional but for design completeness) -->
-<div class="fixed bottom-6 right-6 lg:hidden">
-<button class="size-14 rounded-full bg-primary text-white shadow-xl flex items-center justify-center">
-<span class="material-symbols-outlined">add</span>
-</button>
-</div>
-</body></html>
+
+<body class="bg-base font-sans text-text-main transition-colors duration-300">
+    <div class="relative flex h-screen w-full overflow-hidden">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 flex flex-col border-r border-surface bg-white">
+            <div class="p-6 flex items-center gap-3">
+                <div class="bg-white p-1 rounded-lg shadow-sm flex items-center justify-center overflow-hidden">
+                    <img src="../assets/logo.svg" alt="BoBB Logo" class="w-8 h-8">
+                </div>
+                <h2 class="text-xl font-bold tracking-tight" data-i18n="APP_BRAND_NAME">BoBB</h2>
+            </div>
+
+
+            <nav class="flex-1 px-4 py-4 space-y-1">
+                <a class="flex items-center gap-3 px-3 py-2 text-text-sub hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                    href="#">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="text-sm font-medium" data-i18n="TITLE_DASHBOARD">仪表盘</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg" href="#">
+                    <span class="material-symbols-outlined">calendar_today</span>
+                    <span class="text-sm font-medium" data-i18n="TITLE_TRIP_MGMT">行程管理</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2 text-text-sub hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                    href="#">
+                    <span class="material-symbols-outlined">list_alt</span>
+                    <span class="text-sm font-medium" data-i18n="TITLE_ORDER_LIST">订单列表</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2 text-text-sub hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                    href="#">
+                    <span class="material-symbols-outlined">chat_bubble</span>
+                    <span class="text-sm font-medium" data-i18n="MSG_CHAT_CENTER">消息中心</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2 text-text-sub hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                    href="#">
+                    <span class="material-symbols-outlined">account_balance_wallet</span>
+                    <span class="text-sm font-medium" data-i18n="LBL_WALLET">财务钱包</span>
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-surface">
+                <div class="lang-selector mb-4">
+                    <span class="lang-btn" onclick="switchLanguage('zh')">简</span>
+                    <span class="lang-btn" onclick="switchLanguage('zt')">繁</span>
+                    <span class="lang-btn" onclick="switchLanguage('en')">EN</span>
+                    <span class="lang-btn" onclick="switchLanguage('ja')">JP</span>
+                </div>
+                <div class="flex items-center gap-3 p-2 rounded-xl bg-base">
+                    <div class="size-10 rounded-full bg-cover bg-center"
+                        style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBApXLL_EeqJYCFSY98pssqfXDstRPyIRIPdtLqT2jV3rln4EcgXqQuHeYNycYFbh3pw3bK-2qF9y-4ifvDQ7E-eDAbNcT4RVkQ3G3T_YHA7_O2QvMQDmzHT6SsEYCJUE_UU5xS9kF_-NKx2v9URVVecuFmWfCQ-nteDJpKJHVE3ZrpsozMKzuBFZLgkkE71mMJYGKElKuP8wpUwBRO_wxbUF6aJKOQp-QIlRDNV1HjsP_agxGUurs05Gi79xpj33g37t3lLKBdX5M')">
+                    </div>
+                    <div class="flex-1 overflow-hidden">
+                        <p class="text-xs font-bold truncate">Costco 采买专员</p>
+                        <p class="text-[10px] text-text-sub truncate">商家认证会员</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col h-full overflow-hidden">
+            <header class="h-16 border-b border-surface bg-white flex items-center justify-between px-8">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 text-sm text-text-sub">
+                        <span>控制台</span>
+                        <span class="material-symbols-outlined text-xs">chevron_right</span>
+                        <span class="text-text-main font-semibold">发布新行程</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="relative">
+                        <input
+                            class="bg-base border-none rounded-full pl-10 pr-4 py-2 text-sm w-64 focus:ring-2 focus:ring-primary/50"
+                            placeholder="搜索行程或订单..." type="text" />
+                        <span
+                            class="material-symbols-outlined absolute left-3 top-2 text-text-sub text-xl">search</span>
+                    </div>
+                    <button class="relative p-2 text-text-sub hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined">notifications</span>
+                        <span
+                            class="absolute top-2 right-2 size-2 bg-primary rounded-full border-2 border-white"></span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-8">
+                <div class="max-w-4xl mx-auto space-y-8">
+                    <div class="flex justify-between items-end">
+                        <div class="space-y-1">
+                            <h1 class="text-3xl font-black tracking-tight" data-i18n="nav_trips">发布新行程</h1>
+                            <p class="text-text-sub">计划您的下一次 Costco 采买，实时管理全球订单</p>
+                        </div>
+                    </div>
+
+                    <div class="premium-card p-0">
+                        <div class="p-6 border-b border-surface flex justify-between items-center bg-surface/30">
+                            <h2 class="font-bold flex items-center gap-2">
+                                <span class="material-symbols-outlined text-primary">add_location_alt</span>
+                                行程详情设置
+                            </h2>
+                        </div>
+                        <div class="p-8 space-y-8">
+                            <div class="space-y-4">
+                                <label class="text-sm font-bold text-text-sub uppercase tracking-wider">采买门店选址</label>
+                                <div class="relative rounded-xl overflow-hidden border-2 border-surface h-[200px] bg-cover bg-center"
+                                    style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDaDYvv2vnOhegGQqLvSZPtCAbl24YlyrcKG2Fz92TL_ecXOvj1JQMgFOBsZiBrZQZCHPmHXgP-kmiYUjPYEsSZ2DK8DDeKgIKTGQhT7qta8kwAuTQWlY7wOFsfJ5iplJGqYpjNpTc72lJCzsVm4SjilWvXV_VsBvb6NBHcQ53YIBF-WFJiO7az-RM_-yKwaiSLPpJewnl_5hz0yhxNEQtqPrNrqYY2i6rto1qiCMWZC3XkK6KWy2K8wlTCn_Dd_Ajd33zMuNowiII')">
+                                    <div class="absolute inset-0 bg-black/10"></div>
+                                    <div
+                                        class="absolute bottom-4 left-4 bg-white/95 p-3 rounded-lg shadow-lg flex items-center gap-3">
+                                        <div class="bg-primary/20 text-primary p-2 rounded-full"><span
+                                                class="material-symbols-outlined">storefront</span></div>
+                                        <p class="text-xs font-bold">Costco Wholesale, Alhambra, CA</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-8">
+                                <div class="space-y-2">
+                                    <label class="text-sm font-bold text-text-sub">开始采买时间</label>
+                                    <input class="w-full bg-base border-surface rounded-lg py-3 focus:ring-primary"
+                                        type="datetime-local" />
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-sm font-bold text-text-sub">预估送达时间</label>
+                                    <input class="w-full bg-base border-surface rounded-lg py-3 focus:ring-primary"
+                                        type="datetime-local" />
+                                </div>
+                            </div>
+
+                            <div class="bg-surface/20 p-6 rounded-xl space-y-4 border border-surface">
+                                <div class="flex justify-between items-center text-sm font-bold">
+                                    <span>订单容量上限</span>
+                                    <span class="text-primary price-text text-xl">25</span>
+                                </div>
+                                <input
+                                    class="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                                    max="50" min="1" type="range" value="25" />
+                            </div>
+
+                            <div class="flex gap-4 pt-4">
+                                <button class="btn-primary flex-1" data-i18n="btn_publish">发布行程</button>
+                                <button class="btn-ghost flex-1" data-i18n="btn_draft">存为草稿</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="../assets/ui-core.js"></script>
+</body>
+
+</html>

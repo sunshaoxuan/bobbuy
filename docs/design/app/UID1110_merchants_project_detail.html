@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BoBB - Project Detail (Merchant)</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#C14B3B",
+                        "background-light": "#FAF7F2",
+                        "background-dark": "#2D2926",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+
+<body class="bg-[#FAF7F2] lg:bg-gray-200 flex justify-center min-h-screen font-sans text-text-main antialiased">
+    <div class="w-full max-w-[480px] bg-base min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
+
+        <header class="p-6 bg-white border-b border-surface flex items-center justify-between sticky top-0 z-50">
+            <a href="UID1110_merchants_project_detail.html"
+                class="material-symbols-outlined text-text-sub">arrow_back_ios</a>
+            <h1 class="font-black tracking-tight">UID1110 项目详情</h1>
+            <button class="material-symbols-outlined text-text-sub">share</button>
+        </header>
+
+        <main class="p-6 space-y-8">
+            <section class="space-y-4">
+                <div class="premium-card bg-text-main text-white p-6 shadow-soft relative overflow-hidden">
+                    <h3 class="text-2xl font-black mb-2">Costco Wholesale</h3>
+                    <p class="text-xs opacity-60">Chiba, Japan • 2026-01-20</p>
+                </div>
+            </section>
+
+            <section class="space-y-4">
+                <h3 class="text-xs font-black text-text-sub uppercase tracking-widest pl-2">行程状态</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-surface p-4 rounded-2xl border border-surface text-center">
+                        <p class="text-[10px] text-text-sub font-black uppercase tracking-tight mb-1">已采集</p>
+                        <p class="text-2xl font-black">24 / 32</p>
+                    </div>
+                    <div class="bg-surface p-4 rounded-2xl border border-surface text-center">
+                        <p class="text-[10px] text-text-sub font-black uppercase tracking-tight mb-1">预计收益</p>
+                        <p class="text-2xl font-black text-primary">¥1,428</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-4">
+                <h3 class="text-xs font-black text-text-sub uppercase tracking-widest pl-2">操作中心</h3>
+                <div class="space-y-3">
+                    <a href="UID1112_merchants_project_processing.html"
+                        class="flex items-center justify-between p-5 bg-white border border-surface rounded-2xl shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <span class="material-symbols-outlined text-primary">shopping_cart</span>
+                            <span class="font-bold">继续采买</span>
+                        </div>
+                        <span class="material-symbols-outlined text-text-sub text-sm">arrow_forward_ios</span>
+                    </a>
+                    <a href="UID1115_merchants_project_talk.html"
+                        class="flex items-center justify-between p-5 bg-white border border-surface rounded-2xl shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <span class="material-symbols-outlined text-primary">chat</span>
+                            <span class="font-bold">沟通中心</span>
+                        </div>
+                        <span class="material-symbols-outlined text-text-sub text-sm">arrow_forward_ios</span>
+                    </a>
+                </div>
+            </section>
+        </main>
+
+        <footer class="absolute bottom-10 left-6 right-6">
+            <button class="btn-primary w-full py-4 font-black shadow-soft">结束行程并进入结算</button>
+        </footer>
+    </div>
+    <script src="../assets/ui-core.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,110 @@
+{
+    "TITLE_DASHBOARD": {
+        "zh": "仪表盘",
+        "zt": "儀表盤",
+        "en": "Dashboard",
+        "ja": "ダッシュボード"
+    },
+    "TITLE_TRIP_MGMT": {
+        "zh": "行程管理",
+        "zt": "行程管理",
+        "en": "Trip Management",
+        "ja": "旅行管理"
+    },
+    "TITLE_ORDER_LIST": {
+        "zh": "订单列表",
+        "zt": "訂單列表",
+        "en": "Order List",
+        "ja": "注文一覧"
+    },
+    "MSG_CHAT_CENTER": {
+        "zh": "消息中心",
+        "zt": "消息中心",
+        "en": "Message Center",
+        "ja": "メッセージセンター"
+    },
+    "LBL_WALLET": {
+        "zh": "财务钱包",
+        "zt": "財務錢包",
+        "en": "Wallet",
+        "ja": "ウォレット"
+    },
+    "BTN_PUBLISH_TRIP": {
+        "zh": "立即发布行程",
+        "zt": "立即發佈行程",
+        "en": "Publish Trip",
+        "ja": "今すぐ公開"
+    },
+    "BTN_SAVE_DRAFT": {
+        "zh": "存为草稿",
+        "zt": "存為草稿",
+        "en": "Save Draft",
+        "ja": "下書き保存"
+    },
+    "LBL_STATUS_ACTIVE": {
+        "zh": "进行中",
+        "zt": "進行中",
+        "en": "Active",
+        "ja": "進行中"
+    },
+    "LBL_STATUS_PLANNED": {
+        "zh": "已计划",
+        "zt": "已計劃",
+        "en": "Planned",
+        "ja": "計画済み"
+    },
+    "TITLE_CONSOLE": {
+        "zh": "控制台",
+        "zt": "控制台",
+        "en": "Console",
+        "ja": "コンソール"
+    },
+    "LBL_NEW_TRIP": {
+        "zh": "发布新行程",
+        "zt": "發佈新行程",
+        "en": "New Trip",
+        "ja": "新規旅行"
+    },
+    "LBL_START_TIME": {
+        "zh": "开始采买时间",
+        "zt": "開始採買時間",
+        "en": "Start Time",
+        "ja": "開始時間"
+    },
+    "LBL_DELIVERY_TIME": {
+        "zh": "预估送达时间",
+        "zt": "預估送達时间",
+        "en": "Delivery Time",
+        "ja": "配達予定时间"
+    },
+    "LBL_CAPACITY_LIMIT": {
+        "zh": "订单容量上限",
+        "zt": "訂單容量上限",
+        "en": "Order Capacity",
+        "ja": "最大注文数"
+    },
+    "TXT_LOADING": {
+        "zh": "正在开启您的专属服务...",
+        "zt": "正在開啟您的專屬服務...",
+        "en": "Opening your exclusive service...",
+        "ja": "専用サービスをご案内中..."
+    },
+    "MSG_PAY_SUCCESS": {
+        "zh": "恭喜，已开启您的专属服务",
+        "zt": "恭喜，已開啟您的專屬服務",
+        "en": "Congrats, your exclusive service is active",
+        "ja": "おめでとうございます、専用サービスが開始されました"
+    },
+    "APP_BRAND_NAME": {
+        "zh": "宝宝败",
+        "zt": "寶寶敗",
+        "en": "BoBB",
+        "ja": "宝宝買"
+    },
+    "APP_BRAND_TECH": {
+        "zh": "bobb",
+        "zt": "bobb",
+        "en": "bobb",
+        "ja": "bobb"
+    }
+}

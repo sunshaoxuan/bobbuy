@@ -1,285 +1,88 @@
 <!DOCTYPE html>
-<html class="light" lang="zh-CN"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>BOBBuy 系统管理设置中心</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
+<html class="light" lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/ui-core.css">
+    <script id="tailwind-config">
         tailwind.config = {
-            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#1fad7e",
-                        "background-light": "#f6f8f7",
-                        "background-dark": "#12201b",
-                        "sidebar-light": "#ffffff",
-                        "card-light": "#ffffff",
-                        "accent-yellow": "#FBC02D"
+                        "primary": "#C14B3B",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
                     },
-                    fontFamily: {
-                        "display": ["Manrope", "Noto Sans SC", "sans-serif"]
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                },
-            },
+                    borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
+                }
+            }
         }
     </script>
-<style type="text/tailwindcss">
-        body {
-            font-family: 'Manrope', 'Noto Sans SC', sans-serif;
-        }
-        .sidebar-item-active {
-            background-color: rgba(31, 173, 126, 0.1);
-            color: #1fad7e;
-            border-right: 3px solid #1fad7e;
-        }
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        .status-online { background-color: #1fad7e; box-shadow: 0 0 8px #1fad7e; }
-    </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark text-[#0f1a16] transition-colors duration-200">
-<div class="flex h-screen overflow-hidden">
-<aside class="w-64 flex flex-col bg-sidebar-light dark:bg-[#1a2e28] border-r border-[#d1e5df] dark:border-[#2a443d] z-20">
-<div class="p-6 flex flex-col gap-1">
-<h1 class="text-primary text-2xl font-bold tracking-tight">BOBBuy</h1>
-<p class="text-[#53937d] text-xs font-medium uppercase tracking-widest">宝宝败 · 系统管理中心</p>
-</div>
-<nav class="flex-1 px-3 space-y-1">
-<a class="sidebar-item-active flex items-center gap-3 px-4 py-3 rounded-lg transition-colors" href="#">
-<span class="material-symbols-outlined text-[22px]">settings</span>
-<span class="text-sm font-bold">平台设置</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-[#53937d] hover:bg-gray-50 dark:hover:bg-primary/10 rounded-lg transition-colors" href="#">
-<span class="material-symbols-outlined text-[22px]">storefront</span>
-<span class="text-sm font-medium">商家管理</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-[#53937d] hover:bg-gray-50 dark:hover:bg-primary/10 rounded-lg transition-colors" href="#">
-<span class="material-symbols-outlined text-[22px]">psychology</span>
-<span class="text-sm font-medium">AI 配置中心</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-[#53937d] hover:bg-gray-50 dark:hover:bg-primary/10 rounded-lg transition-colors" href="#">
-<span class="material-symbols-outlined text-[22px]">translate</span>
-<span class="text-sm font-medium">语言与翻译</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-[#53937d] hover:bg-gray-50 dark:hover:bg-primary/10 rounded-lg transition-colors" href="#">
-<span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
-<span class="text-sm font-medium">财务审计</span>
-</a>
-</nav>
-<div class="p-4 mt-auto">
-<div class="bg-gray-50 dark:bg-black/20 p-4 rounded-xl border border-[#d1e5df] dark:border-[#2a443d]">
-<div class="flex items-center gap-2 mb-2">
-<span class="material-symbols-outlined text-primary text-sm">security</span>
-<span class="text-xs font-bold dark:text-white">管理员身份</span>
-</div>
-<p class="text-[10px] text-[#53937d]">最后登录: 2023-11-24 10:45</p>
-</div>
-</div>
-</aside>
-<main class="flex-1 flex overflow-hidden">
-<div class="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-8">
-<header class="flex justify-between items-center">
-<div>
-<h2 class="text-2xl font-bold dark:text-white">全局平台配置</h2>
-<p class="text-[#53937d] text-sm">管理 BOBBuy 全球业务运营参数与服务范围</p>
-</div>
-<button class="bg-primary text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
-                        保存全局更改
-                    </button>
-</header>
-<section class="flex flex-col gap-4">
-<div class="flex items-center justify-between">
-<h3 class="text-lg font-bold dark:text-white flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">map</span>
-                            服务覆盖地区
-                        </h3>
-<button class="text-primary text-sm font-bold flex items-center gap-1">
-<span class="material-symbols-outlined text-sm">add</span>新增地区
-                        </button>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div class="bg-card-light dark:bg-[#1a2e28] p-5 rounded-xl border border-[#d1e5df] dark:border-[#2a443d] shadow-sm">
-<div class="flex justify-between items-start mb-4">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">NA</div>
-<div>
-<h4 class="font-bold dark:text-white">北美地区 (North America)</h4>
-<p class="text-xs text-[#53937d]">主要城市: 西雅图, 温哥华, 洛杉矶</p>
-</div>
-</div>
-<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded">活跃中</span>
-</div>
-<div class="flex gap-2">
-<span class="text-[10px] border border-[#d1e5df] dark:border-[#2a443d] px-2 py-1 rounded dark:text-gray-300">Costco 特许</span>
-<span class="text-[10px] border border-[#d1e5df] dark:border-[#2a443d] px-2 py-1 rounded dark:text-gray-300">生鲜支持</span>
-</div>
-</div>
-<div class="bg-card-light dark:bg-[#1a2e28] p-5 rounded-xl border border-[#d1e5df] dark:border-[#2a443d] shadow-sm">
-<div class="flex justify-between items-start mb-4">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 font-bold">SEA</div>
-<div>
-<h4 class="font-bold dark:text-white">东南亚 (South East Asia)</h4>
-<p class="text-xs text-[#53937d]">主要城市: 新加坡, 吉隆坡, 曼谷</p>
-</div>
-</div>
-<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded">活跃中</span>
-</div>
-<div class="flex gap-2">
-<span class="text-[10px] border border-[#d1e5df] dark:border-[#2a443d] px-2 py-1 rounded dark:text-gray-300">跨境转运</span>
-<span class="text-[10px] border border-[#d1e5df] dark:border-[#2a443d] px-2 py-1 rounded dark:text-gray-300">多币种结算</span>
-</div>
-</div>
-</div>
-</section>
-<section class="flex flex-col gap-4">
-<h3 class="text-lg font-bold dark:text-white flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">payments</span>
-                        全球费用结构
-                    </h3>
-<div class="bg-card-light dark:bg-[#1a2e28] rounded-xl border border-[#d1e5df] dark:border-[#2a443d] divide-y divide-[#d1e5df] dark:divide-[#2a443d]">
-<div class="p-5 flex items-center justify-between">
-<div>
-<p class="text-sm font-bold dark:text-white">基础平台佣金 (Base Commission)</p>
-<p class="text-xs text-[#53937d]">每笔订单从商家侧收取的百分比</p>
-</div>
-<div class="flex items-center gap-3">
-<input class="w-20 text-right font-bold bg-background-light dark:bg-[#12201b] border-[#d1e5df] dark:border-[#2a443d] rounded-lg p-2 text-sm dark:text-white" type="text" value="5.0"/>
-<span class="text-sm font-bold text-[#53937d]">%</span>
-</div>
-</div>
-<div class="p-5 flex items-center justify-between">
-<div>
-<p class="text-sm font-bold dark:text-white">AI 服务增强费 (AI Fee)</p>
-<p class="text-xs text-[#53937d]">包含 AI 摘要、翻译与自动回复功能</p>
-</div>
-<div class="flex items-center gap-3">
-<input class="w-20 text-right font-bold bg-background-light dark:bg-[#12201b] border-[#d1e5df] dark:border-[#2a443d] rounded-lg p-2 text-sm dark:text-white" type="text" value="1.5"/>
-<span class="text-sm font-bold text-[#53937d]">USD/单</span>
-</div>
-</div>
-<div class="p-5 flex items-center justify-between">
-<div>
-<p class="text-sm font-bold dark:text-white">主结算货币 (Base Currency)</p>
-<p class="text-xs text-[#53937d]">平台财务报表展示的首选货币</p>
-</div>
-<select class="bg-background-light dark:bg-[#12201b] border-[#d1e5df] dark:border-[#2a443d] rounded-lg p-2 text-sm font-bold dark:text-white outline-none">
-<option>CNY - 人民币</option>
-<option selected="">USD - 美元</option>
-<option>SGD - 新加坡元</option>
-</select>
-</div>
-</div>
-</section>
-<section class="mt-auto pt-6 border-t border-[#d1e5df] dark:border-[#2a443d] flex items-center justify-between">
-<div class="flex items-center gap-4">
-<div class="text-xs">
-<span class="text-[#53937d]">系统版本:</span>
-<span class="font-bold dark:text-white ml-1">v2.4.12-stable</span>
-</div>
-<div class="text-xs">
-<span class="text-[#53937d]">内核构建:</span>
-<span class="font-bold dark:text-white ml-1">20231120.af82</span>
-</div>
-</div>
-<button class="flex items-center gap-2 text-xs font-bold text-primary px-3 py-1.5 bg-primary/10 rounded-lg">
-<span class="material-symbols-outlined text-sm">update</span>
-                        检查更新
-                    </button>
-</section>
-</div>
-<aside class="w-80 border-l border-[#d1e5df] dark:border-[#2a443d] bg-background-light dark:bg-[#12201b] flex flex-col">
-<div class="p-6 border-b border-[#d1e5df] dark:border-[#2a443d]">
-<div class="flex items-center gap-2 mb-1">
-<span class="status-dot status-online"></span>
-<h3 class="text-sm font-bold uppercase tracking-widest dark:text-white">系统运行状态</h3>
-</div>
-<p class="text-xs text-[#53937d]">所有核心服务运行正常</p>
-</div>
-<div class="flex-1 overflow-y-auto p-4 space-y-6">
-<div>
-<div class="flex items-center justify-between mb-3">
-<h4 class="text-[10px] font-bold text-[#53937d] uppercase tracking-widest">AI Agent 运行监测</h4>
-<span class="text-[10px] text-primary">实时更新</span>
-</div>
-<div class="space-y-3">
-<div class="bg-card-light dark:bg-[#1a2e28] p-3 rounded-lg border border-[#d1e5df] dark:border-[#2a443d]">
-<div class="flex justify-between items-center mb-2">
-<span class="text-xs font-bold dark:text-white">Chat-Agent-01</span>
-<span class="text-[10px] text-primary">活跃 (84%)</span>
-</div>
-<div class="w-full h-1.5 bg-gray-100 dark:bg-black/20 rounded-full overflow-hidden">
-<div class="h-full bg-primary" style="width: 84%;"></div>
-</div>
-</div>
-<div class="bg-card-light dark:bg-[#1a2e28] p-3 rounded-lg border border-[#d1e5df] dark:border-[#2a443d]">
-<div class="flex justify-between items-center mb-2">
-<span class="text-xs font-bold dark:text-white">Trans-Agent-US</span>
-<span class="text-[10px] text-primary">活跃 (42%)</span>
-</div>
-<div class="w-full h-1.5 bg-gray-100 dark:bg-black/20 rounded-full overflow-hidden">
-<div class="h-full bg-primary" style="width: 42%;"></div>
-</div>
-</div>
-</div>
-</div>
-<div>
-<h4 class="text-[10px] font-bold text-[#53937d] uppercase tracking-widest mb-3">API 调用频次 (24h)</h4>
-<div class="h-32 bg-card-light dark:bg-[#1a2e28] rounded-lg border border-[#d1e5df] dark:border-[#2a443d] flex items-end p-2 gap-1">
-<div class="flex-1 bg-primary/20 h-1/2 rounded-t-sm"></div>
-<div class="flex-1 bg-primary/20 h-2/3 rounded-t-sm"></div>
-<div class="flex-1 bg-primary/40 h-3/4 rounded-t-sm"></div>
-<div class="flex-1 bg-primary/30 h-1/2 rounded-t-sm"></div>
-<div class="flex-1 bg-primary/60 h-4/5 rounded-t-sm"></div>
-<div class="flex-1 bg-primary/80 h-full rounded-t-sm"></div>
-<div class="flex-1 bg-primary/50 h-2/3 rounded-t-sm"></div>
-<div class="flex-1 bg-primary/20 h-1/3 rounded-t-sm"></div>
-</div>
-<div class="flex justify-between mt-2">
-<span class="text-[8px] text-[#53937d]">00:00</span>
-<span class="text-[8px] text-[#53937d]">12:00</span>
-<span class="text-[8px] text-[#53937d]">现在</span>
-</div>
-</div>
-<div>
-<h4 class="text-[10px] font-bold text-[#53937d] uppercase tracking-widest mb-3">系统告警记录</h4>
-<div class="space-y-2">
-<div class="flex gap-3 items-start p-2 rounded-lg hover:bg-white/5 transition-colors">
-<span class="material-symbols-outlined text-accent-yellow text-sm">warning</span>
-<div>
-<p class="text-[10px] font-bold dark:text-white">API 延迟波动</p>
-<p class="text-[8px] text-[#53937d]">NA-West 节点响应时间 &gt; 500ms</p>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="p-6 bg-gray-50 dark:bg-[#1a2e28] border-t border-[#d1e5df] dark:border-[#2a443d]">
-<div class="flex items-center justify-between">
-<div class="flex flex-col">
-<span class="text-[10px] font-bold dark:text-white uppercase">数据备份</span>
-<span class="text-[8px] text-[#53937d]">上次: 2小时前</span>
-</div>
-<button class="p-2 rounded-lg bg-white dark:bg-[#12201b] border border-[#d1e5df] dark:border-[#2a443d]">
-<span class="material-symbols-outlined text-sm dark:text-white">cloud_download</span>
-</button>
-</div>
-</div>
-</aside>
-</main>
-</div>
 
-</body></html>
+<body class="bg-base font-sans text-text-main transition-colors duration-300">
+    <div class="relative flex h-screen w-full overflow-hidden">
+        <aside class="w-64 flex flex-col border-r border-surface bg-white">
+            <div class="p-6 flex items-center gap-3">
+                <div
+                    class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-soft overflow-hidden">
+                    <img src="../assets/logo.svg" alt="BoBB Logo" class="w-12 h-12">
+                </div>
+                <h2 class="text-xl font-bold tracking-tight" data-i18n="APP_BRAND_NAME">BoBB</h2>
+            </div>
+            <nav class="flex-1 px-4 py-4 space-y-1">
+                <a class="flex items-center gap-3 px-3 py-2 text-text-sub hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                    href="#">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span class="text-sm font-medium" data-i18n="TITLE_CONSOLE">系统设置</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-surface">
+                <div class="lang-selector mb-4">
+                    <span class="lang-btn" onclick="switchLanguage('zh')">简</span>
+                    <span class="lang-btn" onclick="switchLanguage('zt')">繁</span>
+                    <span class="lang-btn" onclick="switchLanguage('en')">EN</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-full overflow-hidden">
+            <header class="h-16 border-b border-surface bg-white flex items-center justify-between px-8">
+                <h1 class="text-lg font-black tracking-tight" data-i18n="TITLE_CONSOLE">系统管理员设置</h1>
+            </header>
+            <div class="flex-1 overflow-y-auto p-8">
+                <div class="max-w-4xl mx-auto premium-card bg-white p-8">
+                    <h2 class="text-xl font-bold mb-6">基本配置</h2>
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-text-sub uppercase">站点名称</label>
+                                <input type="text" class="w-full bg-base border-surface rounded-lg py-3"
+                                    value="BoBB Global">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-text-sub uppercase">联系邮箱</label>
+                                <input type="email" class="w-full bg-base border-surface rounded-lg py-3"
+                                    value="admin@bobb.tech">
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <button class="btn-primary">保存设置</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="../assets/ui-core.js"></script>
+</body>
+
+</html>

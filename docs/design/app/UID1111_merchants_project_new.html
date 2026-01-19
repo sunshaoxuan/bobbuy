@@ -1,22 +1,29 @@
 <!DOCTYPE html>
 
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Merchant: Create Shopping Trip</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
+<html class="light" lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BoBB - Create Shopping Trip</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#f9f506",
-                        "background-light": "#f8f8f5",
-                        "background-dark": "#23220f",
+                        "primary": "#C14B3B",
+                        "background-light": "#FAF7F2",
+                        "background-dark": "#2D2926",
                     },
                     fontFamily: {
                         "display": ["Spline Sans", "sans-serif"]
@@ -31,191 +38,225 @@
             },
         }
     </script>
-<style>
+    <style>
         body {
             font-family: 'Spline Sans', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
+
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
+
         .no-scrollbar {
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
         .form-input-custom {
             @apply flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#1c1c0d] dark:text-[#fcfcf8] focus:outline-0 focus:ring-0 border border-[#e9e8ce] dark:border-[#3d3c1a] bg-white dark:bg-[#2d2c14] h-14 p-[15px] text-base font-normal leading-normal;
         }
     </style>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
-    }
-  </style>
-  </head>
-<body class="bg-background-light dark:bg-background-dark text-[#1c1c0d] dark:text-[#fcfcf8] min-h-screen flex flex-col">
-<!-- Top Navigation Bar -->
-<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-[#e9e8ce] dark:border-[#3d3c1a] px-4 py-4 flex items-center justify-between">
-<button class="flex items-center justify-center size-10 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-<span class="material-symbols-outlined">arrow_back_ios_new</span>
-</button>
-<h1 class="text-lg font-bold tracking-tight">Create Shopping Trip</h1>
-<div class="size-10"></div> <!-- Spacer for symmetry -->
-</header>
-<main class="flex-1 overflow-y-auto px-4 py-6 space-y-8 pb-32">
-<!-- Store Selection Section -->
-<section class="space-y-4">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[#9e9d47]">storefront</span>
-<h3 class="text-lg font-bold tracking-tight">Store Details</h3>
-</div>
-<div class="flex flex-col gap-4">
-<label class="flex flex-col gap-2">
-<p class="text-sm font-medium opacity-70 ml-1">Select Store</p>
-<div class="relative">
-<select class="form-input-custom appearance-none cursor-pointer pr-10">
-<option value="costco-chiba">Costco Chiba, Japan</option>
-<option value="costco-kawasaki">Costco Kawasaki, Japan</option>
-<option value="costco-seattle">Costco Seattle, USA</option>
-<option value="costco-shanghai">Costco Shanghai, China</option>
-</select>
-<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#9e9d47]">unfold_more</span>
-</div>
-</label>
-</div>
-</section>
-<!-- Schedule Section -->
-<section class="space-y-4">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[#9e9d47]">calendar_today</span>
-<h3 class="text-lg font-bold tracking-tight">Scheduled Date &amp; Time</h3>
-</div>
-<div class="bg-white dark:bg-[#2d2c14] rounded-2xl p-4 border border-[#e9e8ce] dark:border-[#3d3c1a]">
-<div class="flex items-center justify-between mb-4">
-<button class="p-2"><span class="material-symbols-outlined">chevron_left</span></button>
-<p class="font-bold">October 2023</p>
-<button class="p-2"><span class="material-symbols-outlined">chevron_right</span></button>
-</div>
-<div class="grid grid-cols-7 text-center gap-y-2">
-<div class="text-[11px] font-bold opacity-40">S</div>
-<div class="text-[11px] font-bold opacity-40">M</div>
-<div class="text-[11px] font-bold opacity-40">T</div>
-<div class="text-[11px] font-bold opacity-40">W</div>
-<div class="text-[11px] font-bold opacity-40">T</div>
-<div class="text-[11px] font-bold opacity-40">F</div>
-<div class="text-[11px] font-bold opacity-40">S</div>
-<!-- Calendar Grid (Truncated example) -->
-<div class="h-10 flex items-center justify-center text-sm opacity-20">28</div>
-<div class="h-10 flex items-center justify-center text-sm opacity-20">29</div>
-<div class="h-10 flex items-center justify-center text-sm opacity-20">30</div>
-<div class="h-10 flex items-center justify-center text-sm">1</div>
-<div class="h-10 flex items-center justify-center text-sm">2</div>
-<div class="h-10 flex items-center justify-center text-sm">3</div>
-<div class="h-10 flex items-center justify-center text-sm">4</div>
-<div class="h-10 flex items-center justify-center text-sm bg-primary text-black rounded-full font-bold">5</div>
-<div class="h-10 flex items-center justify-center text-sm">6</div>
-<div class="h-10 flex items-center justify-center text-sm">7</div>
-<div class="h-10 flex items-center justify-center text-sm font-bold">...</div>
-</div>
-</div>
-<div class="flex gap-3">
-<div class="flex-1 flex flex-col gap-2">
-<p class="text-sm font-medium opacity-70 ml-1">Start Time</p>
-<input class="form-input-custom" type="time" value="10:00"/>
-</div>
-<div class="flex-1 flex flex-col gap-2">
-<p class="text-sm font-medium opacity-70 ml-1">Est. Duration</p>
-<select class="form-input-custom">
-<option>2 Hours</option>
-<option>3 Hours</option>
-<option>4 Hours</option>
-</select>
-</div>
-</div>
-</section>
-<!-- AI Pricing Assistant Toggle -->
-<section class="bg-[#1c1c0d] dark:bg-primary/10 rounded-2xl p-5 flex items-center justify-between border border-transparent dark:border-primary/20">
-<div class="flex flex-col gap-1">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">auto_awesome</span>
-<h3 class="text-white dark:text-primary font-bold">AI Pricing Assistant</h3>
-</div>
-<p class="text-xs text-white/60 dark:text-primary/70 max-w-[200px]">Auto-calculate fees, taxes, and live FX rates during shop.</p>
-</div>
-<label class="relative inline-flex items-center cursor-pointer">
-<input checked="" class="sr-only peer" type="checkbox"/>
-<div class="w-14 h-8 bg-white/20 dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-primary after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary/40"></div>
-</label>
-</section>
-<!-- Invited Customers Section -->
-<section class="space-y-4">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[#9e9d47]">group_add</span>
-<h3 class="text-lg font-bold tracking-tight">Invited Customers</h3>
-</div>
-<button class="text-sm font-bold text-[#9e9d47] px-3 py-1 rounded-full border border-[#9e9d47]/20">Add All</button>
-</div>
-<div class="flex overflow-x-auto gap-4 no-scrollbar pb-2">
-<!-- Customer Card 1 -->
-<div class="flex flex-col items-center gap-2 min-w-[80px]">
-<div class="relative">
-<img class="size-16 rounded-full object-cover border-2 border-primary" data-alt="Portrait of a female customer avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5eqCF786-E5E24845r0PJgCiGgFCzi9XmDtCliPqoymx4njzfVEN5G-1Ilrb6Xp3Tw68L2gJn_xxlET6h_ro436BTbIAiblLLXiCRAFu3VjjXt0wIwYRBLdh32M2L6SLAfcLDh_earf0U4M1qmoPLk7OKbRu4b8s7jhfMcGpu2EmldweD2DEgFr1LMdT0OrUjjgF-c_6oTYAdWG7F0bqRjp0rXGeW3JsXsQ2o1eBd2arygNNqmzQRzXghgBd0zjtdqsLyisFRVYVM"/>
-<div class="absolute -bottom-1 -right-1 bg-primary text-black size-6 rounded-full flex items-center justify-center border-2 border-white dark:border-background-dark">
-<span class="material-symbols-outlined text-[14px] font-bold">check</span>
-</div>
-</div>
-<p class="text-xs font-medium text-center truncate w-full">Yuki M.</p>
-</div>
-<!-- Customer Card 2 -->
-<div class="flex flex-col items-center gap-2 min-w-[80px]">
-<div class="relative">
-<img class="size-16 rounded-full object-cover border-2 border-transparent grayscale opacity-60" data-alt="Portrait of a male customer avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYGUxzwwtSq92ql1SbE63UZBqzHqnAYVIpEBpaNzyXDXOff4kbcyHCsqQ_BNWskLrJILLALaW3qhGgt2LHPDmbWZkWh6VOqoA6Yn4XFIp8KbmgAKtqi-4NSe0ZyJYK0NXcChGdVKFWCSD2KMso5Cjk1s2x2W8RfXjdyHgor0dX8JptQTU1VudEnq9lQkIsfWrPmN9AHsnFZ6kl75Q1azMYgG5V5AF79x6GPShP4M_jLU-S5U9fa5URntNVfJT1LQ5mcUXhPCx8yifC"/>
-<div class="absolute -bottom-1 -right-1 bg-background-light dark:bg-background-dark text-gray-400 size-6 rounded-full flex items-center justify-center border-2 border-white dark:border-background-dark">
-<span class="material-symbols-outlined text-[14px] font-bold">add</span>
-</div>
-</div>
-<p class="text-xs font-medium text-center truncate w-full opacity-60">Kenji S.</p>
-</div>
-<!-- Customer Card 3 -->
-<div class="flex flex-col items-center gap-2 min-w-[80px]">
-<div class="relative">
-<img class="size-16 rounded-full object-cover border-2 border-primary" data-alt="Portrait of a female customer avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo__TTef_73YqYN4GQIbfbg2BWZ9QH6ygZJzF0MH9MjakJme6VMX-xtDPQp5zqUso05sLOa9UFtuOEBR2B65EwakZ3ozDDnILiTzYUwJxgc_OAPfdE2hMEedivH97Ii7FbA7GFUIFsMqoo0FU8g_RDhhYkleeoPqnVCmtGonE0SoRb5epnLu02iA_NSoLBOUyEli8lSw3IGDplaKIToqCrbo2SbunDNd0GK9tkNSUfS8lEVD6a3Y91qRAmdAdy8OdJH8HhMlFK58by"/>
-<div class="absolute -bottom-1 -right-1 bg-primary text-black size-6 rounded-full flex items-center justify-center border-2 border-white dark:border-background-dark">
-<span class="material-symbols-outlined text-[14px] font-bold">check</span>
-</div>
-</div>
-<p class="text-xs font-medium text-center truncate w-full">Sarah L.</p>
-</div>
-<!-- Customer Card 4 -->
-<div class="flex flex-col items-center gap-2 min-w-[80px]">
-<div class="relative">
-<div class="size-16 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center border-2 border-dashed border-[#e9e8ce] dark:border-[#3d3c1a]">
-<span class="material-symbols-outlined text-[#9e9d47]">person_search</span>
-</div>
-</div>
-<p class="text-xs font-medium text-center truncate w-full opacity-60">Find</p>
-</div>
-</div>
-</section>
-</main>
-<!-- Floating Footer Action -->
-<footer class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background-light dark:from-background-dark via-background-light/95 dark:via-background-dark/95 to-transparent pb-8">
-<div class="max-w-[500px] mx-auto space-y-4">
-<div class="flex items-center justify-between px-4 py-2 bg-black/5 dark:bg-white/5 rounded-full backdrop-blur-sm">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-sm">shopping_bag</span>
-<span class="text-sm font-semibold">Costco Chiba</span>
-</div>
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-sm">event</span>
-<span class="text-sm font-semibold">Oct 5, 10:00 AM</span>
-</div>
-</div>
-<button class="w-full h-16 bg-primary text-[#1c1c0d] font-bold text-lg rounded-full flex items-center justify-center gap-2 shadow-xl shadow-primary/20 active:scale-[0.98] transition-transform">
-<span>Publish Trip</span>
-<span class="material-symbols-outlined">send</span>
-</button>
-</div>
-</footer>
-</body></html>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body class="bg-[#FAF7F2] lg:bg-gray-200 flex justify-center min-h-screen font-sans text-text-main">
+    <div class="w-full max-w-[480px] bg-base min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
+
+        <!-- Top Navigation Bar -->
+        <header
+            class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-[#e9e8ce] dark:border-[#3d3c1a] px-4 py-4 flex items-center justify-between">
+            <button
+                class="flex items-center justify-center size-10 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                <span class="material-symbols-outlined">arrow_back_ios_new</span>
+            </button>
+            <h1 class="text-lg font-bold tracking-tight">UID1111 创建代购行程</h1>
+            <div class="size-10"></div> <!-- Spacer for symmetry -->
+        </header>
+        <main class="flex-1 overflow-y-auto px-4 py-6 space-y-8 pb-32">
+            <!-- Store Selection Section -->
+            <section class="space-y-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#9e9d47]">storefront</span>
+                    <h3 class="text-lg font-bold tracking-tight">Store Details</h3>
+                </div>
+                <div class="flex flex-col gap-4">
+                    <label class="flex flex-col gap-2">
+                        <p class="text-sm font-medium opacity-70 ml-1">Select Store</p>
+                        <div class="relative">
+                            <select class="form-input-custom appearance-none cursor-pointer pr-10">
+                                <option value="costco-chiba">Costco Chiba, Japan</option>
+                                <option value="costco-kawasaki">Costco Kawasaki, Japan</option>
+                                <option value="costco-seattle">Costco Seattle, USA</option>
+                                <option value="costco-shanghai">Costco Shanghai, China</option>
+                            </select>
+                            <span
+                                class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#9e9d47]">unfold_more</span>
+                        </div>
+                    </label>
+                </div>
+            </section>
+            <!-- Schedule Section -->
+            <section class="space-y-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#9e9d47]">calendar_today</span>
+                    <h3 class="text-lg font-bold tracking-tight">Scheduled Date &amp; Time</h3>
+                </div>
+                <div class="bg-white dark:bg-[#2d2c14] rounded-2xl p-4 border border-[#e9e8ce] dark:border-[#3d3c1a]">
+                    <div class="flex items-center justify-between mb-4">
+                        <button class="p-2"><span class="material-symbols-outlined">chevron_left</span></button>
+                        <p class="font-bold">October 2023</p>
+                        <button class="p-2"><span class="material-symbols-outlined">chevron_right</span></button>
+                    </div>
+                    <div class="grid grid-cols-7 text-center gap-y-2">
+                        <div class="text-[11px] font-bold opacity-40">S</div>
+                        <div class="text-[11px] font-bold opacity-40">M</div>
+                        <div class="text-[11px] font-bold opacity-40">T</div>
+                        <div class="text-[11px] font-bold opacity-40">W</div>
+                        <div class="text-[11px] font-bold opacity-40">T</div>
+                        <div class="text-[11px] font-bold opacity-40">F</div>
+                        <div class="text-[11px] font-bold opacity-40">S</div>
+                        <!-- Calendar Grid (Truncated example) -->
+                        <div class="h-10 flex items-center justify-center text-sm opacity-20">28</div>
+                        <div class="h-10 flex items-center justify-center text-sm opacity-20">29</div>
+                        <div class="h-10 flex items-center justify-center text-sm opacity-20">30</div>
+                        <div class="h-10 flex items-center justify-center text-sm">1</div>
+                        <div class="h-10 flex items-center justify-center text-sm">2</div>
+                        <div class="h-10 flex items-center justify-center text-sm">3</div>
+                        <div class="h-10 flex items-center justify-center text-sm">4</div>
+                        <div
+                            class="h-10 flex items-center justify-center text-sm bg-primary text-black rounded-full font-bold">
+                            5</div>
+                        <div class="h-10 flex items-center justify-center text-sm">6</div>
+                        <div class="h-10 flex items-center justify-center text-sm">7</div>
+                        <div class="h-10 flex items-center justify-center text-sm font-bold">...</div>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="flex-1 flex flex-col gap-2">
+                        <p class="text-sm font-medium opacity-70 ml-1">Start Time</p>
+                        <input class="form-input-custom" type="time" value="10:00" />
+                    </div>
+                    <div class="flex-1 flex flex-col gap-2">
+                        <p class="text-sm font-medium opacity-70 ml-1">Est. Duration</p>
+                        <select class="form-input-custom">
+                            <option>2 Hours</option>
+                            <option>3 Hours</option>
+                            <option>4 Hours</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+            <!-- AI Pricing Assistant Toggle -->
+            <section
+                class="bg-[#1c1c0d] dark:bg-primary/10 rounded-2xl p-5 flex items-center justify-between border border-transparent dark:border-primary/20">
+                <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">auto_awesome</span>
+                        <h3 class="text-white dark:text-primary font-bold">AI Pricing Assistant</h3>
+                    </div>
+                    <p class="text-xs text-white/60 dark:text-primary/70 max-w-[200px]">Auto-calculate fees, taxes, and
+                        live
+                        FX rates during shop.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input checked="" class="sr-only peer" type="checkbox" />
+                    <div
+                        class="w-14 h-8 bg-white/20 dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-primary after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary/40">
+                    </div>
+                </label>
+            </section>
+            <!-- Invited Customers Section -->
+            <section class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#9e9d47]">group_add</span>
+                        <h3 class="text-lg font-bold tracking-tight">Invited Customers</h3>
+                    </div>
+                    <button
+                        class="text-sm font-bold text-[#9e9d47] px-3 py-1 rounded-full border border-[#9e9d47]/20">Add
+                        All</button>
+                </div>
+                <div class="flex overflow-x-auto gap-4 no-scrollbar pb-2">
+                    <!-- Customer Card 1 -->
+                    <div class="flex flex-col items-center gap-2 min-w-[80px]">
+                        <div class="relative">
+                            <img class="size-16 rounded-full object-cover border-2 border-primary"
+                                data-alt="Portrait of a female customer avatar"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5eqCF786-E5E24845r0PJgCiGgFCzi9XmDtCliPqoymx4njzfVEN5G-1Ilrb6Xp3Tw68L2gJn_xxlET6h_ro436BTbIAiblLLXiCRAFu3VjjXt0wIwYRBLdh32M2L6SLAfcLDh_earf0U4M1qmoPLk7OKbRu4b8s7jhfMcGpu2EmldweD2DEgFr1LMdT0OrUjjgF-c_6oTYAdWG7F0bqRjp0rXGeW3JsXsQ2o1eBd2arygNNqmzQRzXghgBd0zjtdqsLyisFRVYVM" />
+                            <div
+                                class="absolute -bottom-1 -right-1 bg-primary text-black size-6 rounded-full flex items-center justify-center border-2 border-white dark:border-background-dark">
+                                <span class="material-symbols-outlined text-[14px] font-bold">check</span>
+                            </div>
+                        </div>
+                        <p class="text-xs font-medium text-center truncate w-full">Yuki M.</p>
+                    </div>
+                    <!-- Customer Card 2 -->
+                    <div class="flex flex-col items-center gap-2 min-w-[80px]">
+                        <div class="relative">
+                            <img class="size-16 rounded-full object-cover border-2 border-transparent grayscale opacity-60"
+                                data-alt="Portrait of a male customer avatar"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYGUxzwwtSq92ql1SbE63UZBqzHqnAYVIpEBpaNzyXDXOff4kbcyHCsqQ_BNWskLrJILLALaW3qhGgt2LHPDmbWZkWh6VOqoA6Yn4XFIp8KbmgAKtqi-4NSe0ZyJYK0NXcChGdVKFWCSD2KMso5Cjk1s2x2W8RfXjdyHgor0dX8JptQTU1VudEnq9lQkIsfWrPmN9AHsnFZ6kl75Q1azMYgG5V5AF79x6GPShP4M_jLU-S5U9fa5URntNVfJT1LQ5mcUXhPCx8yifC" />
+                            <div
+                                class="absolute -bottom-1 -right-1 bg-background-light dark:bg-background-dark text-gray-400 size-6 rounded-full flex items-center justify-center border-2 border-white dark:border-background-dark">
+                                <span class="material-symbols-outlined text-[14px] font-bold">add</span>
+                            </div>
+                        </div>
+                        <p class="text-xs font-medium text-center truncate w-full opacity-60">Kenji S.</p>
+                    </div>
+                    <!-- Customer Card 3 -->
+                    <div class="flex flex-col items-center gap-2 min-w-[80px]">
+                        <div class="relative">
+                            <img class="size-16 rounded-full object-cover border-2 border-primary"
+                                data-alt="Portrait of a female customer avatar"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo__TTef_73YqYN4GQIbfbg2BWZ9QH6ygZJzF0MH9MjakJme6VMX-xtDPQp5zqUso05sLOa9UFtuOEBR2B65EwakZ3ozDDnILiTzYUwJxgc_OAPfdE2hMEedivH97Ii7FbA7GFUIFsMqoo0FU8g_RDhhYkleeoPqnVCmtGonE0SoRb5epnLu02iA_NSoLBOUyEli8lSw3IGDplaKIToqCrbo2SbunDNd0GK9tkNSUfS8lEVD6a3Y91qRAmdAdy8OdJH8HhMlFK58by" />
+                            <div
+                                class="absolute -bottom-1 -right-1 bg-primary text-black size-6 rounded-full flex items-center justify-center border-2 border-white dark:border-background-dark">
+                                <span class="material-symbols-outlined text-[14px] font-bold">check</span>
+                            </div>
+                        </div>
+                        <p class="text-xs font-medium text-center truncate w-full">Sarah L.</p>
+                    </div>
+                    <!-- Customer Card 4 -->
+                    <div class="flex flex-col items-center gap-2 min-w-[80px]">
+                        <div class="relative">
+                            <div
+                                class="size-16 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center border-2 border-dashed border-[#e9e8ce] dark:border-[#3d3c1a]">
+                                <span class="material-symbols-outlined text-[#9e9d47]">person_search</span>
+                            </div>
+                        </div>
+                        <p class="text-xs font-medium text-center truncate w-full opacity-60">Find</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+        <!-- Floating Footer Action -->
+        <footer
+            class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background-light dark:from-background-dark via-background-light/95 dark:via-background-dark/95 to-transparent pb-8">
+            <div class="max-w-[500px] mx-auto space-y-4">
+                <div
+                    class="flex items-center justify-between px-4 py-2 bg-black/5 dark:bg-white/5 rounded-full backdrop-blur-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">shopping_bag</span>
+                        <span class="text-sm font-semibold">Costco Chiba</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">event</span>
+                        <span class="text-sm font-semibold">Oct 5, 10:00 AM</span>
+                    </div>
+                </div>
+                <button
+                    class="w-full h-16 bg-primary text-[#1c1c0d] font-bold text-lg rounded-full flex items-center justify-center gap-2 shadow-xl shadow-primary/20 active:scale-[0.98] transition-transform">
+                    <span>Publish Trip</span>
+                    <span class="material-symbols-outlined">send</span>
+                </button>
+            </div>
+        </footer>
+    </div>
+</body>
+
+</html>

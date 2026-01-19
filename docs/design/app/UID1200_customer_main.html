@@ -1,196 +1,143 @@
 <!DOCTYPE html>
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
-<title>BobBuy Discovery</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
+<html class="light" lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BoBB - Global Personal Shopping</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/ui-core.css">
+    <script id="tailwind-config">
         tailwind.config = {
-            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#f9f506",
-                        "background-light": "#f8f8f5",
-                        "background-dark": "#23220f",
+                        "primary": "#C14B3B",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
                     },
-                    fontFamily: {
-                        "display": ["Spline Sans", "sans-serif"]
-                    },
-                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
-                },
-            },
+                    borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
+                }
+            }
         }
     </script>
-<style type="text/tailwindcss">
-        @layer base {
-            body { font-family: 'Spline Sans', sans-serif; }
-            .no-scrollbar::-webkit-scrollbar { display: none; }
-            .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    <style>
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: var(--color-bg-base);
+            position: relative;
         }
-        :root {
-            --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
-        }
-        .nav-container {
-            bottom: calc(1.5rem + var(--safe-area-inset-bottom));
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 480px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-blur: lg;
+            border-t: 1px solid var(--color-bg-surface);
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            z-index: 50;
         }
     </style>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
-    }
-  </style>
-  </head>
-<body class="bg-background-light dark:bg-background-dark text-[#1c1c0d] dark:text-white min-h-screen flex flex-col overflow-x-hidden">
-<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-6 pt-6 pb-2">
-<div class="flex items-center justify-between">
-<div class="flex flex-col">
-<span class="text-[10px] uppercase tracking-widest text-[#9e9d47] font-bold">Delivering to</span>
-<div class="flex items-center gap-1 cursor-pointer">
-<span class="material-symbols-outlined text-lg text-primary">location_on</span>
-<span class="font-bold text-sm">5th Ave, New York</span>
-<span class="material-symbols-outlined text-sm">expand_more</span>
-</div>
-</div>
-<div class="flex gap-3">
-<button class="bg-white dark:bg-zinc-800 size-10 rounded-full flex items-center justify-center shadow-sm">
-<span class="material-symbols-outlined text-xl">notifications</span>
-</button>
-<div class="size-10 rounded-full overflow-hidden border-2 border-primary">
-<img alt="User profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGyhPDzq1Fq64wWz6LPDvryrjzsLb8BBGpH6M_w-C8iddOCRv4di-V8t9-P1895LMUCDBt0QeaI4nxDNBzxgNRcWhi70UDx3CxZrQEs1kbVCnhnF2COzMEQbHax5BkjMc0V4raiBLW1ChfikYi-pj3BqrLcxOGUDviJXHrBoeDhfHaAOVvOJHoji6Ild6DXJvzRYnwTc5T6CyuepvdiLIujuzIum2L6gKGJZMQiUmOxsQgnNtyeHngBy1Jk1dnEXwy3FIfcFBcpJnO"/>
-</div>
-</div>
-</div>
-</header>
-<main class="flex-1 pb-32">
-<div class="px-6 py-6">
-<div class="relative group">
-<div class="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
-<label class="relative flex flex-col w-full">
-<div class="flex w-full items-center rounded-full h-16 bg-white dark:bg-zinc-800 shadow-lg border border-zinc-100 dark:border-zinc-700 px-6 gap-4">
-<span class="material-symbols-outlined text-2xl text-[#9e9d47]">temp_preferences_custom</span>
-<input class="form-input flex-1 border-none bg-transparent focus:ring-0 text-lg placeholder:text-[#9e9d47] font-medium" placeholder="Tell me what you need..."/>
-<button class="bg-primary size-10 rounded-full flex items-center justify-center text-black">
-<span class="material-symbols-outlined">arrow_forward</span>
-</button>
-</div>
-</label>
-</div>
-</div>
-<div class="mb-8">
-<div class="px-6 flex items-center justify-between mb-4">
-<h2 class="text-xl font-bold tracking-tight">Active Trips Near You</h2>
-<button class="text-sm font-bold text-[#9e9d47]">See All</button>
-</div>
-<div class="flex overflow-x-auto no-scrollbar gap-5 px-6 pb-4">
-<div class="flex-none w-72 bg-white dark:bg-zinc-800 rounded-xl overflow-hidden shadow-sm border border-zinc-100 dark:border-zinc-700">
-<div class="relative h-40 bg-center bg-cover" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAA6IeGAcR9cvFtSGeFkwUsvsKUhIiWLS6GMXNl1RFTMDtHiavGfyFofIQTg9vJTwQ-FJfMFOXymMAam_GxSuhG52g2KG4oOaebrCeA0L3QbXg-PbYULaIcAoOKFciAo3OPLBIv3h7bS6myPRSa0qkPTR9iRLkHSctSqv9NSORilqJ0ffPpAwijogrO7ufDJhebH1xm1kIf3NySnXyxKtq1nPBVRQuVJSVeWQYOjCmEp-jaUlcmIzkUsQoaNUdxOm--aKF4-79Xz6Mj');">
-<div class="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter">Live</div>
-<div class="absolute bottom-3 right-3 flex -space-x-2">
-<img alt="Shopper" class="size-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAobOH_r_VjZeWXRZmhGO8GbssBNFKqgvFbrPfIVGiP01ORMEAotK6uyk0zwtnNEbQRHgEG-e7tafxGf9a_0Am4hEzgu_c06P4xlR2oGh_cRWF3QZtxuCzRkbU_wyfGcbXDB4S2Fn7LKduO0Zk6Ep1PTvlDEtum_9tezG0dgQJmIczlJYe-kxbVZYiUuty_Xsh5Drt5GWZv411WdTTNj92h4wBOBpwehkrA_dwpj2Fof5_oAzOXg59ZXjsCYWOHqd5N9NoNKLDYPQDR"/>
-<img alt="Shopper" class="size-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSV_ekq8SZIWgxaBotaTPnIN4oDDpvtB7Hxa_-N1uUHnksTGALwtVaqraLOX9U8xtCnisRTl1RbhoHyzz2bAup5koUuzZkLDYTff4Oy7Y6b7bxzysjZnmDHci7j073YeueULt00r-z3Zn0Oyi086wHXsR8hJ6cxHoU79Vopto0PcN1BW8qdjItEDdcV8ZgGDSxYIUIZbsplSHKSv-6VVpIsT5UNQZdx4KK-Ou1p-7trmBNd1NfSSjM1uzyx8Mewr61yNoHJjF1AccS"/>
-</div>
-</div>
-<div class="p-4">
-<div class="flex items-center gap-2 mb-1">
-<span class="font-bold text-lg">Costco</span>
-<span class="text-xs text-[#9e9d47]">• 0.8 mi</span>
-</div>
-<p class="text-sm text-[#9e9d47] mb-4">Tomorrow, 10:00 AM • 4 slots</p>
-<button class="w-full bg-primary text-black font-bold py-3 rounded-full text-sm transition-transform active:scale-95">Join Trip</button>
-</div>
-</div>
-<div class="flex-none w-72 bg-white dark:bg-zinc-800 rounded-xl overflow-hidden shadow-sm border border-zinc-100 dark:border-zinc-700">
-<div class="relative h-40 bg-center bg-cover" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAwQRuYxeAi6ssGCzeNDPqztixS2s3n9rd_P0wy-5LomJxx_ZuyWDFySyGtHBOspHz1MUmX5ewP_mLtvnQ2ZKHIe5aywKNDl6V3AD7ZajL1fzbYJiTlJSpiKxcOvkgy_yrV_Gv-N3dkbSVxqpajZyVhdX-DlYfNK37Ksf4-rIBy-oWvX06rVM4GT3BTBJb1ZMGnrRMhupsD88_pIwcmzg5G0_Z6wXaYk4hZt3dCB8TH0rT-T-GDv8zL8WDlO4PfeLkMxCwGh2LOiNyQ');">
-<div class="absolute top-3 left-3 bg-zinc-900 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter">Closing Soon</div>
-</div>
-<div class="p-4">
-<div class="flex items-center gap-2 mb-1">
-<span class="font-bold text-lg">Whole Foods</span>
-<span class="text-xs text-[#9e9d47]">• 1.2 mi</span>
-</div>
-<p class="text-sm text-[#9e9d47] mb-4">Today, 4:30 PM • 1 slot left</p>
-<button class="w-full bg-primary text-black font-bold py-3 rounded-full text-sm">Join Trip</button>
-</div>
-</div>
-</div>
-</div>
-<div class="px-6">
-<div class="flex items-center justify-between mb-6">
-<h2 class="text-xl font-bold tracking-tight">Suggested for You</h2>
-<span class="material-symbols-outlined text-[#9e9d47]">grid_view</span>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div class="flex flex-col">
-<div class="aspect-[4/5] rounded-xl bg-zinc-100 dark:bg-zinc-800 relative mb-2 overflow-hidden">
-<img alt="Product" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpYloq0K0wouQYAyvXn_kCuzEKSTGykkNwZ3Y2OPshV3rDD0v767NiVR2BhgX8B_AQKqOrmF9FoizZrdtYfLhqodmSFZ4kAtx1P6FRYvCicGAUduC6InRRnEhlgSIecpw8Xt2D22PcqzBYC2dTjb4JSpg3EiD5agVoKgjR0bnkJoWDCrD7FaToh1i9TBxVmJmz7sTXXJcoDP5ZI_0vPf8wMluC7Iz7QCIAyywz8bIQ9WRAIvsU7S9AKrLr8uyg1H_C7mhy5Vvtn03K"/>
-<button class="absolute top-2 right-2 size-8 bg-white/80 backdrop-blur rounded-full flex items-center justify-center">
-<span class="material-symbols-outlined text-lg">favorite</span>
-</button>
-</div>
-<span class="font-bold text-sm truncate">Premium Mineral Water</span>
-<div class="flex items-center justify-between">
-<span class="text-xs text-[#9e9d47]">$12.99</span>
-<div class="bg-primary/20 text-[#1c1c0d] dark:text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">Costco</div>
-</div>
-</div>
-<div class="flex flex-col">
-<div class="aspect-[4/5] rounded-xl bg-zinc-100 dark:bg-zinc-800 relative mb-2 overflow-hidden">
-<img alt="Product" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPFbnSsNEvqjBV15aC3zyfRJwn3IqaHYH-lxj7g_4OMj0_6CDDDrPmrnUD2kTY5EaBrJ7FpGptLCM7dvnGqmZHr9oujfbWh4aMhvlu4SjF-RNhS3BbMYm3TxecklHJX8iJ9hFadAyI7Uhue5pONgTzkSuhdkGd_NJEIUYqKoF3JJUN1-TuqTvTr6bzMSIuRefyx8gGMf2HjDHHfa_SX7SYRQcvdh7BPgoPzQm3H1GjBr6QprJnsxByW3mWI1AnVHb0MnmaJ8INotWj"/>
-<button class="absolute top-2 right-2 size-8 bg-white/80 backdrop-blur rounded-full flex items-center justify-center">
-<span class="material-symbols-outlined text-lg">favorite</span>
-</button>
-</div>
-<span class="font-bold text-sm truncate">Organic Blueberries</span>
-<div class="flex items-center justify-between">
-<span class="text-xs text-[#9e9d47]">$8.50</span>
-<div class="bg-primary/20 text-[#1c1c0d] dark:text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">Whole Foods</div>
-</div>
-</div>
-<div class="flex flex-col">
-<div class="aspect-[4/5] rounded-xl bg-zinc-100 dark:bg-zinc-800 relative mb-2 overflow-hidden">
-<img alt="Product" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl0UMNmBDgYoL1SKJ5ioKcJV-ZiQXd_QsMBQRHJOqW83fvkPRS2DGUFK55j7TxE7UySCgN3IjAbJWtFoW3WxOoSWodx-iqiY4KfU1tcXrtsDgitAX--FkyIFgWPjMv5DGceQ6hgnK9lq0z7pJWezN0o5vmba3gKTYploKVRKwcwIvKSGfAq811I2_jA8KJyqrCu5Nly0URPn10-y5KH1Ju8o1BrrXqGbZNefRCySUPyhTpuRIE3RS1QRDiriQYDaIqEl3U-TUSxBmb"/>
-<button class="absolute top-2 right-2 size-8 bg-white/80 backdrop-blur rounded-full flex items-center justify-center">
-<span class="material-symbols-outlined text-lg">favorite</span>
-</button>
-</div>
-<span class="font-bold text-sm truncate">Kirkland Coffee Roast</span>
-<div class="flex items-center justify-between">
-<span class="text-xs text-[#9e9d47]">$19.99</span>
-<div class="bg-primary/20 text-[#1c1c0d] dark:text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">Costco</div>
-</div>
-</div>
-<div class="flex flex-col">
-<div class="aspect-[4/5] rounded-xl bg-zinc-100 dark:bg-zinc-800 relative mb-2 overflow-hidden">
-<img alt="Product" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1zfNim0-ECsvPLxP5DJEcHmFmtBnohd0gj2G9IOYqRmDAQC-MBbagAdzsTx3ziQN8RT3MQ5m6Cn-t0X5UBWNoeUzIfemPNrdjG5P5sFCMKrpMUPhPPtOysQyKkmWatwxf-gmTbpmw5PzknwYO-d65id6Jz0H__iDG7F0CZVf0WzedbilqIWpmN8P8TWKxbQuaJFQ9az87r0ejueYCDk4oLtGgPTwVQoNsJRlU5qrLaeuS_OVG-RAKpIV3o9o24SDmsUeLH27r_oOJ"/>
-<button class="absolute top-2 right-2 size-8 bg-white/80 backdrop-blur rounded-full flex items-center justify-center">
-<span class="material-symbols-outlined text-lg">favorite</span>
-</button>
-</div>
-<span class="font-bold text-sm truncate">Cold Pressed Olive Oil</span>
-<div class="flex items-center justify-between">
-<span class="text-xs text-[#9e9d47]">$24.00</span>
-<div class="bg-primary/20 text-[#1c1c0d] dark:text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">Specialty</div>
-</div>
-</div>
-</div>
-</div>
-</main>
-<nav class="fixed nav-container left-1/2 -translate-x-1/2 w-[90%] max-w-md h-16 bg-zinc-900/95 dark:bg-zinc-800/95 backdrop-blur-xl rounded-full flex items-center justify-around px-4 shadow-2xl border border-white/10 z-[100]">
-<button class="flex items-center justify-center size-12 bg-primary rounded-full text-black">
-<span class="material-symbols-outlined">home</span>
-</button>
-<button class="flex items-center justify-center size-12 text-white/60 hover:text-white transition-colors">
-<span class="material-symbols-outlined">receipt_long</span>
-</button>
-<button class="flex items-center justify-center size-12 text-white/60 hover:text-white transition-colors">
-<span class="material-symbols-outlined">forum</span>
-</button>
-<button class="flex items-center justify-center size-12 text-white/60 hover:text-white transition-colors">
-<span class="material-symbols-outlined">person</span>
-</button>
-</nav>
+</head>
 
-</body></html>
+<body class="bg-[#FAF7F2] lg:bg-gray-200 flex justify-center min-h-screen font-sans text-text-main">
+    <div class="w-full max-w-[480px] bg-base min-h-screen shadow-2xl flex flex-col pb-20 overflow-hidden relative">
+
+        <!-- Header -->
+        <header class="p-6 pb-2 space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm overflow-hidden">
+                        <img src="../assets/logo.svg" alt="BoBB Logo" class="w-6 h-6">
+                    </div>
+                    <span class="text-xl font-black text-primary tracking-tight" data-i18n="APP_BRAND_NAME">BoBB</span>
+                    <span class="text-[10px] font-bold text-text-sub uppercase opacity-50 ml-1">UID1200</span>
+                </div>
+                <div class="lang-selector">
+                    <span class="lang-btn" onclick="switchLanguage('zh')">简</span>
+                    <span class="lang-btn" onclick="switchLanguage('en')">EN</span>
+                </div>
+            </div>
+            <!-- Search Bar -->
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-3 text-text-sub">search</span>
+                <input type="text"
+                    class="w-full bg-white border-none rounded-full py-3 px-12 text-sm shadow-sm focus:ring-primary"
+                    placeholder="搜索全球好物...">
+            </div>
+        </header>
+
+        <!-- Categories -->
+        <div class="flex gap-4 overflow-x-auto px-6 py-4 no-scrollbar">
+            <button
+                class="px-6 py-2 bg-primary text-white rounded-full text-xs font-bold whitespace-nowrap shadow-soft">全部推荐</button>
+            <button
+                class="px-6 py-2 bg-white text-text-main rounded-full text-xs font-bold border border-surface whitespace-nowrap">美加直邮</button>
+            <button
+                class="px-6 py-2 bg-white text-text-main rounded-full text-xs font-bold border border-surface whitespace-nowrap">日潮精选</button>
+        </div>
+
+        <main class="flex-1 px-6 space-y-6 overflow-y-auto">
+            <h2 class="text-2xl font-black tracking-tight" data-i18n="TITLE_TRIP_MGMT">热门行程</h2>
+
+            <!-- Trip Mobile Card -->
+            <a href="UID1210_customer_project_detail.html" class="block premium-card bg-white overflow-hidden">
+                <div class="h-40 bg-cover bg-center"
+                    style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAP8fRUzkDroAzrrBkI_0DkM51n58hkcwZxrS4XlioL6fIG7yyIuLq99vRHezfgcU1QfHW7DY7TqfPiPWBXSSYLxc0bEqQbJ7tbXnF84EWzmn5F7DKe1h-sfy246da3fcTLy94YtxQgNNU6xmzv4N3Tafnv0auICVMkhZF9rfBEfY7funqwH9TUKiEfIrtdho2zKRoumRX63Zl4v151i9CDuh7c0920s9ljFkQPmxUEiUwZqhSQLp7LG6yjpvsrTJRnYCdOR_5yTbE')">
+                </div>
+                <div class="p-4 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-primary uppercase bg-primary/10 px-2 py-0.5 rounded">西雅图
+                            Costco</span>
+                        <span class="text-[10px] text-text-sub">2023-11-25</span>
+                    </div>
+                    <h3 class="font-bold">Issaquah 仓库黑色星期五专场</h3>
+                    <div class="flex items-center gap-1 text-[10px] text-text-sub">
+                        <span class="material-symbols-outlined text-xs">local_shipping</span> 极速清关 | 全球比价
+                    </div>
+                </div>
+            </a>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav px-4 bg-white/90 backdrop-blur-md">
+            <div class="flex flex-col items-center gap-1 text-primary">
+                <span class="material-symbols-outlined">explore</span>
+                <span class="text-[10px] font-bold">发现</span>
+            </div>
+            <div
+                class="flex flex-col items-center gap-1 text-text-sub hover:text-primary transition-colors cursor-pointer">
+                <span class="material-symbols-outlined">confirmation_number</span>
+                <span class="text-[10px] font-bold">订单</span>
+            </div>
+            <div
+                class="flex flex-col items-center gap-1 text-text-sub hover:text-primary transition-colors cursor-pointer">
+                <span class="material-symbols-outlined">chat_bubble</span>
+                <span class="text-[10px] font-bold">对话</span>
+            </div>
+            <div
+                class="flex flex-col items-center gap-1 text-text-sub hover:text-primary transition-colors cursor-pointer">
+                <span class="material-symbols-outlined">person</span>
+                <span class="text-[10px] font-bold">我的</span>
+            </div>
+        </nav>
+    </div>
+    <script src="../assets/ui-core.js"></script>
+</body>
+
+</html>

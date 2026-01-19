@@ -1,311 +1,130 @@
 <!DOCTYPE html>
+<html class="light" lang="zh-CN">
 
-<html class="light" lang="zh-CN"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>BOBBuy 宝宝败 - 客户沟通与清单协作中心</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/ui-core.css">
+    <script id="tailwind-config">
         tailwind.config = {
-            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#0c7e8d",
-                        "background-light": "#f6f8f8",
-                        "background-dark": "#102022",
+                        "primary": "#C14B3B",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
                     },
-                    fontFamily: {
-                        "display": ["Manrope", "Noto Sans SC", "sans-serif"]
-                    },
-                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
-                },
-            },
+                    borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
+                }
+            }
         }
     </script>
-<style>
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-        .message-bubble-left {
-            border-bottom-left-radius: 2px;
-        }
-        .message-bubble-right {
-            border-bottom-right-radius: 2px;
-        }
-    </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display text-[#0d1a1b] dark:text-slate-200">
-<div class="flex h-screen overflow-hidden">
-<!-- Leftmost Slim Navigation -->
-<aside class="w-16 border-r border-[#e7f2f3] dark:border-slate-800 flex flex-col items-center py-6 gap-8 bg-white dark:bg-[#152a2c]">
-<div class="size-10 text-primary">
-<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-<path clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor" fill-rule="evenodd"></path>
-</svg>
-</div>
-<div class="flex flex-col gap-6">
-<span class="material-symbols-outlined text-primary cursor-pointer hover:bg-primary/10 p-2 rounded-lg" style="font-variation-settings: 'FILL' 1">house</span>
-<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:bg-primary/10 p-2 rounded-lg">chat_bubble</span>
-<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:bg-primary/10 p-2 rounded-lg">shopping_bag</span>
-<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:bg-primary/10 p-2 rounded-lg">settings</span>
-</div>
-<div class="mt-auto flex flex-col gap-6 items-center">
-<div class="size-10 rounded-full bg-cover bg-center border-2 border-primary/20" data-alt="User profile avatar circle" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBunc7miEwo3neMG5zdfmEvBrexrGjaUifbs2PdMlZzVvjN8mR5yyrtSh2dOGjpmupcUwN1IS8cK8lHXVn2XUsWzqEmxxZ12x2hkFxh3wL9kzWSkeBlkV4ldtpbUN5htAxKlF4IlXGlsmeOVs0V_1nPwJBrbefOR4hCBEc05S6EvqTcQLTLdCta55HRCu0tnCrpC6h76DwTqaOx1bylxt1NRLyk6edXbb_Fpd8yxCaSWT2vtdoFmrV9PvSiHRukzn-M9Zr5bHPgKoU')"></div>
-</div>
-</aside>
-<!-- Conversation List (Left Panel) -->
-<nav class="w-80 border-r border-[#e7f2f3] dark:border-slate-800 flex flex-col bg-white dark:bg-[#102022]">
-<div class="p-6">
-<h2 class="text-xl font-bold mb-4">当前对话</h2>
-<div class="relative">
-<span class="material-symbols-outlined absolute left-3 top-2.5 text-sm text-slate-400">search</span>
-<input class="w-full pl-10 pr-4 py-2 bg-background-light dark:bg-slate-800 border-none rounded-lg text-sm focus:ring-1 focus:ring-primary" placeholder="搜索买手或任务..." type="text"/>
-</div>
-</div>
-<div class="flex-1 overflow-y-auto custom-scrollbar">
-<!-- Active Conversation -->
-<div class="flex items-center gap-4 px-6 py-4 bg-[#e7f2f3] dark:bg-primary/10 border-r-4 border-primary cursor-pointer">
-<div class="relative">
-<div class="size-12 rounded-full bg-cover bg-center" data-alt="Shopper profile photo Tokyo" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBe2Cyu_DyMjwzpd-agRKrfbrOJcTRdZ3IEVxeXjfg3sj7o-qehMn6tusnsu0g-7FO8qXsC64Cef8Cpj55ssMqOL7r0Kf26m2gL4G9OdZJ_WyxH3AHwrONDAzlRJtURYu0zJSFD5Q-zdRGkewZ-Wc85aOs83MZZt_uVySWiGXFZG_H_bMNc2PCnVFpWErwcWJ38vNawtsAIk63Js_haCO2i1EnlcIvogOrpKGLjddGIct_VMFIefKuxPKEe-JoRbPrkL7GKBRPnEM4')"></div>
-<div class="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-white rounded-full"></div>
-</div>
-<div class="flex-1 min-w-0">
-<div class="flex justify-between items-center mb-1">
-<p class="text-sm font-bold truncate">东京买手 - 大雄</p>
-<span class="text-[10px] text-slate-400">10:30</span>
-</div>
-<p class="text-xs text-slate-500 truncate font-medium">药妆店巡店中，SK-II有折扣...</p>
-</div>
-</div>
-<!-- List Item 2 -->
-<div class="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
-<div class="size-12 rounded-full bg-cover bg-center" data-alt="Shopper profile photo Paris" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBT4gpSurozxlZJBARtwIHjWtfEk3RtmCJi2tYBz4iOCMGivSoQv0ORjSFxuz15pgIRMfwliUJ8n9khTPdmTiXsZFrz14vpW6yMLwksv4z_yP-yvwTR1LaxEkSIbJTk6j0DcW7iyiF15J_vC2Rm5sjWkHc2QYFkCOUlOSNnfqp9E54UUcqWK-b30ZfrPqCNTRM7YSQteaMaBYOcg4tNx1hjw6VJ5ODfJNB2td5lPvU9knK33IiRKILVdFeXGWf8BA_LSTL10MwdsOU')"></div>
-<div class="flex-1 min-w-0">
-<div class="flex justify-between items-center mb-1">
-<p class="text-sm font-semibold truncate">巴黎代购 - 小玲</p>
-<span class="text-[10px] text-slate-400">昨天</span>
-</div>
-<p class="text-xs text-slate-400 truncate">这个爱马仕包包有现货...</p>
-</div>
-</div>
-<!-- List Item 3 -->
-<div class="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors border-t border-slate-50 dark:border-slate-800">
-<div class="size-12 rounded-full bg-cover bg-center" data-alt="Shopper profile photo London" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDHtjenxJIhP55tusPZclGEurPI9s853WhK27ZumAzm_0Z7NeyJnGxRWqFMftZ1ozIQuWpHxXecZKrbq92Lne974-uzKTErMYwqV03KbPXQ7JLA3maoPqNNtwM7xo5SVnGELPQtfq9OdNr-8eBaSEFd0EGUTov95phApt8m80A8jBarBrM0nmA3BH9vWNjUuqqM9SLcBib8LAfwYgyxJGtOCS25ZRKxVOq9_BET2O7Z1qm70i8q19VgtZ1KghORIA_jif1pEhDgryA')"></div>
-<div class="flex-1 min-w-0">
-<div class="flex justify-between items-center mb-1">
-<p class="text-sm font-semibold truncate">伦敦买手 - James</p>
-<span class="text-[10px] text-slate-400">周三</span>
-</div>
-<p class="text-xs text-slate-400 truncate">Harrods 百货排队中</p>
-</div>
-</div>
-</div>
-<div class="p-6 mt-auto">
-<button class="w-full bg-primary text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
-<span class="material-symbols-outlined text-sm">add</span>
-                发起新代采
-            </button>
-</div>
-</nav>
-<!-- Chat Workspace (Center Panel) -->
-<main class="flex-1 flex flex-col bg-background-light dark:bg-[#0d1a1b]">
-<!-- Chat Header -->
-<header class="h-20 bg-white dark:bg-[#102022] border-b border-[#e7f2f3] dark:border-slate-800 px-8 flex items-center justify-between">
-<div class="flex items-center gap-4">
-<div class="size-10 rounded-full bg-cover bg-center" data-alt="Merchant avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBpbeVR52seIepTa9OoDo-foUW_ZBOe_vtkrkkR3lwksbTffu41Pvq-gylNOqxfN9FRLtiQGl-0uIaEIp2h94mYIUCkbsXnETFspb0nIdai_nJ4pkYHrHaZvTd120Cq0ZwWX2k5mIw55S5HZZsHfai2pB6FAO4e_b0NF5Wkntciqlih9XgA4NDmodl-p23xRn4osm_qxvkmMPr0YJyHIEmEszQCHeLjfWd_ag5tYjeaj7enxF5A3GCrp2uacnav24M6A1-D2lnpU2k')"></div>
-<div>
-<h3 class="font-bold text-lg">东京买手 - 大雄</h3>
-<p class="text-xs text-green-600 font-medium flex items-center gap-1">
-<span class="size-1.5 bg-green-600 rounded-full inline-block"></span>
-                        正在银座松屋百货
-                    </p>
-</div>
-</div>
-<div class="flex items-center gap-4">
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><span class="material-symbols-outlined">call</span></button>
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><span class="material-symbols-outlined">video_call</span></button>
-<button class="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><span class="material-symbols-outlined">more_vert</span></button>
-</div>
-</header>
-<!-- Message History -->
-<div class="flex-1 overflow-y-auto p-8 flex flex-col gap-6 custom-scrollbar">
-<!-- System Timestamp -->
-<div class="flex justify-center">
-<span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-200/50 dark:bg-slate-800 px-3 py-1 rounded-full">10:24 AM</span>
-</div>
-<!-- Merchant Message (Text + Image) -->
-<div class="flex items-start gap-4 max-w-[80%]">
-<div class="size-8 rounded-full bg-cover bg-center mt-1" data-alt="Merchant miniature avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCfqLjumRujYdRhEzzZJ2b-QlxdlV8lFfntlTXOk4O4jER3tawcexELLeToOPnOvcII4fAVnanhpMuRabDzc5uKJ42QxDsqyqkk2fuLgtPAR28fhWEeLMa-DwANPBVtcTuECqMPajDVsi06Yf5Z9gYZeJJ4WYOfWjS5Iw45Z2RMC5dZUuJZnX0vEErf_euc7Vndf85AJoUCq47CwooQY4k5XMcKWOz5NARlEi3P-zS8WyalpGxcBQmRmaTT1_69yMrdi1wwRNsA5Kk')"></div>
-<div class="flex flex-col gap-2">
-<div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm message-bubble-left text-sm leading-relaxed">
-                        老板，看到你要的SK-II神仙水套装了。今天有限定版包装，还送一套中样，价格是22000日元（约1045元人民币）。要拿下吗？
+
+<body class="bg-base font-sans text-text-main transition-colors duration-300">
+    <div class="relative flex h-screen w-full overflow-hidden">
+        <!-- Slim Sidebar Placeholder -->
+        <aside class="w-16 flex flex-col border-r border-surface bg-white items-center py-6 gap-8 shrink-0">
+            <div class="p-6 flex items-center gap-3">
+                <div class="bg-white p-1 rounded-lg shadow-sm flex items-center justify-center overflow-hidden">
+                    <img src="../assets/logo.svg" alt="BoBB Logo" class="w-8 h-8">
+                </div>
+                <h2 class="text-xl font-bold tracking-tight" data-i18n="APP_BRAND_NAME">BoBB</h2>
+            </div>
+            <div class="flex-1 flex flex-col gap-6">
+                <span class="material-symbols-outlined text-primary">chat_bubble</span>
+                <span class="material-symbols-outlined text-text-sub">person</span>
+            </div>
+        </aside>
+
+        <!-- Conversation Sidebar -->
+        <nav class="w-80 border-r border-surface bg-white flex flex-col shrink-0">
+            <div class="p-6 border-b border-surface">
+                <h2 class="text-xl font-bold mb-4" data-i18n="MSG_CHAT_CENTER">消息中心</h2>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-3 top-2.5 text-sm text-text-sub">search</span>
+                    <input
+                        class="w-full pl-10 pr-4 py-2 bg-base border-none rounded-xl text-xs focus:ring-1 focus:ring-primary"
+                        placeholder="搜索对话..." type="text" />
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto divide-y divide-surface">
+                <div class="p-4 bg-primary/5 flex items-center gap-3 cursor-pointer border-r-4 border-primary">
+                    <div class="size-10 rounded-full bg-surface"></div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-black truncate">东京买手 - 大雄</p>
+                        <p class="text-[10px] text-text-sub truncate">正在巡店中...</p>
                     </div>
-<div class="w-64 rounded-xl overflow-hidden shadow-md">
-<img class="w-full h-auto" data-alt="SK-II gift set on store shelf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWQVjo4hloHX0PHgonTJ-wFCDNbTgDDEH3WBk8sOULrd1OwI85QSa5IWpWquvRwQgE9BQGUOfYoC3cAIZLnKcNrzDIE764qfh6wDuqGST1zuDOxy4jWWAsFBFw8vmzwWXEexpALNYczy0Y7mho9pMm_GbOrmWUaKtpkL5yi5FCqbbEFb96r9lVifDZeKNFdB8BWDCfpV5Diak0nuQ10dK585NItNxUcRfr7z4iQhFOsvESXticBtCiW6J2hHroTquEYJ1wDbtb9Zo"/>
-</div>
-</div>
-</div>
-<!-- AI Generated Product Card -->
-<div class="flex items-start gap-4 max-w-[85%]">
-<div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mt-1">
-<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">auto_awesome</span>
-</div>
-<div class="bg-white dark:bg-slate-800 rounded-2xl border border-primary/20 shadow-xl overflow-hidden w-[340px]">
-<div class="p-4 flex gap-4">
-<img class="size-20 rounded-lg object-cover" data-alt="SK-II Product Preview" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRGCP70-ccCuu0fx0zNWzeYZYUEWE-lqenilhRuYi4bB1IQV-W_1LHcKn6R2iB08W9uoSZYn6hjMNltJomPFLLBe6iSH58ipuBNRQ8oMPf-vlzh5QmjEJ6bFiF5pjRtTrkzL_PggPPmEeDpaGJMqppmEZD9St_GzRmf8JkFhMAmFkl8VR3kHH0LSaXi9C_jVDIJ508BIjq5Z4Mm5vF7Kj7b71CJi_SgVkF5XH1AezzunVAVZqAfdz9FjVUUa42e-lffRIzIeUpz-0"/>
-<div class="flex flex-col justify-between py-1">
-<h4 class="text-sm font-bold">SK-II 2024限定神仙水套装</h4>
-<div class="flex items-baseline gap-2">
-<span class="text-lg font-bold text-primary">¥1,045</span>
-<span class="text-[10px] text-slate-400">JPY 22,000</span>
-</div>
-</div>
-</div>
-<div class="bg-primary/5 px-4 py-3 flex justify-between items-center border-t border-primary/10">
-<span class="text-xs text-slate-500 font-medium">智能识别商品信息</span>
-<button class="bg-primary text-white text-xs font-bold py-1.5 px-4 rounded-full flex items-center gap-1 hover:bg-primary/90">
-<span class="material-symbols-outlined text-xs">add_shopping_cart</span>
-                            加入清单
-                        </button>
-</div>
-</div>
-</div>
-<!-- Customer Message -->
-<div class="flex items-start gap-4 max-w-[80%] self-end flex-row-reverse">
-<div class="size-8 rounded-full bg-cover bg-center mt-1" data-alt="Customer avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBwFwB5MJhRQsTatG2WEFwtnRHLOEVx_5dd8j5qu2L5sEtbPAVBWIHgYGJHQAbwAH-oqxu7TC3iw6aRjw80L16dHHI95cxOmv2iJdd-KxMeCtP6jjPnoyrpqf9cQvQiI_JmgCy7FTLJwYt1i6IyHi0oM9yQUQtkTcDMYIOW8f0AIyA1f9muuT_iFUJJgTWrYF21mol-HOpsPGm4nHdjQSfoF4VZmIet8hhAzvmro5zOJQV-xETXlzFRCM_f0uH8upU_O84lmjd17G0')"></div>
-<div class="flex flex-col items-end gap-1">
-<div class="bg-primary text-white p-4 rounded-xl shadow-sm message-bubble-right text-sm leading-relaxed">
+                </div>
+            </div>
+        </nav>
+
+        <!-- Chat Area -->
+        <main class="flex-1 flex flex-col bg-white">
+            <header class="h-16 border-b border-surface flex items-center px-8 justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="size-8 rounded-full bg-surface"></div>
+                    <h3 class="font-bold">东京买手 - 大雄</h3>
+                </div>
+            </header>
+            <div class="flex-1 overflow-y-auto p-8 space-y-6 bg-base/10">
+                <div class="flex justify-start">
+                    <div
+                        class="bg-white p-4 rounded-2xl rounded-tl-none max-w-lg text-sm border border-surface shadow-sm">
+                        老板，看到你要的SK-II神仙水套装了。
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <div class="bg-primary text-white p-4 rounded-2xl rounded-tr-none max-w-lg text-sm shadow-soft">
                         太棒了！就要这个限定款。帮我拿两套，谢谢！
                     </div>
-<span class="text-[10px] text-slate-400 mr-1">已读 10:31</span>
-</div>
-</div>
-</div>
-<!-- Input Area -->
-<div class="p-6 bg-white dark:bg-[#102022] border-t border-[#e7f2f3] dark:border-slate-800">
-<div class="max-w-4xl mx-auto flex flex-col gap-3">
-<div class="flex items-center gap-4 text-slate-400 px-2">
-<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">image</span></button>
-<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">add_circle</span></button>
-<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">location_on</span></button>
-<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">sentiment_satisfied</span></button>
-</div>
-<div class="relative flex items-center">
-<textarea class="w-full rounded-2xl bg-background-light dark:bg-slate-800 border-none px-6 py-4 pr-16 text-sm focus:ring-2 focus:ring-primary/20 resize-none custom-scrollbar" placeholder="发送消息给大雄..." rows="1"></textarea>
-<button class="absolute right-4 size-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
-<span class="material-symbols-outlined text-xl">send</span>
-</button>
-</div>
-</div>
-</div>
-</main>
-<!-- 'My List for this Trip' (Right Drawer) -->
-<aside class="w-80 bg-white dark:bg-[#102022] border-l border-[#e7f2f3] dark:border-slate-800 flex flex-col">
-<!-- Drawer Header -->
-<div class="p-6 border-b border-[#e7f2f3] dark:border-slate-800">
-<div class="flex justify-between items-center mb-4">
-<h3 class="font-bold text-base">本次行程清单</h3>
-<span class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">东京站</span>
-</div>
-<!-- Progress -->
-<div class="space-y-2">
-<div class="flex justify-between text-[11px] font-bold">
-<span class="text-slate-500">采购进度</span>
-<span class="text-primary">60%</span>
-</div>
-<div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-<div class="w-[60%] h-full bg-primary"></div>
-</div>
-</div>
-</div>
-<div class="flex-1 overflow-y-auto p-4 flex flex-col gap-6 custom-scrollbar">
-<!-- Category: Pending -->
-<div>
-<h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3 px-2 flex items-center justify-between">
-                    待购买 (2)
-                    <span class="material-symbols-outlined text-sm">schedule</span>
-</h4>
-<div class="space-y-2">
-<div class="p-3 bg-background-light dark:bg-slate-800/50 rounded-xl border border-transparent hover:border-primary/20 transition-all group">
-<div class="flex gap-3">
-<div class="size-12 rounded-lg bg-slate-200 bg-cover" data-alt="Small product preview item" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuANBKRxJH0OPJ3nBJNL9DcZYZfof0fEuq7DedKN13gRLtRhqvjkYSBLWjiEPwHr1mj5CAeTP0_e5K9CGCijE9Et-ZFFHC9i9WOtnSWg7-B8qpJK3e_iC64W-NpRuS-OUC2hKPUoMq7YfFXCCbKqfJpFuYp2ifzOkZWEcADMDb_nOfi83YuFohCIC9VeX-4bTN3xazqAtPSyUnx63XE3fDhu03FCYawua_SLYsNliPd5SV38fpPmFkaIx7enGSfylbZlpgz3QWOIDFY')"></div>
-<div class="flex-1 min-w-0">
-<p class="text-xs font-bold truncate">龙角散直服颗粒</p>
-<p class="text-[10px] text-slate-400">数量: 4 | 估价: ¥240</p>
-</div>
-<button class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity"><span class="material-symbols-outlined text-sm">close</span></button>
-</div>
-</div>
-<div class="p-3 bg-background-light dark:bg-slate-800/50 rounded-xl border border-transparent">
-<div class="flex gap-3">
-<div class="size-12 rounded-lg bg-slate-200 bg-cover" data-alt="Product item preview" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBOv_jSv276uHbTgI2yH81BcI81JxKuKNTZiQSJjZIgCYtFVkagPdgwqhnsDKf2iMuquSCmUnbLbsNXshFI5kkrHjPVDDkMDhkzHyx6gX1zFVRgGuLxqP6xIqq0mj-yWfNSxkb4ItCo8jMkJz__y1W3--aANMFBIcttynRHkKKrEELStCcGecthB0cUgdaEw1_VpsE9I5lZaQTtHJEwkijp8dMiPJB3EmN2D5KtQ_KFhmCvtxRC6kw-m8Uv2hiFztQhBpLUJFymUPI')"></div>
-<div class="flex-1 min-w-0">
-<p class="text-xs font-bold truncate">大正感冒药 44包入</p>
-<p class="text-[10px] text-slate-400">数量: 2 | 估价: ¥180</p>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!-- Category: Purchased -->
-<div>
-<h4 class="text-[11px] font-bold text-green-600 uppercase tracking-wider mb-3 px-2 flex items-center justify-between">
-                    已入清单 (2)
-                    <span class="material-symbols-outlined text-sm">check_circle</span>
-</h4>
-<div class="space-y-2">
-<div class="p-3 bg-green-50/50 dark:bg-green-900/10 rounded-xl border border-green-100 dark:border-green-900/30">
-<div class="flex gap-3">
-<div class="size-12 rounded-lg bg-cover" data-alt="SK-II small preview" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCPUEZb2FvlZ3dhnAycH1DzVcfsAHySZn1zpWfQbZrPCaxF4Ah6jLSmrSEG4XAjHsVy10h-4GdJHr64FppE-CT43zVCnXM5CYYSrU7-ptMq2XDxNacnnSNqkzVHX0wWmPOKTwa4b4C6CAjsvwuXs9R6KHCQXgcEvb5Rh42ak9EptFM23wxZIZ00driqUpADv0j8eGF9MimgPZad498z6IKnVsqjEj8InNR3-H-0UaZtgv55JshHhY5Wl1-0fE5HxKaadbWCji4_ZTs')"></div>
-<div class="flex-1 min-w-0">
-<p class="text-xs font-bold truncate text-green-800 dark:text-green-200">SK-II 限定套装</p>
-<p class="text-[10px] text-green-600/70">数量: 2 | 现价: ¥2090</p>
-</div>
-<span class="material-symbols-outlined text-green-500 text-sm">verified</span>
-</div>
-</div>
-</div>
-</div>
-<!-- Category: Out of Stock -->
-<div>
-<h4 class="text-[11px] font-bold text-red-500 uppercase tracking-wider mb-3 px-2 flex items-center justify-between">
-                    缺货/未买 (1)
-                    <span class="material-symbols-outlined text-sm">error</span>
-</h4>
-<div class="p-3 bg-red-50/50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30 grayscale">
-<div class="flex gap-3 opacity-60">
-<div class="size-12 rounded-lg bg-slate-200" data-alt="Unavailable product" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCNY4Du2XLjJ7iBTCSw8ETCRJgT2jZZbhbR7T1v6PlqLiF06R8NtXl032RyroLAWGvPLjMeMZMxTqCIb3E6HKd7meAYoYnjQ4wP54DyvDr-jeZfi5E5cEhd-WM_oB6JR4rGdnCDa2wY3276K30WNCzbwPeYv6MZIP7Tav-ATbC_ucWNpVbfxFSn5PPrUdUF2ex0FtAx25DsNPz19jYzh-MQdiP8Ri5hvhk27XJ5XphN5Y8h-LghPtO46TR4I-NV8WbJhJRUW0qb7uw')"></div>
-<div class="flex-1 min-w-0">
-<p class="text-xs font-bold truncate">资生堂红腰子精华</p>
-<p class="text-[10px] text-red-600/70">商场售罄</p>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!-- Footer Actions -->
-<div class="p-6 border-t border-[#e7f2f3] dark:border-slate-800 bg-slate-50 dark:bg-[#152a2c]">
-<div class="flex justify-between items-center mb-4">
-<span class="text-xs text-slate-500 font-bold">已购总计</span>
-<span class="text-lg font-bold text-primary">¥2,090.00</span>
-</div>
-<button class="w-full bg-primary text-white py-4 rounded-xl font-bold text-sm tracking-wide shadow-xl shadow-primary/30 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
-                去结算
-                <span class="material-symbols-outlined text-sm">arrow_forward_ios</span>
-</button>
-<p class="text-center text-[10px] text-slate-400 mt-4">支持微信/支付宝/国际信用卡支付</p>
-</div>
-</aside>
-</div>
-</body></html>
+                </div>
+            </div>
+            <div class="p-6 border-t border-surface bg-white">
+                <div class="flex gap-4 items-center">
+                    <input type="text"
+                        class="flex-1 bg-base border-none rounded-full py-3 px-6 text-sm focus:ring-primary"
+                        placeholder="输入消息...">
+                    <button class="btn-primary px-8 py-3 shadow-soft">发送</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel: Trip Summary -->
+        <aside class="w-80 border-l border-surface bg-white flex flex-col shrink-0">
+            <div class="p-6 border-b border-surface">
+                <h3 class="font-bold text-base mb-4">本次行程清单</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-[11px] font-bold">
+                        <span class="text-text-sub">采购进度</span>
+                        <span class="text-primary">60%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-surface rounded-full overflow-hidden">
+                        <div class="w-[60%] h-full bg-primary"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 p-6 overflow-y-auto space-y-4">
+                <div class="premium-card bg-base/30 p-4 border border-surface">
+                    <p class="text-xs font-bold truncate">龙角散直服颗粒</p>
+                    <p class="text-[10px] text-text-sub">数量: 4 | 估价: ¥240</p>
+                </div>
+            </div>
+            <div class="p-6 border-t border-surface">
+                <button class="btn-primary w-full py-4 text-sm shadow-soft">去结算</button>
+            </div>
+        </aside>
+    </div>
+    <script src="../assets/ui-core.js"></script>
+</body>
+
+</html>
