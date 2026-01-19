@@ -352,5 +352,53 @@
         "zt": "其他編號",
         "en": "Other No.",
         "ja": "その他の番号"
+    },
+    "LBL_PROJECT_DETAIL": {
+        "zh": "项目详情",
+        "zt": "項目詳情",
+        "en": "Project Detail",
+        "ja": "プロジェクト詳細"
+    },
+    "LBL_PROJECT_STATS": {
+        "zh": "行程状态",
+        "zt": "行程狀態",
+        "en": "Project Stats",
+        "ja": "ステータス"
+    },
+    "LBL_COLLECTED": {
+        "zh": "已采集",
+        "zt": "已採集",
+        "en": "Collected",
+        "ja": "採集済み"
+    },
+    "LBL_ESTIMATED_PROFIT": {
+        "zh": "预计收益",
+        "zt": "預計收益",
+        "en": "Est. Profit",
+        "ja": "予想収益"
+    },
+    "LBL_OPERATIONS": {
+        "zh": "操作中心",
+        "zt": "操作中心",
+        "en": "Ops Center",
+        "ja": "操作センター"
+    },
+    "BTN_CONTINUE_BUYING": {
+        "zh": "继续采买",
+        "zt": "繼續採買",
+        "en": "Continue Buying",
+        "ja": "購入を続ける"
+    },
+    "BTN_MESSAGES": {
+        "zh": "沟通中心",
+        "zt": "溝通中心",
+        "en": "Messages",
+        "ja": "メッセージ"
+    },
+    "BTN_FINISH_PROJECT": {
+        "zh": "结束行程并进入结算",
+        "zt": "結束行程並進入結算",
+        "en": "Finish & Settle",
+        "ja": "終了して精算へ"
     }
 }
