@@ -31,7 +31,7 @@
 
 <body class="bg-[#FAF7F2] lg:bg-gray-200 flex justify-center min-h-screen font-sans text-text-main">
     <div
-        class="w-full max-w-[480px] bg-base min-h-screen shadow-2xl flex flex-col justify-center p-10 relative overflow-hidden space-y-12">
+        class="w-full max-w-[480px] bg-base min-h-screen shadow-2xl flex flex-col justify-center p-10 relative overflow-hidden space-y-10">
 
         <div class="flex flex-col items-center gap-4">
             <div
@@ -39,8 +39,8 @@
                 <img src="../assets/logo.svg" alt="BoBB Logo" class="w-14 h-14">
             </div>
             <div class="text-center">
-                <h1 class="text-3xl font-black tracking-tight text-primary" data-i18n="APP_BRAND_NAME">BoBB</h1>
-                <p class="text-[10px] font-bold text-text-sub uppercase tracking-[0.2em] mt-2">UID1000 登录界面</p>
+                <h1 class="text-4xl font-black tracking-tight text-primary" data-i18n="APP_BRAND_NAME">BoBB</h1>
+                <p class="text-[10px] font-bold text-text-sub uppercase tracking-[0.2em] mt-2 opacity-50">UID1000</p>
             </div>
         </div>
 
@@ -48,24 +48,68 @@
             <div class="space-y-2">
                 <input type="text"
                     class="w-full bg-white border-none rounded-2xl py-4 px-6 text-sm shadow-sm focus:ring-primary"
-                    placeholder="账号 / Email">
+                    placeholder="账号 / Email" data-i18n-placeholder="LBL_ACCOUNT_PLACEHOLDER">
             </div>
-            <div class="space-y-2">
+            <div class="space-y-2 relative">
                 <input type="password"
                     class="w-full bg-white border-none rounded-2xl py-4 px-6 text-sm shadow-sm focus:ring-primary"
-                    placeholder="密码 / Password">
+                    placeholder="密码 / Password" data-i18n-placeholder="LBL_PWD_PLACEHOLDER">
             </div>
-            <button class="btn-primary w-full py-4 text-sm font-black shadow-soft mt-4">立 即 登 录</button>
+            <button
+                class="btn-primary w-full py-4 text-sm font-black shadow-lg mt-4 active:scale-95 transition-transform"
+                data-i18n="BTN_LOGIN">立 即 登 录</button>
+            <div class="flex justify-center text-xs">
+                <a href="#" class="font-bold text-text-sub hover:text-primary transition-colors"
+                    data-i18n="LBL_FORGOT_PWD">忘记密码 / Forgot Password</a>
+            </div>
         </div>
 
-        <div class="flex flex-col items-center gap-6 pt-12">
-            <div class="lang-selector border border-surface bg-white/50 px-4 py-2 rounded-full">
+        <!-- Social Login -->
+        <div class="space-y-6 pt-4">
+            <div class="flex items-center gap-4">
+                <div class="flex-1 h-px bg-surface"></div>
+                <span class="text-[10px] font-bold text-text-sub uppercase tracking-widest bg-base px-2"
+                    data-i18n="LBL_SOCIAL_LOGIN">OR SIGN IN WITH</span>
+                <div class="flex-1 h-px bg-surface"></div>
+            </div>
+            <div class="flex justify-center gap-4">
+                <button
+                    class="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
+                    <img src="https://www.google.com/favicon.ico"
+                        class="w-5 h-5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">
+                </button>
+                <button
+                    class="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
+                    <img src="https://www.apple.com/favicon.ico"
+                        class="w-5 h-5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">
+                </button>
+                <button
+                    class="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
+                    <img src="https://www.facebook.com/favicon.ico"
+                        class="w-5 h-5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">
+                </button>
+                <button
+                    class="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
+                    <img src="https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico"
+                        class="w-5 h-5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">
+                </button>
+                <button
+                    class="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
+                    <img src="https://line.me/favicon.ico"
+                        class="w-5 h-5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">
+                </button>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center gap-8 pt-8">
+            <a href="#" class="text-sm font-black text-primary hover:underline underline-offset-4"
+                data-i18n="LBL_REGISTER">还没有账号？立即注册</a>
+
+            <div class="lang-selector border border-surface bg-white/50 px-4 py-2 rounded-full scale-90">
                 <span class="lang-btn" onclick="switchLanguage('zh')">简</span>
                 <span class="lang-btn" onclick="switchLanguage('zt')">繁</span>
                 <span class="lang-btn" onclick="switchLanguage('en')">EN</span>
             </div>
-            <a href="#" class="text-xs font-bold text-text-sub hover:text-primary transition-colors">忘记密码 / Forgot
-                Password?</a>
         </div>
     </div>
     <script src="../assets/ui-core.js"></script>

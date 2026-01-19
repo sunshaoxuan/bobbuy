@@ -34,6 +34,15 @@ function updateTranslations() {
             el.textContent = i18nDictionary[key][UI_CONFIG.currentLang];
         }
     });
+
+    // Support for placeholders
+    const inputs = document.querySelectorAll('[data-i18n-placeholder]');
+    inputs.forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (i18nDictionary[key] && i18nDictionary[key][UI_CONFIG.currentLang]) {
+            el.placeholder = i18nDictionary[key][UI_CONFIG.currentLang];
+        }
+    });
 }
 
 function switchLanguage(lang) {

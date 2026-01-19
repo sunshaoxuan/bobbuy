@@ -106,5 +106,71 @@
         "zt": "bobb",
         "en": "bobb",
         "ja": "bobb"
+    },
+    "LBL_SOCIAL_LOGIN": {
+        "zh": "或者通过以下方式社交账号登录",
+        "zt": "或者通過以下方式社交帳號登錄",
+        "en": "Or sign in with social accounts",
+        "ja": "またはソーシャルアカウントでログイン"
+    },
+    "LBL_FORGOT_PWD": {
+        "zh": "忘记密码 / Forgot Password",
+        "zt": "忘記密碼 / Forgot Password",
+        "en": "Forgot Password",
+        "ja": "パスワードをお忘れですか"
+    },
+    "LBL_REGISTER": {
+        "zh": "还没有账号？立即注册",
+        "zt": "還沒有帳號？立即註冊",
+        "en": "No account? Register Now",
+        "ja": "アカウントをお持ちでないですか？今すぐ登録"
+    },
+    "HERO_TITLE": {
+        "zh": "全球化代购，从未如此简单",
+        "zt": "全球化代購，从未如此簡單",
+        "en": "Global Buying, Simplified",
+        "ja": "グローバルな買い付け、かつてないほど簡単に"
+    },
+    "HERO_SUBTITLE": {
+        "zh": "连接全球代购专家，为您实时同步世界各地的折扣与惊喜。",
+        "zt": "連接全球代購專家，為您即時同步世界各地的折扣与驚喜。",
+        "en": "Connecting you with global experts for real-time deals and surprises worldwide.",
+        "ja": "世界中の買い付けエキスパートとつながり、リアルタイムでお得な情報をお届けします。"
+    },
+    "LBL_DISCOVER": {
+        "zh": "探索发现",
+        "zt": "探索發現",
+        "en": "Discover",
+        "ja": "発見"
+    },
+    "LBL_TRIPS": {
+        "zh": "热门行程",
+        "zt": "熱門行程",
+        "en": "Hot Trips",
+        "ja": "人気の買い付け行程"
+    },
+    "LBL_JOIN": {
+        "zh": "加入我们",
+        "zt": "加入我們",
+        "en": "Join Us",
+        "ja": "参加する"
+    },
+    "LBL_ACCOUNT_PLACEHOLDER": {
+        "zh": "账号 / Email",
+        "zt": "帳號 / Email",
+        "en": "Account / Email",
+        "ja": "アカウント / メール"
+    },
+    "LBL_PWD_PLACEHOLDER": {
+        "zh": "密码 / Password",
+        "zt": "密碼 / Password",
+        "en": "Password",
+        "ja": "パスワード"
+    },
+    "BTN_LOGIN": {
+        "zh": "立 即 登 录",
+        "zt": "立 即 登 錄",
+        "en": "Login Now",
+        "ja": "今すぐログイン"
     }
 }

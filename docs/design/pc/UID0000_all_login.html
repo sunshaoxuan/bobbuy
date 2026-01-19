@@ -28,43 +28,399 @@
     </script>
 </head>
 
-<body class="bg-base font-sans text-text-main flex items-center justify-center min-h-screen">
-    <div class="max-w-md w-full p-8 px-12 premium-card bg-white space-y-8">
-        <div class="flex flex-col items-center gap-4">
-            <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-soft overflow-hidden">
-                <img src="../assets/logo.svg" alt="BoBB Logo" class="w-12 h-12">
-            </div>
-            <div class="text-center">
-                <h1 class="text-2xl font-black tracking-tight text-primary" data-i18n="APP_BRAND_NAME">BoBB</h1>
-                <p class="text-xs font-bold text-text-sub uppercase tracking-widest mt-1">Global Personal Shopping</p>
-            </div>
-        </div>
+<body class="bg-base font-sans text-text-main min-h-screen flex flex-col">
+    <!-- Side Login Drawer (Hidden by default) -->
+    <div id="login-drawer"
+        class="fixed inset-y-0 right-0 w-[400px] bg-white shadow-2xl z-[60] transform translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="p-10 h-full flex flex-col justify-center relative">
+            <button onclick="toggleLogin()"
+                class="absolute top-8 right-8 text-text-sub hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-3xl">close</span>
+            </button>
 
-        <div class="space-y-4">
-            <div class="space-y-2">
-                <label class="text-xs font-bold text-text-sub uppercase">账号 / Email</label>
-                <input type="text" class="w-full bg-base border-surface rounded-lg py-3 focus:ring-primary"
-                    placeholder="yourname@domain.com">
-            </div>
-            <div class="space-y-2">
-                <label class="text-xs font-bold text-text-sub uppercase">密码 / Password</label>
-                <input type="password" class="w-full bg-base border-surface rounded-lg py-3 focus:ring-primary"
-                    placeholder="••••••••">
-            </div>
-        </div>
+            <div class="space-y-8">
+                <div class="space-y-2">
+                    <div
+                        class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg rotate-3 overflow-hidden mb-4">
+                        <img src="../assets/logo.svg" alt="BoBB Logo" class="w-8 h-8">
+                    </div>
+                    <h2 class="text-3xl font-black tracking-tight" data-i18n="BTN_LOGIN">立 即 登 录</h2>
+                    <p class="text-xs text-text-sub font-bold uppercase tracking-widest">Welcome back to BoBB</p>
+                </div>
 
-        <button class="btn-primary w-full py-4 text-base">登 录 / Login</button>
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-text-sub uppercase tracking-wider ml-1">Account</label>
+                        <input type="text"
+                            class="w-full bg-base border-none rounded-xl py-4 px-6 focus:ring-primary text-sm shadow-sm"
+                            placeholder="账号 / Email" data-i18n-placeholder="LBL_ACCOUNT_PLACEHOLDER">
+                    </div>
+                    <div class="space-y-1">
+                        <label
+                            class="text-[10px] font-bold text-text-sub uppercase tracking-wider ml-1">Password</label>
+                        <input type="password"
+                            class="w-full bg-base border-none rounded-xl py-4 px-6 focus:ring-primary text-sm shadow-sm"
+                            placeholder="密码 / Password" data-i18n-placeholder="LBL_PWD_PLACEHOLDER">
+                    </div>
+                </div>
 
-        <div class="flex items-center justify-between text-xs font-bold text-text-sub pt-4">
-            <a href="#" class="hover:text-primary">忘记密码?</a>
-            <div class="lang-selector">
-                <span class="lang-btn" onclick="switchLanguage('zh')">简</span>
-                <span class="lang-btn" onclick="switchLanguage('zt')">繁</span>
-                <span class="lang-btn" onclick="switchLanguage('en')">EN</span>
+                <button
+                    class="btn-primary w-full py-4 text-sm font-black shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
+                    onclick="location.href='UID0200_customer_main.html'" data-i18n="BTN_LOGIN">立 即 登 录</button>
+
+                <div class="flex items-center justify-between text-xs font-bold text-text-sub">
+                    <a href="#" class="hover:text-primary" data-i18n="LBL_FORGOT_PWD">忘记密码?</a>
+                    <a href="#" class="text-primary hover:underline underline-offset-4"
+                        data-i18n="LBL_REGISTER">立即注册</a>
+                </div>
+
+                <div class="pt-8 space-y-6">
+                    <div class="flex items-center gap-4">
+                        <div class="flex-1 h-px bg-surface"></div>
+                        <span class="text-[10px] font-bold text-text-sub uppercase tracking-widest"
+                            data-i18n="LBL_SOCIAL_LOGIN">OR LOGIN WITH</span>
+                        <div class="flex-1 h-px bg-surface"></div>
+                    </div>
+                    <div class="flex justify-center gap-4">
+                        <button
+                            class="w-10 h-10 bg-base rounded-full flex items-center justify-center hover:bg-white transition-colors border border-surface">
+                            <img src="https://www.google.com/favicon.ico" class="w-4 h-4 grayscale opacity-50">
+                        </button>
+                        <button
+                            class="w-10 h-10 bg-base rounded-full flex items-center justify-center hover:bg-white transition-colors border border-surface">
+                            <img src="https://www.apple.com/favicon.ico" class="w-4 h-4 grayscale opacity-50">
+                        </button>
+                        <button
+                            class="w-10 h-10 bg-base rounded-full flex items-center justify-center hover:bg-white transition-colors border border-surface">
+                            <img src="https://www.facebook.com/favicon.ico" class="w-4 h-4 grayscale opacity-50">
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+    <div id="drawer-overlay" onclick="toggleLogin()"
+        class="fixed inset-0 bg-black/20 backdrop-blur-sm z-[55] hidden opacity-0 transition-opacity duration-300">
+    </div>
+
+    <header class="w-full bg-white/80 backdrop-blur-md border-b border-surface sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-12">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg rotate-3 overflow-hidden">
+                        <img src="../assets/logo.svg" alt="BoBB Logo" class="w-8 h-8">
+                    </div>
+                    <span class="text-2xl font-black text-primary tracking-tight" data-i18n="APP_BRAND_NAME">BoBB</span>
+                </div>
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="#" class="text-sm font-bold text-text-sub hover:text-primary transition-colors"
+                        data-i18n="LBL_DISCOVER">探索发现</a>
+                    <a href="#trips" class="text-sm font-bold text-text-sub hover:text-primary transition-colors"
+                        data-i18n="LBL_TRIPS">热门行程</a>
+                </nav>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="lang-selector border border-surface bg-white px-3 py-1.5 rounded-full scale-90">
+                    <span class="lang-btn" onclick="switchLanguage('zh')">简</span>
+                    <span class="lang-btn" onclick="switchLanguage('zt')">繁</span>
+                    <span class="lang-btn" onclick="switchLanguage('en')">EN</span>
+                </div>
+                <button onclick="toggleLogin()"
+                    class="px-6 py-2.5 bg-primary text-white text-sm font-black rounded-full shadow-soft hover:scale-105 transition-transform"
+                    data-i18n="LBL_JOIN">加入我们</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1">
+        <!-- Hero Section -->
+        <section class="relative py-32 overflow-hidden bg-base">
+            <div class="max-w-7xl mx-auto px-8">
+                <div class="max-w-3xl space-y-10 relative z-10">
+                    <div
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-xs font-bold">
+                        <span class="material-symbols-outlined text-sm">rocket_launch</span>
+                        <span>v1.2 全球买手社区已正式上线</span>
+                    </div>
+                    <h1 class="text-7xl font-black tracking-tight leading-[1.05]" data-i18n="HERO_TITLE">全球化代购，从未如此简单
+                    </h1>
+                    <p class="text-xl text-text-sub leading-relaxed" data-i18n="HERO_SUBTITLE">
+                        连接全球代购专家，为您实时同步世界各地的折扣与惊喜。足不出户，买遍全球。</p>
+
+                    <div class="flex items-center gap-6">
+                        <button onclick="document.getElementById('trips').scrollIntoView({behavior:'smooth'})"
+                            class="btn-primary px-8 py-4 text-base">开始探索行程</button>
+                        <div class="flex items-center gap-4 px-6 border-l border-surface">
+                            <div class="flex -space-x-4 overflow-hidden">
+                                <img class="inline-block h-10 w-10 rounded-full ring-4 ring-white"
+                                    src="https://i.pravatar.cc/100?u=1" alt="">
+                                <img class="inline-block h-10 w-10 rounded-full ring-4 ring-white"
+                                    src="https://i.pravatar.cc/100?u=2" alt="">
+                                <img class="inline-block h-10 w-10 rounded-full ring-4 ring-white"
+                                    src="https://i.pravatar.cc/100?u=3" alt="">
+                            </div>
+                            <span class="text-sm font-bold text-text-sub">+1,200 位买手专家已入驻</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Background Decoration -->
+            <div class="absolute top-0 right-0 w-1/2 h-full hidden lg:block">
+                <div class="absolute inset-0 bg-gradient-to-l from-base to-transparent z-10"></div>
+                <div class="grid grid-cols-2 gap-4 rotate-12 scale-125 opacity-20">
+                    <div class="space-y-4">
+                        <div class="h-64 bg-primary/20 rounded-3xl"></div>
+                        <div class="h-96 bg-accent/20 rounded-3xl"></div>
+                    </div>
+                    <div class="space-y-4 -mt-32">
+                        <div class="h-96 bg-primary/10 rounded-3xl"></div>
+                        <div class="h-64 bg-accent/10 rounded-3xl"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Trips Showcase -->
+        <section id="trips" class="bg-white py-32 border-t border-surface">
+            <div class="max-w-7xl mx-auto px-8 space-y-16">
+                <div class="flex items-end justify-between">
+                    <div class="space-y-6">
+                        <h3 class="text-5xl font-black tracking-tight" data-i18n="LBL_TRIPS">热门行程</h3>
+                        <p class="text-text-sub font-bold uppercase tracking-widest text-sm">Real-time shopping trips
+                            happening now</p>
+                    </div>
+                    <button class="text-primary font-black flex items-center gap-2 hover:gap-4 transition-all group">
+                        查看全部行程 <span class="material-symbols-outlined">arrow_forward</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                    <!-- Trip Card 1 -->
+                    <div class="premium-card group hover:shadow-2xl transition-all cursor-pointer">
+                        <div class="h-64 bg-cover bg-center"
+                            style="background-image: url('https://images.unsplash.com/photo-1540553016722-983e48a2cd10?auto=format&fit=crop&w=800&q=80')">
+                        </div>
+                        <div class="p-8 space-y-4">
+                            <div
+                                class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                <span class="px-3 py-1 bg-primary/10 text-primary rounded-full">西雅图 COSTCO</span>
+                                <span class="flex items-center gap-1 text-primary"><span
+                                        class="w-1.5 h-1.5 bg-primary rounded-full animate-ping"></span> LIVE</span>
+                            </div>
+                            <h4 class="text-2xl font-bold group-hover:text-primary transition-colors leading-tight">
+                                Issaquah 仓库黑色星期五专场</h4>
+                            <div class="pt-4 flex items-center justify-between border-t border-surface">
+                                <div class="flex items-center gap-2 text-xs font-bold text-text-sub">
+                                    <span class="material-symbols-outlined text-base">person</span> Mike.S
+                                </div>
+                                <span class="text-xs font-bold text-primary">243 人正在看</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Trip Card 2 -->
+                    <div class="premium-card group hover:shadow-2xl transition-all cursor-pointer">
+                        <div class="h-64 bg-cover bg-center"
+                            style="background-image: url('https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80')">
+                        </div>
+                        <div class="p-8 space-y-4">
+                            <div
+                                class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                <span class="px-3 py-1 bg-primary/10 text-primary rounded-full">东京 银座</span>
+                                <span class="text-text-sub">TOMORROW</span>
+                            </div>
+                            <h4 class="text-2xl font-bold group-hover:text-primary transition-colors leading-tight">
+                                银座奢品店 2024 冬季首发直播</h4>
+                            <div class="pt-4 flex items-center justify-between border-t border-surface">
+                                <div class="flex items-center gap-2 text-xs font-bold text-text-sub">
+                                    <span class="material-symbols-outlined text-base">person</span> Yuki.K
+                                </div>
+                                <span class="text-xs font-bold text-text-sub">已预约 567 人</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Trip Card 3 -->
+                    <div class="premium-card group hover:shadow-2xl transition-all cursor-pointer">
+                        <div class="h-64 bg-cover bg-center"
+                            style="background-image: url('https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?auto=format&fit=crop&w=800&q=80')">
+                        </div>
+                        <div class="p-8 space-y-4">
+                            <div
+                                class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                <span class="px-3 py-1 bg-primary/10 text-primary rounded-full">巴黎 折扣村</span>
+                                <span class="text-text-sub">PRE-ORDER</span>
+                            </div>
+                            <h4 class="text-2xl font-bold group-hover:text-primary transition-colors leading-tight">La
+                                Vallée Village 年度清仓特卖</h4>
+                            <div class="pt-4 flex items-center justify-between border-t border-surface">
+                                <div class="flex items-center gap-2 text-xs font-bold text-text-sub">
+                                    <span class="material-symbols-outlined text-base">person</span> Claire.V
+                                </div>
+                                <span class="text-xs font-bold text-primary">低至 3 折</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Product Showcase Section -->
+        <section class="bg-base py-32">
+            <div class="max-w-7xl mx-auto px-8 space-y-16">
+                <div class="text-center space-y-4 max-w-2xl mx-auto">
+                    <h3 class="text-5xl font-black tracking-tight">全球尖货 直达中国</h3>
+                    <p class="text-text-sub text-lg font-medium">百万件全球精选好物，由当地专业买手亲自核验采买。</p>
+                </div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                    <!-- Product Item 1 -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm hover:shadow-xl transition-all group">
+                        <div class="aspect-square bg-base rounded-xl overflow-hidden mb-4">
+                            <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80"
+                                class="w-full h-full object-cover group-hover:scale-110 transition-transform">
+                        </div>
+                        <span class="text-[10px] font-black text-primary uppercase tracking-widest mb-1 block">LIMITED
+                            EDITION</span>
+                        <h5 class="font-bold text-sm mb-2 line-clamp-2">Nike Air Max Special "Red Fusion"</h5>
+                        <div class="flex items-center justify-between">
+                            <p class="price-text text-xl">¥1,299</p>
+                            <button
+                                class="w-8 h-8 rounded-full bg-base flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                                <span class="material-symbols-outlined text-sm">add</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Product Item 2 -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm hover:shadow-xl transition-all group">
+                        <div class="aspect-square bg-base rounded-xl overflow-hidden mb-4">
+                            <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80"
+                                class="w-full h-full object-cover group-hover:scale-110 transition-transform">
+                        </div>
+                        <span class="text-[10px] font-black text-text-sub uppercase tracking-widest mb-1 block">SMART
+                            TECH</span>
+                        <h5 class="font-bold text-sm mb-2 line-clamp-2">Premium Designer Wristwatch v2</h5>
+                        <div class="flex items-center justify-between">
+                            <p class="price-text text-xl">¥3,580</p>
+                            <button
+                                class="w-8 h-8 rounded-full bg-base flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                                <span class="material-symbols-outlined text-sm">add</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Product Item 3 -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm hover:shadow-xl transition-all group">
+                        <div class="aspect-square bg-base rounded-xl overflow-hidden mb-4">
+                            <img src="https://images.unsplash.com/photo-1527719327859-c6ce80353573?auto=format&fit=crop&w=400&q=80"
+                                class="w-full h-full object-cover group-hover:scale-110 transition-transform">
+                        </div>
+                        <span
+                            class="text-[10px] font-black text-text-sub uppercase tracking-widest mb-1 block">FASHION</span>
+                        <h5 class="font-bold text-sm mb-2 line-clamp-2">Handcrafted Leather Tote Bag</h5>
+                        <div class="flex items-center justify-between">
+                            <p class="price-text text-xl">¥2,450</p>
+                            <button
+                                class="w-8 h-8 rounded-full bg-base flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                                <span class="material-symbols-outlined text-sm">add</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Product Item 4 -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm hover:shadow-xl transition-all group">
+                        <div class="aspect-square bg-base rounded-xl overflow-hidden mb-4">
+                            <img src="https://images.unsplash.com/photo-1546868832-0f9b699cb926?auto=format&fit=crop&w=400&q=80"
+                                class="w-full h-full object-cover group-hover:scale-110 transition-transform">
+                        </div>
+                        <span class="text-[10px] font-black text-primary uppercase tracking-widest mb-1 block">TOP
+                            SELLER</span>
+                        <h5 class="font-bold text-sm mb-2 line-clamp-2">Smart Health Monitoring Tracker</h5>
+                        <div class="flex items-center justify-between">
+                            <p class="price-text text-xl">¥899</p>
+                            <button
+                                class="w-8 h-8 rounded-full bg-base flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                                <span class="material-symbols-outlined text-sm">add</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center pt-8">
+                    <button
+                        class="btn-ghost border-surface text-text-sub hover:border-primary hover:text-primary px-12 py-4">加载更多商品</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-text-main text-white py-24">
+        <div class="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-4 gap-16">
+            <div class="space-y-8">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                        <img src="../assets/logo.svg" alt="BoBB Logo" class="w-8 h-8 brightness-200">
+                    </div>
+                    <span class="text-3xl font-black text-white px-0 tracking-tight"
+                        data-i18n="APP_BRAND_NAME">BoBB</span>
+                </div>
+                <p class="text-base text-white/50 leading-relaxed">连接全球好物，打破地域国界。您的专属全球买手平台，让代购更加专业、透明、高效。</p>
+            </div>
+            <div class="space-y-6">
+                <h6 class="text-sm font-black uppercase tracking-widest text-primary">探索发现</h6>
+                <ul class="space-y-4 text-white/60 font-medium">
+                    <li><a href="#" class="hover:text-white transition-colors">热门行情</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">全球买手</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">限时折扣</a></li>
+                </ul>
+            </div>
+            <div class="space-y-6">
+                <h6 class="text-sm font-black uppercase tracking-widest text-primary">关于我们</h6>
+                <ul class="space-y-4 text-white/60 font-medium">
+                    <li><a href="#" class="hover:text-white transition-colors">平台介绍</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">正品保障</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">联系方式</a></li>
+                </ul>
+            </div>
+            <div class="space-y-6">
+                <h6 class="text-sm font-black uppercase tracking-widest text-primary">下载 APP</h6>
+                <div class="flex flex-col gap-4">
+                    <div class="w-40 h-40 bg-white p-2 rounded-2xl">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://bobbuy.com"
+                            class="w-full h-full opacity-80">
+                    </div>
+                    <p class="text-[10px] text-white/40 font-bold uppercase tracking-wider">扫码体验即时全球采买</p>
+                </div>
+            </div>
+        </div>
+        <div
+            class="max-w-7xl mx-auto px-8 mt-24 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+            <p class="text-xs text-white/30 font-bold tracking-widest">© 2024 BOBBUY GLOBAL. ALL RIGHTS RESERVED.</p>
+            <div class="flex items-center gap-8 text-xs text-white/30 font-bold">
+                <a href="#" class="hover:text-white transition-colors">隐私政策</a>
+                <a href="#" class="hover:text-white transition-colors">服务协议</a>
+            </div>
+        </div>
+    </footer>
+
     <script src="../assets/ui-core.js"></script>
+    <script>
+        function toggleLogin() {
+            const drawer = document.getElementById('login-drawer');
+            const overlay = document.getElementById('drawer-overlay');
+            const isHidden = drawer.classList.contains('translate-x-full');
+
+            if (isHidden) {
+                drawer.classList.remove('translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.add('opacity-100'), 10);
+            } else {
+                drawer.classList.add('translate-x-full');
+                overlay.classList.remove('opacity-100');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+    </script>
+</body>
+
+<script src="../assets/ui-core.js"></script>
 </body>
 
 </html>

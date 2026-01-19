@@ -12,7 +12,7 @@
 ## 2. 链接完整性修复 (Link Integrity)
 - [x] 修正 `UID1200` 中的 `UID1201` 废弃链接 -> `UID1210`
 - [x] 遍历所有 HTML，通过 Grep 确保无 `UID1201/2/3` 残留引用
-- [/] 确保商户端各环节 (New -> Processing -> Settlement) 链接闭环
+- [x] 确保商户端各环节 (New -> Processing -> Settlement) 链接闭环
 
 ## 3. 命名与语言合规 (Naming & Language Compliance)
 - [x] 将所有 App 原型页面标题中的英文翻译为中文 (如 "Create Shopping Trip" -> "创建代购行程")
@@ -22,7 +22,7 @@
 ## 4. 品牌色二次核查 (Brand Color Final Audit)
 - [x] 确认所有高保真 App 原型主色为 `#C14B3B`
 - [x] 检查背景色是否统一为温润白 `#FAF7F2`
-- [/] 确认 Logo 在所有页面加载路径正确
+- [x] 确认 Logo 在所有页面加载路径 correct
 
 ## 5. 验收报告更新
-- [ ] 完成 `AUDIT-01-APP原型对齐验收报告`
+- [x] 完成 `AUDIT-01-APP原型对齐验收报告`
