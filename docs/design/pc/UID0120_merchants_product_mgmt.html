@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title data-i18n="TITLE_PRODUCT_MGMT">商品维护 - BoBB Merchant</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/ui-core.css">
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#C14B3B",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
+                    },
+                    borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-base font-sans text-text-main transition-colors duration-300" data-page-id="UID0120"
+    data-page-title="商品维护">
+    <div class="relative flex h-screen w-full overflow-hidden">
+        <aside-placeholder></aside-placeholder>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col overflow-hidden relative">
+            <header-placeholder></header-placeholder>
+
+            <!-- Main Content Area Scrollable -->
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Category Sidebar (Internal) -->
+                <div class="w-64 border-r border-surface bg-white/30 p-6 flex flex-col gap-6 overflow-y-auto">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-black uppercase tracking-widest text-text-main"
+                            data-i18n="LBL_CATEGORIES">商品分类</h3>
+                        <button
+                            class="material-symbols-outlined text-primary text-xl hover:bg-white p-1 rounded-lg transition-colors">add</button>
+                    </div>
+
+                    <div class="space-y-1">
+                        <button
+                            class="w-full text-left px-4 py-2.5 bg-primary text-white rounded-xl text-xs font-bold shadow-lg shadow-primary/20 transition-all flex items-center justify-between">
+                            <span>全部商品</span>
+                            <span class="bg-white/20 px-1.5 py-0.5 rounded text-[10px]">42</span>
+                        </button>
+                        <button
+                            class="w-full text-left px-4 py-2.5 text-text-sub hover:bg-white hover:text-primary rounded-xl text-xs font-bold transition-all flex items-center justify-between group">
+                            <span>护肤用品</span>
+                            <span
+                                class="bg-surface px-1.5 py-0.5 rounded text-[10px] group-hover:bg-primary/10">12</span>
+                        </button>
+                        <button
+                            class="w-full text-left px-4 py-2.5 text-text-sub hover:bg-white hover:text-primary rounded-xl text-xs font-bold transition-all flex items-center justify-between group">
+                            <span>时尚鞋包</span>
+                            <span
+                                class="bg-surface px-1.5 py-0.5 rounded text-[10px] group-hover:bg-primary/10">08</span>
+                        </button>
+                        <button
+                            class="w-full text-left px-4 py-2.5 text-text-sub hover:bg-white hover:text-primary rounded-xl text-xs font-bold transition-all flex items-center justify-between group">
+                            <span>电子产品</span>
+                            <span
+                                class="bg-surface px-1.5 py-0.5 rounded text-[10px] group-hover:bg-primary/10">05</span>
+                        </button>
+                        <button
+                            class="w-full text-left px-4 py-2.5 text-text-sub hover:bg-white hover:text-primary rounded-xl text-xs font-bold transition-all flex items-center justify-between group">
+                            <span>零食干货</span>
+                            <span
+                                class="bg-surface px-1.5 py-0.5 rounded text-[10px] group-hover:bg-primary/10">17</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Grid -->
+                <div class="flex-1 overflow-y-auto bg-base/50 p-8">
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 class="text-2xl font-black tracking-tight mb-1" data-i18n="TITLE_PRODUCT_MGMT">商品维护</h2>
+                            <p class="text-xs text-text-sub font-bold uppercase tracking-wider">Manage your inventory
+                                and use AI to sync new products</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button onclick="openAIModal()"
+                                class="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl font-black text-sm shadow-xl shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all group">
+                                <span
+                                    class="material-symbols-outlined text-xl group-hover:rotate-12 transition-transform">rocket_launch</span>
+                                <span data-i18n="BTN_AI_SCAN">AI 识别新增</span>
+                            </button>
+                            <button
+                                class="flex items-center gap-2 bg-white text-text-main border border-surface px-6 py-3 rounded-2xl font-black text-sm hover:bg-surface transition-all">
+                                <span class="material-symbols-outlined text-xl">add</span>
+                                <span data-i18n="BTN_MANUAL_ADD">手动新增</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                        <!-- Product Card 1 -->
+                        <div
+                            class="bg-white rounded-3xl p-4 shadow-sm border border-surface group hover:shadow-xl hover:shadow-primary/5 transition-all">
+                            <div
+                                class="relative aspect-square rounded-2xl overflow-hidden bg-base mb-4 ring-1 ring-surface">
+                                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400"
+                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                <div class="absolute top-3 left-3 flex gap-2">
+                                    <span
+                                        class="bg-primary/90 backdrop-blur-md text-white text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-tighter">AI
+                                        Synced</span>
+                                </div>
+                                <div
+                                    class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                    <button
+                                        class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all"><span
+                                            class="material-symbols-outlined text-primary">edit</span></button>
+                                    <button
+                                        class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all text-red-500"><span
+                                            class="material-symbols-outlined">delete</span></button>
+                                </div>
+                            </div>
+                            <div class="px-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span
+                                        class="text-[9px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded tracking-widest uppercase">Sneakers</span>
+                                    <span class="text-[9px] font-bold text-text-sub">#PRD-9921</span>
+                                </div>
+                                <h4 class="font-black text-sm line-clamp-1 mb-2">Nike Air Max Special Edition Red</h4>
+                                <div class="flex items-center justify-between border-t border-surface pt-3 mt-3">
+                                    <span class="text-sm font-black text-text-main">¥ 1,299.00</span>
+                                    <div class="flex items-center gap-1">
+                                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                        <span class="text-[10px] font-bold text-text-sub">In Stock</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Product Card 2 -->
+                        <div
+                            class="bg-white rounded-3xl p-4 shadow-sm border border-surface group hover:shadow-xl hover:shadow-primary/5 transition-all">
+                            <div
+                                class="relative aspect-square rounded-2xl overflow-hidden bg-base mb-4 ring-1 ring-surface">
+                                <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"
+                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                <div
+                                    class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                    <button
+                                        class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all"><span
+                                            class="material-symbols-outlined text-primary">edit</span></button>
+                                    <button
+                                        class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all text-red-500"><span
+                                            class="material-symbols-outlined">delete</span></button>
+                                </div>
+                            </div>
+                            <div class="px-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span
+                                        class="text-[9px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded tracking-widest uppercase">Accessories</span>
+                                    <span class="text-[9px] font-bold text-text-sub">#PRD-8821</span>
+                                </div>
+                                <h4 class="font-black text-sm line-clamp-1 mb-2">Designer Watch Professional Series</h4>
+                                <div class="flex items-center justify-between border-t border-surface pt-3 mt-3">
+                                    <span class="text-sm font-black text-text-main">¥ 3,580.00</span>
+                                    <div class="flex items-center gap-1">
+                                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                        <span class="text-[10px] font-bold text-text-sub">In Stock</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <footer-placeholder></footer-placeholder>
+        </div>
+    </div>
+
+    <!-- AI Scan Modal -->
+    <div id="ai-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-text-main/60 backdrop-blur-sm shadow-2xl transition-opacity duration-300"></div>
+        <div class="absolute inset-x-0 bottom-0 md:inset-0 flex items-end md:items-center justify-center p-4">
+            <div
+                class="bg-white w-full max-w-2xl rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-zoom-in relative">
+                <!-- Close Button -->
+                <button onclick="closeAIModal()"
+                    class="absolute top-6 right-6 w-10 h-10 bg-base rounded-full flex items-center justify-center text-text-sub hover:bg-surface hover:text-primary transition-all z-10">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+
+                <!-- Initial Step: Upload -->
+                <div id="step-upload" class="p-10 text-center space-y-8">
+                    <div class="w-24 h-24 bg-primary/10 rounded-3xl mx-auto flex items-center justify-center">
+                        <span class="material-symbols-outlined text-5xl text-primary font-light">add_a_photo</span>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black mb-2" data-i18n="BTN_AI_SCAN">AI 识别新增</h3>
+                        <p class="text-sm text-text-sub font-bold">上传商品图片，AI 将自动分析详情、价格并建议分类</p>
+                    </div>
+                    <div class="border-2 border-dashed border-surface rounded-3xl p-12 hover:border-primary/50 cursor-pointer transition-all bg-base/30 group"
+                        onclick="startAIAnalysis()">
+                        <div class="flex flex-col items-center gap-3">
+                            <span
+                                class="material-symbols-outlined text-4xl text-text-sub group-hover:text-primary group-hover:-translate-y-1 transition-all">upload_file</span>
+                            <span
+                                class="text-xs font-black text-text-sub group-hover:text-primary uppercase tracking-widest">Click
+                                to upload or Drag & Drop</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-text-sub uppercase tracking-widest font-black opacity-30">BoBB AI Engine
+                        v2.0</p>
+                </div>
+
+                <!-- Step: Analyzing -->
+                <div id="step-analyzing" class="p-10 py-20 text-center hidden space-y-8">
+                    <div class="relative w-32 h-32 mx-auto">
+                        <div class="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+                        <div
+                            class="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin">
+                        </div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span
+                                class="material-symbols-outlined text-4xl text-primary animate-pulse">rocket_launch</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-black mb-2" data-i18n="MSG_AI_ANALYZING">AI 正在分析商品详情...</h3>
+                        <p class="text-sm text-text-sub font-bold">Detecting brand, model, estimated price and category
+                        </p>
+                    </div>
+                    <div class="max-w-xs mx-auto space-y-2">
+                        <div class="h-1 bg-surface rounded-full overflow-hidden">
+                            <div class="h-full bg-primary w-2/3 animate-progress"></div>
+                        </div>
+                        <div
+                            class="flex justify-between text-[10px] font-black text-text-sub uppercase tracking-widest">
+                            <span>Scanning pixels</span>
+                            <span>68%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step: Confirm -->
+                <div id="step-confirm" class="hidden">
+                    <div class="bg-primary/10 p-4 px-10 flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary">
+                            <span class="material-symbols-outlined">auto_fix_high</span>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-sm" data-i18n="LBL_CONFIRM_DETAILS">确认商品信息</h3>
+                            <p class="text-[10px] font-bold text-primary uppercase tracking-widest">AI analysis
+                                successful</p>
+                        </div>
+                    </div>
+
+                    <div class="p-10 space-y-6">
+                        <div class="grid grid-cols-3 gap-8">
+                            <!-- Image Preview -->
+                            <div class="col-span-1">
+                                <div
+                                    class="aspect-square bg-base rounded-2xl overflow-hidden ring-1 ring-surface relative group">
+                                    <img src="https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400"
+                                        class="w-full h-full object-cover">
+                                    <button
+                                        class="absolute bottom-2 right-2 bg-white/90 p-1.5 rounded-lg text-primary shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span class="material-symbols-outlined text-lg">edit</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Form Details -->
+                            <div class="col-span-2 space-y-4">
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-black text-text-sub uppercase tracking-widest ml-1"
+                                        data-i18n="LBL_PRODUCT_NAME">商品名称</label>
+                                    <input type="text" value="Vintage Retro Sneakers Pro"
+                                        class="w-full bg-base border-none rounded-2xl py-3 px-4 text-xs font-bold focus:ring-1 focus:ring-primary/20">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-1.5">
+                                        <label
+                                            class="text-[10px] font-black text-text-sub uppercase tracking-widest ml-1"
+                                            data-i18n="LBL_PRODUCT_PRICE">价格</label>
+                                        <div class="relative">
+                                            <span
+                                                class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black">¥</span>
+                                            <input type="number" value="899.00"
+                                                class="w-full bg-base border-none rounded-2xl py-3 pl-8 pr-4 text-xs font-bold focus:ring-1 focus:ring-primary/20">
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label
+                                            class="text-[10px] font-black text-text-sub uppercase tracking-widest ml-1"
+                                            data-i18n="LBL_CATEGORIES">商品分类</label>
+                                        <!-- Lazy Category: Datalist or Select with custom add -->
+                                        <div class="relative">
+                                            <input list="cat-list" value="时尚鞋包" placeholder="LBL_CATEGORY_PLACEHOLDER"
+                                                data-i18n-placeholder="LBL_CATEGORY_PLACEHOLDER"
+                                                class="w-full bg-base border-none rounded-2xl py-3 px-4 text-xs font-bold focus:ring-1 focus:ring-primary/20">
+                                            <datalist id="cat-list">
+                                                <option value="护肤用品">
+                                                <option value="时尚鞋包">
+                                                <option value="电子产品">
+                                                <option value="零食干货">
+                                                <option value="+ 创建新分类 (Create New)">
+                                            </datalist>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-black text-text-sub uppercase tracking-widest ml-1"
+                                        data-i18n="LBL_PRODUCT_DESC">描述</label>
+                                    <textarea rows="3"
+                                        class="w-full bg-base border-none rounded-2xl py-3 px-4 text-xs font-bold focus:ring-1 focus:ring-primary/20 resize-none overflow-y-auto custom-scrollbar">Retro design meets modern comfort. Durable synthetic upper with breathable mesh panels. High-traction rubber outsole.</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4 pt-4 border-t border-surface">
+                            <button onclick="closeAIModal()"
+                                class="flex-1 bg-base text-text-sub py-3.5 rounded-2xl font-black text-sm hover:bg-surface transition-all">取消</button>
+                            <button
+                                class="flex-[2] bg-primary text-white py-3.5 rounded-2xl font-black text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-100 transition-all flex items-center justify-center gap-2"
+                                onclick="showToast('商品已入库')">
+                                <span class="material-symbols-outlined">check_circle</span>
+                                <span data-i18n="BTN_CONFIRM_ADD">确认并入库</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Core Scripts -->
+    <script src="../assets/ui-core.js"></script>
+    <script src="../assets/ui-merchant-framework.js"></script>
+
+    <script>
+        // Modal Control
+        function openAIModal() {
+            const modal = document.getElementById('ai-modal');
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+
+            // Reset to step 1
+            document.getElementById('step-upload').classList.remove('hidden');
+            document.getElementById('step-analyzing').classList.add('hidden');
+            document.getElementById('step-confirm').classList.add('hidden');
+        }
+
+        function closeAIModal() {
+            const modal = document.getElementById('ai-modal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function startAIAnalysis() {
+            document.getElementById('step-upload').classList.add('hidden');
+            document.getElementById('step-analyzing').classList.remove('hidden');
+
+            // Simulate AI Delay
+            setTimeout(() => {
+                document.getElementById('step-analyzing').classList.add('hidden');
+                document.getElementById('step-confirm').classList.remove('hidden');
+                if (window.updateTranslations) window.updateTranslations();
+            }, 2500);
+        }
+
+        // Mini Toast
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-10 left-1/2 -translate-x-1/2 bg-text-main text-white px-8 py-4 rounded-3xl shadow-2xl font-black text-sm z-[200] animate-slide-up flex items-center gap-3';
+            toast.innerHTML = `<span class="material-symbols-outlined text-green-400">check_circle</span>${msg}`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                setTimeout(() => {
+                    toast.remove();
+                    closeAIModal();
+                }, 500);
+            }, 2000);
+        }
+    </script>
+
+    <style>
+        .animate-progress {
+            animation: progress 2.5s infinite linear;
+        }
+
+        @keyframes progress {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(200%);
+            }
+        }
+
+        @keyframes zoom-in {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .animate-zoom-in {
+            animation: zoom-in 0.3s ease-out forwards;
+        }
+    </style>
+</body>
+
+</html>

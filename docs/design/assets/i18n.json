@@ -17,6 +17,24 @@
         "en": "Order List",
         "ja": "注文一覧"
     },
+    "TITLE_LOGISTICS": {
+        "zh": "配送中心",
+        "zt": "配送中心",
+        "en": "Logistics",
+        "ja": "配送センター"
+    },
+    "TITLE_FINANCE": {
+        "zh": "财务中心",
+        "zt": "財務中心",
+        "en": "Finance",
+        "ja": "財務センター"
+    },
+    "TITLE_HELP": {
+        "zh": "帮助中心",
+        "zt": "幫助中心",
+        "en": "Help Center",
+        "ja": "ヘルプセンター"
+    },
     "MSG_CHAT_CENTER": {
         "zh": "消息中心",
         "zt": "消息中心",
@@ -114,8 +132,8 @@
         "ja": "またはソーシャルアカウントでログイン"
     },
     "LBL_FORGOT_PWD": {
-        "zh": "忘记密码 / Forgot Password",
-        "zt": "忘記密碼 / Forgot Password",
+        "zh": "忘记密码",
+        "zt": "忘記密碼",
         "en": "Forgot Password",
         "ja": "パスワードをお忘れですか"
     },
@@ -156,14 +174,14 @@
         "ja": "参加する"
     },
     "LBL_ACCOUNT_PLACEHOLDER": {
-        "zh": "账号 / Email",
-        "zt": "帳號 / Email",
-        "en": "Account / Email",
-        "ja": "アカウント / メール"
+        "zh": "手机号或邮箱",
+        "zt": "手機號或郵箱",
+        "en": "Phone or Email",
+        "ja": "電話番号またはメール"
     },
     "LBL_PWD_PLACEHOLDER": {
-        "zh": "密码 / Password",
-        "zt": "密碼 / Password",
+        "zh": "密码",
+        "zt": "密碼",
         "en": "Password",
         "ja": "パスワード"
     },
@@ -172,5 +190,125 @@
         "zt": "立 即 登 錄",
         "en": "Login Now",
         "ja": "今すぐログイン"
+    },
+    "TITLE_REGISTER": {
+        "zh": "加入宝宝败",
+        "zt": "加入寶寶敗",
+        "en": "Join BoBB",
+        "ja": "BoBBに参加"
+    },
+    "LBL_NAME_PLACEHOLDER": {
+        "zh": "您的姓名 / 昵称",
+        "zt": "您的姓名 / 暱稱",
+        "en": "Your Name",
+        "ja": "お名前"
+    },
+    "LBL_CONFIRM_PWD_PLACEHOLDER": {
+        "zh": "确认密码",
+        "zt": "確認密碼",
+        "en": "Confirm Password",
+        "ja": "パスワード（確認）"
+    },
+    "BTN_CREATE_ACCOUNT": {
+        "zh": "创 建 账 号",
+        "zt": "创 建 帳 號",
+        "en": "Create Account",
+        "ja": "アカウント作成"
+    },
+    "LBL_ALREADY_HAVE_ACCOUNT": {
+        "zh": "已有账号？立即登录",
+        "zt": "已有帳號？立即登錄",
+        "en": "Already have an account? Login",
+        "ja": "アカウントをお持ちですか？ログイン"
+    },
+    "LBL_TERMS": {
+        "zh": "我已阅读并同意用户服务条款",
+        "zt": "我已閱讀並同意用戶服务條款",
+        "en": "I agree to the Terms of Service",
+        "ja": "利用規約に同意します"
+    },
+    "LBL_SEARCH_PLACEHOLDER": {
+        "zh": "输入订单号或关键词搜索...",
+        "zt": "輸入訂單號或關鍵詞搜索...",
+        "en": "Search orders or keywords...",
+        "ja": "注文番号またはキーワードで検索..."
+    },
+    "NAV_BREADCRUMB_HOME": {
+        "zh": "主页",
+        "zt": "主頁",
+        "en": "Home",
+        "ja": "ホーム"
+    },
+    "TITLE_PRODUCT_MGMT": {
+        "zh": "商品维护",
+        "zt": "商品維護",
+        "en": "Product Maintenance",
+        "ja": "商品メンテナンス"
+    },
+    "LBL_CATEGORIES": {
+        "zh": "商品分类",
+        "zt": "商品分類",
+        "en": "Categories",
+        "ja": "カテゴリー"
+    },
+    "BTN_AI_SCAN": {
+        "zh": "AI 识别新增",
+        "zt": "AI 識別新增",
+        "en": "AI Scan Add",
+        "ja": "AIスキャン追加"
+    },
+    "BTN_MANUAL_ADD": {
+        "zh": "手动新增",
+        "zt": "手動新增",
+        "en": "Manual Add",
+        "ja": "主動追加"
+    },
+    "LBL_LAZY_CREATE_CAT": {
+        "zh": "创建新分类",
+        "zt": "創建新分類",
+        "en": "Create Category",
+        "ja": "新規作成"
+    },
+    "MSG_AI_ANALYZING": {
+        "zh": "AI 正在分析商品详情...",
+        "zt": "AI 正在分析商品詳情...",
+        "en": "AI Analyzing details...",
+        "ja": "AI分析中..."
+    },
+    "LBL_CONFIRM_DETAILS": {
+        "zh": "确认商品信息",
+        "zt": "確認商品信息",
+        "en": "Confirm Details",
+        "ja": "詳細確認"
+    },
+    "LBL_PRODUCT_NAME": {
+        "zh": "商品名称",
+        "zt": "商品名稱",
+        "en": "Product Name",
+        "ja": "商品名"
+    },
+    "LBL_PRODUCT_PRICE": {
+        "zh": "价格",
+        "zt": "價格",
+        "en": "Price",
+        "ja": "価格"
+    },
+    "LBL_PRODUCT_DESC": {
+        "zh": "描述",
+        "zt": "描述",
+        "en": "Description",
+        "ja": "説明"
+    },
+    "BTN_CONFIRM_ADD": {
+        "zh": "确认并入库",
+        "zt": "確認並入庫",
+        "en": "Confirm & Save",
+        "ja": "確認して保存"
+    },
+    "LBL_CATEGORY_PLACEHOLDER": {
+        "zh": "输入或选择分类...",
+        "zt": "輸入或選擇分類...",
+        "en": "Type or select category...",
+        "ja": "カテゴリーを入力..."
     }
 }
