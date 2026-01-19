@@ -50,17 +50,18 @@
 
                 <div class="space-y-4">
                     <div class="space-y-1">
-                        <label class="text-[10px] font-bold text-text-sub uppercase tracking-wider ml-1">Account</label>
+                        <label class="text-[10px] font-bold text-text-sub uppercase tracking-wider ml-1"
+                            data-i18n="LBL_ACCOUNT_PLACEHOLDER">手机号或邮箱</label>
                         <input type="text"
                             class="w-full bg-base border-none rounded-xl py-4 px-6 focus:ring-primary text-sm shadow-sm"
-                            placeholder="账号 / Email" data-i18n-placeholder="LBL_ACCOUNT_PLACEHOLDER">
+                            placeholder="手机号或邮箱" data-i18n-placeholder="LBL_ACCOUNT_PLACEHOLDER">
                     </div>
                     <div class="space-y-1">
                         <label
                             class="text-[10px] font-bold text-text-sub uppercase tracking-wider ml-1">Password</label>
                         <input type="password"
                             class="w-full bg-base border-none rounded-xl py-4 px-6 focus:ring-primary text-sm shadow-sm"
-                            placeholder="密码 / Password" data-i18n-placeholder="LBL_PWD_PLACEHOLDER">
+                            placeholder="密码" data-i18n-placeholder="LBL_PWD_PLACEHOLDER">
                     </div>
                 </div>
 
@@ -94,6 +95,15 @@
                             class="w-10 h-10 bg-base rounded-full flex items-center justify-center hover:bg-white transition-colors border border-surface">
                             <img src="https://www.facebook.com/favicon.ico" class="w-4 h-4 grayscale opacity-50">
                         </button>
+                        <button
+                            class="w-10 h-10 bg-base rounded-full flex items-center justify-center hover:bg-white transition-colors border border-surface">
+                            <img src="https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico"
+                                class="w-4 h-4 grayscale opacity-50">
+                        </button>
+                        <button
+                            class="w-10 h-10 bg-base rounded-full flex items-center justify-center hover:bg-white transition-colors border border-surface">
+                            <img src="https://line.me/favicon.ico" class="w-4 h-4 grayscale opacity-50">
+                        </button>
                     </div>
                 </div>
             </div>
@@ -124,6 +134,7 @@
                 <div class="lang-selector border border-surface bg-white px-3 py-1.5 rounded-full scale-90">
                     <span class="lang-btn" onclick="switchLanguage('zh')">简</span>
                     <span class="lang-btn" onclick="switchLanguage('zt')">繁</span>
+                    <span class="lang-btn" onclick="switchLanguage('ja')">日</span>
                     <span class="lang-btn" onclick="switchLanguage('en')">EN</span>
                 </div>
                 <button onclick="toggleLogin()"

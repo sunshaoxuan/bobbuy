@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/ui-core.css">
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#C14B3B",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
+                    },
+                    borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-base font-sans text-text-main min-h-screen flex flex-col">
+    <!-- Side Register Drawer (Shown by default for this variant) -->
+    <div id="login-drawer"
+        class="fixed inset-y-0 right-0 w-[420px] bg-white shadow-2xl z-[60] transform translate-x-0 transition-transform duration-300 ease-in-out">
+        <div class="p-10 h-full flex flex-col justify-center relative">
+            <button onclick="toggleLogin()"
+                class="absolute top-8 right-8 text-text-sub hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-3xl">close</span>
+            </button>
+
+            <div class="space-y-8">
+                <div class="space-y-2">
+                    <div
+                        class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg rotate-3 overflow-hidden mb-4">
+                        <img src="../assets/logo.svg" alt="BoBB Logo" class="w-8 h-8">
+                    </div>
+                    <h2 class="text-3xl font-black tracking-tight text-primary" data-i18n="TITLE_REGISTER">加入宝宝败</h2>
+                    <p class="text-xs text-text-sub font-bold uppercase tracking-widest">Start your global shopping
+                        journey</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-text-sub uppercase tracking-wider ml-1">Name</label>
+                        <input type="text"
+                            class="w-full bg-base border-none rounded-xl py-4 px-6 focus:ring-primary text-sm shadow-sm"
+                            placeholder="您的姓名 / 昵称" data-i18n-placeholder="LBL_NAME_PLACEHOLDER">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-text-sub uppercase tracking-wider ml-1"
+                            data-i18n="LBL_ACCOUNT_PLACEHOLDER">手机号或邮箱</label>
+                        <input type="text"
+                            class="w-full bg-base border-none rounded-xl py-4 px-6 focus:ring-primary text-sm shadow-sm"
+                            placeholder="手机号或邮箱" data-i18n-placeholder="LBL_ACCOUNT_PLACEHOLDER">
+                    </div>
+                    <div class="space-y-1">
+                        <label
+                            class="text-[10px] font-bold text-text-sub uppercase tracking-wider ml-1">Password</label>
+                        <input type="password"
+                            class="w-full bg-base border-none rounded-xl py-4 px-6 focus:ring-primary text-sm shadow-sm"
+                            placeholder="密码" data-i18n-placeholder="LBL_PWD_PLACEHOLDER">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-text-sub uppercase tracking-wider ml-1">Confirm
+                            Password</label>
+                        <input type="password"
+                            class="w-full bg-base border-none rounded-xl py-4 px-6 focus:ring-primary text-sm shadow-sm"
+                            placeholder="确认密码" data-i18n-placeholder="LBL_CONFIRM_PWD_PLACEHOLDER">
+                    </div>
+
+                    <div class="flex items-start gap-2 pt-2">
+                        <input type="checkbox" class="mt-1 rounded border-surface text-primary focus:ring-primary">
+                        <p class="text-[11px] text-text-sub leading-relaxed" data-i18n="LBL_TERMS">我已阅读并同意用户服务条款</p>
+                    </div>
+                </div>
+
+                <button
+                    class="btn-primary w-full py-4 text-sm font-black shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
+                    data-i18n="BTN_CREATE_ACCOUNT">创 建 账 号</button>
+
+                <div class="flex items-center justify-center text-xs font-bold text-text-sub">
+                    <a href="UID0000_all_login.html" class="text-primary hover:underline underline-offset-4"
+                        data-i18n="LBL_ALREADY_HAVE_ACCOUNT">已有账号？立即登录</a>
+                </div>
+
+                <div class="pt-4 space-y-6">
+                    <div class="flex items-center gap-4">
+                        <div class="flex-1 h-px bg-surface"></div>
+                        <span class="text-[10px] font-bold text-text-sub uppercase tracking-widest"
+                            data-i18n="LBL_SOCIAL_LOGIN">OR REGISTER WITH</span>
+                        <div class="flex-1 h-px bg-surface"></div>
+                    </div>
+                    <div class="flex justify-center gap-4">
+                        <button
+                            class="w-10 h-10 bg-base rounded-full flex items-center justify-center hover:bg-white transition-colors border border-surface">
+                            <img src="https://www.google.com/favicon.ico" class="w-4 h-4 grayscale opacity-50">
+                        </button>
+                        <button
+                            class="w-10 h-10 bg-base rounded-full flex items-center justify-center hover:bg-white transition-colors border border-surface">
+                            <img src="https://www.apple.com/favicon.ico" class="w-4 h-4 grayscale opacity-50">
+                        </button>
+                        <button
+                            class="w-10 h-10 bg-base rounded-full flex items-center justify-center hover:bg-white transition-colors border border-surface">
+                            <img src="https://www.facebook.com/favicon.ico" class="w-4 h-4 grayscale opacity-50">
+                        </button>
+                        <button
+                            class="w-10 h-10 bg-base rounded-full flex items-center justify-center hover:bg-white transition-colors border border-surface">
+                            <img src="https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico"
+                                class="w-4 h-4 grayscale opacity-50">
+                        </button>
+                        <button
+                            class="w-10 h-10 bg-base rounded-full flex items-center justify-center hover:bg-white transition-colors border border-surface">
+                            <img src="https://line.me/favicon.ico" class="w-4 h-4 grayscale opacity-50">
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="drawer-overlay" onclick="toggleLogin()"
+        class="fixed inset-0 bg-black/20 backdrop-blur-sm z-[55] block opacity-100 transition-opacity duration-300">
+    </div>
+
+    <header class="w-full bg-white/80 backdrop-blur-md border-b border-surface sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-12">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg rotate-3 overflow-hidden">
+                        <img src="../assets/logo.svg" alt="BoBB Logo" class="w-8 h-8">
+                    </div>
+                    <span class="text-2xl font-black text-primary tracking-tight" data-i18n="APP_BRAND_NAME">BoBB</span>
+                </div>
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="#" class="text-sm font-bold text-text-sub hover:text-primary transition-colors"
+                        data-i18n="LBL_DISCOVER">探索发现</a>
+                    <a href="#trips" class="text-sm font-bold text-text-sub hover:text-primary transition-colors"
+                        data-i18n="LBL_TRIPS">热门行程</a>
+                </nav>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="lang-selector border border-surface bg-white px-3 py-1.5 rounded-full scale-90">
+                    <span class="lang-btn" onclick="switchLanguage('zh')">简</span>
+                    <span class="lang-btn" onclick="switchLanguage('zt')">繁</span>
+                    <span class="lang-btn" onclick="switchLanguage('ja')">日</span>
+                    <span class="lang-btn" onclick="switchLanguage('en')">EN</span>
+                </div>
+                <button onclick="toggleLogin()"
+                    class="px-6 py-2.5 bg-primary text-white text-sm font-black rounded-full shadow-soft hover:scale-105 transition-transform"
+                    data-i18n="LBL_JOIN">加入我们</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 filter blur-[2px] pointer-events-none">
+        <!-- Hero Section Shell (Simplified for register view) -->
+        <section class="relative py-32 overflow-hidden bg-base">
+            <div class="max-w-7xl mx-auto px-8">
+                <div class="max-w-3xl space-y-10 relative z-10">
+                    <h1 class="text-7xl font-black tracking-tight leading-[1.05]" data-i18n="HERO_TITLE">全球化代购，从未如此简单
+                    </h1>
+                    <p class="text-xl text-text-sub leading-relaxed" data-i18n="HERO_SUBTITLE">
+                        连接全球代购专家，为您实时同步世界各地的折扣与惊喜。</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-text-main text-white py-24 filter blur-[2px]">
+        <div class="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-4 gap-16">
+            <div class="space-y-8">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                        <img src="../assets/logo.svg" alt="BoBB Logo" class="w-8 h-8 brightness-200">
+                    </div>
+                    <span class="text-3xl font-black text-white px-0 tracking-tight"
+                        data-i18n="APP_BRAND_NAME">BoBB</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../assets/ui-core.js"></script>
+    <script>
+        function toggleLogin() {
+            const drawer = document.getElementById('login-drawer');
+            const overlay = document.getElementById('drawer-overlay');
+            const isHidden = drawer.classList.contains('translate-x-full');
+
+            // If we are on UID0002.html, the drawer is open by default.
+            // If the user clicks 'close', we might redirect back to index or login.
+            if (!isHidden) {
+                drawer.classList.add('translate-x-full');
+                overlay.classList.remove('opacity-100');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    window.location.href = 'UID0000_all_login.html';
+                }, 300);
+            }
+        }
+    </script>
+</body>
+
+</html>

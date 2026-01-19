@@ -14,7 +14,6 @@
     <link rel="stylesheet" href="../assets/ui-core.css">
     <script id="tailwind-config">
         tailwind.config = {
-            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
@@ -31,90 +30,16 @@
     </script>
 </head>
 
-<body class="bg-base font-sans text-text-main transition-colors duration-300">
+<body class="bg-base font-sans text-text-main transition-colors duration-300" data-page-id="UID0110"
+    data-page-title="项目详情">
     <div class="relative flex h-screen w-full overflow-hidden">
-        <!-- Sidebar Navigation -->
-        <aside class="w-64 flex flex-col border-r border-surface bg-white">
-            <div class="p-6 flex items-center gap-3">
-                <div class="bg-white p-1 rounded-lg shadow-sm flex items-center justify-center overflow-hidden">
-                    <img src="../assets/logo.svg" alt="BoBB Logo" class="w-8 h-8">
-                </div>
-                <h2 class="text-xl font-bold tracking-tight" data-i18n="APP_BRAND_NAME">BoBB</h2>
-            </div>
-
-            <nav class="flex-1 px-4 py-4 space-y-1">
-                <a class="flex items-center gap-3 px-3 py-2 text-text-sub hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
-                    href="#">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    <span class="text-sm font-medium" data-i18n="TITLE_DASHBOARD">仪表盘</span>
-                </a>
-                <a class="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg" href="#">
-                    <span class="material-symbols-outlined">calendar_today</span>
-                    <span class="text-sm font-medium" data-i18n="TITLE_TRIP_MGMT">行程管理</span>
-                </a>
-                <a class="flex items-center gap-3 px-3 py-2 text-text-sub hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
-                    href="#">
-                    <span class="material-symbols-outlined">list_alt</span>
-                    <span class="text-sm font-medium" data-i18n="TITLE_ORDER_LIST">订单列表</span>
-                </a>
-                <a class="flex items-center gap-3 px-3 py-2 text-text-sub hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
-                    href="#">
-                    <span class="material-symbols-outlined">chat_bubble</span>
-                    <span class="text-sm font-medium" data-i18n="MSG_CHAT_CENTER">消息中心</span>
-                </a>
-                <a class="flex items-center gap-3 px-3 py-2 text-text-sub hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
-                    href="#">
-                    <span class="material-symbols-outlined">account_balance_wallet</span>
-                    <span class="text-sm font-medium" data-i18n="LBL_WALLET">财务钱包</span>
-                </a>
-            </nav>
-
-            <div class="p-4 border-t border-surface">
-                <div class="lang-selector mb-4">
-                    <span class="lang-btn" onclick="switchLanguage('zh')">简</span>
-                    <span class="lang-btn" onclick="switchLanguage('zt')">繁</span>
-                    <span class="lang-btn" onclick="switchLanguage('en')">EN</span>
-                    <span class="lang-btn" onclick="switchLanguage('ja')">JP</span>
-                </div>
-                <div class="flex items-center gap-3 p-2 rounded-xl bg-base">
-                    <div class="size-10 rounded-full bg-cover bg-center"
-                        style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBApXLL_EeqJYCFSY98pssqfXDstRPyIRIPdtLqT2jV3rln4EcgXqQuHeYNycYFbh3pw3bK-2qF9y-4ifvDQ7E-eDAbNcT4RVkQ3G3T_YHA7_O2QvMQDmzHT6SsEYCJUE_UU5xS9kF_-NKx2v9URVVecuFmWfCQ-nteDJpKJHVE3ZrpsozMKzuBFZLgkkE71mMJYGKElKuP8wpUwBRO_wxbUF6aJKOQp-QIlRDNV1HjsP_agxGUurs05Gi79xpj33g37t3lLKBdX5M')">
-                    </div>
-                    <div class="flex-1 overflow-hidden">
-                        <p class="text-xs font-bold truncate">Costco 采买专员</p>
-                        <p class="text-[10px] text-text-sub truncate">商家认证会员</p>
-                    </div>
-                </div>
-            </div>
-        </aside>
+        <aside-placeholder></aside-placeholder>
 
         <!-- Main Content Area -->
-        <main class="flex-1 flex flex-col h-full overflow-hidden">
-            <header class="h-16 border-b border-surface bg-white flex items-center justify-between px-8">
-                <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-2 text-sm text-text-sub">
-                        <span data-i18n="TITLE_CONSOLE">控制台</span>
-                        <span class="material-symbols-outlined text-xs">chevron_right</span>
-                        <span class="text-text-main font-semibold">项目详情</span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-6">
-                    <div class="relative">
-                        <input
-                            class="bg-base border-none rounded-full pl-10 pr-4 py-2 text-sm w-64 focus:ring-2 focus:ring-primary/50"
-                            placeholder="搜索行程或订单..." type="text" />
-                        <span
-                            class="material-symbols-outlined absolute left-3 top-2 text-text-sub text-xl">search</span>
-                    </div>
-                    <button class="relative p-2 text-text-sub hover:text-primary transition-colors">
-                        <span class="material-symbols-outlined">notifications</span>
-                        <span
-                            class="absolute top-2 right-2 size-2 bg-primary rounded-full border-2 border-white"></span>
-                    </button>
-                </div>
-            </header>
+        <div class="flex-1 flex flex-col overflow-hidden relative">
+            <header-placeholder></header-placeholder>
 
-            <div class="flex-1 overflow-y-auto p-8">
+            <div class="flex-1 overflow-y-auto bg-base/50">
                 <div class="max-w-6xl mx-auto space-y-8">
                     <div class="flex justify-between items-start">
                         <div class="space-y-2">
@@ -217,10 +142,11 @@
                         </table>
                     </div>
                 </div>
+                <footer-placeholder></footer-placeholder>
             </div>
-        </main>
-    </div>
-    <script src="../assets/ui-core.js"></script>
+        </div>
+        <script src="../assets/ui-core.js"></script>
+        <script src="../assets/ui-merchant-framework.js"></script>
 </body>
 
 </html>

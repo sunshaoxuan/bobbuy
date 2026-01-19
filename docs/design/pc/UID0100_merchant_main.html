@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/ui-core.css">
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#C14B3B",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
+                    },
+                    borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
+                }
+            }
+        }
+    </script>
+
+<body class="bg-base font-sans text-text-main h-screen flex overflow-hidden" data-page-id="UID0100"
+    data-page-title="仪表盘">
+    <aside-placeholder></aside-placeholder>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col overflow-hidden relative">
+        <header-placeholder></header-placeholder>
+
+        <!-- Dynamic Content Body -->
+        <main class="flex-1 overflow-y-auto p-8 space-y-8 bg-base/50">
+            <!-- Summary Metrics (Placeholder for Dashboard) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-surface flex items-center gap-4">
+                    <div class="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined">payments</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-text-sub uppercase tracking-widest">今日营收</p>
+                        <p class="text-2xl font-black text-text-main">¥28,450.00</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-surface flex items-center gap-4">
+                    <div class="w-12 h-12 bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined">shopping_cart</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-text-sub uppercase tracking-widest">待处理订单</p>
+                        <p class="text-2xl font-black text-text-main">42</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-surface flex items-center gap-4">
+                    <div class="w-12 h-12 bg-green-500/10 text-green-600 rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined">trending_up</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-text-sub uppercase tracking-widest">活跃行程</p>
+                        <p class="text-2xl font-black text-text-main">5</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-surface flex items-center gap-4">
+                    <div class="w-12 h-12 bg-orange-500/10 text-orange-600 rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined">group</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-text-sub uppercase tracking-widest">我的私域客户</p>
+                        <p class="text-2xl font-black text-text-main">1,280</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity / Trends (Large Placeholder) -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div
+                    class="lg:col-span-2 bg-white p-8 rounded-3xl shadow-sm border border-surface min-h-[400px] flex flex-col justify-center items-center text-center space-y-4">
+                    <span class="material-symbols-outlined text-6xl text-surface">analytics</span>
+                    <h4 class="text-xl font-black">销售趋势分析</h4>
+                    <p class="text-sm text-text-sub max-w-sm">此处将展示最近30天的订单增长与营收曲线。数据正在同步中...</p>
+                </div>
+                <div class="bg-white p-8 rounded-3xl shadow-sm border border-surface min-h-[400px]">
+                    <h4 class="text-lg font-black mb-6">实时消息</h4>
+                    <div class="space-y-6">
+                        <!-- Message Item -->
+                        <div class="flex items-start gap-4">
+                            <img src="https://i.pravatar.cc/100?u=c1" class="w-10 h-10 rounded-full">
+                            <div class="flex-1">
+                                <p class="text-xs font-black">张小明 <span
+                                        class="text-[10px] font-medium text-text-sub ml-2">2 分钟前</span></p>
+                                <p class="text-xs text-text-sub mt-1">你好，请问我上周定的西雅图Costco的订单发出了吗？</p>
+                            </div>
+                            <div class="w-2 h-2 bg-primary rounded-full"></div>
+                        </div>
+                        <!-- Message Item -->
+                        <div class="flex items-start gap-4">
+                            <img src="https://i.pravatar.cc/100?u=c2" class="w-10 h-10 rounded-full">
+                            <div class="flex-1">
+                                <p class="text-xs font-black">Elena <span
+                                        class="text-[10px] font-medium text-text-sub ml-2">15 分钟前</span></p>
+                                <p class="text-xs text-text-sub mt-1">Hello, is the Japanese first release ready?</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        class="w-full mt-8 py-3 bg-base rounded-xl text-primary text-xs font-black hover:bg-surface transition-colors"
+                        data-i18n="LBL_VIEW_ALL">查看全部</button>
+                </div>
+            </div>
+
+            <!-- More content to test scrolling -->
+            <div
+                class="h-64 bg-white/30 border border-dashed border-surface rounded-3xl flex items-center justify-center">
+                <p class="text-xs font-bold text-text-sub uppercase tracking-widest opacity-30">Additional Content Area
+                </p>
+            </div>
+        </main>
+
+        <footer-placeholder></footer-placeholder>
+    </div>
+
+    <script src="../assets/ui-core.js"></script>
+    <script src="../assets/ui-merchant-framework.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/ui-core.css">
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#C14B3B",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
+                    },
+                    borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-[#FAF7F2] lg:bg-gray-200 flex justify-center min-h-screen font-sans text-text-main">
+    <div class="w-full max-w-[480px] bg-base min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
+
+        <!-- App Top Header -->
+        <header class="p-6 pb-2 space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div
+                        class="w-8 h-8 bg-white rounded-lg shadow-sm border border-surface flex items-center justify-center rotate-3 overflow-hidden">
+                        <img src="../assets/logo.svg" alt="BoBB" class="w-5 h-5">
+                    </div>
+                    <span class="text-xl font-black text-primary tracking-tight">BoBB</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button class="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center relative">
+                        <span class="material-symbols-outlined text-text-sub">notifications</span>
+                        <span
+                            class="absolute top-3 right-3 w-1.5 h-1.5 bg-primary rounded-full ring-2 ring-white"></span>
+                    </button>
+                    <div class="lang-selector border border-surface bg-white/80 px-3 py-1.5 rounded-full scale-[0.85]">
+                        <span class="lang-btn" onclick="switchLanguage('zh')">简</span>
+                        <span class="lang-btn" onclick="switchLanguage('ja')">日</span>
+                        <span class="lang-btn" onclick="switchLanguage('en')">EN</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- App Search -->
+            <div class="relative">
+                <span
+                    class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-sub text-lg">search</span>
+                <input type="text" placeholder="搜索订单..." data-i18n-placeholder="LBL_SEARCH_PLACEHOLDER"
+                    class="w-full bg-white border-none rounded-2xl py-3.5 pl-12 pr-6 text-sm font-medium shadow-sm focus:ring-1 focus:ring-primary/20">
+            </div>
+        </header>
+
+        <!-- Main Content (Scrollable Area) -->
+        <main class="flex-1 overflow-y-auto px-6 pb-24">
+            <!-- Business Stats Card -->
+            <div class="bg-primary p-6 rounded-3xl shadow-xl shadow-primary/20 mt-4 text-white space-y-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-bold text-white/60 uppercase tracking-widest mb-1">今日预估营收</p>
+                        <h2 class="text-3xl font-black">¥ 12,850.00</h2>
+                    </div>
+                    <span class="material-symbols-outlined bg-white/20 p-2 rounded-xl">account_balance_wallet</span>
+                </div>
+                <div class="grid grid-cols-2 gap-4 border-t border-white/10 pt-4">
+                    <div>
+                        <p class="text-[10px] font-bold text-white/60 uppercase tracking-wider">新增订单</p>
+                        <p class="text-xl font-black">28 件</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-white/60 uppercase tracking-wider">活跃行程</p>
+                        <p class="text-xl font-black">3 条</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Feature Grid -->
+            <div class="mt-8 space-y-4">
+                <h3 class="text-sm font-black text-text-main uppercase tracking-widest">商家管理引擎</h3>
+                <div class="grid grid-cols-4 gap-4">
+                    <button class="flex flex-col items-center gap-2 group">
+                        <div
+                            class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-surface flex items-center justify-center group-active:scale-95 transition-transform">
+                            <span class="material-symbols-outlined text-primary">local_shipping</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-text-sub" data-i18n="TITLE_LOGISTICS">配送中心</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2 group">
+                        <div
+                            class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-surface flex items-center justify-center group-active:scale-95 transition-transform">
+                            <span class="material-symbols-outlined text-primary">savings</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-text-sub" data-i18n="TITLE_FINANCE">财务中心</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2 group">
+                        <div
+                            class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-surface flex items-center justify-center group-active:scale-95 transition-transform">
+                            <span class="material-symbols-outlined text-primary">forum</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-text-sub" data-i18n="MSG_CHAT_CENTER">消息中心</span>
+                    </button>
+                    <button class="flex flex-col items-center gap-2 group">
+                        <div
+                            class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-surface flex items-center justify-center group-active:scale-95 transition-transform">
+                            <span class="material-symbols-outlined text-primary">help</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-text-sub" data-i18n="TITLE_HELP">帮助中心</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Activity List -->
+            <div class="mt-10 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-black text-text-main uppercase tracking-widest">最新订单动态</h3>
+                    <button class="text-[10px] font-black text-primary">查看全部</button>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- Order Item 1 -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-surface flex items-center gap-4">
+                        <div class="w-12 h-12 bg-base rounded-xl overflow-hidden ring-1 ring-surface">
+                            <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100"
+                                class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-xs font-black line-clamp-1">Nike Air Max Special ...</p>
+                            <p class="text-[10px] text-text-sub font-medium mt-1">#ORD-8829 • 待配送</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-black text-primary">¥ 1,299</p>
+                        </div>
+                    </div>
+                    <!-- Order Item 2 -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-surface flex items-center gap-4">
+                        <div class="w-12 h-12 bg-base rounded-xl overflow-hidden ring-1 ring-surface">
+                            <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100"
+                                class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-xs font-black line-clamp-1">Designer Watch Pro</p>
+                            <p class="text-[10px] text-text-sub font-medium mt-1">#ORD-8828 • 已完成</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-black text-text-main">¥ 3,580</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Copyright (within app flow) -->
+            <div class="mt-12 text-center pb-8">
+                <p class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em] opacity-30">© 2024 BOBBUY
+                    GLOBAL</p>
+                <p class="text-[10px] font-bold text-text-sub uppercase tracking-[0.2em] mt-1 opacity-20">UID1100</p>
+            </div>
+        </main>
+
+        <!-- App Bottom Navigation -->
+        <nav
+            class="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-surface h-20 flex items-center justify-around px-4 z-50">
+            <button class="flex flex-col items-center gap-1 text-primary">
+                <span class="material-symbols-outlined text-2xl font-black">dashboard</span>
+                <span class="text-[9px] font-black uppercase tracking-widest">Dashboard</span>
+            </button>
+            <button class="flex flex-col items-center gap-1 text-text-sub opacity-50">
+                <span class="material-symbols-outlined text-2xl">explore</span>
+                <span class="text-[9px] font-black uppercase tracking-widest">Trips</span>
+            </button>
+            <div
+                class="w-14 h-14 bg-primary text-white rounded-2xl shadow-lg shadow-primary/30 -mt-10 flex items-center justify-center active:scale-95 transition-transform border-4 border-base">
+                <span class="material-symbols-outlined text-3xl font-black">add</span>
+            </div>
+            <button class="flex flex-col items-center gap-1 text-text-sub opacity-50">
+                <span class="material-symbols-outlined text-2xl">list_alt</span>
+                <span class="text-[9px] font-black uppercase tracking-widest">Orders</span>
+            </button>
+            <button class="flex flex-col items-center gap-1 text-text-sub opacity-50">
+                <span class="material-symbols-outlined text-2xl">person</span>
+                <span class="text-[9px] font-black uppercase tracking-widest">Account</span>
+            </button>
+        </nav>
+    </div>
+
+    <script src="../assets/ui-core.js"></script>
+</body>
+
+</html>

@@ -26,82 +26,70 @@
             }
         }
     </script>
-</head>
 
-<body class="bg-base font-sans text-text-main transition-colors duration-300">
+<body class="bg-base font-sans text-text-main transition-colors duration-300" data-page-id="UID0115"
+    data-page-title="消息中心">
     <div class="relative flex h-screen w-full overflow-hidden">
-        <aside class="w-64 flex flex-col border-r border-surface bg-white">
-            <div class="p-6 flex items-center gap-3">
-                <div class="bg-white p-1 rounded-lg shadow-sm flex items-center justify-center overflow-hidden">
-                    <img src="../assets/logo.svg" alt="BoBB Logo" class="w-8 h-8">
-                </div>
-                <h2 class="text-xl font-bold tracking-tight" data-i18n="APP_BRAND_NAME">BoBB</h2>
-            </div>
-            <nav class="flex-1 px-4 py-4 space-y-1">
-                <a class="flex items-center gap-3 px-3 py-2 text-text-sub hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
-                    href="#">
-                    <span class="material-symbols-outlined">forum</span>
-                    <span class="text-sm font-medium" data-i18n="MSG_CHAT_CENTER">消息中心</span>
-                </a>
-            </nav>
-            <div class="p-4 border-t border-surface">
-                <div class="lang-selector">
-                    <span class="lang-btn" onclick="switchLanguage('zh')">简</span>
-                    <span class="lang-btn" onclick="switchLanguage('en')">EN</span>
-                </div>
-            </div>
-        </aside>
+        <aside-placeholder></aside-placeholder>
 
-        <main class="flex-1 flex overflow-hidden">
-            <!-- Contact List -->
-            <div class="w-80 border-r border-surface bg-white overflow-y-auto">
-                <div class="p-4 border-b border-surface bg-base/20">
-                    <input type="text"
-                        class="w-full bg-white border-surface rounded-full text-xs py-2 px-4 focus:ring-primary"
-                        placeholder="搜索联系人...">
-                </div>
-                <div class="divide-y divide-surface">
-                    <div class="p-4 bg-primary/5 flex items-center gap-3 cursor-pointer">
-                        <div class="size-10 rounded-full bg-surface"></div>
-                        <div class="flex-1 overflow-hidden">
-                            <p class="text-sm font-black truncate">User_Seattle_88</p>
-                            <p class="text-[10px] text-text-sub truncate">请问 Kirkland 咖啡还有货吗？</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col overflow-hidden relative">
+            <header-placeholder></header-placeholder>
 
-            <!-- Chat Area -->
-            <div class="flex-1 flex flex-col bg-white">
-                <div class="h-16 border-b border-surface flex items-center px-6 justify-between">
-                    <div class="flex items-center gap-2">
-                        <span class="font-bold">User_Seattle_88</span>
-                        <span class="size-2 bg-success rounded-full"></span>
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Contact List -->
+                <div class="w-80 border-r border-surface bg-white overflow-y-auto">
+                    <div class="p-4 border-b border-surface bg-base/20">
+                        <input type="text"
+                            class="w-full bg-white border-surface rounded-full text-xs py-2 px-4 focus:ring-primary"
+                            placeholder="搜索联系人...">
                     </div>
-                </div>
-                <div class="flex-1 p-6 overflow-y-auto bg-base/10 space-y-4">
-                    <div class="flex justify-end">
-                        <div class="bg-primary text-white p-3 rounded-2xl rounded-tr-none max-w-sm text-sm shadow-soft">
-                            您好！有的，我现在正在 Issaquah 店。
+                    <div class="divide-y divide-surface">
+                        <div class="p-4 bg-primary/5 flex items-center gap-3 cursor-pointer">
+                            <div class="size-10 rounded-full bg-surface"></div>
+                            <div class="flex-1 overflow-hidden">
+                                <p class="text-sm font-black truncate">User_Seattle_88</p>
+                                <p class="text-[10px] text-text-sub truncate">请问 Kirkland 咖啡还有货吗？</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex justify-start">
-                        <div class="bg-white p-3 rounded-2xl rounded-tl-none max-w-sm text-sm border border-surface">
-                            太好了！请帮我带两罐，谢谢！
+                </div>
+
+                <!-- Chat Area -->
+                <div class="flex-1 flex flex-col bg-white overflow-hidden relative">
+                    <div class="h-16 border-b border-surface flex items-center px-6 justify-between shrink-0">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold">User_Seattle_88</span>
+                            <span class="size-2 bg-success rounded-full"></span>
                         </div>
                     </div>
+                    <div class="flex-1 p-6 overflow-y-auto bg-base/50 space-y-4">
+                        <div class="flex justify-end">
+                            <div
+                                class="bg-primary text-white p-3 rounded-2xl rounded-tr-none max-w-sm text-sm shadow-soft">
+                                您好！有的，我现在正在 Issaquah 店。
+                            </div>
+                        </div>
+                        <div class="flex justify-start">
+                            <div
+                                class="bg-white p-3 rounded-2xl rounded-tl-none max-w-sm text-sm border border-surface">
+                                太好了！请帮我带两罐，谢谢！
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t border-surface bg-white flex gap-4 shrink-0">
+                        <button class="text-text-sub hover:text-primary"><span
+                                class="material-symbols-outlined">image</span></button>
+                        <input type="text" class="flex-1 bg-base border-none rounded-full py-2 px-6 focus:ring-primary"
+                            placeholder="输入消息...">
+                        <button class="btn-primary py-2 px-6">发送</button>
+                    </div>
                 </div>
-                <div class="p-4 border-t border-surface bg-white flex gap-4">
-                    <button class="text-text-sub hover:text-primary"><span
-                            class="material-symbols-outlined">image</span></button>
-                    <input type="text" class="flex-1 bg-base border-none rounded-full py-2 px-6 focus:ring-primary"
-                        placeholder="输入消息...">
-                    <button class="btn-primary py-2 px-6">发送</button>
-                </div>
+                <footer-placeholder></footer-placeholder>
             </div>
-        </main>
-    </div>
-    <script src="../assets/ui-core.js"></script>
+        </div>
+        <script src="../assets/ui-core.js"></script>
+        <script src="../assets/ui-merchant-framework.js"></script>
 </body>
 
 </html>

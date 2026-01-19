@@ -1,17 +1,23 @@
 :root {
     /* PROD-04 Color Palette */
-    --color-primary: #C14B3B;       /* 砖红 */
-    --color-bg-base: #FAF7F2;       /* 暖米白 */
-    --color-bg-surface: #F0E9E0;    /* 浅杏 */
-    --color-text-main: #2D2926;     /* 炭黑 */
-    --color-text-sub: #706860;      /* 暖灰 */
-    --color-accent: #D4A373;        /* 琥珀金 */
-    
+    --color-primary: #C14B3B;
+    /* 砖红 */
+    --color-bg-base: #FAF7F2;
+    /* 暖米白 */
+    --color-bg-surface: #F0E9E0;
+    /* 浅杏 */
+    --color-text-main: #2D2926;
+    /* 炭黑 */
+    --color-text-sub: #706860;
+    /* 暖灰 */
+    --color-accent: #D4A373;
+    /* 琥珀金 */
+
     /* Functional Colors */
     --color-success: #1fad7e;
     --color-warning: #f59e0b;
     --color-error: #dc2626;
-    
+
     /* Shadows & Radius */
     --shadow-soft: 0 4px 12px rgba(193, 75, 59, 0.1);
     --shadow-hover: 0 10px 25px rgba(193, 75, 59, 0.2);
@@ -28,7 +34,10 @@ body {
 }
 
 /* Typography Overrides */
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
     letter-spacing: -0.02em;
     color: var(--color-text-main);
 }
@@ -101,6 +110,60 @@ h1, h2, h3, h4 {
 .lang-btn.active {
     background: var(--color-primary);
     color: white;
+}
+
+/* Sidebar & Navigation Framework */
+.sidebar-item {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar-item.active {
+    background-color: var(--color-primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(193, 75, 59, 0.2);
+}
+
+.sidebar-item:not(.active) {
+    color: var(--color-text-sub);
+}
+
+.sidebar-item:not(.active):hover {
+    background-color: var(--color-bg-surface);
+    color: var(--color-primary);
+}
+
+/* Collapsible Sidebar Logic */
+.sidebar-mini {
+    width: 80px !important;
+}
+
+.sidebar-mini .sidebar-text,
+.sidebar-mini .brand-text {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+    margin: 0;
+}
+
+.sidebar-mini .sidebar-item {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.sidebar-mini .sidebar-item span:last-child {
+    display: none;
+}
+
+/* Transition Helpers */
+.transition-sidebar {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-content {
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Noise overlay for texture */
