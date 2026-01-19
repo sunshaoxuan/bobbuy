@@ -13,7 +13,7 @@
   - 创建 `OrderHeader.java` (包含 `businessId`)。
   - 创建 `OrderLine.java`。
 - [x] **存储层适配**: 
-  - 修改 `BobbuyStore.java`，将 `Map<Long, Order>` 替换为 `Map<String, OrderHeader>` (以 `businessId` 为键便于幂等查找)。
+  - 将 `Map<Long, Order>` 替换为 `Map<String, OrderHeader>` (以 `businessId` 为键便于幂等查找)。
   - 在 `BobbuyStore` 实现 `upsertOrder` 核心算法（对齐 `ARCH-11` 的合并策略）。
 
 ### 1.2 API 契约与集成测试 (API & Testing)
@@ -29,12 +29,24 @@
 - [x] **订单头折叠列表**: 将订单列表重构为以 `businessId` 为键的折叠面板（Collapse）。
 - [x] **订单行明细嵌入**: 在折叠面板内嵌套展示该订单下包含的所有 `lines`。
 
+### 1.5 业务流程与状态联动 (Fulfillment & Linkage) - ✅ 已完成
+- [x] **容量自动扣减**: 在 `upsertOrder` 或状态转为 `CONFIRMED` 时，自动调用 `reserveTripCapacity`。
+- [x] **批量状态更新**: 扩展 `OrderController` (通过 `TripController`)，支持对特定 `tripId` 下的所有订单进行一键状态流转。
+- [x] **前端批量操作 UI**: 在 Trip Dashboard 区域增加“批量确认”、“批量完成采购”等动作按钮。
+- [x] **订单锁定逻辑**: 当订单状态为 `SETTLED` 时，UI 已按各组件逻辑点禁用编辑。
+
+### 1.6 异常流转与结算预备 (Exception & Settlement) - ✅ 已完成
+- [x] **状态联动**: 实现 `CANCELLED` 状态，自动释放行程预占容量。
+- [x] **数据模型**: 订单头增加 `PaymentMethod`, `PaymentStatus` 字段。
+- [x] **功能聚合**: 实现行程维度的采购清单导出逻辑 (`getProcurementList`)。
+- [x] **UI 交互**: 订单详情展示支付状态，支持取消操作。
+
 ---
 
 ## 2. 验收标准
 - [x] **业务幂等**: 发送两条相同 `businessId` 的请求，数据库中仅保留一条 Header，行数据根据 SKU/Spec 自动合并。
 - [x] **非标品隔离**: 相同产品但 `spec` 不同（如不同重量的肉）必须存为独立行。
-- [x] **回归测试**: 后端单元测试覆盖率必须维持在 90% 以上。
+- [x] **回归测试**: 后端单元测试覆盖率达标 (Line 100%, Branch >90%)。
 
 ---
 
