@@ -105,77 +105,138 @@
             <div class="size-10"></div> <!-- Spacer for symmetry -->
         </header>
         <main class="flex-1 overflow-y-auto px-4 py-6 space-y-8 pb-32">
-            <!-- Store Selection Section -->
+            <!-- Store Selection & Map Section -->
             <section class="space-y-4">
                 <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[#9e9d47]">storefront</span>
-                    <h3 class="text-lg font-bold tracking-tight">Store Details</h3>
+                    <span class="material-symbols-outlined text-primary">storefront</span>
+                    <h3 class="text-lg font-bold tracking-tight">主采购地与定位</h3>
                 </div>
                 <div class="flex flex-col gap-4">
-                    <label class="flex flex-col gap-2">
-                        <p class="text-sm font-medium opacity-70 ml-1">Select Store</p>
-                        <div class="relative">
-                            <select class="form-input-custom appearance-none cursor-pointer pr-10">
-                                <option value="costco-chiba">Costco Chiba, Japan</option>
-                                <option value="costco-kawasaki">Costco Kawasaki, Japan</option>
-                                <option value="costco-seattle">Costco Seattle, USA</option>
-                                <option value="costco-shanghai">Costco Shanghai, China</option>
-                            </select>
-                            <span
-                                class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#9e9d47]">unfold_more</span>
+                    <div class="relative">
+                        <select
+                            class="form-input-custom appearance-none cursor-pointer pr-10 border-surface bg-white font-medium">
+                            <option value="costco-alhambra">Costco Alhambra, CA, USA</option>
+                            <option value="costco-chiba">Costco Chiba, Japan</option>
+                            <option value="costco-kawasaki">Costco Kawasaki, Japan</option>
+                        </select>
+                        <span
+                            class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-text-sub">unfold_more</span>
+                    </div>
+
+                    <!-- App Map Preview -->
+                    <div
+                        class="relative rounded-2xl overflow-hidden border border-surface h-48 bg-slate-100 shadow-inner group">
+                        <div class="absolute inset-0 bg-cover bg-center"
+                            style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDaDYvv2vnOhegGQqLvSZPtCAbl24YlyrcKG2Fz92TL_ecXOvj1JQMgFOBsZiBrZQZCHPmHXgP-kmiYUjPYEsSZ2DK8DDeKgIKTGQhT7qta8kwAuTQWlY7wOFsfJ5iplJGqYpjNpTc72lJCzsVm4SjilWvXV_VsBvb6NBHcQ53YIBF-WFJiO7az-RM_-yKwaiSLPpJewnl_5hz0yhxNEQtqPrNrqYY2i6rto1qiCMWZC3XkK6KWy2K8wlTCn_Dd_Ajd33zMuNowiII')">
                         </div>
-                    </label>
+                        <div class="absolute inset-0 bg-black/10"></div>
+                        <button
+                            class="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur py-2.5 rounded-xl text-sm font-bold shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all">
+                            <span class="material-symbols-outlined text-primary text-base">near_me</span>
+                            辅助确定位置 / 调取大地图
+                        </button>
+                    </div>
                 </div>
             </section>
+
+            <!-- Trip Title with Auto-generation -->
+            <section class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">title</span>
+                        <h3 class="text-lg font-bold tracking-tight">行程标题</h3>
+                    </div>
+                    <button class="text-xs font-bold text-primary flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">auto_fix</span>
+                        自动生成
+                    </button>
+                </div>
+                <input class="form-input-custom border-surface bg-white font-bold" type="text" placeholder="输入您的行程描述"
+                    value="2026-02-15 首尔主采购行程" />
+            </section>
+
             <!-- Schedule Section -->
             <section class="space-y-4">
                 <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[#9e9d47]">calendar_today</span>
-                    <h3 class="text-lg font-bold tracking-tight">Scheduled Date &amp; Time</h3>
+                    <span class="material-symbols-outlined text-primary">calendar_today</span>
+                    <h3 class="text-lg font-bold tracking-tight">日期与时间选择</h3>
                 </div>
-                <div class="bg-white dark:bg-[#2d2c14] rounded-2xl p-4 border border-[#e9e8ce] dark:border-[#3d3c1a]">
-                    <div class="flex items-center justify-between mb-4">
-                        <button class="p-2"><span class="material-symbols-outlined">chevron_left</span></button>
-                        <p class="font-bold">October 2023</p>
-                        <button class="p-2"><span class="material-symbols-outlined">chevron_right</span></button>
+
+                <!-- Calendar (Existing style but polished) -->
+                <div class="bg-white rounded-3xl p-6 border border-surface shadow-sm">
+                    <div class="flex items-center justify-between mb-6">
+                        <button class="p-2"><span
+                                class="material-symbols-outlined text-text-sub">chevron_left</span></button>
+                        <p class="font-black text-text-main">二月 2026</p>
+                        <button class="p-2"><span
+                                class="material-symbols-outlined text-text-sub">chevron_right</span></button>
                     </div>
-                    <div class="grid grid-cols-7 text-center gap-y-2">
-                        <div class="text-[11px] font-bold opacity-40">S</div>
-                        <div class="text-[11px] font-bold opacity-40">M</div>
-                        <div class="text-[11px] font-bold opacity-40">T</div>
-                        <div class="text-[11px] font-bold opacity-40">W</div>
-                        <div class="text-[11px] font-bold opacity-40">T</div>
-                        <div class="text-[11px] font-bold opacity-40">F</div>
-                        <div class="text-[11px] font-bold opacity-40">S</div>
-                        <!-- Calendar Grid (Truncated example) -->
+                    <div class="grid grid-cols-7 text-center gap-y-3">
+                        <div class="text-[10px] font-bold opacity-30">日</div>
+                        <div class="text-[10px] font-bold opacity-30">一</div>
+                        <div class="text-[10px] font-bold opacity-30">二</div>
+                        <div class="text-[10px] font-bold opacity-30">三</div>
+                        <div class="text-[10px] font-bold opacity-30">四</div>
+                        <div class="text-[10px] font-bold opacity-30">五</div>
+                        <div class="text-[10px] font-bold opacity-30">六</div>
+
+                        <div class="h-10 flex items-center justify-center text-sm opacity-20">26</div>
+                        <div class="h-10 flex items-center justify-center text-sm opacity-20">27</div>
                         <div class="h-10 flex items-center justify-center text-sm opacity-20">28</div>
-                        <div class="h-10 flex items-center justify-center text-sm opacity-20">29</div>
-                        <div class="h-10 flex items-center justify-center text-sm opacity-20">30</div>
-                        <div class="h-10 flex items-center justify-center text-sm">1</div>
-                        <div class="h-10 flex items-center justify-center text-sm">2</div>
-                        <div class="h-10 flex items-center justify-center text-sm">3</div>
-                        <div class="h-10 flex items-center justify-center text-sm">4</div>
                         <div
-                            class="h-10 flex items-center justify-center text-sm bg-primary text-black rounded-full font-bold">
-                            5</div>
-                        <div class="h-10 flex items-center justify-center text-sm">6</div>
-                        <div class="h-10 flex items-center justify-center text-sm">7</div>
-                        <div class="h-10 flex items-center justify-center text-sm font-bold">...</div>
+                            class="h-10 flex items-center justify-center text-sm hover:bg-surface/50 rounded-full transition-colors">
+                            1</div>
+                        <div
+                            class="h-10 flex items-center justify-center text-sm hover:bg-surface/50 rounded-full transition-colors">
+                            2</div>
+                        <div
+                            class="h-10 flex items-center justify-center text-sm hover:bg-surface/50 rounded-full transition-colors">
+                            3</div>
+                        <div
+                            class="h-10 flex items-center justify-center text-sm hover:bg-surface/50 rounded-full transition-colors">
+                            4</div>
+
+                        <div
+                            class="h-10 flex items-center justify-center text-sm bg-primary text-white rounded-full font-black shadow-lg shadow-primary/30">
+                            15</div>
+                        <div class="h-10 flex items-center justify-center text-sm">...</div>
                     </div>
                 </div>
-                <div class="flex gap-3">
-                    <div class="flex-1 flex flex-col gap-2">
-                        <p class="text-sm font-medium opacity-70 ml-1">Start Time</p>
-                        <input class="form-input-custom" type="time" value="10:00" />
+
+                <!-- Time Segment Logic -->
+                <div class="bg-surface/30 p-4 rounded-2xl border border-surface space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-bold text-text-sub">具体出行时间段</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input checked="" class="sr-only peer" type="checkbox" />
+                            <div
+                                class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary">
+                            </div>
+                        </label>
                     </div>
-                    <div class="flex-1 flex flex-col gap-2">
-                        <p class="text-sm font-medium opacity-70 ml-1">Est. Duration</p>
-                        <select class="form-input-custom">
-                            <option>2 Hours</option>
-                            <option>3 Hours</option>
-                            <option>4 Hours</option>
-                        </select>
+                    <div class="flex gap-3">
+                        <input class="form-input-custom border-surface bg-white text-center" type="time"
+                            value="09:00" />
+                        <div class="flex items-center opacity-30">至</div>
+                        <input class="form-input-custom border-surface bg-white text-center" type="time"
+                            value="18:00" />
                     </div>
+                </div>
+            </section>
+
+            <!-- Service Capacity Section -->
+            <section class="space-y-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">groups</span>
+                    <h3 class="text-lg font-bold tracking-tight">行程服务容量</h3>
+                </div>
+                <div class="bg-white rounded-3xl p-5 border border-surface shadow-sm space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-text-sub">最大服务客户上限</span>
+                        <span class="text-2xl font-black text-primary">25</span>
+                    </div>
+                    <input class="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                        max="50" min="1" type="range" value="25" />
                 </div>
             </section>
             <!-- AI Pricing Assistant Toggle -->
@@ -269,18 +330,25 @@
                     class="flex items-center justify-between px-4 py-2 bg-black/5 dark:bg-white/5 rounded-full backdrop-blur-sm">
                     <div class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm">shopping_bag</span>
-                        <span class="text-sm font-semibold">Costco Chiba</span>
+                        <span class="text-xs font-bold">Costco Alhambra</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm">event</span>
-                        <span class="text-sm font-semibold">Oct 5, 10:00 AM</span>
+                        <span class="text-xs font-bold">2月15日 09:00</span>
                     </div>
                 </div>
-                <button
-                    class="w-full h-16 bg-primary text-[#1c1c0d] font-bold text-lg rounded-full flex items-center justify-center gap-2 shadow-xl shadow-primary/20 active:scale-[0.98] transition-transform">
-                    <span>Publish Trip</span>
-                    <span class="material-symbols-outlined">send</span>
-                </button>
+                <div class="flex gap-3">
+                    <button
+                        class="flex-1 h-14 bg-surface text-text-main font-bold text-sm rounded-full flex items-center justify-center gap-2 border border-surface active:scale-95 transition-transform">
+                        <span class="material-symbols-outlined text-base">style</span>
+                        <span>存为草稿</span>
+                    </button>
+                    <button
+                        class="flex-[2] h-14 bg-primary text-white font-bold text-base rounded-full flex items-center justify-center gap-2 shadow-xl shadow-primary/20 active:scale-95 transition-transform">
+                        <span>发布行程</span>
+                        <span class="material-symbols-outlined text-base">rocket_launch</span>
+                    </button>
+                </div>
             </div>
         </footer>
     </div>

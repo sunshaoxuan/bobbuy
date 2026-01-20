@@ -21,7 +21,8 @@
     - **UID0100 (PC)**: 确认实时指标区域布局正常。
     - **UID1100 (App)**: 确认 header 消息红点及状态卡片显示。
     - **UID1115/1211**: 确认桌面端 split-view 侧边栏布局成功。
-    - **Redirection**: 确认 `?no-redirect` 参数在 18 个页面有效。
+    - **Redirection**: 确认 `?no-redirect` 参数在 **全部 18 个 App 页面** 均已生效，无回退或 404 错误。
+    - **证据存档**: 已录制全量自动化验证视频 `app_batch_redirect_verify_1768901525208.webp`。
 5.  **结束清理 (Shutdown)**: **[CRITICAL]** 已彻底终止 HTTP 服务器进程，并执行了 `*.ps1`, `*.tmp` 及 `dev_temp` 的清除操作（符合 Rule #5）。
 
 ## 3. 文档合规性审计 (STD-02)

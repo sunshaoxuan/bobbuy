@@ -43,62 +43,382 @@
             <header-placeholder></header-placeholder>
 
             <div class="flex-1 overflow-y-auto bg-base/50">
-                <div class="max-w-4xl mx-auto space-y-8">
-                    <div class="flex justify-between items-end">
-                        <div class="space-y-1">
-                            <h1 class="text-3xl font-black tracking-tight" data-i18n="nav_trips">发布新行程</h1>
-                            <p class="text-text-sub">计划您的下一次 Costco 采买，实时管理全球订单</p>
-                        </div>
-                    </div>
+                <div class="max-w-[1280px] mx-auto p-8">
+                    <div class="flex flex-col lg:flex-row gap-8">
 
-                    <div class="premium-card p-0">
-                        <div class="p-6 border-b border-surface flex justify-between items-center bg-surface/30">
-                            <h2 class="font-bold flex items-center gap-2">
-                                <span class="material-symbols-outlined text-primary">add_location_alt</span>
-                                行程详情设置
-                            </h2>
-                        </div>
-                        <div class="p-8 space-y-8">
-                            <div class="space-y-4">
-                                <label class="text-sm font-bold text-text-sub uppercase tracking-wider">采买门店选址</label>
-                                <div class="relative rounded-xl overflow-hidden border-2 border-surface h-[200px] bg-cover bg-center"
-                                    style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDaDYvv2vnOhegGQqLvSZPtCAbl24YlyrcKG2Fz92TL_ecXOvj1JQMgFOBsZiBrZQZCHPmHXgP-kmiYUjPYEsSZ2DK8DDeKgIKTGQhT7qta8kwAuTQWlY7wOFsfJ5iplJGqYpjNpTc72lJCzsVm4SjilWvXV_VsBvb6NBHcQ53YIBF-WFJiO7az-RM_-yKwaiSLPpJewnl_5hz0yhxNEQtqPrNrqYY2i6rto1qiCMWZC3XkK6KWy2K8wlTCn_Dd_Ajd33zMuNowiII')">
-                                    <div class="absolute inset-0 bg-black/10"></div>
+                        <!-- Left: Form Section -->
+                        <div class="flex-1 space-y-8">
+                            <div class="space-y-1">
+                                <h1 class="text-3xl font-black tracking-tight" data-i18n="nav_trips">发布新行程</h1>
+                                <p class="text-text-sub">填写以下信息，开启您的全球专业代购之旅</p>
+                            </div>
+
+                            <div class="premium-card p-0 overflow-visible">
+                                <div
+                                    class="p-6 border-b border-surface flex justify-between items-center bg-surface/30">
+                                    <h2 class="font-bold flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-primary">edit_calendar</span>
+                                        行程基础信息
+                                    </h2>
+                                </div>
+                                <div class="p-8 space-y-8">
+                                    <!-- Store and Auto Title -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div class="space-y-3">
+                                            <label
+                                                class="text-sm font-bold text-text-sub uppercase tracking-wider">采买门店/主采购地</label>
+                                            <div class="relative group">
+                                                <input id="storeInput" type="text" placeholder="输入名称、地址或从历史记录选择"
+                                                    class="w-full bg-base border-surface rounded-lg py-3 pl-10 focus:ring-primary focus:border-primary transition-all"
+                                                    value="Costco Wholesale, Alhambra, CA">
+                                                <span
+                                                    class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-sub group-focus-within:text-primary transition-colors">storefront</span>
+                                                <!-- History Dropdown (Hidden by default) -->
+                                                <div
+                                                    class="hidden absolute top-full left-0 w-full bg-white border border-surface rounded-xl shadow-xl mt-2 z-50 overflow-hidden">
+                                                    <div
+                                                        class="p-2 border-b border-surface bg-surface/20 text-[10px] uppercase font-bold text-text-sub">
+                                                        历史采购地</div>
+                                                    <button
+                                                        class="w-full text-left px-4 py-3 hover:bg-surface/30 transition-colors flex items-center gap-3">
+                                                        <span
+                                                            class="material-symbols-outlined text-sm text-text-sub">history</span>
+                                                        <span class="text-sm">Costco Wholesale, Alhambra, CA</span>
+                                                    </button>
+                                                    <button
+                                                        class="w-full text-left px-4 py-3 hover:bg-surface/30 transition-colors flex items-center gap-3">
+                                                        <span
+                                                            class="material-symbols-outlined text-sm text-text-sub">history</span>
+                                                        <span class="text-sm">Costco Chiba, Japan</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-3">
+                                            <label
+                                                class="text-sm font-bold text-text-sub uppercase tracking-wider">行程标题</label>
+                                            <div class="relative">
+                                                <input id="tripTitle" type="text" placeholder="系统将自动生成描述性标题"
+                                                    class="w-full bg-base border-surface rounded-lg py-3 focus:ring-primary font-bold">
+                                                <button
+                                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-primary hover:bg-primary/10 p-1 rounded transition-colors"
+                                                    title="重新生成">
+                                                    <span class="material-symbols-outlined text-lg">autorenew</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Map and Location -->
+                                    <div class="space-y-4">
+                                        <div
+                                            class="relative rounded-2xl overflow-hidden border-2 border-surface h-[240px] bg-slate-200 group">
+                                            <!-- Mock Map Layer -->
+                                            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDaDYvv2vnOhegGQqLvSZPtCAbl24YlyrcKG2Fz92TL_ecXOvj1JQMgFOBsZiBrZQZCHPmHXgP-kmiYUjPYEsSZ2DK8DDeKgIKTGQhT7qta8kwAuTQWlY7wOFsfJ5iplJGqYpjNpTc72lJCzsVm4SjilWvXV_VsBvb6NBHcQ53YIBF-WFJiO7az-RM_-yKwaiSLPpJewnl_5hz0yhxNEQtqPrNrqYY2i6rto1qiCMWZC3XkK6KWy2K8wlTCn_Dd_Ajd33zMuNowiII')">
+                                            </div>
+                                            <div class="absolute inset-0 bg-black/5"></div>
+                                            <!-- Map Controls -->
+                                            <div class="absolute top-4 right-4 flex flex-col gap-2">
+                                                <button
+                                                    class="size-10 bg-white/90 backdrop-blur rounded-lg shadow-lg flex items-center justify-center text-text-main hover:bg-white transition-all active:scale-95">
+                                                    <span class="material-symbols-outlined">add</span>
+                                                </button>
+                                                <button
+                                                    class="size-10 bg-white/90 backdrop-blur rounded-lg shadow-lg flex items-center justify-center text-text-main hover:bg-white transition-all active:scale-95">
+                                                    <span class="material-symbols-outlined">remove</span>
+                                                </button>
+                                            </div>
+                                            <div
+                                                class="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                                                <div
+                                                    class="bg-white/95 backdrop-blur p-3 rounded-xl shadow-xl flex items-center gap-3 border border-surface/50 max-w-[70%]">
+                                                    <div class="bg-primary/20 text-primary p-2 rounded-lg">
+                                                        <span
+                                                            class="material-symbols-outlined text-xl">location_on</span>
+                                                    </div>
+                                                    <div class="truncate">
+                                                        <p
+                                                            class="text-[10px] uppercase font-bold text-text-sub leading-none mb-1">
+                                                            已定位采购点</p>
+                                                        <p class="text-sm font-bold truncate">Alhambra, California, USA
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    class="bg-primary text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg shadow-primary/30 flex items-center gap-2 hover:brightness-110 transition-all active:scale-95">
+                                                    <span
+                                                        class="material-symbols-outlined text-base font-bold">map</span>
+                                                    打开系统注册大地图
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Date and Time Segments -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div class="space-y-3">
+                                            <label class="text-sm font-bold text-text-sub uppercase tracking-wider">出行日期
+                                                (选择完整月历)</label>
+                                            <div class="relative">
+                                                <input type="text" readonly value="2026-02-15"
+                                                    class="w-full bg-base border-surface rounded-lg py-3 pl-10 focus:ring-primary cursor-pointer">
+                                                <span
+                                                    class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-sub">calendar_month</span>
+                                                <!-- Calendar Popup (Mock) -->
+                                                <div
+                                                    class="hidden absolute top-full left-0 w-80 bg-white border border-surface rounded-2xl shadow-2xl mt-4 z-50 p-6">
+                                                    <div class="flex items-center justify-between mb-6">
+                                                        <button
+                                                            class="p-2 hover:bg-base rounded-full transition-colors"><span
+                                                                class="material-symbols-outlined text-sm">chevron_left</span></button>
+                                                        <p class="font-bold">二月 2026</p>
+                                                        <button
+                                                            class="p-2 hover:bg-base rounded-full transition-colors"><span
+                                                                class="material-symbols-outlined text-sm">chevron_right</span></button>
+                                                    </div>
+                                                    <div class="grid grid-cols-7 text-center gap-y-2 mb-2">
+                                                        <div class="text-[10px] font-bold text-text-sub/50">日</div>
+                                                        <div class="text-[10px] font-bold text-text-sub/50">一</div>
+                                                        <div class="text-[10px] font-bold text-text-sub/50">二</div>
+                                                        <div class="text-[10px] font-bold text-text-sub/50">三</div>
+                                                        <div class="text-[10px] font-bold text-text-sub/50">四</div>
+                                                        <div class="text-[10px] font-bold text-text-sub/50">五</div>
+                                                        <div class="text-[10px] font-bold text-text-sub/50">六</div>
+                                                        <div
+                                                            class="h-9 flex items-center justify-center text-sm text-text-sub/20 cursor-default">
+                                                            25</div>
+                                                        <div
+                                                            class="h-9 flex items-center justify-center text-sm text-text-sub/20 cursor-default">
+                                                            26</div>
+                                                        <div
+                                                            class="h-9 flex items-center justify-center text-sm text-text-sub/20 cursor-default">
+                                                            27</div>
+                                                        <div
+                                                            class="h-9 flex items-center justify-center text-sm text-text-sub/20 cursor-default">
+                                                            28</div>
+                                                        <div
+                                                            class="h-9 flex items-center justify-center text-sm text-text-sub/20 cursor-default">
+                                                            29</div>
+                                                        <div
+                                                            class="h-9 flex items-center justify-center text-sm text-text-sub/20 cursor-default">
+                                                            30</div>
+                                                        <div
+                                                            class="h-9 flex items-center justify-center text-sm hover:bg-primary/10 hover:text-primary rounded-lg transition-colors cursor-pointer">
+                                                            1</div>
+                                                        <!-- ... current date selection ... -->
+                                                        <div
+                                                            class="h-9 flex items-center justify-center text-sm bg-primary text-white rounded-lg font-bold shadow-lg shadow-primary/20 cursor-pointer">
+                                                            15</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-4">
+                                            <div class="flex items-center justify-between">
+                                                <label
+                                                    class="text-sm font-bold text-text-sub uppercase tracking-wider">具体出行时间段</label>
+                                                <label class="flex items-center gap-2 cursor-pointer">
+                                                    <input type="checkbox" checked
+                                                        class="rounded text-primary focus:ring-primary">
+                                                    <span class="text-xs font-bold text-text-sub">启用时间段</span>
+                                                </label>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <div class="flex-1 relative">
+                                                    <input type="time"
+                                                        class="w-full bg-base border-surface rounded-lg py-3 focus:ring-primary"
+                                                        value="09:00">
+                                                </div>
+                                                <div class="text-text-sub px-1">至</div>
+                                                <div class="flex-1 relative">
+                                                    <input type="time"
+                                                        class="w-full bg-base border-surface rounded-lg py-3 focus:ring-primary"
+                                                        value="18:00">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Customer Invitation -->
+                                    <div class="space-y-6">
+                                        <div class="flex items-center justify-between">
+                                            <label
+                                                class="text-sm font-bold text-text-sub uppercase tracking-wider">邀请历史客户
+                                                / 查找客户</label>
+                                            <div class="relative">
+                                                <input type="text" placeholder="查找客户姓名/ID..."
+                                                    class="text-xs bg-base border-surface rounded-full px-4 py-1.5 w-48 focus:ring-primary focus:w-64 transition-all">
+                                                <span
+                                                    class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-sub">search</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+                                            <!-- Add New Trigger -->
+                                            <button class="flex flex-col items-center gap-2 min-w-[72px] group">
+                                                <div
+                                                    class="size-14 rounded-full border-2 border-dashed border-surface flex items-center justify-center text-text-sub group-hover:border-primary group-hover:text-primary transition-all active:scale-95">
+                                                    <span class="material-symbols-outlined">person_add</span>
+                                                </div>
+                                                <span
+                                                    class="text-[10px] font-bold text-text-sub group-hover:text-primary transition-colors">查找历史</span>
+                                            </button>
+
+                                            <!-- Customer Items -->
+                                            <button
+                                                class="flex flex-col items-center gap-2 min-w-[72px] relative group selected">
+                                                <div class="relative">
+                                                    <img class="size-14 rounded-full object-cover border-2 border-primary ring-4 ring-primary/10"
+                                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5eqCF786-E5E24845r0PJgCiGgFCzi9XmDtCliPqoymx4njzfVEN5G-1Ilrb6Xp3Tw68L2gJn_xxlET6h_ro436BTbIAiblLLXiCRAFu3VjjXt0wIwYRBLdh32M2L6SLAfcLDh_earf0U4M1qmoPLk7OKbRu4b8s7jhfMcGpu2EmldweD2DEgFr1LMdT0OrUjjgF-c_6oTYAdWG7F0bqRjp0rXGeW3JsXsQ2o1eBd2arygNNqmzQRzXghgBd0zjtdqsLyisFRVYVM" />
+                                                    <div
+                                                        class="absolute -bottom-1 -right-1 bg-primary text-white size-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                                                        <span
+                                                            class="material-symbols-outlined text-[10px] font-bold">check</span>
+                                                    </div>
+                                                </div>
+                                                <span class="text-[10px] font-bold">Yuki M.</span>
+                                            </button>
+
+                                            <button
+                                                class="flex flex-col items-center gap-2 min-w-[72px] relative group">
+                                                <div class="relative">
+                                                    <img class="size-14 rounded-full object-cover border-2 border-transparent grayscale group-hover:grayscale-0 group-hover:border-primary transition-all"
+                                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYGUxzwwtSq92ql1SbE63UZBqzHqnAYVIpEBpaNzyXDXOff4kbcyHCsqQ_BNWskLrJILLALaW3qhGgt2LHPDmbWZkWh6VOqoA6Yn4XFIp8KbmgAKtqi-4NSe0ZyJYK0NXcChGdVKFWCSD2KMso5Cjk1s2x2W8RfXjdyHgor0dX8JptQTU1VudEnq9lQkIsfWrPmN9AHsnFZ6kl75Q1azMYgG5V5AF79x6GPShP4M_jLU-S5U9fa5URntNVfJT1LQ5mcUXhPCx8yifC" />
+                                                </div>
+                                                <span class="text-[10px] font-bold text-text-sub">Kenji S.</span>
+                                            </button>
+
+                                            <button
+                                                class="flex flex-col items-center gap-2 min-w-[72px] relative group selected">
+                                                <div class="relative">
+                                                    <img class="size-14 rounded-full object-cover border-2 border-primary ring-4 ring-primary/10"
+                                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo__TTef_73YqYN4GQIbfbg2BWZ9QH6ygZJzF0MH9MjakJme6VMX-xtDPQp5zqUso05sLOa9UFtuOEBR2B65EwakZ3ozDDnILiTzYUwJxgc_OAPfdE2hMEedivH97Ii7FbA7GFUIFsMqoo0FU8g_RDhhYkleeoPqnVCmtGonE0SoRb5epnLu02iA_NSoLBOUyEli8lSw3IGDplaKIToqCrbo2SbunDNd0GK9tkNSUfS8lEVD6a3Y91qRAmdAdy8OdJH8HhMlFK58by" />
+                                                    <div
+                                                        class="absolute -bottom-1 -right-1 bg-primary text-white size-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                                                        <span
+                                                            class="material-symbols-outlined text-[10px] font-bold">check</span>
+                                                    </div>
+                                                </div>
+                                                <span class="text-[10px] font-bold">Sarah L.</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Capacity -->
                                     <div
-                                        class="absolute bottom-4 left-4 bg-white/95 p-3 rounded-lg shadow-lg flex items-center gap-3">
-                                        <div class="bg-primary/20 text-primary p-2 rounded-full"><span
-                                                class="material-symbols-outlined">storefront</span></div>
-                                        <p class="text-xs font-bold">Costco Wholesale, Alhambra, CA</p>
+                                        class="bg-surface/20 p-6 rounded-2xl space-y-4 border border-surface shadow-inner">
+                                        <div class="flex justify-between items-center">
+                                            <div class="flex items-center gap-2">
+                                                <span
+                                                    class="material-symbols-outlined text-primary text-xl">group</span>
+                                                <span
+                                                    class="text-sm font-bold uppercase tracking-wider text-text-sub">行程最大服务客户上限</span>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <button
+                                                    class="size-8 rounded-lg bg-white border border-surface flex items-center justify-center hover:bg-surface/50 active:scale-90 transition-all">
+                                                    <span class="material-symbols-outlined text-base">remove</span>
+                                                </button>
+                                                <span
+                                                    class="text-2xl font-black text-primary w-10 text-center">25</span>
+                                                <button
+                                                    class="size-8 rounded-lg bg-white border border-surface flex items-center justify-center hover:bg-surface/50 active:scale-90 transition-all">
+                                                    <span class="material-symbols-outlined text-base">add</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <input
+                                            class="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                                            max="50" min="1" type="range" value="25" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Summary Sidebar -->
+                        <div class="w-full lg:w-80 space-y-6 pt-12 lg:pt-24 shrink-0">
+                            <div
+                                class="bg-[#1c1c0d] dark:bg-[#fcfcf8] text-white dark:text-[#1c1c0d] rounded-3xl p-8 sticky top-24 shadow-2xl relative overflow-hidden group">
+                                <!-- Background Design -->
+                                <div
+                                    class="absolute -top-12 -right-12 size-48 bg-primary/20 rounded-full blur-3xl transition-transform duration-1000 group-hover:scale-150">
+                                </div>
+
+                                <div class="relative space-y-8">
+                                    <div class="space-y-4">
+                                        <h3 class="text-xs font-bold uppercase tracking-[0.2em] opacity-50">行程信息简报 (预览)
+                                        </h3>
+                                        <h4 id="previewTitle" class="text-2xl font-black leading-tight">2026-02-15
+                                            首尔主采购行程</h4>
+                                    </div>
+
+                                    <div class="space-y-6">
+                                        <div class="flex items-start gap-4">
+                                            <div
+                                                class="size-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/10">
+                                                <span class="material-symbols-outlined text-lg">event</span>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] font-bold uppercase opacity-40">预计日期</p>
+                                                <p class="font-bold">2026年 02月 15日</p>
+                                                <p class="text-xs opacity-60">09:00 - 18:00 (1天)</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-start gap-4">
+                                            <div
+                                                class="size-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/10">
+                                                <span class="material-symbols-outlined text-lg">store</span>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] font-bold uppercase opacity-40">主采购点</p>
+                                                <p class="font-bold">Costco Alhambra</p>
+                                                <p class="text-xs opacity-60 leading-tight">Alhambra, California</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-start gap-4">
+                                            <div
+                                                class="size-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/10">
+                                                <span class="material-symbols-outlined text-lg">accessibility_new</span>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] font-bold uppercase opacity-40">已邀请客户</p>
+                                                <p class="font-bold">2 位已选</p>
+                                                <div class="flex -space-x-2 mt-2">
+                                                    <img class="size-7 rounded-full border-2 border-[#1c1c0d] object-cover"
+                                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5eqCF786-E5E24845r0PJgCiGgFCzi9XmDtCliPqoymx4njzfVEN5G-1Ilrb6Xp3Tw68L2gJn_xxlET6h_ro436BTbIAiblLLXiCRAFu3VjjXt0wIwYRBLdh32M2L6SLAfcLDh_earf0U4M1qmoPLk7OKbRu4b8s7jhfMcGpu2EmldweD2DEgFr1LMdT0OrUjjgF-c_6oTYAdWG7F0bqRjp0rXGeW3JsXsQ2o1eBd2arygNNqmzQRzXghgBd0zjtdqsLyisFRVYVM">
+                                                    <img class="size-7 rounded-full border-2 border-[#1c1c0d] object-cover"
+                                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo__TTef_73YqYN4GQIbfbg2BWZ9QH6ygZJzF0MH9MjakJme6VMX-xtDPQp5zqUso05sLOa9UFtuOEBR2B65EwakZ3ozDDnILiTzYUwJxgc_OAPfdE2hMEedivH97Ii7FbA7GFUIFsMqoo0FU8g_RDhhYkleeoPqnVCmtGonE0SoRb5epnLu02iA_NSoLBOUyEli8lSw3IGDplaKIToqCrbo2SbunDNd0GK9tkNSUfS8lEVD6a3Y91qRAmdAdy8OdJH8HhMlFK58by">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-6 space-y-3">
+                                        <button
+                                            class="w-full bg-primary text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3">
+                                            <span>发布行程</span>
+                                            <span class="material-symbols-outlined">rocket_launch</span>
+                                        </button>
+                                        <button
+                                            class="w-full bg-white/10 py-4 rounded-2xl font-bold text-sm border border-white/10 hover:bg-white/20 transition-all flex items-center justify-center gap-2">
+                                            <span class="material-symbols-outlined text-base">style</span>
+                                            存为草稿
+                                        </button>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-8">
-                                <div class="space-y-2">
-                                    <label class="text-sm font-bold text-text-sub">开始采买时间</label>
-                                    <input class="w-full bg-base border-surface rounded-lg py-3 focus:ring-primary"
-                                        type="datetime-local" />
-                                </div>
-                                <div class="space-y-2">
-                                    <label class="text-sm font-bold text-text-sub">预估送达时间</label>
-                                    <input class="w-full bg-base border-surface rounded-lg py-3 focus:ring-primary"
-                                        type="datetime-local" />
-                                </div>
-                            </div>
-
-                            <div class="bg-surface/20 p-6 rounded-xl space-y-4 border border-surface">
-                                <div class="flex justify-between items-center text-sm font-bold">
-                                    <span>订单容量上限</span>
-                                    <span class="text-primary price-text text-xl">25</span>
-                                </div>
-                                <input
-                                    class="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
-                                    max="50" min="1" type="range" value="25" />
-                            </div>
-
-                            <div class="flex gap-4 pt-4">
-                                <button class="btn-primary flex-1" data-i18n="btn_publish">发布行程</button>
-                                <button class="btn-ghost flex-1" data-i18n="btn_draft">存为草稿</button>
+                            <!-- Tips/Helper Card -->
+                            <div class="bg-primary/5 border border-primary/10 rounded-2xl p-6">
+                                <h5 class="text-sm font-bold text-primary flex items-center gap-2 mb-2">
+                                    <span class="material-symbols-outlined text-lg">lightbulb</span>
+                                    小贴士
+                                </h5>
+                                <p class="text-xs text-text-sub leading-relaxed">
+                                    准确的采买地点和时间段有助于系统向受众客户进行精准推送。邀请历史客户可以极大地提高订单转化率。
+                                </p>
                             </div>
                         </div>
                     </div>
