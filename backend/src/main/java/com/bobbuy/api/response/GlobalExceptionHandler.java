@@ -23,8 +23,9 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ApiException.class)
   public ResponseEntity<ApiError> handleApiException(ApiException ex) {
     log.warn("API error: {}", ex.getMessage());
-    String message = messageSource.getMessage(ex.getMessageKey(), ex.getMessageArgs(), "Error",
+    String rawMessage = messageSource.getMessage(ex.getMessageKey(), ex.getMessageArgs(), "Error",
         LocaleContextHolder.getLocale());
+    String message = (rawMessage != null) ? rawMessage : "Unknown Error";
     return ResponseEntity.status(resolveStatus(ex.getErrorCode()))
         .body(new ApiError(ex.getErrorCode().name(), message));
   }
@@ -32,7 +33,10 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ApiError> handleValidationException(MethodArgumentNotValidException ex) {
     String message = ex.getBindingResult().getFieldErrors().stream()
-        .map(error -> messageSource.getMessage(error, LocaleContextHolder.getLocale()))
+        .map(error -> {
+          String m = messageSource.getMessage(error, LocaleContextHolder.getLocale());
+          return m != null ? m : "Validation error";
+        })
         .collect(Collectors.joining("; "));
     return ResponseEntity.badRequest().body(new ApiError(ErrorCode.INVALID_REQUEST.name(), message));
   }

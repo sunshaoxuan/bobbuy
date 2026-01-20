@@ -15,6 +15,15 @@ let i18nDictionary = {};
  * Load external translations
  */
 async function loadTranslations() {
+    // If I18N_DATA is already defined (via script include), use it directly
+    if (typeof I18N_DATA !== 'undefined') {
+        i18nDictionary = I18N_DATA;
+        updateTranslations();
+        updateLangButtons();
+        console.log('Using local I18N_DATA (CORS bypass)');
+        return;
+    }
+
     try {
         const response = await fetch(UI_CONFIG.i18nPath);
         const data = await response.json();

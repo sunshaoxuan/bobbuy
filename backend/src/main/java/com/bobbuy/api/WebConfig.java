@@ -15,9 +15,9 @@ import java.util.Locale;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
-  private final RequestLoggingInterceptor requestLoggingInterceptor;
+  private final @NonNull RequestLoggingInterceptor requestLoggingInterceptor;
 
-  public WebConfig(RequestLoggingInterceptor requestLoggingInterceptor) {
+  public WebConfig(@NonNull RequestLoggingInterceptor requestLoggingInterceptor) {
     this.requestLoggingInterceptor = requestLoggingInterceptor;
   }
 
@@ -31,7 +31,8 @@ public class WebConfig implements WebMvcConfigurer {
 
   @Override
   public void addInterceptors(@NonNull InterceptorRegistry registry) {
-    registry.addInterceptor(requestLoggingInterceptor).addPathPatterns("/api/**");
+    registry.addInterceptor((org.springframework.web.servlet.HandlerInterceptor) requestLoggingInterceptor)
+        .addPathPatterns("/api/**");
   }
 
   @Bean
