@@ -31,10 +31,15 @@
 | Draft Saving | Footer switch | Secondary button | Pass |
 | Summary Card | Sticky right panel | N/A (App design) | Pass |
 
-### 5. Shutdown (清理并确认)
-- [x] Removed verification recordings from development space.
-- [x] Updated `walkthrough.md`.
-- [x] Updated `task.md`.
+### 6. Extra: Customer Invitation Refinement (Stage 17)
+- **Problem**: Inconsistent button positioning and redundant "Find" triggers.
+- **Action**: Both platforms now feature action buttons (Search/Add All) in the leading position. Redundant tags in App removed.
+- **Verification**: Verified via `browser_subagent` screenshots.
+
+### 7. Extra: Dynamic Title-in-Header Integration (Stage 18 & 19)
+- **Problem**: Redundant title field in form body wasted space and looked less professional.
+- **Action**: Completely removed "行程标题" from body. Moved title input and auto-generation triggered into the page header for both platforms.
+- **Verification**: Verified via interactive click tests and visual audit of 'leaner' form layout.
 
 ## Evidence Links
 - [PC Screenshot](file:///C:/Users/X02851/.gemini/antigravity/brain/f6ccb209-479a-4b5e-b8f6-ab5654d41eda/pc_trip_creation_refined_1768902826658.png)

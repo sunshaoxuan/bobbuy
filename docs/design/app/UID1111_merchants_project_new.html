@@ -101,8 +101,16 @@
                 class="flex items-center justify-center size-10 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                 <span class="material-symbols-outlined">arrow_back_ios_new</span>
             </button>
-            <h1 class="text-lg font-bold tracking-tight">UID1111 创建代购行程</h1>
-            <div class="size-10"></div> <!-- Spacer for symmetry -->
+            <div class="flex-1 px-2 flex items-center gap-2">
+                <input id="appMainTitleInput" type="text" value="创建代购行程"
+                    class="text-sm font-bold tracking-tight bg-transparent border-none p-0 focus:ring-0 w-full text-center"
+                    placeholder="标题">
+                <button
+                    class="flex items-center justify-center size-8 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-primary"
+                    onclick="const genTitle='2026-02-15 首尔主采购行程'; document.getElementById('appMainTitleInput').value=genTitle;">
+                    <span class="material-symbols-outlined text-base">auto_fix</span>
+                </button>
+            </div>
         </header>
         <main class="flex-1 overflow-y-auto px-4 py-6 space-y-8 pb-32">
             <!-- Store Selection & Map Section -->
@@ -139,21 +147,6 @@
                 </div>
             </section>
 
-            <!-- Trip Title with Auto-generation -->
-            <section class="space-y-3">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary">title</span>
-                        <h3 class="text-lg font-bold tracking-tight">行程标题</h3>
-                    </div>
-                    <button class="text-xs font-bold text-primary flex items-center gap-1">
-                        <span class="material-symbols-outlined text-xs">auto_fix</span>
-                        自动生成
-                    </button>
-                </div>
-                <input class="form-input-custom border-surface bg-white font-bold" type="text" placeholder="输入您的行程描述"
-                    value="2026-02-15 首尔主采购行程" />
-            </section>
 
             <!-- Schedule Section -->
             <section class="space-y-4">
@@ -261,15 +254,23 @@
             <!-- Invited Customers Section -->
             <section class="space-y-4">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-3">
                         <span class="material-symbols-outlined text-[#9e9d47]">group_add</span>
                         <h3 class="text-lg font-bold tracking-tight">Invited Customers</h3>
+                        <button
+                            class="text-[10px] font-bold text-[#9e9d47] px-2 py-0.5 rounded-full border border-[#9e9d47]/20">Add
+                            All</button>
                     </div>
-                    <button
-                        class="text-sm font-bold text-[#9e9d47] px-3 py-1 rounded-full border border-[#9e9d47]/20">Add
-                        All</button>
                 </div>
                 <div class="flex overflow-x-auto gap-4 no-scrollbar pb-2">
+                    <!-- Search Trigger -->
+                    <div class="flex flex-col items-center gap-2 min-w-[72px]">
+                        <div
+                            class="size-16 rounded-full border-2 border-dashed border-surface flex items-center justify-center text-text-sub active:bg-surface transition-all">
+                            <span class="material-symbols-outlined text-2xl">search</span>
+                        </div>
+                        <p class="text-[10px] font-bold text-text-sub">Search</p>
+                    </div>
                     <!-- Customer Card 1 -->
                     <div class="flex flex-col items-center gap-2 min-w-[80px]">
                         <div class="relative">
@@ -308,16 +309,6 @@
                             </div>
                         </div>
                         <p class="text-xs font-medium text-center truncate w-full">Sarah L.</p>
-                    </div>
-                    <!-- Customer Card 4 -->
-                    <div class="flex flex-col items-center gap-2 min-w-[80px]">
-                        <div class="relative">
-                            <div
-                                class="size-16 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center border-2 border-dashed border-[#e9e8ce] dark:border-[#3d3c1a]">
-                                <span class="material-symbols-outlined text-[#9e9d47]">person_search</span>
-                            </div>
-                        </div>
-                        <p class="text-xs font-medium text-center truncate w-full opacity-60">Find</p>
                     </div>
                 </div>
             </section>

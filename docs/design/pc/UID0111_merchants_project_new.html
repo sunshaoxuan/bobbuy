@@ -49,7 +49,17 @@
                         <!-- Left: Form Section -->
                         <div class="flex-1 space-y-8">
                             <div class="space-y-1">
-                                <h1 class="text-3xl font-black tracking-tight" data-i18n="nav_trips">发布新行程</h1>
+                                <div class="flex items-center gap-4 group">
+                                    <input id="tripTitleInput" type="text" value="发布新行程"
+                                        class="text-3xl font-black tracking-tight bg-transparent border-none p-0 focus:ring-0 w-full hover:bg-black/5 rounded px-2 -ml-2 transition-colors cursor-edit"
+                                        placeholder="输入您的行程描述">
+                                    <button
+                                        class="text-primary hover:bg-primary/10 p-2 rounded-full transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                                        title="生成并同步至标题"
+                                        onclick="const genTitle='2026-02-15 首尔主采购行程'; document.getElementById('tripTitleInput').value=genTitle;">
+                                        <span class="material-symbols-outlined text-2xl">autorenew</span>
+                                    </button>
+                                </div>
                                 <p class="text-text-sub">填写以下信息，开启您的全球专业代购之旅</p>
                             </div>
 
@@ -92,19 +102,6 @@
                                                         <span class="text-sm">Costco Chiba, Japan</span>
                                                     </button>
                                                 </div>
-                                            </div>
-                                        </div>
-                                        <div class="space-y-3">
-                                            <label
-                                                class="text-sm font-bold text-text-sub uppercase tracking-wider">行程标题</label>
-                                            <div class="relative">
-                                                <input id="tripTitle" type="text" placeholder="系统将自动生成描述性标题"
-                                                    class="w-full bg-base border-surface rounded-lg py-3 focus:ring-primary font-bold">
-                                                <button
-                                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-primary hover:bg-primary/10 p-1 rounded transition-colors"
-                                                    title="重新生成">
-                                                    <span class="material-symbols-outlined text-lg">autorenew</span>
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -242,193 +239,196 @@
 
                                     <!-- Customer Invitation -->
                                     <div class="space-y-6">
-                                        <div class="flex items-center justify-between">
-                                            <label
-                                                class="text-sm font-bold text-text-sub uppercase tracking-wider">邀请历史客户
-                                                / 查找客户</label>
-                                            <div class="relative">
-                                                <input type="text" placeholder="查找客户姓名/ID..."
-                                                    class="text-xs bg-base border-surface rounded-full px-4 py-1.5 w-48 focus:ring-primary focus:w-64 transition-all">
-                                                <span
-                                                    class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-sub">search</span>
+                                        <div class="flex flex-col gap-4">
+                                            <div class="flex items-center gap-4">
+                                                <label
+                                                    class="text-sm font-bold text-text-sub uppercase tracking-wider">邀请历史客户
+                                                    / 查找客户</label>
+                                                <div class="relative">
+                                                    <input type="text" placeholder="查找客户姓名/ID..."
+                                                        class="text-xs bg-base border-surface rounded-full px-4 py-1.5 w-48 focus:ring-primary focus:w-64 transition-all">
+                                                    <span
+                                                        class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-sub">search</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-                                            <!-- Add New Trigger -->
-                                            <button class="flex flex-col items-center gap-2 min-w-[72px] group">
-                                                <div
-                                                    class="size-14 rounded-full border-2 border-dashed border-surface flex items-center justify-center text-text-sub group-hover:border-primary group-hover:text-primary transition-all active:scale-95">
-                                                    <span class="material-symbols-outlined">person_add</span>
-                                                </div>
-                                                <span
-                                                    class="text-[10px] font-bold text-text-sub group-hover:text-primary transition-colors">查找历史</span>
-                                            </button>
-
-                                            <!-- Customer Items -->
-                                            <button
-                                                class="flex flex-col items-center gap-2 min-w-[72px] relative group selected">
-                                                <div class="relative">
-                                                    <img class="size-14 rounded-full object-cover border-2 border-primary ring-4 ring-primary/10"
-                                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5eqCF786-E5E24845r0PJgCiGgFCzi9XmDtCliPqoymx4njzfVEN5G-1Ilrb6Xp3Tw68L2gJn_xxlET6h_ro436BTbIAiblLLXiCRAFu3VjjXt0wIwYRBLdh32M2L6SLAfcLDh_earf0U4M1qmoPLk7OKbRu4b8s7jhfMcGpu2EmldweD2DEgFr1LMdT0OrUjjgF-c_6oTYAdWG7F0bqRjp0rXGeW3JsXsQ2o1eBd2arygNNqmzQRzXghgBd0zjtdqsLyisFRVYVM" />
+                                            <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+                                                <!-- Add New Trigger -->
+                                                <button class="flex flex-col items-center gap-2 min-w-[72px] group">
                                                     <div
-                                                        class="absolute -bottom-1 -right-1 bg-primary text-white size-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                                                        <span
-                                                            class="material-symbols-outlined text-[10px] font-bold">check</span>
+                                                        class="size-14 rounded-full border-2 border-dashed border-surface flex items-center justify-center text-text-sub group-hover:border-primary group-hover:text-primary transition-all active:scale-95">
+                                                        <span class="material-symbols-outlined">person_add</span>
                                                     </div>
-                                                </div>
-                                                <span class="text-[10px] font-bold">Yuki M.</span>
-                                            </button>
-
-                                            <button
-                                                class="flex flex-col items-center gap-2 min-w-[72px] relative group">
-                                                <div class="relative">
-                                                    <img class="size-14 rounded-full object-cover border-2 border-transparent grayscale group-hover:grayscale-0 group-hover:border-primary transition-all"
-                                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYGUxzwwtSq92ql1SbE63UZBqzHqnAYVIpEBpaNzyXDXOff4kbcyHCsqQ_BNWskLrJILLALaW3qhGgt2LHPDmbWZkWh6VOqoA6Yn4XFIp8KbmgAKtqi-4NSe0ZyJYK0NXcChGdVKFWCSD2KMso5Cjk1s2x2W8RfXjdyHgor0dX8JptQTU1VudEnq9lQkIsfWrPmN9AHsnFZ6kl75Q1azMYgG5V5AF79x6GPShP4M_jLU-S5U9fa5URntNVfJT1LQ5mcUXhPCx8yifC" />
-                                                </div>
-                                                <span class="text-[10px] font-bold text-text-sub">Kenji S.</span>
-                                            </button>
-
-                                            <button
-                                                class="flex flex-col items-center gap-2 min-w-[72px] relative group selected">
-                                                <div class="relative">
-                                                    <img class="size-14 rounded-full object-cover border-2 border-primary ring-4 ring-primary/10"
-                                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo__TTef_73YqYN4GQIbfbg2BWZ9QH6ygZJzF0MH9MjakJme6VMX-xtDPQp5zqUso05sLOa9UFtuOEBR2B65EwakZ3ozDDnILiTzYUwJxgc_OAPfdE2hMEedivH97Ii7FbA7GFUIFsMqoo0FU8g_RDhhYkleeoPqnVCmtGonE0SoRb5epnLu02iA_NSoLBOUyEli8lSw3IGDplaKIToqCrbo2SbunDNd0GK9tkNSUfS8lEVD6a3Y91qRAmdAdy8OdJH8HhMlFK58by" />
-                                                    <div
-                                                        class="absolute -bottom-1 -right-1 bg-primary text-white size-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                                                        <span
-                                                            class="material-symbols-outlined text-[10px] font-bold">check</span>
-                                                    </div>
-                                                </div>
-                                                <span class="text-[10px] font-bold">Sarah L.</span>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Capacity -->
-                                    <div
-                                        class="bg-surface/20 p-6 rounded-2xl space-y-4 border border-surface shadow-inner">
-                                        <div class="flex justify-between items-center">
-                                            <div class="flex items-center gap-2">
-                                                <span
-                                                    class="material-symbols-outlined text-primary text-xl">group</span>
-                                                <span
-                                                    class="text-sm font-bold uppercase tracking-wider text-text-sub">行程最大服务客户上限</span>
-                                            </div>
-                                            <div class="flex items-center gap-3">
-                                                <button
-                                                    class="size-8 rounded-lg bg-white border border-surface flex items-center justify-center hover:bg-surface/50 active:scale-90 transition-all">
-                                                    <span class="material-symbols-outlined text-base">remove</span>
+                                                    <span
+                                                        class="text-[10px] font-bold text-text-sub group-hover:text-primary transition-colors">查找历史</span>
                                                 </button>
-                                                <span
-                                                    class="text-2xl font-black text-primary w-10 text-center">25</span>
+
+                                                <!-- Customer Items -->
                                                 <button
-                                                    class="size-8 rounded-lg bg-white border border-surface flex items-center justify-center hover:bg-surface/50 active:scale-90 transition-all">
-                                                    <span class="material-symbols-outlined text-base">add</span>
+                                                    class="flex flex-col items-center gap-2 min-w-[72px] relative group selected">
+                                                    <div class="relative">
+                                                        <img class="size-14 rounded-full object-cover border-2 border-primary ring-4 ring-primary/10"
+                                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5eqCF786-E5E24845r0PJgCiGgFCzi9XmDtCliPqoymx4njzfVEN5G-1Ilrb6Xp3Tw68L2gJn_xxlET6h_ro436BTbIAiblLLXiCRAFu3VjjXt0wIwYRBLdh32M2L6SLAfcLDh_earf0U4M1qmoPLk7OKbRu4b8s7jhfMcGpu2EmldweD2DEgFr1LMdT0OrUjjgF-c_6oTYAdWG7F0bqRjp0rXGeW3JsXsQ2o1eBd2arygNNqmzQRzXghgBd0zjtdqsLyisFRVYVM" />
+                                                        <div
+                                                            class="absolute -bottom-1 -right-1 bg-primary text-white size-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                                                            <span
+                                                                class="material-symbols-outlined text-[10px] font-bold">check</span>
+                                                        </div>
+                                                    </div>
+                                                    <span class="text-[10px] font-bold">Yuki M.</span>
+                                                </button>
+
+                                                <button
+                                                    class="flex flex-col items-center gap-2 min-w-[72px] relative group">
+                                                    <div class="relative">
+                                                        <img class="size-14 rounded-full object-cover border-2 border-transparent grayscale group-hover:grayscale-0 group-hover:border-primary transition-all"
+                                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYGUxzwwtSq92ql1SbE63UZBqzHqnAYVIpEBpaNzyXDXOff4kbcyHCsqQ_BNWskLrJILLALaW3qhGgt2LHPDmbWZkWh6VOqoA6Yn4XFIp8KbmgAKtqi-4NSe0ZyJYK0NXcChGdVKFWCSD2KMso5Cjk1s2x2W8RfXjdyHgor0dX8JptQTU1VudEnq9lQkIsfWrPmN9AHsnFZ6kl75Q1azMYgG5V5AF79x6GPShP4M_jLU-S5U9fa5URntNVfJT1LQ5mcUXhPCx8yifC" />
+                                                    </div>
+                                                    <span class="text-[10px] font-bold text-text-sub">Kenji S.</span>
+                                                </button>
+
+                                                <button
+                                                    class="flex flex-col items-center gap-2 min-w-[72px] relative group selected">
+                                                    <div class="relative">
+                                                        <img class="size-14 rounded-full object-cover border-2 border-primary ring-4 ring-primary/10"
+                                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo__TTef_73YqYN4GQIbfbg2BWZ9QH6ygZJzF0MH9MjakJme6VMX-xtDPQp5zqUso05sLOa9UFtuOEBR2B65EwakZ3ozDDnILiTzYUwJxgc_OAPfdE2hMEedivH97Ii7FbA7GFUIFsMqoo0FU8g_RDhhYkleeoPqnVCmtGonE0SoRb5epnLu02iA_NSoLBOUyEli8lSw3IGDplaKIToqCrbo2SbunDNd0GK9tkNSUfS8lEVD6a3Y91qRAmdAdy8OdJH8HhMlFK58by" />
+                                                        <div
+                                                            class="absolute -bottom-1 -right-1 bg-primary text-white size-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                                                            <span
+                                                                class="material-symbols-outlined text-[10px] font-bold">check</span>
+                                                        </div>
+                                                    </div>
+                                                    <span class="text-[10px] font-bold">Sarah L.</span>
                                                 </button>
                                             </div>
                                         </div>
-                                        <input
-                                            class="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
-                                            max="50" min="1" type="range" value="25" />
+
+                                        <!-- Capacity -->
+                                        <div
+                                            class="bg-surface/20 p-6 rounded-2xl space-y-4 border border-surface shadow-inner">
+                                            <div class="flex justify-between items-center">
+                                                <div class="flex items-center gap-2">
+                                                    <span
+                                                        class="material-symbols-outlined text-primary text-xl">group</span>
+                                                    <span
+                                                        class="text-sm font-bold uppercase tracking-wider text-text-sub">行程最大服务客户上限</span>
+                                                </div>
+                                                <div class="flex items-center gap-3">
+                                                    <button
+                                                        class="size-8 rounded-lg bg-white border border-surface flex items-center justify-center hover:bg-surface/50 active:scale-90 transition-all">
+                                                        <span class="material-symbols-outlined text-base">remove</span>
+                                                    </button>
+                                                    <span
+                                                        class="text-2xl font-black text-primary w-10 text-center">25</span>
+                                                    <button
+                                                        class="size-8 rounded-lg bg-white border border-surface flex items-center justify-center hover:bg-surface/50 active:scale-90 transition-all">
+                                                        <span class="material-symbols-outlined text-base">add</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <input
+                                                class="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                                                max="50" min="1" type="range" value="25" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Right: Summary Sidebar -->
-                        <div class="w-full lg:w-80 space-y-6 pt-12 lg:pt-24 shrink-0">
-                            <div
-                                class="bg-[#1c1c0d] dark:bg-[#fcfcf8] text-white dark:text-[#1c1c0d] rounded-3xl p-8 sticky top-24 shadow-2xl relative overflow-hidden group">
-                                <!-- Background Design -->
+                            <!-- Right: Summary Sidebar -->
+                            <div class="w-full lg:w-80 space-y-6 pt-12 lg:pt-24 shrink-0">
                                 <div
-                                    class="absolute -top-12 -right-12 size-48 bg-primary/20 rounded-full blur-3xl transition-transform duration-1000 group-hover:scale-150">
-                                </div>
-
-                                <div class="relative space-y-8">
-                                    <div class="space-y-4">
-                                        <h3 class="text-xs font-bold uppercase tracking-[0.2em] opacity-50">行程信息简报 (预览)
-                                        </h3>
-                                        <h4 id="previewTitle" class="text-2xl font-black leading-tight">2026-02-15
-                                            首尔主采购行程</h4>
+                                    class="bg-[#1c1c0d] dark:bg-[#fcfcf8] text-white dark:text-[#1c1c0d] rounded-3xl p-8 sticky top-24 shadow-2xl relative overflow-hidden group">
+                                    <!-- Background Design -->
+                                    <div
+                                        class="absolute -top-12 -right-12 size-48 bg-primary/20 rounded-full blur-3xl transition-transform duration-1000 group-hover:scale-150">
                                     </div>
 
-                                    <div class="space-y-6">
-                                        <div class="flex items-start gap-4">
-                                            <div
-                                                class="size-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/10">
-                                                <span class="material-symbols-outlined text-lg">event</span>
-                                            </div>
-                                            <div>
-                                                <p class="text-[10px] font-bold uppercase opacity-40">预计日期</p>
-                                                <p class="font-bold">2026年 02月 15日</p>
-                                                <p class="text-xs opacity-60">09:00 - 18:00 (1天)</p>
-                                            </div>
+                                    <div class="relative space-y-8">
+                                        <div class="space-y-4">
+                                            <h3 class="text-xs font-bold uppercase tracking-[0.2em] opacity-50">行程信息简报
+                                                (预览)
+                                            </h3>
+                                            <h4 id="previewTitle" class="text-2xl font-black leading-tight">2026-02-15
+                                                首尔主采购行程</h4>
                                         </div>
 
-                                        <div class="flex items-start gap-4">
-                                            <div
-                                                class="size-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/10">
-                                                <span class="material-symbols-outlined text-lg">store</span>
+                                        <div class="space-y-6">
+                                            <div class="flex items-start gap-4">
+                                                <div
+                                                    class="size-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/10">
+                                                    <span class="material-symbols-outlined text-lg">event</span>
+                                                </div>
+                                                <div>
+                                                    <p class="text-[10px] font-bold uppercase opacity-40">预计日期</p>
+                                                    <p class="font-bold">2026年 02月 15日</p>
+                                                    <p class="text-xs opacity-60">09:00 - 18:00 (1天)</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p class="text-[10px] font-bold uppercase opacity-40">主采购点</p>
-                                                <p class="font-bold">Costco Alhambra</p>
-                                                <p class="text-xs opacity-60 leading-tight">Alhambra, California</p>
-                                            </div>
-                                        </div>
 
-                                        <div class="flex items-start gap-4">
-                                            <div
-                                                class="size-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/10">
-                                                <span class="material-symbols-outlined text-lg">accessibility_new</span>
+                                            <div class="flex items-start gap-4">
+                                                <div
+                                                    class="size-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/10">
+                                                    <span class="material-symbols-outlined text-lg">store</span>
+                                                </div>
+                                                <div>
+                                                    <p class="text-[10px] font-bold uppercase opacity-40">主采购点</p>
+                                                    <p class="font-bold">Costco Alhambra</p>
+                                                    <p class="text-xs opacity-60 leading-tight">Alhambra, California</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p class="text-[10px] font-bold uppercase opacity-40">已邀请客户</p>
-                                                <p class="font-bold">2 位已选</p>
-                                                <div class="flex -space-x-2 mt-2">
-                                                    <img class="size-7 rounded-full border-2 border-[#1c1c0d] object-cover"
-                                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5eqCF786-E5E24845r0PJgCiGgFCzi9XmDtCliPqoymx4njzfVEN5G-1Ilrb6Xp3Tw68L2gJn_xxlET6h_ro436BTbIAiblLLXiCRAFu3VjjXt0wIwYRBLdh32M2L6SLAfcLDh_earf0U4M1qmoPLk7OKbRu4b8s7jhfMcGpu2EmldweD2DEgFr1LMdT0OrUjjgF-c_6oTYAdWG7F0bqRjp0rXGeW3JsXsQ2o1eBd2arygNNqmzQRzXghgBd0zjtdqsLyisFRVYVM">
-                                                    <img class="size-7 rounded-full border-2 border-[#1c1c0d] object-cover"
-                                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo__TTef_73YqYN4GQIbfbg2BWZ9QH6ygZJzF0MH9MjakJme6VMX-xtDPQp5zqUso05sLOa9UFtuOEBR2B65EwakZ3ozDDnILiTzYUwJxgc_OAPfdE2hMEedivH97Ii7FbA7GFUIFsMqoo0FU8g_RDhhYkleeoPqnVCmtGonE0SoRb5epnLu02iA_NSoLBOUyEli8lSw3IGDplaKIToqCrbo2SbunDNd0GK9tkNSUfS8lEVD6a3Y91qRAmdAdy8OdJH8HhMlFK58by">
+
+                                            <div class="flex items-start gap-4">
+                                                <div
+                                                    class="size-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/10">
+                                                    <span
+                                                        class="material-symbols-outlined text-lg">accessibility_new</span>
+                                                </div>
+                                                <div>
+                                                    <p class="text-[10px] font-bold uppercase opacity-40">已邀请客户</p>
+                                                    <p class="font-bold">2 位已选</p>
+                                                    <div class="flex -space-x-2 mt-2">
+                                                        <img class="size-7 rounded-full border-2 border-[#1c1c0d] object-cover"
+                                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5eqCF786-E5E24845r0PJgCiGgFCzi9XmDtCliPqoymx4njzfVEN5G-1Ilrb6Xp3Tw68L2gJn_xxlET6h_ro436BTbIAiblLLXiCRAFu3VjjXt0wIwYRBLdh32M2L6SLAfcLDh_earf0U4M1qmoPLk7OKbRu4b8s7jhfMcGpu2EmldweD2DEgFr1LMdT0OrUjjgF-c_6oTYAdWG7F0bqRjp0rXGeW3JsXsQ2o1eBd2arygNNqmzQRzXghgBd0zjtdqsLyisFRVYVM">
+                                                        <img class="size-7 rounded-full border-2 border-[#1c1c0d] object-cover"
+                                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo__TTef_73YqYN4GQIbfbg2BWZ9QH6ygZJzF0MH9MjakJme6VMX-xtDPQp5zqUso05sLOa9UFtuOEBR2B65EwakZ3ozDDnILiTzYUwJxgc_OAPfdE2hMEedivH97Ii7FbA7GFUIFsMqoo0FU8g_RDhhYkleeoPqnVCmtGonE0SoRb5epnLu02iA_NSoLBOUyEli8lSw3IGDplaKIToqCrbo2SbunDNd0GK9tkNSUfS8lEVD6a3Y91qRAmdAdy8OdJH8HhMlFK58by">
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div class="pt-6 space-y-3">
-                                        <button
-                                            class="w-full bg-primary text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3">
-                                            <span>发布行程</span>
-                                            <span class="material-symbols-outlined">rocket_launch</span>
-                                        </button>
-                                        <button
-                                            class="w-full bg-white/10 py-4 rounded-2xl font-bold text-sm border border-white/10 hover:bg-white/20 transition-all flex items-center justify-center gap-2">
-                                            <span class="material-symbols-outlined text-base">style</span>
-                                            存为草稿
-                                        </button>
+                                        <div class="pt-6 space-y-3">
+                                            <button
+                                                class="w-full bg-primary text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3">
+                                                <span>发布行程</span>
+                                                <span class="material-symbols-outlined">rocket_launch</span>
+                                            </button>
+                                            <button
+                                                class="w-full bg-white/10 py-4 rounded-2xl font-bold text-sm border border-white/10 hover:bg-white/20 transition-all flex items-center justify-center gap-2">
+                                                <span class="material-symbols-outlined text-base">style</span>
+                                                存为草稿
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Tips/Helper Card -->
-                            <div class="bg-primary/5 border border-primary/10 rounded-2xl p-6">
-                                <h5 class="text-sm font-bold text-primary flex items-center gap-2 mb-2">
-                                    <span class="material-symbols-outlined text-lg">lightbulb</span>
-                                    小贴士
-                                </h5>
-                                <p class="text-xs text-text-sub leading-relaxed">
-                                    准确的采买地点和时间段有助于系统向受众客户进行精准推送。邀请历史客户可以极大地提高订单转化率。
-                                </p>
+                                <!-- Tips/Helper Card -->
+                                <div class="bg-primary/5 border border-primary/10 rounded-2xl p-6">
+                                    <h5 class="text-sm font-bold text-primary flex items-center gap-2 mb-2">
+                                        <span class="material-symbols-outlined text-lg">lightbulb</span>
+                                        小贴士
+                                    </h5>
+                                    <p class="text-xs text-text-sub leading-relaxed">
+                                        准确的采买地点和时间段有助于系统向受众客户进行精准推送。邀请历史客户可以极大地提高订单转化率。
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <footer-placeholder></footer-placeholder>
             </div>
-            <footer-placeholder></footer-placeholder>
         </div>
-    </div>
-    <script src="../assets/ui-core.js"></script>
-    <script src="../assets/ui-merchant-framework.js"></script>
+        <script src="../assets/ui-core.js"></script>
+        <script src="../assets/ui-merchant-framework.js"></script>
 </body>
 
 </html>
