@@ -11,6 +11,12 @@
         rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap"
         rel="stylesheet" />
+    <script>
+        if (window.innerWidth >= 1024) {
+            const pcUrl = window.location.href.replace('UID1215_customer_project_bill.html', 'UID0215_customer_project_bill.html');
+            if (pcUrl !== window.location.href) window.location.href = pcUrl;
+        }
+    </script>
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -18,8 +24,14 @@
                 extend: {
                     colors: {
                         "primary": "#C14B3B",
-                        "background-light": "#FAF7F2",
-                        "background-dark": "#2D2926",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
+                        "accent": "#D4A373",
+                        "success": "#34C759",
+                        "info": "#007AFF",
+                        "warning": "#FF9500",
                     },
                     fontFamily: {
                         "display": ["Spline Sans", "sans-serif"]
@@ -32,7 +44,7 @@
     <style type="text/tailwindcss">
         body {
             font-family: 'Spline Sans', sans-serif;
-            @apply bg-background-light dark:bg-background-dark;
+            background-color: var(--color-bg-base);
         }
         .qr-gradient {
             background: linear-gradient(135deg, #C14B3B 0%, #A03A2D 100%);
@@ -54,33 +66,33 @@
     </style>
 </head>
 
-<body class="bg-[#FAF7F2] lg:bg-gray-200 flex justify-center min-h-screen font-sans text-text-main">
-    <div class="w-full max-w-[480px] bg-base min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
+<body class="bg-base lg:bg-surface/30 dark:bg-base-dark flex justify-center min-h-screen font-sans text-text-main">
+    <div class="w-full md:max-w-3xl mx-auto bg-base min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
 
         <div
-            class="relative flex flex-col h-screen w-full max-w-[430px] mx-auto shadow-2xl bg-background-light dark:bg-background-dark overflow-hidden">
+            class="relative flex flex-col h-screen w-full mx-auto bg-background-light dark:bg-background-dark overflow-hidden">
             <div
                 class="flex items-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md p-4 pb-2 justify-between shrink-0 z-10">
-                <div class="text-[#1c1c0d] dark:text-white flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-black/5 transition-colors"
+                <div class="text-text-main dark:text-white flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-black/5 transition-colors"
                     data-icon="ArrowLeft">
                     <span class="material-symbols-outlined">arrow_back_ios_new</span>
                 </div>
                 <h2
-                    class="text-[#1c1c0d] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">
+                    class="text-text-main dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">
                     Bill &amp; Verification</h2>
             </div>
             <div class="flex-1 overflow-y-auto custom-scrollbar">
                 <div class="flex flex-col gap-6 px-4 pb-32">
                     <div class="flex flex-col items-center gap-2 mt-2">
                         <div
-                            class="px-4 py-1 bg-primary text-[#1c1c0d] rounded-full text-xs font-bold uppercase tracking-wider">
+                            class="px-4 py-1 bg-primary text-text-main rounded-full text-xs font-bold uppercase tracking-wider">
                             Awaiting Payment
                         </div>
                         <h4
-                            class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-bold leading-normal tracking-[0.015em] text-center">
+                            class="text-text-sub dark:text-text-sub text-sm font-bold leading-normal tracking-[0.015em] text-center">
                             Costco Shopping Summary</h4>
                     </div>
-                    <div class="bg-white dark:bg-[#2d2c14] rounded-lg shadow-sm overflow-hidden">
+                    <div class="bg-white dark:bg-surface rounded-lg shadow-sm overflow-hidden">
                         <div class="flex flex-col divide-y divide-gray-100 dark:divide-gray-800">
                             <div class="flex items-center gap-4 px-4 min-h-[72px] py-3 justify-between">
                                 <div class="flex items-center gap-4">
@@ -89,16 +101,15 @@
                                     </div>
                                     <div class="flex flex-col justify-center">
                                         <p
-                                            class="text-[#1c1c0d] dark:text-white text-base font-medium leading-normal line-clamp-1">
+                                            class="text-text-main dark:text-white text-base font-medium leading-normal line-clamp-1">
                                             Organic Bananas</p>
-                                        <p
-                                            class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-normal leading-normal">
+                                        <p class="text-text-sub dark:text-text-sub text-sm font-normal leading-normal">
                                             2 x
                                             $2.99</p>
                                     </div>
                                 </div>
                                 <div class="shrink-0">
-                                    <p class="text-[#1c1c0d] dark:text-white text-base font-semibold leading-normal">
+                                    <p class="text-text-main dark:text-white text-base font-semibold leading-normal">
                                         $5.98
                                     </p>
                                 </div>
@@ -110,16 +121,15 @@
                                     </div>
                                     <div class="flex flex-col justify-center">
                                         <p
-                                            class="text-[#1c1c0d] dark:text-white text-base font-medium leading-normal line-clamp-1">
+                                            class="text-text-main dark:text-white text-base font-medium leading-normal line-clamp-1">
                                             Kirkland Paper Towels</p>
-                                        <p
-                                            class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-normal leading-normal">
+                                        <p class="text-text-sub dark:text-text-sub text-sm font-normal leading-normal">
                                             1 x
                                             $19.99</p>
                                     </div>
                                 </div>
                                 <div class="shrink-0">
-                                    <p class="text-[#1c1c0d] dark:text-white text-base font-semibold leading-normal">
+                                    <p class="text-text-main dark:text-white text-base font-semibold leading-normal">
                                         $19.99
                                     </p>
                                 </div>
@@ -131,59 +141,58 @@
                                     </div>
                                     <div class="flex flex-col justify-center">
                                         <p
-                                            class="text-[#1c1c0d] dark:text-white text-base font-medium leading-normal line-clamp-1">
+                                            class="text-text-main dark:text-white text-base font-medium leading-normal line-clamp-1">
                                             Rotisserie Chicken</p>
-                                        <p
-                                            class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-normal leading-normal">
+                                        <p class="text-text-sub dark:text-text-sub text-sm font-normal leading-normal">
                                             1 x
                                             $4.99</p>
                                     </div>
                                 </div>
                                 <div class="shrink-0">
-                                    <p class="text-[#1c1c0d] dark:text-white text-base font-semibold leading-normal">
+                                    <p class="text-text-main dark:text-white text-base font-semibold leading-normal">
                                         $4.99
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-white dark:bg-[#2d2c14] rounded-lg p-5 shadow-sm">
+                    <div class="bg-white dark:bg-surface rounded-lg p-5 shadow-sm">
                         <div class="space-y-3">
                             <div class="flex justify-between items-center">
-                                <p class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-normal">Subtotal</p>
-                                <p class="text-[#1c1c0d] dark:text-white text-sm font-medium">$30.96</p>
+                                <p class="text-text-sub dark:text-text-sub text-sm font-normal">Subtotal</p>
+                                <p class="text-text-main dark:text-white text-sm font-medium">$30.96</p>
                             </div>
                             <div class="flex justify-between items-center">
-                                <p class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-normal">Service Fee</p>
-                                <p class="text-[#1c1c0d] dark:text-white text-sm font-medium">$5.00</p>
+                                <p class="text-text-sub dark:text-text-sub text-sm font-normal">Service Fee</p>
+                                <p class="text-text-main dark:text-white text-sm font-medium">$5.00</p>
                             </div>
                             <div class="flex justify-between items-center">
-                                <p class="text-[#9e9d47] dark:text-[#d1cf6a] text-sm font-normal">Tax</p>
-                                <p class="text-[#1c1c0d] dark:text-white text-sm font-medium">$2.78</p>
+                                <p class="text-text-sub dark:text-text-sub text-sm font-normal">Tax</p>
+                                <p class="text-text-main dark:text-white text-sm font-medium">$2.78</p>
                             </div>
                             <div
                                 class="pt-3 mt-3 border-t border-dashed border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                                <p class="text-[#1c1c0d] dark:text-white text-lg font-bold">Grand Total</p>
-                                <p class="text-[#1c1c0d] dark:text-white text-2xl font-black">$38.74</p>
+                                <p class="text-text-main dark:text-white text-lg font-bold">Grand Total</p>
+                                <p class="text-text-main dark:text-white text-2xl font-black">$38.74</p>
                             </div>
                         </div>
                     </div>
                     <div class="flex flex-col gap-4">
-                        <h3 class="text-sm font-bold uppercase tracking-widest text-[#9e9d47] px-1">Payment Method</h3>
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-text-sub px-1">Payment Method</h3>
                         <div class="grid grid-cols-2 gap-3">
                             <button
-                                class="flex items-center justify-center gap-2 p-4 bg-white dark:bg-[#2d2c14] border-2 border-primary rounded-lg shadow-sm">
+                                class="flex items-center justify-center gap-2 p-4 bg-white dark:bg-surface border-2 border-primary rounded-lg shadow-sm">
                                 <span class="material-symbols-outlined text-black dark:text-white">ios</span>
                                 <span class="font-bold">Apple Pay</span>
                             </button>
                             <button
-                                class="flex items-center justify-center gap-2 p-4 bg-white dark:bg-[#2d2c14] border-2 border-transparent rounded-lg shadow-sm hover:border-gray-200 transition-all">
+                                class="flex items-center justify-center gap-2 p-4 bg-white dark:bg-surface border-2 border-transparent rounded-lg shadow-sm hover:border-gray-200 transition-all">
                                 <span class="material-symbols-outlined text-gray-500">credit_card</span>
                                 <span class="font-medium text-gray-600 dark:text-gray-300">Card</span>
                             </button>
                         </div>
                         <button
-                            class="w-full bg-primary text-[#1c1c0d] py-5 rounded-full font-bold text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                            class="w-full bg-primary text-text-main py-5 rounded-full font-bold text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
                             Pay Now $38.74
                             <span class="material-symbols-outlined">bolt</span>
                         </button>
@@ -195,7 +204,7 @@
                         </div>
                         <div class="px-8 pt-12 pb-6 space-y-2">
                             <div class="flex items-center justify-between">
-                                <h1 class="text-4xl font-black tracking-tighter text-[#1c1c0d] dark:text-white">UID1215
+                                <h1 class="text-4xl font-black tracking-tighter text-text-main dark:text-white">UID1215
                                     待核销账单</h1>
                             </div>
                             <p class="text-gray-500 text-xs font-medium max-w-[200px] leading-relaxed text-center">
@@ -240,7 +249,7 @@
                             <span class="material-symbols-outlined">payments</span>
                             <span class="material-symbols-outlined">support_agent</span>
                         </div>
-                        <p class="text-[11px] text-[#9e9d47] max-w-[280px]">
+                        <p class="text-[11px] text-text-sub max-w-[280px]">
                             Your payment is processed securely. BoBB holds funds until you verify the delivery using the
                             QR code above.
                         </p>
@@ -248,7 +257,7 @@
                 </div>
             </div>
             <div
-                class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white/95 dark:bg-[#1c1c0d]/95 backdrop-blur-lg border-t border-gray-100 dark:border-gray-800 shrink-0 z-50">
+                class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full md:max-w-3xl bg-white/95 dark:bg-text-main/95 backdrop-blur-lg border-t border-gray-100 dark:border-gray-800 shrink-0 z-50">
                 <div class="flex items-center justify-between px-6 pt-3 pb-safe">
                     <div class="flex flex-col items-center gap-1 group cursor-pointer">
                         <span

@@ -12,14 +12,24 @@
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
     <script id="tailwind-config">
+        if (window.innerWidth >= 1024) {
+            const pcUrl = window.location.href.replace('UID1114_merchants_project_reciept.html', 'UID0114_merchants_project_reciept.html');
+            if (pcUrl !== window.location.href) window.location.href = pcUrl;
+        }
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
                         "primary": "#C14B3B",
-                        "background-light": "#f8f8f5",
-                        "background-dark": "#23220f",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
+                        "accent": "#D4A373",
+                        "success": "#34C759",
+                        "info": "#007AFF",
+                        "warning": "#FF9500",
                     },
                     fontFamily: {
                         "display": ["Spline Sans"]
@@ -49,8 +59,8 @@
     </style>
 </head>
 
-<body class="bg-[#FAF7F2] lg:bg-gray-200 flex justify-center min-h-screen font-sans text-text-main">
-    <div class="w-full max-w-[480px] bg-base min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
+<body class="bg-base lg:bg-surface/30 dark:bg-base-dark flex justify-center min-h-screen font-sans text-text-main">
+    <div class="w-full md:max-w-3xl mx-auto bg-base min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
 
         <div
             class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-[#e9e8ce] dark:border-[#3a391a]">
@@ -182,7 +192,7 @@
             </div>
         </main>
         <div
-            class="fixed bottom-20 left-0 right-0 bg-white/95 dark:bg-[#2d2c14]/95 backdrop-blur-lg border-t border-[#e9e8ce] dark:border-[#3a391a] p-5 z-40">
+            class="fixed bottom-20 left-1/2 -translate-x-1/2 w-full md:max-w-3xl bg-white/95 dark:bg-[#2d2c14]/95 backdrop-blur-lg border-t border-[#e9e8ce] dark:border-[#3a391a] p-5 z-40">
             <div class="max-w-md mx-auto">
                 <div class="flex justify-between items-end mb-4 px-1">
                     <div class="space-y-1">
@@ -210,21 +220,21 @@
             </div>
         </div>
         <div
-            class="fixed bottom-0 left-0 right-0 bg-background-light dark:bg-background-dark border-t border-[#e9e8ce] dark:border-[#3a391a] h-20 z-50">
+            class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full md:max-w-3xl bg-background-light dark:bg-background-dark border-t border-[#e9e8ce] dark:border-[#3a391a] h-20 z-50">
             <div class="max-w-md mx-auto grid grid-cols-4 h-full">
-                <div class="flex flex-col items-center justify-center text-[#9e9d47]">
+                <div class="flex flex-col items-center justify-center text-text-sub">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span class="text-[10px] font-bold mt-1 uppercase">Trip</span>
                 </div>
-                <div class="flex flex-col items-center justify-center text-[#1c1c0d] dark:text-white">
+                <div class="flex flex-col items-center justify-center text-text-main dark:text-white">
                     <span class="material-symbols-outlined font-bold text-primary">receipt_long</span>
                     <span class="text-[10px] font-bold mt-1 uppercase">Billing</span>
                 </div>
-                <div class="flex flex-col items-center justify-center text-[#9e9d47]">
+                <div class="flex flex-col items-center justify-center text-text-sub">
                     <span class="material-symbols-outlined">forum</span>
                     <span class="text-[10px] font-bold mt-1 uppercase">Chat</span>
                 </div>
-                <div class="flex flex-col items-center justify-center text-[#9e9d47]">
+                <div class="flex flex-col items-center justify-center text-text-sub">
                     <span class="material-symbols-outlined">person</span>
                     <span class="text-[10px] font-bold mt-1 uppercase">Account</span>
                 </div>

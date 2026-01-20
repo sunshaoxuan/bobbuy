@@ -24,5 +24,12 @@
 - [x] 检查背景色是否统一为温润白 `#FAF7F2`
 - [x] 确认 Logo 在所有页面加载路径 correct
 
-## 5. 验收报告更新
-- [x] 完成 `AUDIT-01-APP原型对齐验收报告`
+## 6. 响应式与 Tablet 适配 (Responsive & Tablet)
+- [x] 实现全量 18 个 App 原型的三层响应式容器 (w-full / md:max-w-3xl / redirect)
+- [x] 在 UID1211/1115 中实现平板模式 Split-View 分栏布局
+- [x] 优化 UID1210 信息网格在 md 断点的展示效益
+
+## 7. 标准合规整改 (STD Compliance)
+- [x] 补全 `PLAN-11-APP响应式架构与Tablet适配实施方案`
+- [/] 执行 `STD-06` 集成测试五步法 (Clean -> Verify -> Start -> Test -> Shutdown)
+- [ ] 完成 `AUDIT-11-响应式架构与Tablet适配验收报告`

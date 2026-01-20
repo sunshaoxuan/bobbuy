@@ -11,6 +11,13 @@
         rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/ui-core.css">
+    <script src="../assets/i18n-data.js"></script>
+    <script>
+        if (window.innerWidth >= 1024) {
+            const pcUrl = window.location.href.replace('UID1200_customer_main.html', '../pc/UID0200_landing_page.html');
+            if (pcUrl !== window.location.href) window.location.href = pcUrl;
+        }
+    </script>
     <script id="tailwind-config">
         tailwind.config = {
             theme: {
@@ -21,6 +28,10 @@
                         "surface": "#F0E9E0",
                         "text-main": "#2D2926",
                         "text-sub": "#706860",
+                        "accent": "#D4A373",
+                        "success": "#34C759",
+                        "info": "#007AFF",
+                        "warning": "#FF9500",
                     },
                     borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
                 }
@@ -44,8 +55,9 @@
             max-width: 480px;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.9);
-            backdrop-blur: lg;
-            border-t: 1px solid var(--color-bg-surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid var(--color-bg-surface);
             height: 72px;
             display: flex;
             align-items: center;
@@ -55,8 +67,9 @@
     </style>
 </head>
 
-<body class="bg-[#FAF7F2] lg:bg-gray-200 flex justify-center min-h-screen font-sans text-text-main">
-    <div class="w-full max-w-[480px] bg-base min-h-screen shadow-2xl flex flex-col pb-20 overflow-hidden relative">
+<body class="bg-base lg:bg-surface/30 flex justify-center min-h-screen font-sans text-text-main">
+    <div
+        class="w-full md:max-w-3xl mx-auto bg-base min-h-screen shadow-2xl flex flex-col pb-20 overflow-hidden relative">
 
         <!-- Header -->
         <header class="p-6 pb-2 space-y-4">

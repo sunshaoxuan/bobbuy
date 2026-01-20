@@ -9,6 +9,13 @@
     <link rel="stylesheet" href="../assets/ui-core.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet">
+    <script src="../assets/i18n-data.js"></script>
+    <script>
+        if (window.innerWidth >= 1024) {
+            const pcUrl = window.location.href.replace('UID1121_merchants_product_detail.html', 'UID0121_merchants_product_detail.html');
+            if (pcUrl !== window.location.href) window.location.href = pcUrl;
+        }
+    </script>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script>
@@ -17,160 +24,246 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#FF3B30',
-                        base: '#F5F5F7',
-                        'base-dark': '#1C1C1E',
-                        surface: '#FFFFFF',
-                        'surface-dark': '#2C2C2E',
-                        text: '#1D1D1F',
-                        'text-dark': '#F5F5F7',
-                        'text-sub': '#86868B'
-                    }
+                        "primary": "#C14B3B",
+                        "base": "#FAF7F2",
+                        "surface": "#F0E9E0",
+                        "text-main": "#2D2926",
+                        "text-sub": "#706860",
+                        "accent": "#D4A373",
+                        "success": "#34C759",
+                        "info": "#007AFF",
+                        "warning": "#FF9500",
+                    },
+                    borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
                 }
             }
         }
     </script>
 </head>
 
-<body class="bg-base dark:bg-base-dark text-text dark:text-text-dark font-['Inter'] antialiased pb-24">
-    <!-- App Header -->
-    <header
-        class="fixed top-0 left-0 right-0 z-50 bg-base/80 dark:bg-base-dark/80 backdrop-blur-xl border-b border-text-sub/5 px-4 h-16 flex items-center justify-between">
-        <button onclick="history.back()"
-            class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors">
-            <span class="material-symbols-outlined">arrow_back</span>
-        </button>
-        <span class="text-sm font-black uppercase tracking-widest" data-i18n="LBL_PRODUCT_NAME">商品详情</span>
-        <button class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-primary">
-            <span class="material-symbols-outlined">more_horiz</span>
-        </button>
-    </header>
-
-    <main class="mt-16">
-        <!-- Image Carousel Simulation -->
-        <div class="relative aspect-square bg-white dark:bg-surface-dark overflow-hidden">
-            <img id="main-img" src="https://images.unsplash.com/photo-1542291026-7eec264c27ff" alt="Product"
-                class="w-full h-full object-cover">
-            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                <span class="w-1.5 h-1.5 rounded-full bg-black/20 dark:bg-white/20"></span>
-                <span class="w-1.5 h-1.5 rounded-full bg-black/20 dark:bg-white/20"></span>
-            </div>
-            <button class="absolute top-6 right-6 p-3 bg-black/50 text-white rounded-full backdrop-blur-md">
-                <span class="material-symbols-outlined text-sm">photo_camera</span>
+<body
+    class="bg-base lg:bg-surface/30 dark:bg-base-dark text-text-main dark:text-text-main font-['Inter'] antialiased flex justify-center min-h-screen">
+    <div
+        class="w-full md:max-w-3xl mx-auto bg-base dark:bg-base-dark min-h-screen shadow-2xl relative overflow-hidden flex flex-col pb-24">
+        <!-- App Header -->
+        <header
+            class="fixed top-0 left-1/2 -translate-x-1/2 w-full md:max-w-3xl z-50 bg-base/80 dark:bg-base-dark/80 backdrop-blur-xl border-b border-text-sub/5 px-4 h-16 flex items-center justify-between">
+            <button onclick="history.back()"
+                class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
             </button>
-        </div>
+            <span class="text-sm font-black uppercase tracking-widest" data-i18n="LBL_PRODUCT_NAME">商品详情</span>
+            <button class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-primary">
+                <span class="material-symbols-outlined">more_horiz</span>
+            </button>
+        </header>
 
-        <!-- Form Content -->
-        <div class="px-6 py-8 space-y-10">
-            <!-- Title & Price Section -->
-            <div class="space-y-4">
-                <div class="space-y-1">
-                    <label class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em]"
-                        data-i18n="LBL_PRODUCT_NAME">商品名称</label>
-                    <input type="text" value="Vintage Retro Sneakers Pro"
-                        class="w-full bg-transparent border-none p-0 text-xl font-black focus:ring-0">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em]"
-                        data-i18n="LBL_PRODUCT_PRICE">商品单价</label>
-                    <div class="flex items-center">
-                        <span class="text-xl font-black mr-1">¥</span>
-                        <input type="number" value="599.00"
-                            class="w-full bg-transparent border-none p-0 text-3xl font-[900] focus:ring-0 text-primary">
-                    </div>
-                </div>
+        <main class="mt-16">
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-text-sub/5 bg-white/50 sticky top-16 z-40 backdrop-blur-md">
+                <button data-tab="basic"
+                    class="flex-1 py-4 text-xs font-black uppercase tracking-widest text-primary border-b-2 border-primary tab-btn">基础</button>
+                <button data-tab="variants"
+                    class="flex-1 py-4 text-xs font-bold uppercase tracking-widest text-text-sub border-b-2 border-transparent tab-btn">规格</button>
+                <button data-tab="marketing"
+                    class="flex-1 py-4 text-xs font-bold uppercase tracking-widest text-text-sub border-b-2 border-transparent tab-btn">行销</button>
             </div>
 
-            <!-- Detailed Specs -->
-            <div class="space-y-6">
-                <h3
-                    class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em] border-b border-text-sub/10 pb-2">
-                    基础设置</h3>
-
-                <div class="flex items-center justify-between py-2">
-                    <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-text-sub text-xl">category</span>
-                        <span class="text-sm font-bold" data-i18n="LBL_CATEGORIES">商品分类</span>
+            <div id="tab-basic" class="tab-content">
+                <!-- Image Carousel Simulation -->
+                <div class="relative aspect-square bg-white dark:bg-surface-dark overflow-hidden">
+                    <img id="main-img" src="https://images.unsplash.com/photo-1542291026-7eec264c27ff" alt="Product"
+                        class="w-full h-full object-cover">
+                    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-black/20 dark:bg-white/20"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-black/20 dark:bg-white/20"></span>
                     </div>
-                    <button class="flex items-center gap-1 text-sm font-bold text-text-sub">
-                        <span>时尚鞋包</span>
-                        <span class="material-symbols-outlined text-lg">chevron_right</span>
+                    <button class="absolute top-6 right-6 p-3 bg-black/50 text-white rounded-full backdrop-blur-md">
+                        <span class="material-symbols-outlined text-sm">photo_camera</span>
                     </button>
                 </div>
 
-                <div class="flex items-center justify-between py-2">
-                    <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-text-sub text-xl">inventory_2</span>
-                        <span class="text-sm font-bold" data-i18n="LBL_INVENTORY">库存数量</span>
+                <!-- Form Content -->
+                <div class="px-6 py-8 space-y-10">
+                    <!-- Title & Price Section -->
+                    <div class="space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em]"
+                                data-i18n="LBL_PRODUCT_NAME">商品名称</label>
+                            <input type="text" value="Vintage Retro Sneakers Pro"
+                                class="w-full bg-transparent border-none p-0 text-xl font-black focus:ring-0">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em]"
+                                data-i18n="LBL_PRODUCT_PRICE">商品单价</label>
+                            <div class="flex items-center">
+                                <span class="text-xl font-black mr-1">¥</span>
+                                <input type="number" value="599.00"
+                                    class="w-full bg-transparent border-none p-0 text-3xl font-[900] focus:ring-0 text-primary">
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <input type="number" value="1248"
-                            class="w-20 bg-black/5 dark:bg-white/5 border-none rounded-lg px-2 py-1 text-right text-sm font-black focus:ring-1 focus:ring-primary/20">
+
+                    <!-- Detailed Specs -->
+                    <div class="space-y-6">
+                        <h3
+                            class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em] border-b border-text-sub/10 pb-2">
+                            基础设置</h3>
+
+                        <div class="flex items-center justify-between py-2">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-text-sub text-xl">category</span>
+                                <span class="text-sm font-bold" data-i18n="LBL_CATEGORIES">商品分类</span>
+                            </div>
+                            <button class="flex items-center gap-1 text-sm font-bold text-text-sub">
+                                <span>时尚鞋包</span>
+                                <span class="material-symbols-outlined text-lg">chevron_right</span>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center justify-between py-2">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-text-sub text-xl">inventory_2</span>
+                                <span class="text-sm font-bold" data-i18n="LBL_INVENTORY">库存数量</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="number" value="1248"
+                                    class="w-20 bg-black/5 dark:bg-white/5 border-none rounded-lg px-2 py-1 text-right text-sm font-black focus:ring-1 focus:ring-primary/20">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between py-2">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-text-sub text-xl">label</span>
+                                <span class="text-sm font-bold">SKU</span>
+                            </div>
+                            <span class="text-xs font-mono font-bold text-text-sub">SNE-VINT-2024-X</span>
+                        </div>
+
+                        <div class="flex items-center justify-between py-2 border-t border-text-sub/5 mt-2 pt-2">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-text-sub text-xl">storefront</span>
+                                <span class="text-sm font-bold" data-i18n="LBL_MERCHANT_NO">商家编号</span>
+                            </div>
+                            <span class="text-xs font-mono font-bold text-text-sub">COSTCO-88291</span>
+                        </div>
+
+                        <div class="flex items-center justify-between py-2 border-t border-text-sub/5 mt-2 pt-2">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-text-sub text-xl">fingerprint</span>
+                                <span class="text-sm font-bold" data-i18n="LBL_OTHER_NO">其他编号</span>
+                            </div>
+                            <span class="text-xs font-mono font-bold text-text-sub">ITEM-99021</span>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="space-y-4">
+                        <h3 class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em] border-b border-text-sub/10 pb-2"
+                            data-i18n="LBL_PRODUCT_DESC">商品描述</h3>
+                        <textarea rows="4"
+                            class="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl p-4 text-sm font-medium leading-relaxed focus:ring-1 focus:ring-primary/20">这款复古运动鞋结合了 90 年代的经典设计与现代缓震技术，采用高品质牛皮材质，为您提供极致的穿着体验。</textarea>
+                    </div>
+
+                    <!-- AI Insight (App specific) -->
+                    <div class="bg-primary/5 dark:bg-primary/10 rounded-[2rem] p-6 border border-primary/10">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="material-symbols-outlined text-primary">auto_awesome</span>
+                            <span class="text-xs font-black uppercase tracking-widest text-primary">AI Insight</span>
+                        </div>
+                        <p class="text-xs font-bold leading-relaxed opacity-80">
+                            当前商品的视觉特征与“复古潮流”趋势高度匹配。建议在行销中加入“怀旧”标签以提高转化率。
+                        </p>
+                    </div>
+                </div>
+                <!-- Variants Tab Content -->
+                <div id="tab-variants" class="tab-content hidden px-6 py-8 space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em]">规格变体 (4)</h3>
+                        <button class="text-xs font-black text-primary uppercase">+ Add Variant</button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div
+                            class="bg-white p-5 rounded-3xl border border-text-sub/5 flex items-center justify-between shadow-sm">
+                            <div>
+                                <p class="text-sm font-black">White / 42</p>
+                                <p class="text-[10px] font-bold text-text-sub">SKU: SNE-W-42 • Stock: 428</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-black text-primary">¥599.00</p>
+                                <span class="material-symbols-outlined text-text-sub text-lg">edit</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between py-2">
-                    <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-text-sub text-xl">label</span>
-                        <span class="text-sm font-bold">SKU</span>
+                <!-- Marketing Tab Content -->
+                <div id="tab-marketing" class="tab-content hidden px-6 py-8 space-y-8">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em]">SEO
+                                标题</label>
+                            <input type="text" value="Vintage Retro Sneakers Pro - Bobbuy"
+                                class="w-full bg-surface/50 border-none rounded-2xl p-4 text-sm font-bold">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em]">社交文案</label>
+                            <textarea rows="6"
+                                class="w-full bg-surface/50 border-none rounded-2xl p-4 text-sm font-bold leading-relaxed">🌟 探索经典！这款复古运动鞋集舒适与风格于一身。</textarea>
+                        </div>
                     </div>
-                    <span class="text-xs font-mono font-bold text-text-sub">SNE-VINT-2024-X</span>
                 </div>
+        </main>
 
-                <div class="flex items-center justify-between py-2 border-t border-text-sub/5 mt-2 pt-2">
-                    <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-text-sub text-xl">storefront</span>
-                        <span class="text-sm font-bold" data-i18n="LBL_MERCHANT_NO">商家编号</span>
-                    </div>
-                    <span class="text-xs font-mono font-bold text-text-sub">COSTCO-88291</span>
-                </div>
-
-                <div class="flex items-center justify-between py-2 border-t border-text-sub/5 mt-2 pt-2">
-                    <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-text-sub text-xl">fingerprint</span>
-                        <span class="text-sm font-bold" data-i18n="LBL_OTHER_NO">其他编号</span>
-                    </div>
-                    <span class="text-xs font-mono font-bold text-text-sub">ITEM-99021</span>
-                </div>
-            </div>
-
-            <!-- Description -->
-            <div class="space-y-4">
-                <h3 class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em] border-b border-text-sub/10 pb-2"
-                    data-i18n="LBL_PRODUCT_DESC">商品描述</h3>
-                <textarea rows="4"
-                    class="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl p-4 text-sm font-medium leading-relaxed focus:ring-1 focus:ring-primary/20">这款复古运动鞋结合了 90 年代的经典设计与现代缓震技术，采用高品质牛皮材质，为您提供极致的穿着体验。</textarea>
-            </div>
-
-            <!-- AI Insight (App specific) -->
-            <div class="bg-primary/5 dark:bg-primary/10 rounded-[2rem] p-6 border border-primary/10">
-                <div class="flex items-center gap-3 mb-3">
-                    <span class="material-symbols-outlined text-primary">auto_awesome</span>
-                    <span class="text-xs font-black uppercase tracking-widest text-primary">AI Insight</span>
-                </div>
-                <p class="text-xs font-bold leading-relaxed opacity-80">当前商品的视觉特征与“复古潮流”趋势高度匹配。建议在行销中加入“怀旧”标签以提高转化率。</p>
-            </div>
+        <!-- Bottom Actions -->
+        <div
+            class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full md:max-w-3xl p-4 bg-base/80 dark:bg-base-dark/80 backdrop-blur-xl border-t border-text-sub/5 flex gap-3">
+            <button
+                class="flex-1 py-4 rounded-2xl bg-surface dark:bg-surface-dark text-text dark:text-text-dark text-sm font-black shadow-sm active:scale-95 transition-transform"
+                data-i18n="BTN_DELETE_PRODUCT">删除</button>
+            <button
+                class="flex-[2] py-4 rounded-2xl bg-primary text-white text-sm font-black shadow-xl shadow-primary/20 active:scale-95 transition-transform"
+                data-i18n="BTN_SAVE_CHANGES">保存更改</button>
         </div>
-    </main>
 
-    <!-- Bottom Actions -->
-    <div
-        class="fixed bottom-0 left-0 right-0 p-4 bg-base/80 dark:bg-base-dark/80 backdrop-blur-xl border-t border-text-sub/5 flex gap-3">
-        <button
-            class="flex-1 py-4 rounded-2xl bg-surface dark:bg-surface-dark text-text dark:text-text-dark text-sm font-black shadow-sm active:scale-95 transition-transform"
-            data-i18n="BTN_DELETE_PRODUCT">删除</button>
-        <button
-            class="flex-[2] py-4 rounded-2xl bg-primary text-white text-sm font-black shadow-xl shadow-primary/20 active:scale-95 transition-transform"
-            data-i18n="BTN_SAVE_CHANGES">保存更改</button>
+        <script src="../assets/ui-core.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const btns = document.querySelectorAll('.tab-btn');
+                const contents = document.querySelectorAll('.tab-content');
+
+                btns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const tab = btn.getAttribute('data-tab');
+
+                        // Update buttons
+                        btns.forEach(b => {
+                            b.classList.remove('text-primary', 'border-primary');
+                            b.classList.add('text-text-sub', 'border-transparent');
+                            b.classList.replace('font-black', 'font-bold');
+                        });
+                        btn.classList.add('text-primary', 'border-primary');
+                        btn.classList.remove('text-text-sub', 'border-transparent');
+                        btn.classList.replace('font-bold', 'font-black');
+
+                        // Update content
+                        contents.forEach(c => {
+                            if (c.id === `tab-${tab}`) {
+                                c.classList.remove('hidden');
+                            } else {
+                                c.classList.add('hidden');
+                            }
+                        });
+
+                        // Scroll to top of content
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    });
+                });
+            });
+        </script>
     </div>
-
-    <script src="../assets/ui-core.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Mobile specific init if needed
-        });
-    </script>
 </body>
 
 </html>
