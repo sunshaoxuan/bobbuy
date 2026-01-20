@@ -13,7 +13,7 @@
         rel="stylesheet" />
     <link rel="stylesheet" href="../assets/ui-core.css">
     <script>
-        if (window.innerWidth >= 1024) {
+        if (window.innerWidth >= 1024 && !window.location.search.includes('no-redirect')) {
             const pcUrl = window.location.href.replace('UID1120_merchants_product_mgmt.html', 'UID0120_merchants_product_mgmt.html');
             if (pcUrl !== window.location.href) window.location.href = pcUrl;
         }

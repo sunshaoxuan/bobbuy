@@ -404,5 +404,65 @@ const I18N_DATA = {
         "zt": "結束行程並進入結算",
         "en": "Finish & Settle",
         "ja": "終了して精算へ"
+    },
+    "LBL_ONGOING_TRIPS": {
+        "zh": "正在进行的行程",
+        "zt": "正在進行的行程",
+        "en": "Ongoing Trips",
+        "ja": "進行中の旅行"
+    },
+    "LBL_UPCOMING_TRIPS": {
+        "zh": "最近要到来的行程",
+        "zt": "最近要到來的行程",
+        "en": "Upcoming Trips",
+        "ja": "今後の予定"
+    },
+    "LBL_ONGOING_ORDERS": {
+        "zh": "正进行订单",
+        "zt": "正進行訂單",
+        "en": "Ongoing Orders",
+        "ja": "進行中の注文"
+    },
+    "LBL_ONGOING_CUSTOMERS": {
+        "zh": "正在服务客户",
+        "zt": "正在服務客戶",
+        "en": "Serving Customers",
+        "ja": "対応中の顧客"
+    },
+    "LBL_TOTAL_COMPLETED_TRIPS": {
+        "zh": "总完成行程",
+        "zt": "總完成行程",
+        "en": "Total Trips",
+        "ja": "累計旅行数"
+    },
+    "LBL_TOTAL_COMPLETED_ORDERS": {
+        "zh": "总完成订单",
+        "zt": "總完成訂單",
+        "en": "Total Orders",
+        "ja": "累計注文数"
+    },
+    "LBL_TOTAL_CUSTOMERS": {
+        "zh": "总服务客户",
+        "zt": "總服務客戶",
+        "en": "Total Customers",
+        "ja": "累計顧客数"
+    },
+    "LBL_TOTAL_REVENUE": {
+        "zh": "总收入",
+        "zt": "總收入",
+        "en": "Total Revenue",
+        "ja": "累計収入"
+    },
+    "LBL_TOTAL_PROFIT": {
+        "zh": "总利润",
+        "zt": "總利潤",
+        "en": "Total Profit",
+        "ja": "累計利益"
+    },
+    "BTN_CREATE_TRIP": {
+        "zh": "创建新行程",
+        "zt": "創建新行程",
+        "en": "Create Trip",
+        "ja": "旅行を作成"
     }
 };

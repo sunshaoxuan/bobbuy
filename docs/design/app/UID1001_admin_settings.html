@@ -13,7 +13,7 @@
         rel="stylesheet" />
     <link rel="stylesheet" href="../assets/ui-core.css">
     <script>
-        if (window.innerWidth >= 1024) {
+        if (window.innerWidth >= 1024 && !window.location.search.includes('no-redirect')) {
             const pcUrl = window.location.href.replace('UID1001_admin_settings.html', '../pc/UID0001_all_login.html'); // Map to login for now if admin specific PC is missing
             if (pcUrl !== window.location.href) window.location.href = pcUrl;
         }

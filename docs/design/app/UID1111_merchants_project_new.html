@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap"
         rel="stylesheet" />
     <script>
-        if (window.innerWidth >= 1024) {
+        if (window.innerWidth >= 1024 && !window.location.search.includes('no-redirect')) {
             const pcUrl = window.location.href.replace('UID1111_merchants_project_new.html', 'UID0111_merchants_project_new.html');
             if (pcUrl !== window.location.href) window.location.href = pcUrl;
         }

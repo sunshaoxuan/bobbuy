@@ -12,7 +12,7 @@
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script>
-        if (window.innerWidth >= 1024) {
+        if (window.innerWidth >= 1024 && !window.location.search.includes('no-redirect')) {
             const pcUrl = window.location.href.replace('UID1110_merchants_project_detail.html', 'UID0110_merchants_project_detail.html');
             if (pcUrl !== window.location.href) window.location.href = pcUrl;
         }

@@ -41,89 +41,208 @@
         <header-placeholder></header-placeholder>
 
         <!-- Dynamic Content Body -->
-        <main class="flex-1 overflow-y-auto p-8 space-y-8 bg-base/50">
-            <!-- Summary Metrics (Placeholder for Dashboard) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-surface flex items-center gap-4">
-                    <div class="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
-                        <span class="material-symbols-outlined">payments</span>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-black text-text-sub uppercase tracking-widest">今日营收</p>
-                        <p class="text-2xl font-black text-text-main">¥28,450.00</p>
-                    </div>
+        <main class="flex-1 overflow-y-auto p-8 space-y-10 bg-base/30">
+            <!-- Header Section with Quick Action -->
+            <div class="flex items-end justify-between">
+                <div>
+                    <h2 class="text-3xl font-black text-text-main tracking-tight" data-i18n="TITLE_DASHBOARD">仪表盘</h2>
+                    <p class="text-sm text-text-sub font-medium mt-1">欢迎回来，这是您今天的业务概览</p>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-surface flex items-center gap-4">
-                    <div class="w-12 h-12 bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center">
-                        <span class="material-symbols-outlined">shopping_cart</span>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-black text-text-sub uppercase tracking-widest">待处理订单</p>
-                        <p class="text-2xl font-black text-text-main">42</p>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-surface flex items-center gap-4">
-                    <div class="w-12 h-12 bg-green-500/10 text-green-600 rounded-xl flex items-center justify-center">
-                        <span class="material-symbols-outlined">trending_up</span>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-black text-text-sub uppercase tracking-widest">活跃行程</p>
-                        <p class="text-2xl font-black text-text-main">5</p>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-surface flex items-center gap-4">
-                    <div class="w-12 h-12 bg-orange-500/10 text-orange-600 rounded-xl flex items-center justify-center">
-                        <span class="material-symbols-outlined">group</span>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-black text-text-sub uppercase tracking-widest">我的私域客户</p>
-                        <p class="text-2xl font-black text-text-main">1,280</p>
-                    </div>
-                </div>
+                <button
+                    class="bg-primary text-white px-8 py-3.5 rounded-full font-black text-sm shadow-xl shadow-primary/20 hover:scale-105 transition-transform flex items-center gap-2 group"
+                    onclick="location.href='UID0111_merchants_project_new.html'">
+                    <span class="material-symbols-outlined group-hover:rotate-90 transition-transform">add</span>
+                    <span data-i18n="BTN_CREATE_TRIP">创建新行程</span>
+                </button>
             </div>
 
-            <!-- Recent Activity / Trends (Large Placeholder) -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div
-                    class="lg:col-span-2 bg-white p-8 rounded-3xl shadow-sm border border-surface min-h-[400px] flex flex-col justify-center items-center text-center space-y-4">
-                    <span class="material-symbols-outlined text-6xl text-surface">analytics</span>
-                    <h4 class="text-xl font-black">销售趋势分析</h4>
-                    <p class="text-sm text-text-sub max-w-sm">此处将展示最近30天的订单增长与营收曲线。数据正在同步中...</p>
-                </div>
-                <div class="bg-white p-8 rounded-3xl shadow-sm border border-surface min-h-[400px]">
-                    <h4 class="text-lg font-black mb-6">实时消息</h4>
-                    <div class="space-y-6">
-                        <!-- Message Item -->
-                        <div class="flex items-start gap-4">
-                            <img src="https://i.pravatar.cc/100?u=c1" class="w-10 h-10 rounded-full">
-                            <div class="flex-1">
-                                <p class="text-xs font-black">张小明 <span
-                                        class="text-[10px] font-medium text-text-sub ml-2">2 分钟前</span></p>
-                                <p class="text-xs text-text-sub mt-1">你好，请问我上周定的西雅图Costco的订单发出了吗？</p>
+            <!-- Dashboard Sections: Grid Layout -->
+            <div class="grid grid-cols-12 gap-8">
+
+                <!-- Left Column: Primary Stats and Lists (8 Cols) -->
+                <div class="col-span-12 lg:col-span-8 space-y-10">
+
+                    <!-- Primary Business Stats (Real-time Monitoring) -->
+                    <div class="grid grid-cols-3 gap-6">
+                        <!-- Ongoing Trips Card -->
+                        <div
+                            class="bg-primary p-6 rounded-[32px] text-white shadow-2xl shadow-primary/10 relative overflow-hidden group">
+                            <div class="relative z-10">
+                                <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-2"
+                                    data-i18n="LBL_ONGOING_TRIPS">正在进行的行程</p>
+                                <h3 class="text-5xl font-black tabular-nums tracking-tighter">05</h3>
+                                <div
+                                    class="mt-6 flex items-center gap-2 text-xs font-bold bg-white/10 w-fit px-3 py-1 rounded-full">
+                                    <span class="material-symbols-outlined text-sm">flight_takeoff</span>
+                                    <span>2 条行程今日采买中</span>
+                                </div>
                             </div>
-                            <div class="w-2 h-2 bg-primary rounded-full"></div>
+                            <span
+                                class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl opacity-10 group-hover:scale-110 transition-transform">explore</span>
                         </div>
-                        <!-- Message Item -->
-                        <div class="flex items-start gap-4">
-                            <img src="https://i.pravatar.cc/100?u=c2" class="w-10 h-10 rounded-full">
-                            <div class="flex-1">
-                                <p class="text-xs font-black">Elena <span
-                                        class="text-[10px] font-medium text-text-sub ml-2">15 分钟前</span></p>
-                                <p class="text-xs text-text-sub mt-1">Hello, is the Japanese first release ready?</p>
+
+                        <!-- Ongoing Orders Card -->
+                        <div class="bg-white p-6 rounded-[32px] border border-surface shadow-sm hover:shadow-xl transition-all cursor-pointer group"
+                            onclick="location.href='UID0112_merchants_project_processing.html'">
+                            <p class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em] mb-2"
+                                data-i18n="LBL_ONGOING_ORDERS">正进行订单</p>
+                            <h3 class="text-5xl font-black tabular-nums tracking-tighter text-text-main">42</h3>
+                            <div class="mt-6 flex items-center gap-2 text-xs font-bold text-success">
+                                <span class="material-symbols-outlined text-sm">trending_up</span>
+                                <span>+12% 较昨日同期</span>
+                            </div>
+                        </div>
+
+                        <!-- Ongoing Customers Card -->
+                        <div
+                            class="bg-white p-6 rounded-[32px] border border-surface shadow-sm hover:shadow-xl transition-all group">
+                            <p class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em] mb-2"
+                                data-i18n="LBL_ONGOING_CUSTOMERS">正在服务客户</p>
+                            <h3 class="text-5xl font-black tabular-nums tracking-tighter text-text-main">185</h3>
+                            <div class="mt-6 flex items-center gap-2 text-xs font-bold text-primary">
+                                <span class="material-symbols-outlined text-sm">person</span>
+                                <span>3 个新对话接入</span>
                             </div>
                         </div>
                     </div>
-                    <button
-                        class="w-full mt-8 py-3 bg-base rounded-xl text-primary text-xs font-black hover:bg-surface transition-colors"
-                        data-i18n="LBL_VIEW_ALL">查看全部</button>
-                </div>
-            </div>
 
-            <!-- More content to test scrolling -->
-            <div
-                class="h-64 bg-white/30 border border-dashed border-surface rounded-3xl flex items-center justify-center">
-                <p class="text-xs font-bold text-text-sub uppercase tracking-widest opacity-30">Additional Content Area
-                </p>
+                    <!-- Triple Card Section: Trips & Orders -->
+                    <div class="grid grid-cols-2 gap-8">
+                        <!-- Ongoing Trips List -->
+                        <section class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-text-sub"
+                                    data-i18n="LBL_ONGOING_TRIPS">正在进行的行程</h3>
+                                <button class="text-primary text-[10px] font-black uppercase">View All</button>
+                            </div>
+                            <div class="space-y-4">
+                                <div
+                                    class="bg-white p-5 rounded-3xl border border-surface hover:border-primary/30 transition-colors cursor-pointer flex gap-4">
+                                    <div
+                                        class="w-14 h-14 bg-surface rounded-2xl flex items-center justify-center text-primary">
+                                        <span class="material-symbols-outlined text-3xl">shopping_bag</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-black">法国巴黎春季奢侈品采买</h4>
+                                        <p class="text-[10px] text-text-sub font-bold mt-1 uppercase tracking-wider">CDG
+                                            - LHR / 2024.03.20 - 03.25</p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="bg-white p-5 rounded-3xl border border-surface hover:border-primary/30 transition-colors cursor-pointer flex gap-4">
+                                    <div
+                                        class="w-14 h-14 bg-surface rounded-2xl flex items-center justify-center text-primary">
+                                        <span class="material-symbols-outlined text-3xl">watch</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-black">日本银座名表新款限定行程</h4>
+                                        <p class="text-[10px] text-text-sub font-bold mt-1 uppercase tracking-wider">HND
+                                            - NRT / 2024.03.22 - 03.28</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Upcoming Trips List -->
+                        <section class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-text-sub"
+                                    data-i18n="LBL_UPCOMING_TRIPS">最近要到来的行程</h3>
+                            </div>
+                            <div class="space-y-4">
+                                <div
+                                    class="bg-surface/30 p-5 rounded-3xl border border-dashed border-surface group hover:bg-white hover:border-solid transition-all cursor-pointer flex gap-4">
+                                    <div
+                                        class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-text-sub group-hover:text-primary transition-colors">
+                                        <span class="material-symbols-outlined text-3xl">event</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4
+                                            class="text-sm font-black text-text-sub group-hover:text-text-main transition-colors">
+                                            韩国明洞美妆补货行程</h4>
+                                        <p
+                                            class="text-[10px] text-text-sub/60 font-medium mt-1 uppercase tracking-wider">
+                                            Starting in 12 Days</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <!-- Right Column: Achievement Stats and Message Center Preview (4 Cols) -->
+                <div class="col-span-12 lg:col-span-4 space-y-8">
+                    <!-- Historical Achievements Card -->
+                    <div class="bg-white p-8 rounded-[40px] border border-surface shadow-sm space-y-8">
+                        <h4 class="text-lg font-black tracking-tight">累计经营成就</h4>
+
+                        <div class="space-y-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-base flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-primary text-lg">verified</span>
+                                    </div>
+                                    <span class="text-xs font-bold text-text-sub"
+                                        data-i18n="LBL_TOTAL_COMPLETED_TRIPS">总完成行程</span>
+                                </div>
+                                <span class="text-lg font-black tabular-nums">128</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-base flex items-center justify-center">
+                                        <span
+                                            class="material-symbols-outlined text-primary text-lg">shopping_basket</span>
+                                    </div>
+                                    <span class="text-xs font-bold text-text-sub"
+                                        data-i18n="LBL_TOTAL_COMPLETED_ORDERS">总完成订单</span>
+                                </div>
+                                <span class="text-lg font-black tabular-nums">3,450</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-base flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-primary text-lg">group</span>
+                                    </div>
+                                    <span class="text-xs font-bold text-text-sub"
+                                        data-i18n="LBL_TOTAL_CUSTOMERS">总服务客户</span>
+                                </div>
+                                <span class="text-lg font-black tabular-nums">2,840</span>
+                            </div>
+
+                            <div class="border-t border-surface pt-6 space-y-4">
+                                <div>
+                                    <p class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em] mb-1"
+                                        data-i18n="LBL_TOTAL_REVENUE">总收入</p>
+                                    <p class="text-2xl font-black text-text-main tabular-nums">¥ 1,428,500</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-black text-text-sub uppercase tracking-[0.2em] mb-1"
+                                        data-i18n="LBL_TOTAL_PROFIT">总利润</p>
+                                    <p class="text-2xl font-black text-primary tabular-nums">¥ 428,500</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Peek Card -->
+                    <div class="bg-accent/5 p-8 rounded-[40px] border border-accent/10 space-y-6">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-black uppercase tracking-widest text-accent">商品库状态</h4>
+                            <span class="material-symbols-outlined text-accent">inventory</span>
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <div>
+                                <h3 class="text-4xl font-black tabular-nums text-text-main">842</h3>
+                                <p class="text-[10px] font-bold text-text-sub uppercase tracking-wider mt-1">Total SKUs
+                                    Active</p>
+                            </div>
+                            <button
+                                class="bg-accent text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg shadow-accent/20 hover:scale-105 transition-transform">
+                                <span class="material-symbols-outlined text-xl">arrow_forward</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
 

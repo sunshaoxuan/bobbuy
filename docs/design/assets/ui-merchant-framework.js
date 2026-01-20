@@ -36,9 +36,12 @@ const MERCHANT_FRAMEWORK = {
                         <span class="material-symbols-outlined text-xl shrink-0">list_alt</span>
                         <span class="sidebar-text transition-all duration-300" data-i18n="TITLE_ORDER_LIST">订单列表</span>
                     </a>
-                    <a href="UID0115_merchants_project_talk.html" data-page="UID0115" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm">
-                        <span class="material-symbols-outlined text-xl shrink-0">forum</span>
-                        <span class="sidebar-text transition-all duration-300" data-i18n="MSG_CHAT_CENTER">消息中心</span>
+                    <a href="UID0115_merchants_project_talk.html" data-page="UID0115" class="sidebar-item flex items-center justify-between px-4 py-3 rounded-xl font-bold text-sm group">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-xl shrink-0">forum</span>
+                            <span class="sidebar-text transition-all duration-300" data-i18n="MSG_CHAT_CENTER">消息中心</span>
+                        </div>
+                        <span class="badge w-5 h-5 bg-primary text-[10px] text-white rounded-full flex items-center justify-center opacity-0 group-[.active]:opacity-100 transition-opacity">12</span>
                     </a>
                     <a href="UID0114_merchants_project_reciept.html" data-page="UID0114" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm">
                         <span class="material-symbols-outlined text-xl shrink-0">local_shipping</span>

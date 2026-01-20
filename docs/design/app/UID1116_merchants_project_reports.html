@@ -14,7 +14,7 @@
         rel="stylesheet" />
     <link rel="stylesheet" href="../assets/ui-core.css">
     <script id="tailwind-config">
-        if (window.innerWidth >= 1024) {
+        if (window.innerWidth >= 1024 && !window.location.search.includes('no-redirect')) {
             const pcUrl = window.location.href.replace('UID1116_merchants_project_reports.html', 'UID0116_merchants_project_reports.html');
             if (pcUrl !== window.location.href) window.location.href = pcUrl;
         }

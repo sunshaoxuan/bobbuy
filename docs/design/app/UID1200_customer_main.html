@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="../assets/ui-core.css">
     <script src="../assets/i18n-data.js"></script>
     <script>
-        if (window.innerWidth >= 1024) {
+        if (window.innerWidth >= 1024 && !window.location.search.includes('no-redirect')) {
             const pcUrl = window.location.href.replace('UID1200_customer_main.html', '../pc/UID0200_landing_page.html');
             if (pcUrl !== window.location.href) window.location.href = pcUrl;
         }

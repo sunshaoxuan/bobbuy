@@ -12,7 +12,7 @@
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
     <script id="tailwind-config">
-        if (window.innerWidth >= 1024) {
+        if (window.innerWidth >= 1024 && !window.location.search.includes('no-redirect')) {
             const pcUrl = window.location.href.replace('UID1114_merchants_project_reciept.html', 'UID0114_merchants_project_reciept.html');
             if (pcUrl !== window.location.href) window.location.href = pcUrl;
         }

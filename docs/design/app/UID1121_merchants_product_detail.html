@@ -11,7 +11,7 @@
         rel="stylesheet">
     <script src="../assets/i18n-data.js"></script>
     <script>
-        if (window.innerWidth >= 1024) {
+        if (window.innerWidth >= 1024 && !window.location.search.includes('no-redirect')) {
             const pcUrl = window.location.href.replace('UID1121_merchants_product_detail.html', 'UID0121_merchants_product_detail.html');
             if (pcUrl !== window.location.href) window.location.href = pcUrl;
         }
