@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-
 <html class="light" lang="zh-CN">
 
 <head>
     <meta charset="utf-8" />
-    <title>BoBB - In-Store Procurement</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BoBB - 现场采买执行</title>
     <script>
         if (window.innerWidth >= 1024 && !window.location.search.includes('no-redirect')) {
             const pcUrl = window.location.href.replace('UID1112_merchants_project_processing.html', 'UID0112_merchants_project_processing.html');
@@ -15,14 +15,11 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
         rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/ui-core.css">
     <script id="tailwind-config">
         tailwind.config = {
-            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
@@ -36,259 +33,498 @@
                         "info": "#007AFF",
                         "warning": "#FF9500",
                     },
-                    fontFamily: {
-                        "display": ["Spline Sans", "sans-serif"]
-                    },
-                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
-                },
-            },
+                    borderRadius: { "DEFAULT": "12px", "lg": "16px", "xl": "24px", "full": "9999px" }
+                }
+            }
         }
     </script>
     <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        .collapsible-content {
+            transition: max-height 0.3s ease-out;
+            max-height: 0;
+            overflow: hidden;
         }
 
-        body {
-            -webkit-tap-highlight-color: transparent;
+        .collapsible-content.expanded {
+            max-height: 2000px;
+        }
+
+        .item-cancelled {
+            opacity: 0.5;
+            filter: grayscale(1);
+        }
+
+        .item-cancelled .item-title {
+            text-decoration: line-through;
         }
 
         .hide-scrollbar::-webkit-scrollbar {
             display: none;
         }
     </style>
-    <style>
-        body {
-            min-height: max(884px, 100dvh);
-        }
-    </style>
 </head>
 
-<body
-    class="bg-base lg:bg-surface/30 dark:bg-base-dark flex justify-center min-h-screen font-sans text-text-main antialiased overflow-x-hidden">
-    <div class="w-full md:max-w-3xl mx-auto bg-base min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
+<body class="bg-base font-sans text-text-main antialiased selection:bg-primary/10">
+    <div class="w-full md:max-w-3xl mx-auto bg-base min-h-screen flex flex-col relative shadow-2xl">
 
-        <!-- Sticky Header -->
-        <header
-            class="sticky top-0 z-50 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md border-b border-[#e9e8ce] dark:border-[#3a3a1a]">
-            <div class="px-4 py-2 border-b border-primary/10 flex justify-center">
-                <span class="text-[10px] font-bold text-primary tracking-widest uppercase">UID1112 采买执行现场</span>
+        <!-- Header: Sticky & Minimal -->
+        <header class="sticky top-0 z-40 bg-base/80 backdrop-blur-md border-b border-surface p-4 space-y-4">
+            <div class="flex items-center justify-between">
+                <button onclick="toggleMenu()"
+                    class="w-10 h-10 flex items-center justify-center text-text-sub hover:bg-surface rounded-full transition-colors">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div class="text-center">
+                    <h1 class="text-sm font-black uppercase tracking-[0.2em] text-primary">UID1112 采买现场</h1>
+                    <p class="text-[10px] font-bold text-text-sub">Costco Warehouse • #422</p>
+                </div>
+                <button onclick="togglePageMenu()"
+                    class="w-10 h-10 flex items-center justify-center text-text-sub hover:bg-surface rounded-full transition-colors relative">
+                    <span class="material-symbols-outlined">more_vert</span>
+
+                    <!-- Page Menu Dropdown -->
+                    <div id="pageMenu"
+                        class="absolute top-12 right-0 w-48 bg-white rounded-xl shadow-xl border border-surface hidden transform origin-top-right transition-all z-50 overflow-hidden text-left">
+                        <div class="py-1">
+                            <div onclick="expandAll()"
+                                class="px-4 py-3 hover:bg-base flex items-center gap-3 cursor-pointer">
+                                <span class="material-symbols-outlined text-text-sub text-xl">unfold_more</span>
+                                <span class="text-sm font-bold">展开全部</span>
+                            </div>
+                            <div onclick="collapseAll()"
+                                class="px-4 py-3 hover:bg-base flex items-center gap-3 cursor-pointer">
+                                <span class="material-symbols-outlined text-text-sub text-xl">unfold_less</span>
+                                <span class="text-sm font-bold">折叠全部</span>
+                            </div>
+                        </div>
+                    </div>
+                </button>
             </div>
-            <div class="flex items-center p-4 pb-2 justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="flex size-10 items-center justify-center rounded-full bg-primary/10">
-                        <span class="material-symbols-outlined text-[#1c1c0d] dark:text-white">storefront</span>
+
+            <!-- Global Trip Tracker: 2x2 Grid for high intensity metrics -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white p-3 rounded-2xl border border-surface flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        <span class="material-symbols-outlined font-black text-xl">inventory_2</span>
                     </div>
                     <div>
-                        <h2 class="text-lg font-bold leading-tight tracking-tight">Costco Warehouse #422</h2>
-                        <p class="text-xs font-medium text-[#9e9d47]">Procurement Mode • Active</p>
+                        <p class="text-[8px] font-black text-text-sub uppercase tracking-widest leading-none">总货品数</p>
+                        <p class="text-xl font-black tabular-nums mt-1 leading-none">24</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button
-                        class="flex size-10 items-center justify-center rounded-full bg-white dark:bg-[#3a3a1a] shadow-sm border border-[#e9e8ce] dark:border-none">
-                        <span class="material-symbols-outlined">search</span>
-                    </button>
-                    <button
-                        class="flex size-10 items-center justify-center rounded-full bg-white dark:bg-[#3a3a1a] shadow-sm border border-[#e9e8ce] dark:border-none">
-                        <span class="material-symbols-outlined">more_vert</span>
-                    </button>
+                <div class="bg-white p-3 rounded-2xl border border-surface flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
+                        <span class="material-symbols-outlined font-black text-xl">check_circle</span>
+                    </div>
+                    <div>
+                        <p class="text-[8px] font-black text-text-sub uppercase tracking-widest leading-none">已完成</p>
+                        <p class="text-xl font-black tabular-nums mt-1 leading-none">18</p>
+                    </div>
                 </div>
-            </div>
-            <!-- Global Progress Bar -->
-            <div class="flex flex-col gap-2 px-4 pb-4 pt-2">
-                <div class="flex justify-between items-end">
-                    <p class="text-xs font-bold uppercase tracking-widest text-accent">Overall Progress</p>
-                    <p class="text-sm font-bold">18 / 24 <span class="text-accent font-normal">items</span></p>
+                <div class="bg-white p-3 rounded-2xl border border-surface flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center text-info">
+                        <span class="material-symbols-outlined font-black text-xl">groups</span>
+                    </div>
+                    <div>
+                        <p class="text-[8px] font-black text-text-sub uppercase tracking-widest leading-none">服务客户</p>
+                        <p class="text-xl font-black tabular-nums mt-1 leading-none">12</p>
+                    </div>
                 </div>
-                <div class="h-2.5 w-full rounded-full bg-surface overflow-hidden">
-                    <div class="h-full bg-primary rounded-full" style="width: 75%;"></div>
+                <div
+                    class="bg-primary p-3 rounded-2xl border border-primary/20 flex items-center gap-3 shadow-lg shadow-primary/20">
+                    <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white">
+                        <span class="material-symbols-outlined font-black text-xl">trending_up</span>
+                    </div>
+                    <div>
+                        <p class="text-[8px] font-black text-white/70 uppercase tracking-widest leading-none">总体进度</p>
+                        <p class="text-xl font-black tabular-nums mt-1 leading-none text-white">75%</p>
+                    </div>
                 </div>
             </div>
         </header>
-        <main class="flex flex-col gap-2 pb-32">
-            <!-- AI Stock Alert Panel -->
-            <div class="p-4 pt-6">
-                <div
-                    class="flex flex-col gap-4 rounded-xl border-2 border-primary bg-primary/5 p-5 shadow-[0_4px_20px_rgba(249,245,6,0.1)]">
-                    <div class="flex items-center gap-3">
-                        <div class="flex size-8 items-center justify-center rounded-full bg-primary">
-                            <span class="material-symbols-outlined text-sm font-bold">bolt</span>
-                        </div>
-                        <p class="text-base font-bold leading-tight">AI Inventory Alert</p>
-                    </div>
-                    <p class="text-[#1c1c0d] dark:text-gray-300 text-sm font-medium">
-                        <span class="font-bold underline">Kirkland Whole Milk</span> is reported out of stock at this
-                        location.
-                    </p>
-                    <div class="flex gap-2">
-                        <button
-                            class="flex flex-1 items-center justify-center rounded-full h-10 px-4 bg-primary text-[#1c1c0d] text-sm font-bold transition-transform active:scale-95">
-                            Swap for Organic
-                        </button>
-                        <button
-                            class="flex items-center justify-center rounded-full h-10 px-4 bg-white dark:bg-[#3a3a1a] border border-[#e9e8ce] dark:border-none text-sm font-bold">
-                            Ask Customer
-                        </button>
-                    </div>
-                </div>
+
+        <!-- Pull to Refresh Loading Spinner -->
+        <div id="ptr-loader"
+            class="fixed top-24 left-0 w-full flex justify-center pointer-events-none transition-opacity duration-300 opacity-0 z-30">
+            <div class="bg-white p-2 rounded-full shadow-lg border border-surface flex items-center gap-2">
+                <span id="ptr-icon" class="material-symbols-outlined animate-spin text-primary">autorenew</span>
+                <span class="text-xs font-bold text-text-sub">松手刷新...</span>
             </div>
-            <!-- Customer Group 1 -->
-            <section>
-                <div
-                    class="flex items-center justify-between px-4 pb-2 pt-4 bg-background-light dark:bg-background-dark">
-                    <div class="flex items-center gap-2">
+        </div>
+
+        <!-- Main Content: Collapsible Customer Cards -->
+        <main class="flex-1 p-4 pb-56 space-y-4">
+
+            <!-- Customer Card 1 -->
+            <div class="bg-white rounded-3xl border border-surface shadow-sm overflow-hidden group">
+                <!-- Card Header -->
+                <div class="p-4 flex items-center gap-4 cursor-pointer active:bg-base/50 transition-colors"
+                    onclick="toggleSection('customer1', this)">
+                    <div onclick="event.stopPropagation(); location.href='UID1115_merchants_project_talk.html'"
+                        class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-sm relative hover:scale-105 active:scale-95 transition-all">
+                        AW
+                        <!-- Online Status -->
+                        <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-success border-2 border-white rounded-full">
+                        </div>
+                        <!-- Message Icon Overlay -->
                         <div
-                            class="size-8 rounded-full bg-[#1c1c0d] dark:bg-white flex items-center justify-center text-white dark:text-[#1c1c0d] font-bold text-xs">
-                            AW</div>
-                        <h2 class="text-lg font-bold tracking-tight">Alice W.</h2>
+                            class="absolute -bottom-1.5 -left-1.5 w-5 h-5 bg-white rounded-full shadow-sm flex items-center justify-center border border-surface">
+                            <span class="material-symbols-outlined text-[12px] text-primary">forum</span>
+                        </div>
+                        <!-- Notification Badge -->
+                        <div
+                            class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-5 h-5 rounded-full border-2 border-white flex items-center justify-center shadow-sm">
+                            2
+                        </div>
                     </div>
-                    <span
-                        class="text-xs font-bold px-2 py-1 bg-[#e9e8ce] dark:bg-[#3a3a1a] rounded-full uppercase tracking-tighter">Cart
-                        B</span>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-black text-text-main">Alice Wang</h3>
+                            <span
+                                class="px-2 py-0.5 bg-accent/10 text-accent text-[8px] font-black uppercase tracking-tighter rounded-full">VIP
+                                客户</span>
+                        </div>
+                        <p class="text-[10px] text-text-sub font-medium mt-0.5">3 待购 • 2 已拿</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <div class="flex items-baseline justify-end leading-none">
+                                <span class="text-2xl font-black text-primary tabular-nums">2</span>
+                                <span class="text-sm font-black text-text-sub mx-0.5">/</span>
+                                <span class="text-sm font-black text-text-sub">3</span>
+                            </div>
+                            <div class="text-[8px] font-black text-success uppercase tracking-tighter mt-0.5">66% Done
+                            </div>
+                        </div>
+                        <span
+                            class="material-symbols-outlined text-text-sub transition-transform duration-300 transform"
+                            id="chevron-customer1">expand_more</span>
+                    </div>
                 </div>
-                <!-- List Items -->
-                <div class="divide-y divide-[#e9e8ce]/50 dark:divide-[#3a3a1a]/50">
-                    <!-- Item 1 (Checked) -->
-                    <div class="flex items-center gap-4 px-4 py-4 transition-colors active:bg-[#e9e8ce]/20">
-                        <div class="relative">
-                            <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-2xl size-16 ring-1 ring-[#e9e8ce] dark:ring-transparent"
-                                data-alt="Kirkland Signature Organic Milk cartons"
-                                style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBgOrM0TcnM1hjek-rxloJzsDICURMtDojrYvvWB0gBg8PXb5nBJkuYeSV26fvwhkVOMErFhNGo_HY1a_gojaU40GzPprNuvL34eqthRAST0jthJpPeXf_YY2sb8g-EJjln2OJme0p2l5IXsfeEQHhRKrEGckcMPhKbqeklytd-HYyFzoe_KAB3r-CGCOZ576UWcQ7ijoJpCC419I9PhOBayMH5LEhvlWj3v1pXqyISF9j3jLbnPJkWQxzONeLj3UfQg-AjRIubWy6x");'>
-                            </div>
-                            <div
-                                class="absolute -top-1 -right-1 size-5 bg-primary rounded-full flex items-center justify-center ring-2 ring-background-light dark:ring-background-dark">
-                                <span class="material-symbols-outlined text-[10px] font-bold">check</span>
-                            </div>
+
+                <!-- Card Content (Items) -->
+                <div id="customer1"
+                    class="collapsible-content divide-y divide-surface bg-base/20 border-t border-surface">
+                    <!-- Item 1 -->
+                    <div class="p-4 flex items-center gap-4 active:bg-surface transition-colors relative group/item"
+                        oncontextmenu="showItemMenu(event, 'Kirkland 有机牛奶')">
+                        <!-- 1. Product Image -->
+                        <div class="w-16 h-16 rounded-xl bg-white border border-surface bg-cover bg-center shrink-0"
+                            style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBgOrM0TcnM1hjek-rxloJzsDICURMtDojrYvvWB0gBg8PXb5nBJkuYeSV26fvwhkVOMErFhNGo_HY1a_gojaU40GzPprNuvL34eqthRAST0jthJpPeXf_YY2sb8g-EJJln2OJme0p2l5IXsfeEQHhRKrEGckcMPhKbqeklytd-HYyFzoe_KAB3r-CGCOZ576UWcQ7ijoJpCC419I9PhOBayMH5LEhvlWj3v1pXqyISF9j3jLbnPJkWQxzONeLj3UfQg-AjRIubWy6x')">
                         </div>
-                        <div class="flex flex-col flex-1 min-w-0">
-                            <p class="text-[#1c1c0d] dark:text-white text-base font-bold leading-tight truncate">
-                                Kirkland
-                                Organic Milk, 3pk</p>
-                            <div class="flex items-center gap-2 mt-1">
-                                <span
-                                    class="text-xs font-bold bg-[#1c1c0d] text-white px-2 py-0.5 rounded-full">$12.99</span>
-                                <span class="text-xs font-medium text-[#9e9d47]">Qty: 2</span>
-                            </div>
+                        <!-- 2 & 3. Product ID, Name & Unit Price -->
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] font-bold text-text-sub uppercase tracking-tighter">#SKU-20934</p>
+                            <h4 class="text-sm font-black text-text-main truncate item-title">Kirkland 有机牛奶 (3支装)</h4>
+                            <p class="text-[10px] font-black text-primary mt-1">$12.99 / 组</p>
                         </div>
-                        <div class="shrink-0">
-                            <input checked=""
-                                class="size-7 rounded-full border-2 border-[#e9e8ce] text-primary focus:ring-0 focus:ring-offset-0 bg-transparent checked:bg-primary checked:border-primary transition-all cursor-pointer"
-                                type="checkbox" />
+                        <!-- 4. Large Quantity -->
+                        <div class="flex flex-col items-center justify-center min-w-[3rem]">
+                            <span class="text-[8px] font-black text-text-sub uppercase tracking-widest">数量</span>
+                            <span class="text-2xl font-black text-text-main tabular-nums leading-none">2</span>
+                        </div>
+                        <!-- 5. Quick Check -->
+                        <div class="flex flex-col items-end">
+                            <button
+                                class="w-10 h-10 rounded-full bg-success text-white flex items-center justify-center shadow-lg shadow-success/20 active:scale-90 transition-all">
+                                <span class="material-symbols-outlined font-black">check</span>
+                            </button>
                         </div>
                     </div>
                     <!-- Item 2 -->
-                    <div class="flex items-center gap-4 px-4 py-4 transition-colors active:bg-[#e9e8ce]/20">
-                        <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-2xl size-16 ring-1 ring-[#e9e8ce] dark:ring-transparent"
-                            data-alt="Giant bag of organic spinach"
-                            style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCnff3Q8rrVW4keGWCi4HgxFlXAgP4rzcUBDpsjzLhGD2ih9pijIq73DiS0pU6tmCqlLYbrWnk5KJeegMWe12CISUA16Ca5-iXceBOr6jsTf8Kr6IJYuzrv1BpdDqB99N8_COx2WDyes1JysRLK8LYOCvInBEQ6by3RqJ5bXBS4mzpceIVd0PFxGf2-PRB8sIPtkjfSCznHrD8r6002ZkPs6mAP856M7CEsskHypble1TAH49NNB9bYTy7P9If6_7jFT49soAdjGGBX");'>
+                    <div class="p-4 flex items-center gap-4 active:bg-surface transition-colors group/item"
+                        oncontextmenu="showItemMenu(event, '新鲜有机菠菜')">
+                        <!-- 1. Product Image -->
+                        <div class="w-16 h-16 rounded-xl bg-white border border-surface bg-cover bg-center shrink-0"
+                            style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCnff3Q8rrVW4keGWCi4HgxFlXAgP4rzcUBDpsjzLhGD2ih9pijIq73DiS0pU6tmCqlLYbrWnk5KJeegMWe12CISUA16Ca5-iXceBOr6jsTf8Kr6IJYuzrv1BpdDqB99N8_COx2WDyes1JysRLK8LYOCvInBEQ6by3RqJ5bXBS4mzpceIVd0PFGf2-PRB8sIPtkjfSCznHrD8r6002ZkPs6mAP856M7CEsskHypble1TAH49NNB9bYTy7P9If6_7jFT49soAdjGGBX");'>
                         </div>
-                        <div class="flex flex-col flex-1 min-w-0">
-                            <p class="text-[#1c1c0d] dark:text-white text-base font-bold leading-tight truncate">Organic
-                                Spinach, 1lb</p>
-                            <div class="flex items-center gap-2 mt-1">
-                                <span
-                                    class="text-xs font-bold bg-[#1c1c0d] text-white px-2 py-0.5 rounded-full">$4.49</span>
-                                <span class="text-xs font-medium text-[#9e9d47]">Qty: 1</span>
-                            </div>
+                        <!-- 2 & 3. Product ID, Name & Unit Price -->
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] font-bold text-text-sub uppercase tracking-tighter">#SKU-88210</p>
+                            <h4 class="text-sm font-black text-text-main truncate item-title">新鲜有机菠菜 (1磅)</h4>
+                            <p class="text-[10px] font-black text-primary mt-1">$4.49 / lb</p>
                         </div>
-                        <div class="shrink-0">
-                            <input
-                                class="size-7 rounded-full border-2 border-[#e9e8ce] text-primary focus:ring-0 focus:ring-offset-0 bg-transparent checked:bg-primary checked:border-primary transition-all cursor-pointer"
-                                type="checkbox" />
+                        <!-- 4. Large Quantity -->
+                        <div class="flex flex-col items-center justify-center min-w-[3rem]">
+                            <span class="text-[8px] font-black text-text-sub uppercase tracking-widest">数量</span>
+                            <span class="text-2xl font-black text-text-main tabular-nums leading-none">1</span>
+                        </div>
+                        <!-- 5. Quick Check -->
+                        <div class="flex flex-col items-end">
+                            <button
+                                class="w-10 h-10 rounded-full border-2 border-surface flex items-center justify-center bg-white hover:border-success/50 active:scale-90 transition-all">
+                                <span class="material-symbols-outlined text-text-sub/20 font-black">check</span>
+                            </button>
                         </div>
                     </div>
                 </div>
-            </section>
-            <!-- Customer Group 2 -->
-            <section>
-                <div
-                    class="flex items-center justify-between px-4 pb-2 pt-8 bg-background-light dark:bg-background-dark">
-                    <div class="flex items-center gap-2">
+            </div>
+
+            <!-- Customer Card 2 -->
+            <div class="bg-white rounded-3xl border border-surface shadow-sm overflow-hidden group">
+                <div class="p-4 flex items-center gap-4 cursor-pointer" onclick="toggleSection('customer2', this)">
+                    <div onclick="event.stopPropagation(); location.href='UID1115_merchants_project_talk.html'"
+                        class="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent font-black text-sm relative hover:scale-105 active:scale-95 transition-all">
+                        BT
+                        <!-- Message Icon Overlay -->
                         <div
-                            class="size-8 rounded-full bg-primary flex items-center justify-center text-[#1c1c0d] font-bold text-xs">
-                            BT</div>
-                        <h2 class="text-lg font-bold tracking-tight">Benjamin T.</h2>
+                            class="absolute -bottom-1.5 -left-1.5 w-5 h-5 bg-white rounded-full shadow-sm flex items-center justify-center border border-surface">
+                            <span class="material-symbols-outlined text-[12px] text-text-sub">forum</span>
+                        </div>
                     </div>
-                    <span
-                        class="text-xs font-bold px-2 py-1 bg-[#e9e8ce] dark:bg-[#3a3a1a] rounded-full uppercase tracking-tighter">Cart
-                        A</span>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-black text-text-main">Benjamin Tsui</h3>
+                        </div>
+                        <p class="text-[10px] text-text-sub font-medium mt-0.5">2 待购 • 1 已拿</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <div class="flex items-baseline justify-end leading-none">
+                                <span class="text-2xl font-black text-text-sub tabular-nums">0</span>
+                                <span class="text-sm font-black text-text-sub mx-0.5">/</span>
+                                <span class="text-sm font-black text-text-sub">1</span>
+                            </div>
+                            <div class="text-[8px] font-black text-text-sub/40 uppercase tracking-tighter mt-0.5">0%
+                                Done</div>
+                        </div>
+                        <span
+                            class="material-symbols-outlined text-text-sub transition-transform duration-300 transform"
+                            id="chevron-customer2">expand_more</span>
+                    </div>
                 </div>
-                <div class="divide-y divide-[#e9e8ce]/50 dark:divide-[#3a3a1a]/50">
-                    <!-- Item 3 -->
-                    <div class="flex items-center gap-4 px-4 py-4">
-                        <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-2xl size-16 ring-1 ring-[#e9e8ce] dark:ring-transparent"
-                            data-alt="Pack of toilet paper rolls"
-                            style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD5qtxoNKx67wZNOBFiUr2JvgsrqCd0LUZ6JYM5bLei5YXQKkBb_tdyF7FOv-rCVQ-XLjbXgtwIoIOZGOBotTSZV-W9njczTXC4qWcxSeu5xA01ymSE6D8K1C2vrFrEP-RVduFgjM8sLyl3dOH0SygVXikUsxS9qxoo7hROZMSiKWs73c7QYQvW0cEPcfhWcFXqE_3qt_cBLgbFcJX4ahhZYpMSTSolwC0w8xOyJr6MIEVspNCxWNnoxbkqnbpWUYiBfPPUhrks-KMG");'>
+                <div id="customer2"
+                    class="collapsible-content divide-y divide-surface bg-base/20 border-t border-surface">
+                    <div class="p-4 flex items-center gap-3 item-cancelled">
+                        <div class="w-14 h-14 rounded-xl bg-white border border-surface bg-cover bg-center shrink-0 grayscale"
+                            style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDljTOE69qoe9eCNYGUiYJH3oIFQcDXqCrBHPV9OedZ7CkPgn7eyBXx59hIJR5IW6es3p8BSGmRHWAXj-5dbB-cdJdR4g1V69dTDSQQx9TUtrj6FRW-txH4yQ_Er2BMcTYidcAg3U5JZ5S3YEkhXYlrSJAthg0QGJOJQUdh8_G2T7L7iwua_r9FerL7YJdPcakEdQpP-aT82EO5SSDRUjZH1Qb9Cokt9n7h_4NdmEloJoy_MNtJNtvUVWYpoSXzCHizNf6ACU5MOTxX");'>
                         </div>
-                        <div class="flex flex-col flex-1 min-w-0">
-                            <p class="text-[#1c1c0d] dark:text-white text-base font-bold leading-tight truncate">Bath
-                                Tissue, 30 Rolls</p>
-                            <div class="flex items-center gap-2 mt-1">
-                                <span
-                                    class="text-xs font-bold bg-[#1c1c0d] text-white px-2 py-0.5 rounded-full">$19.99</span>
-                                <span class="text-xs font-medium text-[#9e9d47]">Qty: 1</span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] font-bold text-text-sub uppercase tracking-tighter">#SKU-77123</p>
+                            <h4 class="text-sm font-black text-text-main truncate item-title">新鲜草莓 (2磅装)</h4>
+                            <div class="flex items-center gap-3 mt-1">
+                                <span class="text-[10px] font-bold text-red-500 uppercase tracking-widest">已标记缺货</span>
                             </div>
                         </div>
-                        <div class="shrink-0">
-                            <input
-                                class="size-7 rounded-full border-2 border-[#e9e8ce] text-primary focus:ring-0 focus:ring-offset-0 bg-transparent checked:bg-primary checked:border-primary transition-all cursor-pointer"
-                                type="checkbox" />
+                        <span class="material-symbols-outlined text-text-sub/50">block</span>
+                    </div>
+                    <div class="p-4 flex items-center justify-center bg-surface/30 active:bg-surface transition-colors cursor-pointer"
+                        onclick="location.href='UID1115_merchants_project_talk.html'">
+                        <div class="flex items-center gap-2 text-primary">
+                            <span class="material-symbols-outlined text-lg">chat</span>
+                            <span class="text-xs font-bold">与客户沟通详细需求</span>
                         </div>
                     </div>
-                    <!-- Item 4 (Out of Stock State) -->
-                    <div class="flex items-center gap-4 px-4 py-4 opacity-60">
-                        <div class="relative grayscale">
-                            <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-2xl size-16"
-                                data-alt="Tray of fresh strawberries"
-                                style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDljTOE69qoe9eCNYGUiYJH3oIFQcDXqCrBHPV9OedZ7CkPgn7eyBXx59hIJR5IW6es3p8BSGmRHWAXj-5dbB-cdJdR4g1V69dTDSQQx9TUtrj6FRW-txH4yQ_Er2BMcTYidcAg3U5JZ5S3YEkhXYlrSJAthg0QGJOJQUdh8_G2T7L7iwua_r9FerL7YJdPcakEdQpP-aT82EO5SSDRUjZH1Qb9Cokt9n7h_4NdmEloJoy_MNtJNtvUVWYpoSXzCHizNf6ACU5MOTxX");'>
-                            </div>
-                            <div class="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center">
-                                <span class="material-symbols-outlined text-white text-xl">block</span>
-                            </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Floating Procurement Action Bar (Leaf Node) -->
+        <footer
+            class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full md:max-w-3xl bg-gradient-to-t from-base via-base to-transparent p-6 pb-10 z-40">
+            <div class="max-w-md mx-auto flex items-center gap-4">
+                <button
+                    class="flex-1 bg-primary hover:bg-primary/90 text-white font-bold h-16 rounded-full flex items-center justify-center gap-2 shadow-xl shadow-primary/20 transition-transform active:scale-95"
+                    onclick="alert('Camera AI: Analyzing SKU...')">
+                    <span class="material-symbols-outlined font-black">photo_camera</span>
+                    <span class="text-lg">AI 拍照识别</span>
+                </button>
+                <button
+                    class="w-24 bg-success hover:bg-success/90 text-white font-bold h-16 rounded-full flex flex-col items-center justify-center gap-0.2 shadow-xl shadow-success/20 transition-transform active:scale-95"
+                    onclick="location.href='UID1113_merchants_project_settlement.html'">
+                    <span class="material-symbols-outlined text-3xl">receipt_long</span>
+                    <span class="text-[9px] uppercase font-black">去结算</span>
+                </button>
+            </div>
+        </footer>
+
+        <!-- Context Menu Overlay -->
+        <div id="itemMenu"
+            class="fixed inset-0 z-[100] bg-black/40 hidden flex items-end justify-center p-6 backdrop-blur-sm"
+            onclick="this.classList.add('hidden')">
+            <div class="w-full bg-white rounded-[40px] p-8 space-y-6 shadow-2xl transform transition-transform duration-300 translate-y-0"
+                onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center border-b border-surface pb-4">
+                    <h3 class="text-base font-black tracking-tight" id="menuTitle">管理事项</h3>
+                    <button onclick="document.getElementById('itemMenu').classList.add('hidden')" class="text-text-sub">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <button
+                        class="flex flex-col items-center gap-3 p-6 rounded-3xl bg-base hover:bg-surface transition-colors">
+                        <span class="material-symbols-outlined text-orange-500 text-3xl">inventory_2</span>
+                        <span class="text-[10px] font-black uppercase">标记缺货</span>
+                    </button>
+                    <button
+                        class="flex flex-col items-center gap-3 p-6 rounded-3xl bg-base hover:bg-surface transition-colors">
+                        <span class="material-symbols-outlined text-red-500 text-3xl">cancel</span>
+                        <span class="text-[10px] font-black uppercase">取消采买</span>
+                    </button>
+                    <button
+                        class="flex flex-col items-center gap-3 p-6 rounded-3xl bg-base hover:bg-surface transition-colors">
+                        <span class="material-symbols-outlined text-info text-3xl">swap_horiz</span>
+                        <span class="text-[10px] font-black uppercase">换品/拍照</span>
+                    </button>
+                    <button
+                        class="flex flex-col items-center gap-3 p-6 rounded-3xl bg-base hover:bg-surface transition-colors">
+                        <span class="material-symbols-outlined text-accent text-3xl">edit_document</span>
+                        <span class="text-[10px] font-black uppercase">修改价/量</span>
+                    </button>
+                </div>
+                <div class="space-y-3 pt-4 border-t border-surface">
+                    <p class="text-[10px] font-black text-text-sub uppercase tracking-widest">关联图片库 (可滑动选择)</p>
+                    <div class="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
+                        <div class="w-24 h-24 rounded-2xl bg-base border border-surface shrink-0 bg-cover bg-center"
+                            style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBgOrM0TcnM1hjek-rxloJzsDICURMtDojrYvvWB0gBg8PXb5nBJkuYeSV26fvwhkVOMErFhNGo_HY1a_gojaU40GzPprNuvL34eqthRAST0jthJpPeXf_YY2sb8g-EJjln2OJme0p2l5IXsfeEQHhRKrEGckcMPhKbqeklytd-HYyFzoe_KAB3r-CGCOZ576UWcQ7ijoJpCC419I9PhOBayMH5LEhvlWj3v1pXqyISF9j3jLbnPJkWQxzONeLj3UfQg-AjRIubWy6x')">
                         </div>
-                        <div class="flex flex-col flex-1 min-w-0">
-                            <p
-                                class="text-[#1c1c0d] dark:text-white text-base font-bold leading-tight truncate line-through">
-                                Fresh Strawberries, 2lb</p>
-                            <p class="text-xs font-bold text-red-500 mt-1">OUT OF STOCK</p>
+                        <div class="w-24 h-24 rounded-2xl bg-base border-2 border-primary shrink-0 flex items-center justify-center text-primary bg-cover relative"
+                            style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDaDYvv2vnOhegGQqLvSZPtCAbl24YlyrcKG2Fz92TL_ecXOvj1JQMgFOBsZiBrZQZCHPmHXgP-kmiYUjPYEsSZ2DK8DDeKgIKTGQhT7qta4kwAuTQWlY7wOFsfJ5iplJGqYpjNpTc72lJCzsVm4SjilWvXV_VsBvb6NBHcQ53YIBF-WFJiO7az-RM_-yKwaiSLPpJewnl_5hz0yhxNEQtqPrNrqYY2i6rto1qiCMWZC3XkK6KWy2K8wlTCn_Dd_Ajd33zMuNowiII')">
+                            <div class="absolute inset-0 bg-primary/20 rounded-2xl flex items-center justify-center">
+                                <span class="material-symbols-outlined text-white">check_circle</span>
+                            </div>
                         </div>
                         <button
-                            class="shrink-0 size-10 rounded-full bg-[#e9e8ce] dark:bg-[#3a3a1a] flex items-center justify-center">
-                            <span class="material-symbols-outlined text-sm">edit</span>
+                            class="w-24 h-24 rounded-2xl border-2 border-dashed border-surface flex flex-col items-center justify-center text-text-sub shrink-0">
+                            <span class="material-symbols-outlined text-2xl">add_a_photo</span>
+                            <span class="text-[8px] font-black uppercase mt-1">追加实拍</span>
                         </button>
                     </div>
                 </div>
-            </section>
-        </main>
-        <!-- Floating Navigation & Action Bar -->
-        <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] p-6 pointer-events-none">
-            <div class="max-w-md mx-auto flex items-center justify-between pointer-events-auto">
-                <!-- Secondary Navigation Pill -->
-                <div class="flex items-center gap-1 bg-[#1c1c0d] dark:bg-white p-1 rounded-full shadow-xl">
-                    <button class="flex size-12 items-center justify-center rounded-full bg-primary text-[#1c1c0d]">
-                        <span class="material-symbols-outlined">checklist</span>
-                    </button>
-                    <button
-                        class="flex size-12 items-center justify-center rounded-full text-white dark:text-[#1c1c0d]">
-                        <span class="material-symbols-outlined">chat_bubble</span>
-                    </button>
-                    <button
-                        class="flex size-12 items-center justify-center rounded-full text-white dark:text-[#1c1c0d]">
-                        <span class="material-symbols-outlined">map</span>
-                    </button>
-                </div>
-                <!-- Main Floating Action Button -->
-                <button
-                    class="group flex items-center gap-2 bg-primary px-6 py-4 rounded-full shadow-[0_10px_30px_rgba(249,245,6,0.3)] border-2 border-[#1c1c0d] dark:border-white transition-transform active:scale-90">
-                    <span class="material-symbols-outlined text-[#1c1c0d] font-bold">receipt_long</span>
-                    <span class="text-[#1c1c0d] font-bold text-sm tracking-tight">Scan Receipt</span>
-                </button>
             </div>
         </div>
-        <!-- Bottom Safe Area Spacer -->
-        <div class="h-8 bg-transparent"></div>
+
     </div>
+
+    <script src="../assets/ui-core.js"></script>
+    <script src="../assets/hamburger-menu.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initHamburgerMenu('merchant', 'UID1112');
+
+            // Auto-expand first customer
+            const firstHeader = document.querySelector('[onclick*="customer1"]');
+            if (firstHeader) toggleSection('customer1', firstHeader);
+
+            initPullToRefresh();
+        });
+
+        // Pull to Refresh Logic
+        function initPullToRefresh() {
+            let startY = 0;
+            let currentY = 0;
+            let isDragging = false;
+            const threshold = 150; // Pull distance to trigger
+            const loader = document.getElementById('ptr-loader');
+            const mainContent = document.querySelector('main');
+
+            window.addEventListener('touchstart', (e) => {
+                if (window.scrollY === 0) {
+                    startY = e.touches[0].clientY;
+                    isDragging = true;
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                currentY = e.touches[0].clientY;
+                const diff = currentY - startY;
+
+                if (diff > 0 && window.scrollY === 0) {
+                    // Pulling down at top
+                    if (diff > threshold) {
+                        loader.style.opacity = '1';
+                        loader.style.transform = `translateY(${Math.min(diff * 0.4, 100)}px) scale(1.1)`;
+                    } else {
+                        loader.style.opacity = '0.5';
+                        loader.style.transform = `translateY(${diff * 0.4}px)`;
+                    }
+                } else {
+                    isDragging = false;
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchend', () => {
+                if (!isDragging) return;
+                const diff = currentY - startY;
+                isDragging = false;
+
+                if (diff > threshold && window.scrollY === 0) {
+                    // Trigger Refresh
+                    loader.style.transform = 'translateY(50px) scale(1.1)';
+                    loader.style.opacity = '1';
+
+                    // Simulate Loading
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    // Reset
+                    loader.style.opacity = '0';
+                    loader.style.transform = 'translateY(0)';
+                }
+            });
+        }
+
+        function toggleSection(id, header) {
+            const content = document.getElementById(id);
+            const chevron = document.getElementById('chevron-' + id);
+            content.classList.toggle('expanded');
+            if (content.classList.contains('expanded')) {
+                chevron.style.transform = 'rotate(180deg)';
+                header.classList.add('bg-base/30');
+            } else {
+                chevron.style.transform = 'rotate(0deg)';
+                header.classList.remove('bg-base/30');
+            }
+        }
+
+        function togglePageMenu() {
+            const menu = document.getElementById('pageMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Close page menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const button = document.querySelector('[onclick="togglePageMenu()"]');
+            const menu = document.getElementById('pageMenu');
+            if (button && !button.contains(e.target) && !menu.classList.contains('hidden')) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        function expandAll() {
+            document.querySelectorAll('.collapsible-content').forEach(el => {
+                el.classList.add('expanded');
+                // Rotate chevron if exists
+                const id = el.id;
+                const chevron = document.getElementById('chevron-' + id);
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+                // Highlight header
+                const header = el.previousElementSibling;
+                if (header) header.classList.add('bg-base/30');
+            });
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.collapsible-content').forEach(el => {
+                el.classList.remove('expanded');
+                const id = el.id;
+                const chevron = document.getElementById('chevron-' + id);
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+                const header = el.previousElementSibling;
+                if (header) header.classList.remove('bg-base/30');
+            });
+        }
+
+        function showItemMenu(e, title) {
+            e.preventDefault();
+            const menu = document.getElementById('itemMenu');
+            document.getElementById('menuTitle').innerText = title;
+            menu.classList.remove('hidden');
+        }
+    </script>
 </body>
 
 </html>

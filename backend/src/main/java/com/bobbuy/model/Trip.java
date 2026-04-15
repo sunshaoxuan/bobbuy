@@ -1,5 +1,6 @@
 package com.bobbuy.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,6 +21,7 @@ public class Trip {
   private String destination;
 
   @NotNull(message = "{validation.trip.depart_date.required}")
+  @JsonFormat(pattern = "yyyy-MM-dd")
   private LocalDate departDate;
 
   @Min(value = 1, message = "{validation.trip.capacity.min}")

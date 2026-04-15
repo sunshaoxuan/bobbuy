@@ -75,6 +75,11 @@
         <header class="p-6 pb-2 space-y-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
+                    <!-- Hamburger Menu Button -->
+                    <button onclick="toggleMenu()"
+                        class="w-10 h-10 flex items-center justify-center text-text-main active:scale-90 transition-transform">
+                        <span class="material-symbols-outlined text-2xl">menu</span>
+                    </button>
                     <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm overflow-hidden">
                         <img src="../assets/logo.svg" alt="BoBB Logo" class="w-6 h-6">
                     </div>
@@ -127,30 +132,15 @@
             </a>
         </main>
 
-        <!-- Bottom Navigation -->
-        <nav class="bottom-nav px-4 bg-white/90 backdrop-blur-md">
-            <div class="flex flex-col items-center gap-1 text-primary">
-                <span class="material-symbols-outlined">explore</span>
-                <span class="text-[10px] font-bold">发现</span>
-            </div>
-            <div
-                class="flex flex-col items-center gap-1 text-text-sub hover:text-primary transition-colors cursor-pointer">
-                <span class="material-symbols-outlined">confirmation_number</span>
-                <span class="text-[10px] font-bold">订单</span>
-            </div>
-            <div
-                class="flex flex-col items-center gap-1 text-text-sub hover:text-primary transition-colors cursor-pointer">
-                <span class="material-symbols-outlined">chat_bubble</span>
-                <span class="text-[10px] font-bold">对话</span>
-            </div>
-            <div
-                class="flex flex-col items-center gap-1 text-text-sub hover:text-primary transition-colors cursor-pointer">
-                <span class="material-symbols-outlined">person</span>
-                <span class="text-[10px] font-bold">我的</span>
-            </div>
-        </nav>
+        <!-- Slide-out Navigation Drawer (Customer) -->
     </div>
     <script src="../assets/ui-core.js"></script>
+    <script src="../assets/hamburger-menu.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initHamburgerMenu('customer', 'UID1200');
+        });
+    </script>
 </body>
 
 </html>

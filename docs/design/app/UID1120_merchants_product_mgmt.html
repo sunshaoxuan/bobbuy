@@ -47,8 +47,9 @@
         <header class="p-6 pb-2 space-y-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <button class="material-symbols-outlined text-text-sub"
-                        onclick="window.location.href='UID1100_merchant_main.html'">arrow_back</button>
+                    <button onclick="toggleMenu()" class="cursor-pointer text-text-sub">
+                        <span class="material-symbols-outlined">menu</span>
+                    </button>
                     <h1 class="text-xl font-black text-text-main" data-i18n="TITLE_PRODUCT_MGMT">商品维护</h1>
                 </div>
                 <div class="flex items-center gap-2 scale-90">
@@ -139,38 +140,12 @@
             </div>
         </main>
 
-        <!-- Floating Action Button -->
+        <!-- Floating Action Button (AI Scan) -->
         <button onclick="openAIModal()"
-            class="absolute bottom-24 right-6 w-16 h-16 bg-primary text-white rounded-2xl shadow-2xl shadow-primary/40 flex flex-col items-center justify-center active:scale-95 transition-all z-[60]">
+            class="fixed bottom-8 right-6 w-16 h-16 bg-primary text-white rounded-2xl shadow-2xl shadow-primary/40 flex flex-col items-center justify-center active:scale-95 transition-all z-[60]">
             <span class="material-symbols-outlined text-3xl font-light">rocket_launch</span>
             <span class="text-[8px] font-black uppercase tracking-tighter -mt-1">AI Scan</span>
         </button>
-
-        <!-- Bottom Navigation -->
-        <nav
-            class="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-surface h-20 flex items-center justify-around px-4 z-50">
-            <button class="flex flex-col items-center gap-1 text-text-sub opacity-50"
-                onclick="window.location.href='UID1100_merchant_main.html'">
-                <span class="material-symbols-outlined text-2xl">dashboard</span>
-                <span class="text-[9px] font-black uppercase tracking-widest">Dashboard</span>
-            </button>
-            <button class="flex flex-col items-center gap-1 text-primary">
-                <span class="material-symbols-outlined text-2xl font-black">inventory_2</span>
-                <span class="text-[9px] font-black uppercase tracking-widest">Products</span>
-            </button>
-            <div
-                class="w-14 h-14 bg-primary text-white rounded-2xl shadow-lg shadow-primary/30 -mt-10 flex items-center justify-center active:scale-95 transition-transform border-4 border-base">
-                <span class="material-symbols-outlined text-3xl font-black">add</span>
-            </div>
-            <button class="flex flex-col items-center gap-1 text-text-sub opacity-50">
-                <span class="material-symbols-outlined text-2xl">list_alt</span>
-                <span class="text-[9px] font-black uppercase tracking-widest">Orders</span>
-            </button>
-            <button class="flex flex-col items-center gap-1 text-text-sub opacity-50">
-                <span class="material-symbols-outlined text-2xl">person</span>
-                <span class="text-[9px] font-black uppercase tracking-widest">Account</span>
-            </button>
-        </nav>
     </div>
 
     <!-- AI Mobile Modal -->
@@ -301,7 +276,12 @@
 
     <!-- UI Core Scripts -->
     <script src="../assets/ui-core.js"></script>
+    <script src="../assets/hamburger-menu.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initHamburgerMenu('merchant', 'UID1120');
+        });
+
         function openAIModal() {
             const modal = document.getElementById('ai-modal');
             modal.classList.remove('hidden');

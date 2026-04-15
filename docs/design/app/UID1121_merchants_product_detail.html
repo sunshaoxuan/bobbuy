@@ -48,9 +48,9 @@
         <!-- App Header -->
         <header
             class="fixed top-0 left-1/2 -translate-x-1/2 w-full md:max-w-3xl z-50 bg-base/80 dark:bg-base-dark/80 backdrop-blur-xl border-b border-text-sub/5 px-4 h-16 flex items-center justify-between">
-            <button onclick="history.back()"
+            <button onclick="toggleMenu()"
                 class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors">
-                <span class="material-symbols-outlined">arrow_back</span>
+                <span class="material-symbols-outlined">menu</span>
             </button>
             <span class="text-sm font-black uppercase tracking-widest" data-i18n="LBL_PRODUCT_NAME">商品详情</span>
             <button class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-primary">
@@ -217,20 +217,25 @@
                 </div>
         </main>
 
-        <!-- Bottom Actions -->
-        <div
-            class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full md:max-w-3xl p-4 bg-base/80 dark:bg-base-dark/80 backdrop-blur-xl border-t border-text-sub/5 flex gap-3">
-            <button
-                class="flex-1 py-4 rounded-2xl bg-surface dark:bg-surface-dark text-text dark:text-text-dark text-sm font-black shadow-sm active:scale-95 transition-transform"
-                data-i18n="BTN_DELETE_PRODUCT">删除</button>
-            <button
-                class="flex-[2] py-4 rounded-2xl bg-primary text-white text-sm font-black shadow-xl shadow-primary/20 active:scale-95 transition-transform"
-                data-i18n="BTN_SAVE_CHANGES">保存更改</button>
-        </div>
+        <!-- Focused Action Footer (Leaf Node) -->
+        <footer
+            class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full md:max-w-3xl p-6 bg-gradient-to-t from-base via-base to-transparent pb-10 z-50">
+            <div class="max-w-md mx-auto flex gap-3">
+                <button
+                    class="flex-1 py-4 rounded-2xl bg-white border border-surface text-text text-sm font-black shadow-sm active:scale-95 transition-transform"
+                    data-i18n="BTN_DELETE_PRODUCT">删除</button>
+                <button
+                    class="flex-[2] py-4 rounded-2xl bg-primary text-white text-sm font-black shadow-xl shadow-primary/20 active:scale-95 transition-transform"
+                    data-i18n="BTN_SAVE_CHANGES">保存更改</button>
+            </div>
+        </footer>
 
         <script src="../assets/ui-core.js"></script>
+        <script src="../assets/hamburger-menu.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
+                initHamburgerMenu('merchant', 'UID1121');
+
                 const btns = document.querySelectorAll('.tab-btn');
                 const contents = document.querySelectorAll('.tab-content');
 

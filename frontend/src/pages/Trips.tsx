@@ -1,4 +1,4 @@
-import { Button, Card, Form, Input, InputNumber, Select, Table, Tag, Typography, message } from 'antd';
+import { Button, Card, DatePicker, Form, Input, InputNumber, Select, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import { api, Trip } from '../api';
@@ -77,7 +77,11 @@ export default function Trips() {
     }
     try {
       setSubmitting(true);
-      await api.createTrip(values);
+      const payload = {
+        ...values,
+        departDate: (values.departDate as any)?.format?.('YYYY-MM-DD') || values.departDate
+      };
+      await api.createTrip(payload);
       message.success(t('trips.form.success'));
       form.resetFields();
       await refreshTrips();
@@ -126,7 +130,7 @@ export default function Trips() {
             name="departDate"
             rules={[{ required: true, message: t('trips.form.depart_date.required') }]}
           >
-            <Input type="date" />
+            <DatePicker style={{ width: '100%' }} placeholder={t('trips.form.depart_date.placeholder')} />
           </Form.Item>
           <Form.Item
             label={t('trips.form.capacity.label')}

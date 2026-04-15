@@ -70,10 +70,9 @@
 
         <header
             class="fixed top-0 left-1/2 -translate-x-1/2 w-full md:max-w-3xl z-50 px-6 pt-12 pb-4 flex items-center justify-between pointer-events-none">
-            <button
-                class="bg-white/90 dark:bg-black/40 backdrop-blur-md size-10 rounded-full flex items-center justify-center shadow-sm pointer-events-auto"
-                onclick="history.back()">
-                <span class="material-symbols-outlined text-text-main dark:text-white">arrow_back_ios_new</span>
+            <button onclick="toggleMenu()"
+                class="bg-white/90 dark:bg-black/40 backdrop-blur-md size-10 rounded-full flex items-center justify-center shadow-sm pointer-events-auto">
+                <span class="material-symbols-outlined text-text-main dark:text-white">menu</span>
             </button>
             <div
                 class="bg-white/90 dark:bg-black/40 backdrop-blur-md px-4 py-1 rounded-full flex items-center justify-center shadow-sm">
@@ -255,6 +254,12 @@
         </nav>
 
     </div>
+    <script src="../assets/hamburger-menu.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initHamburgerMenu('customer', 'UID1210');
+        });
+    </script>
 </body>
 
 </html>

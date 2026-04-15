@@ -43,8 +43,11 @@
     class="bg-base lg:bg-surface/30 dark:bg-base-dark flex justify-center min-h-screen font-sans text-text-main overflow-x-hidden">
     <div class="w-full md:max-w-3xl mx-auto bg-base min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
         <header class="p-6 bg-white border-b border-surface flex items-center justify-between sticky top-0 z-50">
+            <button onclick="toggleMenu()" class="cursor-pointer text-text-sub">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
             <h1 class="font-black tracking-tight" data-i18n="TITLE_REPORT">结算报告</h1>
-            <span class="material-symbols-outlined text-text-sub" onclick="history.back()">close</span>
+            <div class="w-6"></div>
         </header>
 
         <main class="flex-1 p-6 space-y-8 overflow-y-auto pb-32 text-center">
@@ -68,10 +71,17 @@
                 </div>
             </div>
 
-            <button class="btn-primary w-full py-5 text-lg font-black shadow-soft mt-12">返回工作台</button>
+            <button class="btn-primary w-full py-5 text-lg font-black shadow-soft mt-12"
+                onclick="location.href='UID1100_merchant_main.html'">返回工作台</button>
         </main>
     </div>
     <script src="../assets/ui-core.js"></script>
+    <script src="../assets/hamburger-menu.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initHamburgerMenu('merchant', 'UID1116');
+        });
+    </script>
 </body>
 
 </html>

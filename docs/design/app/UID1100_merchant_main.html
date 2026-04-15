@@ -47,6 +47,11 @@
         <header class="p-6 pb-2 space-y-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
+                    <!-- Hamburger Menu Button -->
+                    <button onclick="toggleMenu()"
+                        class="w-10 h-10 flex items-center justify-center text-text-main active:scale-90 transition-transform">
+                        <span class="material-symbols-outlined text-2xl">menu</span>
+                    </button>
                     <div
                         class="w-8 h-8 bg-white rounded-lg shadow-sm border border-surface flex items-center justify-center rotate-3 overflow-hidden">
                         <img src="../assets/logo.svg" alt="BoBB" class="w-5 h-5">
@@ -214,33 +219,14 @@
             </div>
         </main>
 
-        <!-- App Bottom Navigation -->
-        <nav
-            class="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-surface h-20 flex items-center justify-around px-4 z-50">
-            <button class="flex flex-col items-center gap-1 text-primary">
-                <span class="material-symbols-outlined text-2xl font-black">dashboard</span>
-                <span class="text-[9px] font-black uppercase tracking-widest">Dashboard</span>
-            </button>
-            <button class="flex flex-col items-center gap-1 text-text-sub opacity-50">
-                <span class="material-symbols-outlined text-2xl">explore</span>
-                <span class="text-[9px] font-black uppercase tracking-widest">Trips</span>
-            </button>
-            <div
-                class="w-14 h-14 bg-primary text-white rounded-2xl shadow-lg shadow-primary/30 -mt-10 flex items-center justify-center active:scale-95 transition-transform border-4 border-base">
-                <span class="material-symbols-outlined text-3xl font-black">add</span>
-            </div>
-            <button class="flex flex-col items-center gap-1 text-text-sub opacity-50">
-                <span class="material-symbols-outlined text-2xl">list_alt</span>
-                <span class="text-[9px] font-black uppercase tracking-widest">Orders</span>
-            </button>
-            <button class="flex flex-col items-center gap-1 text-text-sub opacity-50">
-                <span class="material-symbols-outlined text-2xl">person</span>
-                <span class="text-[9px] font-black uppercase tracking-widest">Account</span>
-            </button>
-        </nav>
-    </div>
-
-    <script src="../assets/ui-core.js"></script>
+        <!-- Slide-out Navigation Drawer -->
+        <script src="../assets/ui-core.js"></script>
+        <script src="../assets/hamburger-menu.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                initHamburgerMenu('merchant', 'UID1100');
+            });
+        </script>
 </body>
 
 </html>

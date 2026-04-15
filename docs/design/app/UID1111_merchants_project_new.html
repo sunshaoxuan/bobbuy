@@ -97,9 +97,10 @@
         <!-- Top Navigation Bar -->
         <header
             class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-[#e9e8ce] dark:border-[#3d3c1a] px-4 py-4 flex items-center justify-between">
-            <button
+            <!-- Hamburger Menu -->
+            <button onclick="toggleMenu()"
                 class="flex items-center justify-center size-10 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                <span class="material-symbols-outlined">arrow_back_ios_new</span>
+                <span class="material-symbols-outlined">menu</span>
             </button>
             <div class="flex-1 px-2 flex items-center gap-2">
                 <input id="appMainTitleInput" type="text" value="创建代购行程"
@@ -313,36 +314,41 @@
                 </div>
             </section>
         </main>
-        <!-- Floating Footer Action -->
+        <!-- Floating Footer Action (Focused Leaf Node) -->
         <footer
-            class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] p-4 bg-gradient-to-t from-background-light dark:from-background-dark via-background-light/95 dark:via-background-dark/95 to-transparent pb-8">
-            <div class="max-w-[500px] mx-auto space-y-4">
-                <div
-                    class="flex items-center justify-between px-4 py-2 bg-black/5 dark:bg-white/5 rounded-full backdrop-blur-sm">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm">shopping_bag</span>
-                        <span class="text-xs font-bold">Costco Alhambra</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm">event</span>
-                        <span class="text-xs font-bold">2月15日 09:00</span>
-                    </div>
-                </div>
-                <div class="flex gap-3">
-                    <button
-                        class="flex-1 h-14 bg-surface text-text-main font-bold text-sm rounded-full flex items-center justify-center gap-2 border border-surface active:scale-95 transition-transform">
-                        <span class="material-symbols-outlined text-base">style</span>
-                        <span>存为草稿</span>
-                    </button>
-                    <button
-                        class="flex-[2] h-14 bg-primary text-white font-bold text-base rounded-full flex items-center justify-center gap-2 shadow-xl shadow-primary/20 active:scale-95 transition-transform">
-                        <span>发布行程</span>
-                        <span class="material-symbols-outlined text-base">rocket_launch</span>
-                    </button>
-                </div>
+            class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] p-6 bg-gradient-to-t from-base via-base to-transparent pb-10">
+            <div class="max-w-[500px] mx-auto flex gap-3">
+                <button
+                    class="flex-1 h-14 bg-white text-text-main font-bold text-sm rounded-full flex items-center justify-center gap-2 border border-surface active:scale-95 transition-transform shadow-sm">
+                    <span class="material-symbols-outlined text-base">style</span>
+                    <span>存为草稿</span>
+                </button>
+                <button
+                    class="flex-[2] h-14 bg-primary text-white font-bold text-base rounded-full flex items-center justify-center gap-2 shadow-xl shadow-primary/20 active:scale-95 transition-transform">
+                    <span>发布行程</span>
+                    <span class="material-symbols-outlined text-base">rocket_launch</span>
+                </button>
             </div>
         </footer>
-    </div>
+
+        <script src="../assets/ui-core.js"></script>
+        <script src="../assets/hamburger-menu.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                initHamburgerMenu('merchant', 'UID1111');
+            });
+
+            // Initialize drag and drop
+            const dragArea = document.getElementById('drag-area');
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dragArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        </script>
 </body>
 
 </html>

@@ -47,9 +47,9 @@
         <!-- App Header -->
         <header
             class="fixed top-0 left-1/2 -translate-x-1/2 w-full md:max-w-3xl z-50 bg-base/80 dark:bg-base-dark/80 backdrop-blur-xl border-b border-text-sub/5 px-4 h-16 flex items-center justify-between">
-            <button onclick="history.back()"
+            <button onclick="toggleMenu()"
                 class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors">
-                <span class="material-symbols-outlined">arrow_back</span>
+                <span class="material-symbols-outlined">menu</span>
             </button>
             <span class="text-sm font-black uppercase tracking-widest" data-i18n="LBL_PROJECT_DETAIL">项目详情</span>
             <button class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-primary">
@@ -137,6 +137,12 @@
         </div>
 
         <script src="../assets/ui-core.js"></script>
+        <script src="../assets/hamburger-menu.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                initHamburgerMenu('merchant', 'UID1110');
+            });
+        </script>
     </div>
 </body>
 

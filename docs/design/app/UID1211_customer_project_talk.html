@@ -74,7 +74,9 @@
         <header
             class="bg-background-light dark:bg-background-dark px-4 py-3 flex items-center justify-between border-b border-surface dark:border-text-sub/20 shrink-0">
             <div class="flex items-center gap-3">
-                <button class="material-symbols-outlined text-2xl">arrow_back_ios</button>
+                <button onclick="toggleMenu()" class="cursor-pointer text-2xl">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
                 <div class="relative">
                     <div class="size-10 rounded-full bg-center bg-cover border-2 border-primary"
                         style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD9qSXUa_5haJj2T29aqDC6XGfuMHdoK2cEyQ2Bf3CyRViObpoon0z4XApkCRcx3g16wHsU82iSUGAzWvOo2b2svw3O5cUe5ivaGkmnaeGWNq5iYn3M35K7B5w0s7soXt61-NJXwT_rAwesEXGBKrl6YlyQNavi3jG7jm_qzilZlTQurDVO-WnT5PTDJIDR2OJoggmQ8A2EmGiSuRAhLi-ILgGJvLqDK4all_tK9Ik1K3svzSIjfzShPnHYigpvv7g7VI0KJ3LYqALX");'>
@@ -255,6 +257,12 @@
             </div>
 
         </div>
+        <script src="../assets/hamburger-menu.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                initHamburgerMenu('customer', 'UID1211');
+            });
+        </script>
 </body>
 
 </html>

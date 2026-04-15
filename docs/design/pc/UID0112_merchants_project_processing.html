@@ -4,12 +4,12 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BoBB - 订单履约监控台</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="../assets/ui-core.css">
     <script id="tailwind-config">
@@ -32,51 +32,335 @@
             }
         }
     </script>
+    <style>
+        .customer-row:hover {
+            background: rgba(0, 0, 0, 0.02);
+        }
 
-<body class="bg-base font-sans text-text-main transition-colors duration-300" data-page-id="UID0112"
-    data-page-title="订单履约处理">
-    <div class="relative flex h-screen w-full overflow-hidden">
-        <aside-placeholder></aside-placeholder>
+        .item-cancelled {
+            opacity: 0.5;
+            filter: grayscale(1);
+        }
 
-        <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col overflow-hidden relative">
-            <header-placeholder></header-placeholder>
+        .item-cancelled .item-name {
+            text-decoration: line-through;
+        }
 
-            <div class="flex-1 overflow-y-auto bg-base/50">
-                <div class="max-w-5xl mx-auto space-y-6">
-                    <div class="premium-card bg-white p-6 flex justify-between items-center border-l-4 border-primary">
-                        <div>
-                            <h3 class="text-lg font-bold">Costco Alhambra 现场采买中</h3>
-                            <p class="text-xs text-text-sub mt-1">当前共有 12 个待采买项目</p>
-                        </div>
-                        <button class="btn-primary">标记行程完成</button>
+        .progress-ring {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+
+<body class="bg-base font-sans text-text-main h-screen flex overflow-hidden" data-page-id="UID0112">
+    <aside-placeholder></aside-placeholder>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col overflow-hidden relative">
+        <header-placeholder></header-placeholder>
+
+        <!-- Monitoring Dashboard Body -->
+        <main class="flex-1 overflow-y-auto p-8 space-y-8 bg-base/30">
+
+            <!-- Global Status Bar -->
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-3xl font-black text-text-main tracking-tight">采买监控台</h2>
+                    <p class="text-sm text-text-sub font-medium mt-1">Costco Warehouse #422 • 正在实时同步客户对话数据</p>
+                </div>
+                <div class="flex gap-4">
+                    <button
+                        class="bg-white border border-surface px-6 py-3 rounded-full font-black text-sm flex items-center gap-2 hover:bg-surface transition-colors"
+                        onclick="alert('Uploading photo for AI analysis...')">
+                        <span class="material-symbols-outlined">add_a_photo</span>
+                        上传实拍 (AI 识别)
+                    </button>
+                    <button
+                        class="bg-primary text-white px-8 py-3.5 rounded-full font-black text-sm shadow-xl shadow-primary/20 hover:scale-105 transition-transform flex items-center gap-2 group"
+                        onclick="location.href='UID0113_merchants_project_settlement.html'">
+                        <span class="material-symbols-outlined">receipt_long</span>
+                        去结算中心
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-4 gap-6">
+                <div class="premium-card p-6 bg-white flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group">
+                        <span class="material-symbols-outlined font-black">inventory_2</span>
                     </div>
-
-                    <div class="grid grid-cols-1 gap-4">
-                        <!-- Processing Item -->
-                        <div class="premium-card bg-white p-5 flex items-center justify-between">
-                            <div class="flex items-center gap-4">
-                                <div class="size-16 rounded-lg bg-base bg-cover"
-                                    style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBpYloq0K0wouQYAyvXn_kCuzEKSTGykkNwZ3Y2OPshV3rDD0v767NiVR2BhgX8B_AQKqOrmF9FoizZrdtYfLhqodmSFZ4kAtx1P6FRYvCicGAUduC6InRRnEhlgSIecpw8Xt2D22PcqzBYC2dTjb4JSpg3EiD5agVoKgjR0bnkJoWDCrD7FaToh1i9TBxVmJmz7sTXXJcoDP5ZI_0vPf8wMluC7Iz7QCIAyywz8bIQ9WRAIvsU7S9AKrLr8uyg1H_C7mhy5Vvtn03K')">
-                                </div>
-                                <div>
-                                    <h4 class="font-bold">Kirkland Signature Coffee Roast</h4>
-                                    <p class="text-xs text-text-sub">数量: 2 | 单价: $19.99</p>
-                                </div>
-                            </div>
-                            <div class="flex gap-2">
-                                <button
-                                    class="px-4 py-2 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary hover:text-white transition-colors">确认采买</button>
-                                <button
-                                    class="px-4 py-2 bg-surface text-xs font-bold rounded-lg hover:bg-text-sub hover:text-white transition-colors">缺货标记</button>
-                            </div>
-                        </div>
+                    <div>
+                        <p class="text-[10px] font-black text-text-sub uppercase tracking-widest">总货品数</p>
+                        <p class="text-2xl font-black tabular-nums">24</p>
+                    </div>
+                </div>
+                <div class="premium-card p-6 bg-white flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-success/10 flex items-center justify-center text-success">
+                        <span class="material-symbols-outlined font-black">task_alt</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-text-sub uppercase tracking-widest">已完成采购</p>
+                        <p class="text-2xl font-black tabular-nums">18</p>
+                    </div>
+                </div>
+                <div class="premium-card p-6 bg-white flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent">
+                        <span class="material-symbols-outlined font-black">group</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-text-sub uppercase tracking-widest">服务中客户</p>
+                        <p class="text-2xl font-black tabular-nums">12</p>
+                    </div>
+                </div>
+                <div class="premium-card p-6 bg-primary text-white flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
+                        <span class="material-symbols-outlined font-black">monitoring</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-white/60 uppercase tracking-widest">总体进度</p>
+                        <p class="text-2xl font-black tabular-nums">75%</p>
                     </div>
                 </div>
             </div>
-            <footer-placeholder></footer-placeholder>
-        </div>
+
+            <!-- Main Execution List: Grouped by Customer -->
+            <div class="premium-card p-0 overflow-hidden bg-white">
+                <div class="p-6 border-b border-surface flex justify-between items-center bg-surface/10">
+                    <h3 class="font-black flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">view_list</span>
+                        执行清单 (按客户分组)
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black text-text-sub uppercase">实时同步: 开启</span>
+                        <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                    </div>
+                </div>
+
+                <div class="divide-y divide-surface">
+                    <!-- Customer Group 1 -->
+                    <div class="customer-group">
+                        <div class="p-4 bg-base/20 border-b border-surface flex items-center justify-between cursor-pointer hover:bg-surface/30 transition-colors"
+                            onclick="toggleDetails('details-1', this)">
+                            <div class="flex items-center gap-4">
+                                <span class="material-symbols-outlined text-text-sub transition-transform"
+                                    id="chevron-details-1">expand_more</span>
+                                <div onclick="event.stopPropagation(); location.href='UID0115_merchants_project_talk.html'"
+                                    class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-black text-xs shadow-sm relative cursor-pointer hover:scale-110 active:scale-95 transition-all group/avatar">
+                                    AW
+                                    <!-- Online Status -->
+                                    <div
+                                        class="absolute -bottom-1 -right-1 w-4 h-4 bg-success border-2 border-white rounded-full">
+                                    </div>
+                                    <!-- Notification Badge -->
+                                    <div
+                                        class="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black w-5 h-5 rounded-full border-2 border-white flex items-center justify-center shadow-lg group-hover/avatar:scale-110 transition-transform">
+                                        12
+                                    </div>
+                                    <!-- Chat Icon Overlay -->
+                                    <div
+                                        class="absolute -bottom-1 -left-1 w-4 h-4 bg-white rounded-full shadow-sm flex items-center justify-center border border-surface text-primary">
+                                        <span class="material-symbols-outlined text-[10px]">forum</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-black">Alice Wang</h4>
+                                    <p class="text-[10px] font-bold text-text-sub">已加入 5 分钟前 • 正在沟通中</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-8">
+                                <div class="text-right min-w-[4rem]">
+                                    <p class="text-[10px] font-black text-text-sub uppercase tracking-wider">进度</p>
+                                    <div class="flex items-baseline justify-end">
+                                        <span class="text-3xl font-black text-primary tabular-nums">2</span>
+                                        <span class="text-lg font-black text-text-sub mx-1">/</span>
+                                        <span class="text-lg font-black text-text-sub">3</span>
+                                    </div>
+                                    <p class="text-[10px] font-bold text-success mt-[-4px] tracking-tight">66% COMPLETED
+                                    </p>
+                                </div>
+                                <button
+                                    class="px-5 py-2 bg-primary text-white text-xs font-black rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
+                                    onclick="location.href='UID0115_merchants_project_talk.html'">
+                                    <span class="material-symbols-outlined text-sm font-black">forum</span>
+                                    <span>聊天</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Items Table -->
+                        <div id="details-1" class="hidden overflow-hidden bg-white p-4">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr
+                                        class="text-[10px] font-black text-text-sub uppercase tracking-widest border-b border-surface">
+                                        <th class="pb-3 pl-4">产品视图</th>
+                                        <th class="pb-3">编号</th>
+                                        <th class="pb-3">详情及单价</th>
+                                        <th class="pb-3">数量</th>
+                                        <th class="pb-3 text-right pr-4">勾选完成</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-surface/50">
+                                    <tr>
+                                        <!-- 1. Product Image -->
+                                        <td class="py-4 pl-4">
+                                            <div class="w-16 h-16 rounded-xl bg-base border border-surface bg-cover bg-center shrink-0 cursor-pointer hover:ring-2 ring-primary transition-all"
+                                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBgOrM0TcnM1hjek-rxloJzsDICURMtDojrYvvWB0gBg8PXb5nBJkuYeSV26fvwhkVOMErFhNGo_HY1a_gojaU40GzPprNuvL34eqthRAST0jthJpPeXf_YY2sb8g-EJjln2OJme0p2l5IXsfeEQHhKrEGckcMPhKbqeklytd-HYyFzoe_KAB3r-CGCOZ576UWcQ7ijoJpCC419I9PhOBayMH5LEhvlWj3v1pXqyISF9j3jLbnPJkWQxzONeLj3UfQg-AjRIubWy6x')">
+                                            </div>
+                                        </td>
+                                        <!-- 2. Product ID (SKU) -->
+                                        <td class="text-xs font-black text-text-sub tabular-nums">#SKU-20934</td>
+                                        <!-- 3. Name & Unit Price -->
+                                        <td>
+                                            <h5 class="text-sm font-black text-text-main">Kirkland 有机牛奶 (3支装)</h5>
+                                            <p class="text-[10px] font-bold text-primary">$12.99 / ea</p>
+                                        </td>
+                                        <!-- 4. Large Quantity -->
+                                        <td class="text-3xl font-black tabular-nums text-text-main">2</td>
+                                        <!-- 5. Quick Check -->
+                                        <td class="text-right pr-4">
+                                            <div class="flex items-center justify-end gap-3">
+                                                <button
+                                                    class="size-10 rounded-full bg-success text-white flex items-center justify-center shadow-lg shadow-success/20 active:scale-90 transition-all">
+                                                    <span class="material-symbols-outlined font-black">check</span>
+                                                </button>
+                                                <button class="text-text-sub hover:text-primary transition-colors"><span
+                                                        class="material-symbols-outlined text-xl">more_horiz</span></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <!-- 1. Product Image -->
+                                        <td class="py-4 pl-4">
+                                            <div class="w-16 h-16 rounded-xl bg-base border border-surface bg-cover bg-center shrink-0 cursor-pointer hover:ring-2 ring-primary transition-all"
+                                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCnff3Q8rrVW4keGWCi4HgxFlXAgP4rzcUBDpsjzLhGD2ih9pijIq73DiS0pU6tmCqlLYbrWnk5KJeegMWe12CISUA16Ca5-iXceBOr6jsTf8Kr6IJYuzrv1BpdDqB99N8_COx2WDyes1JysRLK8LYOCvInBEQ6by3RqJ5bXBS4mzpceIVd0PFxGf2-PRB8sIPtkjfSCznHrD8r6002ZkPs6mAP856M7CEsskHypble1TAH49NNB9bYTy7P9If6_7jFT49soAdjGGBX')">
+                                            </div>
+                                        </td>
+                                        <!-- 2. Product ID (SKU) -->
+                                        <td class="text-xs font-black text-text-sub tabular-nums">#SKU-88210</td>
+                                        <!-- 3. Name & Unit Price -->
+                                        <td>
+                                            <h5 class="text-sm font-black text-text-main">新鲜有机菠菜 (1磅)</h5>
+                                            <p class="text-[10px] font-bold text-primary">$4.49 / lb</p>
+                                        </td>
+                                        <!-- 4. Large Quantity -->
+                                        <td class="text-3xl font-black tabular-nums text-text-main">1</td>
+                                        <!-- 5. Quick Check -->
+                                        <td class="text-right pr-4">
+                                            <div class="flex items-center justify-end gap-3">
+                                                <button
+                                                    class="size-10 rounded-full border-2 border-surface flex items-center justify-center bg-white text-text-sub/20 hover:border-success/50 active:scale-90 transition-all">
+                                                    <span class="material-symbols-outlined font-black">check</span>
+                                                </button>
+                                                <button class="text-text-sub hover:text-primary transition-colors"><span
+                                                        class="material-symbols-outlined text-xl">more_horiz</span></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Customer Group 2 (Cancelled/OOS State Example) -->
+                    <div class="customer-group">
+                        <div class="p-4 border-b border-surface flex items-center justify-between cursor-pointer hover:bg-surface/30 transition-colors"
+                            onclick="toggleDetails('details-2', this)">
+                            <div class="flex items-center gap-4">
+                                <span class="material-symbols-outlined text-text-sub transition-transform"
+                                    id="chevron-details-2">expand_more</span>
+                                <div onclick="event.stopPropagation(); location.href='UID0115_merchants_project_talk.html'"
+                                    class="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center font-black text-xs shadow-sm relative cursor-pointer hover:scale-110 active:scale-95 transition-all group/avatar">
+                                    BT
+                                    <!-- Online Status -->
+                                    <div
+                                        class="absolute -bottom-1 -right-1 w-4 h-4 bg-success border-2 border-white rounded-full">
+                                    </div>
+                                    <!-- Chat Icon Overlay -->
+                                    <div
+                                        class="absolute -bottom-1 -left-1 w-4 h-4 bg-white rounded-full shadow-sm flex items-center justify-center border border-surface text-text-sub">
+                                        <span class="material-symbols-outlined text-[10px]">forum</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-black">Benjamin Tsui</h4>
+                                    <p class="text-[10px] font-bold text-text-sub">已完成部分项目</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-8">
+                                <div class="text-right min-w-[4rem]">
+                                    <p class="text-[10px] font-black text-text-sub uppercase tracking-wider">进度</p>
+                                    <div class="flex items-baseline justify-end">
+                                        <span class="text-3xl font-black text-text-sub tabular-nums">0</span>
+                                        <span class="text-lg font-black text-text-sub mx-1">/</span>
+                                        <span class="text-lg font-black text-text-sub">1</span>
+                                    </div>
+                                    <p class="text-[10px] font-bold text-text-sub/50 mt-[-4px] tracking-tight">0%
+                                        COMPLETED</p>
+                                </div>
+                                <button
+                                    class="px-5 py-2 bg-primary text-white text-xs font-black rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
+                                    onclick="location.href='UID0115_merchants_project_talk.html'">
+                                    <span class="material-symbols-outlined text-sm font-black">forum</span>
+                                    <span>聊天</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="details-2" class="hidden overflow-hidden bg-white p-4">
+                            <div
+                                class="flex items-center gap-6 p-4 bg-red-50/50 rounded-2xl border border-red-100 item-cancelled">
+                                <div class="w-16 h-16 rounded-xl bg-base border border-surface bg-cover bg-center shrink-0 grayscale"
+                                    style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDljTOE69qoe9eCNYGUiYJH3oIFQcDXqCrBHPV9OedZ7CkPgn7eyBXx59hIJR5IW6es3p8BSGmRHWAXj-5dbB-cdJdR4g1V69dTDSQQx9TUtrj6FRW-txH4yQ_Er2BMcTYidcAg3U5JZ5S3YEkhXYlrSJAthg0QGJOJQUdh8_G2T7L7iwua_r9FerL7YJdPcakEdQpP-aT82EO5SSDRUjZH1Qb9Cokt9n7h_4NdmEloJoy_MNtJNtvUVWYpoSXzCHizNf6ACU5MOTxX");'>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">已取消 /
+                                        缺货</p>
+                                    <h5 class="text-sm font-black text-text-main item-name">新鲜草莓 (2磅装)</h5>
+                                    <div class="flex items-center gap-3 mt-1">
+                                        <button class="text-[9px] font-black text-primary underline"
+                                            onclick="alert('Triggering Search/Photo for replacement...')">寻找替代品</button>
+                                        <button class="text-[9px] font-black text-text-sub underline">恢复采购</button>
+                                    </div>
+                                </div>
+                                <div class="text-right px-6">
+                                    <span class="material-symbols-outlined text-red-500">block</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <footer-placeholder></footer-placeholder>
     </div>
+
+    <!-- Script for Collapsible Groups -->
+    <script>
+        function toggleDetails(id, header) {
+            const table = document.getElementById(id);
+            const chevron = document.getElementById('chevron-' + id);
+            if (table.classList.contains('hidden')) {
+                table.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+                header.classList.add('bg-surface/30');
+            } else {
+                table.classList.add('hidden');
+                chevron.style.transform = 'rotate(0deg)';
+                header.classList.remove('bg-surface/30');
+            }
+        }
+
+        // Auto-expand first customer
+        document.addEventListener('DOMContentLoaded', () => {
+            const firstGroup = document.querySelector('.customer-group .cursor-pointer');
+            if (firstGroup) firstGroup.click();
+        });
+    </script>
     <script src="../assets/ui-core.js"></script>
     <script src="../assets/ui-merchant-framework.js"></script>
 </body>
