@@ -30,8 +30,8 @@ export default function ProcurementHUD() {
       name: 'Alice Wang',
       avatarLetter: 'AW',
       items: [
-        { id: 'I001', name: 'Organic Milk', sku: 'SKU-20934', price: 12.99, quantity: 2, status: 'picked' },
-        { id: 'I002', name: 'Fresh Spinach', sku: 'SKU-88210', price: 4.49, quantity: 1, status: 'pending' }
+        { id: 'I001', name: 'Organic Milk', sku: 'SKU-20934', price: 12.99, quantity: 2, status: 'picked', imageUrl: '/assets/products/milk.png' },
+        { id: 'I002', name: 'Fresh Spinach', sku: 'SKU-88210', price: 4.49, quantity: 1, status: 'pending', imageUrl: '/assets/products/spinach.png' }
       ]
     },
     {
@@ -39,7 +39,7 @@ export default function ProcurementHUD() {
       name: 'Benjamin Tsui',
       avatarLetter: 'BT',
       items: [
-        { id: 'I003', name: 'Fresh Strawberries', sku: 'SKU-77123', price: 5.99, quantity: 2, status: 'out_of_stock' }
+        { id: 'I003', name: 'Fresh Strawberries', sku: 'SKU-77123', price: 5.99, quantity: 2, status: 'out_of_stock', imageUrl: '/assets/products/strawberries.png' }
       ]
     }
   ]);
@@ -135,7 +135,7 @@ export default function ProcurementHUD() {
                     borderTop: '1px solid #f0f0f0',
                     opacity: item.status === 'out_of_stock' ? 0.5 : 1
                   }}>
-                    <div style={{ width: 50, height: 50, borderRadius: 8, background: '#f5f5f5', flexShrink: 0 }} />
+                    <img src={(item as any).imageUrl} alt={item.name} style={{ width: 50, height: 50, borderRadius: 8, objectFit: 'cover', background: '#f5f5f5', flexShrink: 0 }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 'bold', fontSize: '0.9em' }}>{item.name}</div>
                       <div style={{ fontSize: '0.7em', color: '#8c8c8c' }}>{item.sku} | ${item.price}</div>

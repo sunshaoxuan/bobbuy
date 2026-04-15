@@ -31,8 +31,8 @@ export default function OrderDesk() {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([
-    { id: 'SKU-001', name: 'Kirkland Organic Milk (3pk)', quantity: 2, price: 12.99, confidence: 0.98, status: 'detected' },
-    { id: 'SKU-002', name: 'Butter Croissants (12ct)', quantity: 1, price: 9.99, confidence: 0.95, status: 'detected' }
+    { id: 'SKU-001', name: 'Kirkland Organic Milk (3pk)', quantity: 2, price: 12.99, confidence: 0.98, status: 'detected', imageUrl: '/assets/products/milk.png' } as any,
+    { id: 'SKU-002', name: 'Butter Croissants (12ct)', quantity: 1, price: 9.99, confidence: 0.95, status: 'detected', imageUrl: '/assets/products/croissants.png' } as any
   ]);
 
   const handleSend = () => {
@@ -77,7 +77,7 @@ export default function OrderDesk() {
                   <Avatar size="small" icon={msg.sender === 'ai' ? <RobotOutlined /> : <UserOutlined />} />
                   <div style={{ 
                     background: msg.sender === 'merchant' ? '#1890ff' : msg.sender === 'ai' ? '#f0f5ff' : '#f5f5f5',
-                    color: msg.sender === 'merchant' ? '#white' : '#000',
+                    color: msg.sender === 'merchant' ? 'white' : '#000',
                     padding: '8px 16px',
                     borderRadius: 12,
                     boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
@@ -122,15 +122,18 @@ export default function OrderDesk() {
             dataSource={extractedItems}
             renderItem={(item) => (
               <Card size="small" style={{ marginBottom: 12, border: item.status === 'added' ? '1px solid #52c41a' : '1px solid #f0f0f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text strong style={{ fontSize: '0.9em' }}>{item.name}</Text>
-                  {item.status === 'added' && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
+                  <img src={(item as any).imageUrl} alt={item.name} style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', background: '#f5f5f5' }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text strong style={{ fontSize: '0.9em' }}>{item.name}</Text>
+                      {item.status === 'added' && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                    </div>
+                    <Text type="secondary" style={{ fontSize: '0.8em' }}>Qty: {item.quantity} | ${item.price}</Text>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Space direction="vertical" size={0}>
-                    <Text type="secondary" size="small">Qty: {item.quantity} | ${item.price}</Text>
-                    <Text type="secondary" style={{ fontSize: '0.75em' }}>Confidence: {(item.confidence * 100).toFixed(0)}%</Text>
-                  </Space>
+                  <Text type="secondary" style={{ fontSize: '0.75em' }}>Confidence: {(item.confidence * 100).toFixed(0)}%</Text>
                   <Button 
                     size="small" 
                     type={item.status === 'added' ? 'text' : 'primary'} 

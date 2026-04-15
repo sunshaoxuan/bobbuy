@@ -18,10 +18,10 @@ export default function PickingMaster() {
   const { t } = useI18n();
   const [filter, setFilter] = useState('all');
   const [items, setItems] = useState<PickItem[]>([
-    { id: 'I001', name: 'Organic Milk', customerName: 'Alice Wang', sku: 'SKU-20934', picked: true, imageUrl: 'https://via.placeholder.com/150' },
-    { id: 'I002', name: 'Fresh Spinach', customerName: 'Alice Wang', sku: 'SKU-88210', picked: false, imageUrl: 'https://via.placeholder.com/150' },
-    { id: 'I004', name: 'Rotisserie Chicken', customerName: 'Alex Cos', sku: 'SKU-111', picked: true, imageUrl: 'https://via.placeholder.com/150' },
-    { id: 'I005', name: 'Paper Towels', customerName: 'Alex Cos', sku: 'SKU-222', picked: false, imageUrl: 'https://via.placeholder.com/150' }
+    { id: 'I001', name: 'Organic Milk', customerName: 'Alice Wang', sku: 'SKU-20934', picked: true, imageUrl: '/assets/products/milk.png' },
+    { id: 'I002', name: 'Fresh Spinach', customerName: 'Alice Wang', sku: 'SKU-88210', picked: false, imageUrl: '/assets/products/spinach.png' },
+    { id: 'I004', name: 'Rotisserie Chicken', customerName: 'Alex Cos', sku: 'SKU-111', picked: true, imageUrl: '/assets/products/chicken.png' },
+    { id: 'I005', name: 'Paper Towels', customerName: 'Alex Cos', sku: 'SKU-222', picked: false, imageUrl: '/assets/products/paper_towels.png' }
   ]);
 
   const togglePick = (id: string) => {
