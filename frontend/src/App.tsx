@@ -4,6 +4,9 @@ import Dashboard from './pages/Dashboard';
 import Trips from './pages/Trips';
 import Orders from './pages/Orders';
 import Users from './pages/Users';
+import OrderDesk from './pages/OrderDesk';
+import ProcurementHUD from './pages/ProcurementHUD';
+import PickingMaster from './pages/PickingMaster';
 import type { Locale } from './i18n';
 import { supportedLocales, useI18n } from './i18n';
 
@@ -17,6 +20,9 @@ export default function App() {
     { key: '/', label: <NavLink to="/">{t('nav.dashboard')}</NavLink> },
     { key: '/trips', label: <NavLink to="/trips">{t('nav.trips')}</NavLink> },
     { key: '/orders', label: <NavLink to="/orders">{t('nav.orders')}</NavLink> },
+    { key: '/order-desk', label: <NavLink to="/order-desk">{t('nav.order_desk')}</NavLink> },
+    { key: '/procurement', label: <NavLink to="/procurement">{t('nav.procurement')}</NavLink> },
+    { key: '/picking', label: <NavLink to="/picking">{t('nav.picking')}</NavLink> },
     { key: '/users', label: <NavLink to="/users">{t('nav.users')}</NavLink> }
   ];
   return (
@@ -56,6 +62,9 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/trips" element={<Trips />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/order-desk" element={<OrderDesk />} />
+            <Route path="/procurement" element={<ProcurementHUD />} />
+            <Route path="/picking" element={<PickingMaster />} />
             <Route path="/users" element={<Users />} />
           </Routes>
         </Content>
