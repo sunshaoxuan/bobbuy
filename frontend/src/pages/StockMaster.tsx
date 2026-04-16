@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Table, Input, InputNumber, Button, Space, Typography, Tag, message, Breadcrumb, Card, Drawer, Form } from 'antd';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Table, Input, InputNumber, Button, Space, Typography, Tag, message, Breadcrumb, Card, Drawer, Form, Grid, Select } from 'antd';
 import { PlusOutlined, SaveOutlined, DeleteOutlined, InboxOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
 import { useI18n } from '../i18n';
 import L10nInput, { type L10nValues } from '../components/L10nInput';
@@ -20,15 +20,58 @@ interface StockItem {
   brand?: string;
   sku?: string;
   mediaGallery?: MediaItem[];
+  dynamicAttributes?: Record<string, string | number>;
   isNew?: boolean;
 }
+
+interface CategoryAttributeDefinition {
+  key: string;
+  labelKey: string;
+  type: 'text' | 'number' | 'select';
+  options?: string[];
+}
+
+const CATEGORY_ATTRIBUTE_TEMPLATES: Record<'clothing' | 'food', CategoryAttributeDefinition[]> = {
+  clothing: [
+    { key: 'size', labelKey: 'stock.dynamic.size', type: 'select', options: ['XS', 'S', 'M', 'L', 'XL'] },
+    { key: 'material', labelKey: 'stock.dynamic.material', type: 'text' },
+    { key: 'color', labelKey: 'stock.dynamic.color', type: 'text' }
+  ],
+  food: [
+    { key: 'shelfLifeDays', labelKey: 'stock.dynamic.shelf_life_days', type: 'number' },
+    { key: 'storageTemp', labelKey: 'stock.dynamic.storage_temp', type: 'text' },
+    { key: 'flavor', labelKey: 'stock.dynamic.flavor', type: 'text' }
+  ]
+};
+
+const resolveCategoryTemplate = (category?: string): CategoryAttributeDefinition[] => {
+  if (!category) {
+    return [];
+  }
+  const normalized = category.trim().toLowerCase();
+  const clothingAliases = ['clothing', 'apparel', 'fashion', '服装', '时尚', '鞋包'];
+  const foodAliases = ['food', 'grocery', 'snack', '食品', '零食', '生鲜'];
+  if (clothingAliases.some((alias) => normalized.includes(alias))) {
+    return CATEGORY_ATTRIBUTE_TEMPLATES.clothing;
+  }
+  if (foodAliases.some((alias) => normalized.includes(alias))) {
+    return CATEGORY_ATTRIBUTE_TEMPLATES.food;
+  }
+  return [];
+};
 
 export default function StockMaster() {
   const { t, locale } = useI18n();
   const [searchText, setSearchText] = useState('');
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [form] = Form.useForm();
+  const screens = Grid.useBreakpoint();
+  const isMobile = screens.md === false;
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const watchedCategory = Form.useWatch('category', form);
+  const activeCategoryAttributes = useMemo(() => resolveCategoryTemplate(watchedCategory), [watchedCategory]);
 
   const [dataSource, setDataSource] = useState<StockItem[]>([
     {
@@ -126,41 +169,85 @@ export default function StockMaster() {
       ...record,
       nameL10n: record.nameL10n ?? { 'zh-CN': record.name, 'en-US': record.name },
       descriptionL10n: record.descriptionL10n ?? { 'zh-CN': record.description ?? '', 'en-US': record.description ?? '' },
-      mediaGallery: record.mediaGallery ?? []
+      mediaGallery: record.mediaGallery ?? [],
+      dynamicAttributes: record.dynamicAttributes ?? {}
     });
     setIsDrawerVisible(true);
+    setSyncStatus('idle');
   };
 
   const closeDrawer = () => {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
     setIsDrawerVisible(false);
     setEditingItem(null);
+    setSyncStatus('idle');
     form.resetFields();
+  };
+
+  const saveEditingItem = (values: Partial<StockItem>, options: { closeAfterSave: boolean; showMessage: boolean }) => {
+    if (!editingItem) {
+      return;
+    }
+    setDataSource((prevData) => {
+      const index = prevData.findIndex((item) => editingItem.key === item.key);
+      if (index < 0) {
+        return prevData;
+      }
+      const nextData = [...prevData];
+      const currentItem = nextData[index];
+      const nextNameL10n: L10nValues = values.nameL10n ?? currentItem.nameL10n ?? {};
+      const nextDescriptionL10n: L10nValues = values.descriptionL10n ?? currentItem.descriptionL10n ?? {};
+      nextData[index] = {
+        ...currentItem,
+        ...values,
+        nameL10n: nextNameL10n,
+        descriptionL10n: nextDescriptionL10n,
+        name: getLocalizedFallback(nextNameL10n, currentItem.name),
+        description: getLocalizedFallback(nextDescriptionL10n, currentItem.description),
+        mediaGallery: values.mediaGallery ?? currentItem.mediaGallery ?? [],
+        dynamicAttributes: values.dynamicAttributes ?? currentItem.dynamicAttributes ?? {}
+      };
+      return nextData;
+    });
+    if (options.showMessage) {
+      message.success('Item updated');
+    }
+    if (options.closeAfterSave) {
+      closeDrawer();
+    }
   };
 
   const handleDrawerSave = () => {
     form.validateFields().then((values) => {
-      if (editingItem) {
-        const newData = [...dataSource];
-        const index = newData.findIndex((item) => editingItem.key === item.key);
-        if (index > -1) {
-          const nextNameL10n: L10nValues = values.nameL10n ?? {};
-          const nextDescriptionL10n: L10nValues = values.descriptionL10n ?? {};
-          newData[index] = {
-            ...newData[index],
-            ...values,
-            nameL10n: nextNameL10n,
-            descriptionL10n: nextDescriptionL10n,
-            name: getLocalizedFallback(nextNameL10n, newData[index].name),
-            description: getLocalizedFallback(nextDescriptionL10n, newData[index].description),
-            mediaGallery: values.mediaGallery ?? []
-          };
-          setDataSource(newData);
-          message.success('Item updated');
-          closeDrawer();
-        }
-      }
+      saveEditingItem(values, { closeAfterSave: true, showMessage: true });
     });
   };
+
+  const handleDrawerValuesChange = (_changedValues: unknown, allValues: StockItem) => {
+    if (!isMobile || !editingItem) {
+      return;
+    }
+    setSyncStatus('saving');
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+    autosaveTimerRef.current = setTimeout(() => {
+      saveEditingItem(allValues, { closeAfterSave: false, showMessage: false });
+      setSyncStatus('saved');
+      autosaveTimerRef.current = null;
+    }, 500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, []);
 
   const filteredData = dataSource.filter(item => 
     item.name.toLowerCase().includes(searchText.toLowerCase()) || 
@@ -281,21 +368,37 @@ export default function StockMaster() {
       </Card>
 
       <Drawer
-        title={t('stock.drawer.title')}
-        width={400}
+        title={
+          <Space direction="vertical" size={0}>
+            <span>{t('stock.drawer.title')}</span>
+            {isMobile && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {syncStatus === 'saving' ? t('stock.drawer.sync.saving') : syncStatus === 'saved' ? t('stock.drawer.sync.saved') : t('stock.drawer.sync.ready')}
+              </Text>
+            )}
+          </Space>
+        }
+        width={isMobile ? undefined : 400}
+        height={isMobile ? '82vh' : undefined}
+        placement={isMobile ? 'bottom' : 'right'}
         onClose={closeDrawer}
         open={isDrawerVisible}
         destroyOnClose={true}
-        extra={
+        extra={isMobile ? null : (
           <Space>
             <Button onClick={closeDrawer}>Cancel</Button>
             <Button onClick={handleDrawerSave} type="primary">
               {t('stock.drawer.save')}
             </Button>
           </Space>
-        }
+        )}
       >
-        <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical" onValuesChange={handleDrawerValuesChange}>
+          {isMobile && (
+            <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+              {t('stock.drawer.autosave_hint')}
+            </Text>
+          )}
           <Form.Item name="nameL10n" label={`${t('stock.item.name')} (L10n)`} rules={[{ required: true }]}>
             <L10nInput
               locales={['zh-CN', 'en-US']}
@@ -315,6 +418,22 @@ export default function StockMaster() {
           <Form.Item name="category" label={t('stock.item.category')}>
             <Input />
           </Form.Item>
+          {activeCategoryAttributes.length > 0 && (
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>
+              {t('stock.dynamic.section')}
+            </Text>
+          )}
+          {activeCategoryAttributes.map((field) => (
+            <Form.Item key={field.key} name={['dynamicAttributes', field.key]} label={t(field.labelKey)}>
+              {field.type === 'number' ? (
+                <InputNumber style={{ width: '100%' }} />
+              ) : field.type === 'select' ? (
+                <Select options={field.options?.map((option) => ({ value: option, label: option }))} />
+              ) : (
+                <Input />
+              )}
+            </Form.Item>
+          ))}
           <Form.Item name="price" label={t('stock.item.price')}>
             <InputNumber prefix="$" style={{ width: '100%' }} />
           </Form.Item>

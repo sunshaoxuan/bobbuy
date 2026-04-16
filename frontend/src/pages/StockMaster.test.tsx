@@ -1,14 +1,22 @@
-import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import StockMaster from './StockMaster';
 import { I18nProvider } from '../i18n';
 import React from 'react';
 
-// Mock matchMedia for Ant Design components
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation(query => ({
-    matches: false,
+const createMatchMedia = (isMobile: boolean) => vi.fn().mockImplementation((query: string) => {
+  const viewportWidth = isMobile ? 375 : 1280;
+  const min = /min-width:\s*(\d+)px/.exec(query);
+  const max = /max-width:\s*(\d+)px/.exec(query);
+  let matches = true;
+  if (min) {
+    matches = matches && viewportWidth >= Number(min[1]);
+  }
+  if (max) {
+    matches = matches && viewportWidth <= Number(max[1]);
+  }
+  return {
+    matches,
     media: query,
     onchange: null,
     addListener: vi.fn(),
@@ -16,14 +24,31 @@ Object.defineProperty(window, 'matchMedia', {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
-  })),
+  };
 });
+
+const setMatchMedia = (isMobile: boolean) => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    configurable: true,
+    value: createMatchMedia(isMobile),
+  });
+};
 
 const renderWithI18n = (ui: React.ReactElement) => {
   return render(<I18nProvider>{ui}</I18nProvider>);
 };
 
 describe('StockMaster Component', () => {
+  beforeEach(() => {
+    setMatchMedia(false);
+    vi.useRealTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('renders the stock master page with title and initial data', () => {
     renderWithI18n(<StockMaster />);
     expect(screen.getByText(/库存大师 - 批量上架/i)).toBeInTheDocument();
@@ -92,5 +117,49 @@ describe('StockMaster Component', () => {
     fireEvent.click(publishButton);
     
     expect(publishButton).toBeInTheDocument();
+  });
+
+  it('renders category-specific dynamic attributes in drawer', async () => {
+    renderWithI18n(<StockMaster />);
+    const editButtons = screen.getAllByRole('button').filter(btn => btn.querySelector('.anticon-edit'));
+    fireEvent.click(editButtons[0]);
+
+    const drawer = screen.getByRole('dialog');
+    const categoryInput = within(drawer).getByRole('textbox', { name: /类目/i });
+    fireEvent.change(categoryInput, { target: { value: '服装' } });
+
+    await waitFor(() => {
+      expect(within(drawer).getByText(/分类属性/i)).toBeInTheDocument();
+      expect(within(drawer).getByLabelText(/尺码/i)).toBeInTheDocument();
+      expect(within(drawer).getByLabelText(/材质/i)).toBeInTheDocument();
+    });
+  });
+
+  it('autosaves on mobile drawer with debounce', async () => {
+    setMatchMedia(true);
+    vi.useFakeTimers();
+    renderWithI18n(<StockMaster />);
+    const editButtons = screen.getAllByRole('button').filter(btn => btn.querySelector('.anticon-edit'));
+    fireEvent.click(editButtons[0]);
+
+    expect(screen.queryByText(/保存并关闭/i)).not.toBeInTheDocument();
+    const drawer = screen.getByRole('dialog');
+    const skuInput = within(drawer).getByPlaceholderText(/Unique SKU ID/i);
+    fireEvent.change(skuInput, { target: { value: 'AUTO-SKU-1' } });
+
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+
+    expect(within(drawer).getByText(/已自动保存/i)).toBeInTheDocument();
+
+    const closeButton = screen.getAllByRole('button').find(btn => btn.className.includes('ant-drawer-close'));
+    expect(closeButton).toBeDefined();
+    fireEvent.click(closeButton!);
+
+    fireEvent.click(editButtons[0]);
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('AUTO-SKU-1')).toBeInTheDocument();
+    });
   });
 });
