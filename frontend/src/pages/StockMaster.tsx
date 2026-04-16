@@ -45,18 +45,28 @@ const CATEGORY_ATTRIBUTE_TEMPLATES: Record<'clothing' | 'food', CategoryAttribut
 };
 
 const AUTOSAVE_DELAY_MS = 500;
+const MOBILE_DRAWER_HEIGHT = '82vh';
 const CLOTHING_CATEGORY_ALIASES = ['clothing', 'apparel', 'fashion', '服装', '时尚', '鞋包'];
 const FOOD_CATEGORY_ALIASES = ['food', 'grocery', 'snack', '食品', '零食', '生鲜'];
+
+const matchesCategoryAlias = (normalized: string, alias: string) => {
+  const isEnglishAlias = /^[a-z]+$/i.test(alias);
+  if (!isEnglishAlias) {
+    return normalized.includes(alias);
+  }
+  const latinTokens = normalized.split(/[^a-z]+/i).filter(Boolean);
+  return normalized === alias || latinTokens.includes(alias);
+};
 
 const resolveCategoryTemplate = (category?: string): CategoryAttributeDefinition[] => {
   if (!category) {
     return [];
   }
   const normalized = category.trim().toLowerCase();
-  if (CLOTHING_CATEGORY_ALIASES.some((alias) => normalized.includes(alias))) {
+  if (CLOTHING_CATEGORY_ALIASES.some((alias) => matchesCategoryAlias(normalized, alias))) {
     return CATEGORY_ATTRIBUTE_TEMPLATES.clothing;
   }
-  if (FOOD_CATEGORY_ALIASES.some((alias) => normalized.includes(alias))) {
+  if (FOOD_CATEGORY_ALIASES.some((alias) => matchesCategoryAlias(normalized, alias))) {
     return CATEGORY_ATTRIBUTE_TEMPLATES.food;
   }
   return [];
@@ -228,7 +238,7 @@ export default function StockMaster() {
     });
   };
 
-  const handleDrawerValuesChange = (_changedValues: Record<string, unknown>, _allValues: StockItem) => {
+  const handleDrawerValuesChange = (_changedValues: Record<string, unknown>, _allValues: Record<string, unknown>) => {
     if (!isMobile || !editingItem) {
       return;
     }
@@ -381,7 +391,7 @@ export default function StockMaster() {
           </Space>
         }
         width={isMobile ? undefined : 400}
-        height={isMobile ? '82vh' : undefined}
+        height={isMobile ? MOBILE_DRAWER_HEIGHT : undefined}
         placement={isMobile ? 'bottom' : 'right'}
         onClose={closeDrawer}
         open={isDrawerVisible}

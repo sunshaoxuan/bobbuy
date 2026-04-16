@@ -4,8 +4,11 @@ import StockMaster from './StockMaster';
 import { I18nProvider } from '../i18n';
 import React from 'react';
 
+const MOBILE_VIEWPORT_WIDTH = 375;
+const DESKTOP_VIEWPORT_WIDTH = 1280;
+
 const createMatchMedia = (isMobile: boolean) => vi.fn().mockImplementation((query: string) => {
-  const viewportWidth = isMobile ? 375 : 1280;
+  const viewportWidth = isMobile ? MOBILE_VIEWPORT_WIDTH : DESKTOP_VIEWPORT_WIDTH;
   const min = /min-width:\s*(\d+)px/.exec(query);
   const max = /max-width:\s*(\d+)px/.exec(query);
   let matches = true;
