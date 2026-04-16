@@ -2,33 +2,92 @@ import React, { useState } from 'react';
 import { Table, Input, InputNumber, Button, Space, Typography, Tag, message, Breadcrumb, Card, Drawer, Form } from 'antd';
 import { PlusOutlined, SaveOutlined, DeleteOutlined, InboxOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
 import { useI18n } from '../i18n';
+import L10nInput, { type L10nValues } from '../components/L10nInput';
+import MediaGallery, { type MediaItem } from '../components/MediaGallery';
 
 const { Title, Text } = Typography;
 
 interface StockItem {
   key: string;
   name: string;
+  nameL10n?: L10nValues;
   category: string;
   price: number;
   stock: number;
   unit: string;
   description?: string;
+  descriptionL10n?: L10nValues;
   brand?: string;
   sku?: string;
+  mediaGallery?: MediaItem[];
   isNew?: boolean;
 }
 
 export default function StockMaster() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [searchText, setSearchText] = useState('');
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
   const [form] = Form.useForm();
 
   const [dataSource, setDataSource] = useState<StockItem[]>([
-    { key: '1', name: 'Organic Milk', category: 'Dairy', price: 12.99, stock: 50, unit: '3pk', brand: 'Organic Valley', sku: 'OM-001', description: 'Fresh organic milk from local farms.' },
-    { key: '2', name: 'Fresh Spinach', category: 'Produce', price: 4.50, stock: 100, unit: 'bag', brand: 'Green Garden', sku: 'FS-002', description: 'Pre-washed baby spinach leaves.' },
+    {
+      key: '1',
+      name: 'Organic Milk',
+      nameL10n: { 'zh-CN': '有机牛奶', 'en-US': 'Organic Milk' },
+      category: 'Dairy',
+      price: 12.99,
+      stock: 50,
+      unit: '3pk',
+      brand: 'Organic Valley',
+      sku: 'OM-001',
+      description: 'Fresh organic milk from local farms.',
+      descriptionL10n: { 'zh-CN': '来自本地农场的新鲜有机牛奶。', 'en-US': 'Fresh organic milk from local farms.' },
+      mediaGallery: [
+        {
+          id: 'milk-image-1',
+          url: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
+          type: 'image',
+          title: { 'zh-CN': '牛奶正面图', 'en-US': 'Milk front view' }
+        }
+      ]
+    },
+    {
+      key: '2',
+      name: 'Fresh Spinach',
+      nameL10n: { 'zh-CN': '新鲜菠菜', 'en-US': 'Fresh Spinach' },
+      category: 'Produce',
+      price: 4.50,
+      stock: 100,
+      unit: 'bag',
+      brand: 'Green Garden',
+      sku: 'FS-002',
+      description: 'Pre-washed baby spinach leaves.',
+      descriptionL10n: { 'zh-CN': '免洗嫩菠菜叶。', 'en-US': 'Pre-washed baby spinach leaves.' },
+      mediaGallery: [
+        {
+          id: 'spinach-video-1',
+          url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+          type: 'video',
+          title: { 'zh-CN': '菠菜展示视频', 'en-US': 'Spinach showcase video' }
+        }
+      ]
+    }
   ]);
+
+  const getLocalizedFallback = (values?: L10nValues, fallback?: string) => {
+    if (!values) {
+      return fallback ?? '';
+    }
+    return values[locale] || values['zh-CN'] || values['en-US'] || Object.values(values).find(Boolean) || fallback || '';
+  };
+
+  const requestTranslationSuggestion = async (sourceText: string, _sourceLocale: string, targetLocale: string) => {
+    if (!sourceText.trim()) {
+      return '';
+    }
+    return Promise.resolve(`[AI:${targetLocale}] ${sourceText}`);
+  };
 
   const handleAddRow = () => {
     const newData: StockItem = {
@@ -63,7 +122,12 @@ export default function StockMaster() {
 
   const openDrawer = (record: StockItem) => {
     setEditingItem(record);
-    form.setFieldsValue(record);
+    form.setFieldsValue({
+      ...record,
+      nameL10n: record.nameL10n ?? { 'zh-CN': record.name, 'en-US': record.name },
+      descriptionL10n: record.descriptionL10n ?? { 'zh-CN': record.description ?? '', 'en-US': record.description ?? '' },
+      mediaGallery: record.mediaGallery ?? []
+    });
     setIsDrawerVisible(true);
   };
 
@@ -79,7 +143,17 @@ export default function StockMaster() {
         const newData = [...dataSource];
         const index = newData.findIndex((item) => editingItem.key === item.key);
         if (index > -1) {
-          newData[index] = { ...newData[index], ...values };
+          const nextNameL10n: L10nValues = values.nameL10n ?? {};
+          const nextDescriptionL10n: L10nValues = values.descriptionL10n ?? {};
+          newData[index] = {
+            ...newData[index],
+            ...values,
+            nameL10n: nextNameL10n,
+            descriptionL10n: nextDescriptionL10n,
+            name: getLocalizedFallback(nextNameL10n, newData[index].name),
+            description: getLocalizedFallback(nextDescriptionL10n, newData[index].description),
+            mediaGallery: values.mediaGallery ?? []
+          };
           setDataSource(newData);
           message.success('Item updated');
           closeDrawer();
@@ -222,8 +296,12 @@ export default function StockMaster() {
         }
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="name" label={t('stock.item.name')} rules={[{ required: true }]}>
-            <Input />
+          <Form.Item name="nameL10n" label={`${t('stock.item.name')} (L10n)`} rules={[{ required: true }]}>
+            <L10nInput
+              locales={['zh-CN', 'en-US']}
+              requestTranslation={requestTranslationSuggestion}
+              placeholder="输入多语种商品名称"
+            />
           </Form.Item>
           <Form.Item name="sku" label={t('stock.item.sku')}>
             <Input placeholder="Unique SKU ID" />
@@ -240,8 +318,18 @@ export default function StockMaster() {
           <Form.Item name="stock" label={t('stock.item.quantity')}>
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item name="description" label={t('stock.item.description')}>
-            <Input.TextArea rows={4} />
+          <Form.Item name="descriptionL10n" label={`${t('stock.item.description')} (L10n)`}>
+            <L10nInput
+              locales={['zh-CN', 'en-US']}
+              requestTranslation={requestTranslationSuggestion}
+              placeholder="输入多语种描述"
+            />
+          </Form.Item>
+          <Form.Item name="mediaGallery" label="Media Gallery">
+            <MediaGallery
+              locales={['zh-CN', 'en-US']}
+              requestTranslation={requestTranslationSuggestion}
+            />
           </Form.Item>
         </Form>
       </Drawer>
