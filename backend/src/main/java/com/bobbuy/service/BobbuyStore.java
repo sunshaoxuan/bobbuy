@@ -530,31 +530,36 @@ public class BobbuyStore {
     private void ensureLocalizedFields(Product product) {
         if (product.getName() == null) {
             product.setName(new HashMap<>());
+        } else {
+            product.setName(new HashMap<>(product.getName()));
         }
         if (product.getDescription() == null) {
             product.setDescription(new HashMap<>());
+        } else {
+            product.setDescription(new HashMap<>(product.getDescription()));
         }
         if (product.getMediaGallery() == null) {
             product.setMediaGallery(new ArrayList<>());
+        } else {
+            product.setMediaGallery(new ArrayList<>(product.getMediaGallery()));
         }
     }
 
     private void mergeLocalizedMap(Product product, boolean isNameField, Map<String, String> patchValues) {
-        Map<String, String> target = isNameField ? product.getName() : product.getDescription();
-        if (target == null) {
-            target = new HashMap<>();
-            if (isNameField) {
-                product.setName(target);
+        Map<String, String> source = isNameField ? product.getName() : product.getDescription();
+        Map<String, String> target = source == null ? new HashMap<>() : new HashMap<>(source);
+        if (isNameField) {
+            product.setName(target);
+        } else {
+            product.setDescription(target);
+        }
+
+        for (Map.Entry<String, String> entry : patchValues.entrySet()) {
+            if (entry.getValue() == null) {
+                target.remove(entry.getKey());
             } else {
-                product.setDescription(target);
+                target.put(entry.getKey(), entry.getValue());
             }
         }
-        patchValues.forEach((locale, value) -> {
-            if (value == null) {
-                target.remove(locale);
-            } else {
-                target.put(locale, value);
-            }
-        });
     }
 }

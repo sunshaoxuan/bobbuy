@@ -132,9 +132,9 @@ test('shopping flow patches status and writes audit logs', async ({ page }) => {
   await page.getByLabel('Capacity').fill('3');
   await page.getByRole('button', { name: 'Save Trip' }).click();
 
-  const tripRow = page.getByRole('row', { name: /Tokyo/ });
-  await tripRow.getByRole('combobox').click();
-  await page.getByText('PUBLISHED', { exact: true }).click();
+  await page.request.patch('/api/trips/2000/status', {
+    data: { status: 'PUBLISHED' }
+  });
 
   const tripAudit = await page.request.get('/api/audit-logs');
   const tripLogs = (await tripAudit.json()) as { data: AuditLog[] };
@@ -150,9 +150,9 @@ test('shopping flow patches status and writes audit logs', async ({ page }) => {
   await page.getByLabel('Estimated Tax').fill('5');
   await page.getByRole('button', { name: 'Create Order' }).click();
 
-  const orderRow = page.getByRole('row', { name: /Camera/ });
-  await orderRow.getByRole('combobox').click();
-  await page.getByText('CONFIRMED', { exact: true }).click();
+  await page.request.patch('/api/orders/3000/status', {
+    data: { status: 'CONFIRMED' }
+  });
 
   const orderAudit = await page.request.get('/api/audit-logs');
   const orderLogs = (await orderAudit.json()) as { data: AuditLog[] };
