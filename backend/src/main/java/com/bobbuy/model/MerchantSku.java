@@ -1,11 +1,21 @@
 package com.bobbuy.model;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "bb_merchant_sku")
 public class MerchantSku {
+    @Id
     private String id;
     private String productId;
     private String merchantId;
     private String skuCode;
     private double lastPrice;
+    @Enumerated(EnumType.STRING)
     private StockStatus stockStatus;
 
     public MerchantSku() {

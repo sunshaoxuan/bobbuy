@@ -7,6 +7,7 @@ import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
 import com.bobbuy.service.BobbuyStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -34,6 +35,11 @@ class TripControllerIntegrationTest {
 
   @Autowired
   private ObjectMapper objectMapper;
+
+  @BeforeEach
+  void setUp() {
+    store.seed();
+  }
 
   @Test
   void bulkUpdateTripOrdersStatus() throws Exception {

@@ -13,6 +13,8 @@ import com.bobbuy.model.OrderStatus;
 import com.bobbuy.model.StorageCondition;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,14 +32,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@SpringBootTest
 class BobbuyStoreTest {
+  @Autowired
   private BobbuyStore store;
+  @Autowired
   private AuditLogService auditLogService;
 
   @BeforeEach
   void setUp() {
-    auditLogService = new AuditLogService();
-    store = new BobbuyStore(auditLogService);
     store.seed();
   }
 

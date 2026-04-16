@@ -6,23 +6,26 @@ import com.bobbuy.service.AuditLogService;
 import com.bobbuy.service.BobbuyStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SpringBootTest
 class TripControllerTest {
+  @Autowired
   private AuditLogService auditLogService;
+  @Autowired
   private BobbuyStore store;
+  @Autowired
   private TripController controller;
 
   @BeforeEach
   void setUp() {
-    auditLogService = new AuditLogService();
-    store = new BobbuyStore(auditLogService);
     store.seed();
-    controller = new TripController(store);
   }
 
   @Test

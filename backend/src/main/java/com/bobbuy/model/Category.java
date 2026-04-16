@@ -1,20 +1,37 @@
 package com.bobbuy.model;
 
+import com.bobbuy.model.converter.CategoryAttributeDefinitionsJsonConverter;
+import com.bobbuy.model.converter.StringMapJsonConverter;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Entity
+@Table(name = "bb_category")
 public class Category {
+    @Id
     private String id;
 
     @JsonbColumn
+    @Convert(converter = StringMapJsonConverter.class)
+    @Column(columnDefinition = "jsonb")
     private Map<String, String> name = new HashMap<>();
 
     @JsonbColumn
+    @Convert(converter = StringMapJsonConverter.class)
+    @Column(columnDefinition = "jsonb")
     private Map<String, String> description = new HashMap<>();
 
     @JsonbColumn
+    @Convert(converter = CategoryAttributeDefinitionsJsonConverter.class)
+    @Column(columnDefinition = "jsonb")
     private List<Map<String, Object>> attributeDefinitions = new ArrayList<>();
 
     public Category() {

@@ -1,15 +1,29 @@
 package com.bobbuy.model;
 
+import com.bobbuy.model.converter.StringMapJsonConverter;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@Entity
+@Table(name = "bb_supplier")
 public class Supplier {
+    @Id
     private String id;
 
     @JsonbColumn
+    @Convert(converter = StringMapJsonConverter.class)
+    @Column(columnDefinition = "jsonb")
     private Map<String, String> name = new HashMap<>();
 
     @JsonbColumn
+    @Convert(converter = StringMapJsonConverter.class)
+    @Column(columnDefinition = "jsonb")
     private Map<String, String> description = new HashMap<>();
 
     private String contactInfo;

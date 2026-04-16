@@ -2,20 +2,23 @@ package com.bobbuy.api;
 
 import com.bobbuy.api.response.ApiResponse;
 import com.bobbuy.model.Metrics;
-import com.bobbuy.service.AuditLogService;
 import com.bobbuy.service.BobbuyStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SpringBootTest
 class MetricsControllerTest {
+  @Autowired
+  private BobbuyStore store;
   private MetricsController controller;
   private RequestMetricsService requestMetricsService;
 
   @BeforeEach
   void setUp() {
-    BobbuyStore store = new BobbuyStore(new AuditLogService());
     store.seed();
     requestMetricsService = new RequestMetricsService();
     requestMetricsService.record("GET", "/api/orders", 120);

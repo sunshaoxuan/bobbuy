@@ -7,6 +7,8 @@ import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
 import com.bobbuy.model.User;
 import com.bobbuy.model.Role;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,14 +17,15 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SpringBootTest
 class BobbuyStoreCoverageTest {
+    @Autowired
     private BobbuyStore store;
+    @Autowired
     private AuditLogService auditLogService;
 
     @BeforeEach
     void setUp() {
-        auditLogService = new AuditLogService();
-        store = new BobbuyStore(auditLogService);
         store.seed();
     }
 

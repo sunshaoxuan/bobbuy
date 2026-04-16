@@ -2,14 +2,23 @@ package com.bobbuy.model;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
+@Entity
+@Table(name = "bb_user")
 public class User {
+  @Id
   private Long id;
 
   @NotBlank(message = "{validation.user.name.required}")
   private String name;
 
   @NotNull(message = "{validation.user.role.required}")
+  @Enumerated(EnumType.STRING)
   private Role role;
 
   private double rating;

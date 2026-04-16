@@ -4,24 +4,26 @@ import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ApiResponse;
 import com.bobbuy.model.Role;
 import com.bobbuy.model.User;
-import com.bobbuy.service.AuditLogService;
 import com.bobbuy.service.BobbuyStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@SpringBootTest
 class UserControllerTest {
+  @Autowired
   private BobbuyStore store;
+  @Autowired
   private UserController controller;
 
   @BeforeEach
   void setUp() {
-    store = new BobbuyStore(new AuditLogService());
     store.seed();
-    controller = new UserController(store);
   }
 
   @Test

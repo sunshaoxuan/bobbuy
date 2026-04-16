@@ -1,6 +1,7 @@
 package com.bobbuy.api;
 
 import com.bobbuy.service.BobbuyStore;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -17,6 +18,13 @@ class OrderControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+    @Autowired
+    private BobbuyStore store;
+
+    @BeforeEach
+    void setUp() {
+        store.seed();
+    }
 
     @Test
     void testLoggingInterceptorAndTraceId() throws Exception {
