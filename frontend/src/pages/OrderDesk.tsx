@@ -73,7 +73,7 @@ export default function OrderDesk() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {messages.map((msg) => (
               <div key={msg.id} style={{ alignSelf: msg.sender === 'merchant' ? 'flex-end' : 'flex-start', maxWidth: '70%', textAlign: msg.sender === 'merchant' ? 'right' : 'left' }}>
-                <Space align="start" direction={msg.sender === 'merchant' ? 'horizontal-reverse' : 'horizontal'}>
+                <Space align="start" direction="horizontal" style={{ flexDirection: msg.sender === 'merchant' ? 'row-reverse' : 'row' }}>
                   <Avatar size="small" icon={msg.sender === 'ai' ? <RobotOutlined /> : <UserOutlined />} />
                   <div style={{ 
                     background: msg.sender === 'merchant' ? '#1890ff' : msg.sender === 'ai' ? '#f0f5ff' : '#f5f5f5',

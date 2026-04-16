@@ -13,6 +13,7 @@ interface Item {
   price: number;
   quantity: number;
   status: 'pending' | 'picked' | 'out_of_stock';
+  imageUrl?: string;
 }
 
 interface CustomerOrder {
