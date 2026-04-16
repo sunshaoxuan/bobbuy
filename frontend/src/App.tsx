@@ -1,4 +1,6 @@
-import { Layout, Menu, Select, Space, Typography } from 'antd';
+import { useMemo, useState } from 'react';
+import { Button, Drawer, Grid, Layout, Menu, Select, Space, Typography } from 'antd';
+import { AppstoreOutlined, BarsOutlined, OrderedListOutlined, QrcodeOutlined, ShoppingOutlined } from '@ant-design/icons';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Trips from './pages/Trips';
@@ -17,6 +19,13 @@ const { Title, Text } = Typography;
 export default function App() {
   const location = useLocation();
   const { locale, setLocale, t } = useI18n();
+  const screens = Grid.useBreakpoint();
+  const isMobile = screens.md === false;
+  const isTablet = screens.md && !screens.lg;
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+  const contentPadding = isMobile ? '0.5rem' : isTablet ? '1rem' : '1.5rem';
+
   const menuItems = [
     { key: '/', label: <NavLink to="/">{t('nav.dashboard')}</NavLink> },
     { key: '/trips', label: <NavLink to="/trips">{t('nav.trips')}</NavLink> },
@@ -27,25 +36,73 @@ export default function App() {
     { key: '/stock-master', label: <NavLink to="/stock-master">{t('nav.stock_master')}</NavLink> },
     { key: '/users', label: <NavLink to="/users">{t('nav.users')}</NavLink> }
   ];
+
+  const mobileQuickNavItems = useMemo(
+    () => [
+      { key: '/trips', icon: <ShoppingOutlined />, label: t('nav.trips') },
+      { key: '/orders', icon: <OrderedListOutlined />, label: t('nav.orders') },
+      { key: '/procurement', icon: <QrcodeOutlined />, label: t('nav.scan') },
+      { key: '/stock-master', icon: <AppstoreOutlined />, label: t('nav.stock_master') }
+    ],
+    [t]
+  );
+
+  const pageTitles: Record<string, string> = useMemo(
+    () => ({
+      '/': t('nav.dashboard'),
+      '/trips': t('nav.trips'),
+      '/orders': t('nav.orders'),
+      '/order-desk': t('nav.order_desk'),
+      '/procurement': t('nav.procurement'),
+      '/picking': t('nav.picking'),
+      '/stock-master': t('nav.stock_master'),
+      '/users': t('nav.users')
+    }),
+    [t]
+  );
+
+  const pageLabel = useMemo(() => {
+    return pageTitles[location.pathname] ?? t('app.header_title');
+  }, [location.pathname, pageTitles, t]);
+
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider width={220} theme="light">
-        <div style={{ padding: 24 }}>
-          <Title level={4} style={{ margin: 0 }}>
-            BOBBuy
-          </Title>
-          <Text type="secondary">{t('app.brand_subtitle')}</Text>
-        </div>
-        <Menu mode="inline" selectedKeys={[location.pathname]} items={menuItems} />
-      </Sider>
-      <Layout>
-        <Header style={{ background: '#fff', padding: '0 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Title level={5} style={{ margin: 0 }}>
-              {t('app.header_title')}
+    <Layout className="app-shell">
+      {!isMobile ? (
+        <Sider
+          collapsible
+          collapsed={desktopCollapsed}
+          onCollapse={setDesktopCollapsed}
+          theme="light"
+          className="app-sider app-shadow-high"
+          width={desktopCollapsed ? undefined : 232}
+        >
+          <div className="app-brand-block">
+            <Title level={4} style={{ margin: 0 }}>
+              BOBBuy
             </Title>
+            {!desktopCollapsed ? <Text type="secondary">{t('app.brand_subtitle')}</Text> : null}
+          </div>
+          <Menu mode="inline" selectedKeys={[location.pathname]} items={menuItems} />
+        </Sider>
+      ) : null}
+      <Layout>
+        <Header className={isMobile ? 'app-header-mobile app-shadow-medium' : 'app-header-desktop'}>
+          <div className="app-header-inner">
             <Space>
-              <Text type="secondary">{t('language.label')}</Text>
+              {isMobile ? (
+                <Button
+                  type="text"
+                  icon={<BarsOutlined />}
+                  aria-label={t('app.open_menu')}
+                  onClick={() => setMobileMenuOpen(true)}
+                />
+              ) : null}
+              <Title level={5} style={{ margin: 0 }} ellipsis>
+                {isMobile ? pageLabel : t('app.header_title')}
+              </Title>
+            </Space>
+            <Space size="small">
+              {!isMobile ? <Text type="secondary">{t('language.label')}</Text> : null}
               <Select
                 popupMatchSelectWidth={false}
                 size="small"
@@ -59,19 +116,60 @@ export default function App() {
             </Space>
           </div>
         </Header>
-        <Content style={{ padding: 24 }}>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/trips" element={<Trips />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/order-desk" element={<OrderDesk />} />
-            <Route path="/procurement" element={<ProcurementHUD />} />
-            <Route path="/picking" element={<PickingMaster />} />
-            <Route path="/stock-master" element={<StockMaster />} />
-            <Route path="/users" element={<Users />} />
-          </Routes>
+        <Content style={{ padding: contentPadding }} className="app-content">
+          <div className="app-page-transition">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/trips" element={<Trips />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/order-desk" element={<OrderDesk />} />
+              <Route path="/procurement" element={<ProcurementHUD />} />
+              <Route path="/picking" element={<PickingMaster />} />
+              <Route path="/stock-master" element={<StockMaster />} />
+              <Route path="/users" element={<Users />} />
+            </Routes>
+          </div>
         </Content>
       </Layout>
+
+      {isMobile ? (
+        <>
+          <Drawer
+            placement="left"
+            onClose={() => setMobileMenuOpen(false)}
+            open={mobileMenuOpen}
+            styles={{ body: { padding: '1rem 0' } }}
+            className="app-mobile-drawer"
+          >
+            <div className="app-brand-block">
+              <Title level={4} style={{ margin: 0 }}>
+                BOBBuy
+              </Title>
+              <Text type="secondary">{t('app.brand_subtitle')}</Text>
+            </div>
+            <Menu
+              mode="inline"
+              selectedKeys={[location.pathname]}
+              items={menuItems}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+          </Drawer>
+          <nav className="mobile-bottom-nav app-shadow-high" aria-label={t('app.bottom_nav')}>
+            {mobileQuickNavItems.map((item) => (
+              <NavLink
+                key={item.key}
+                to={item.key}
+                className={({ isActive }) => `mobile-bottom-nav-item${isActive ? ' active' : ''}`}
+              >
+                <Space direction="vertical" size={4} align="center">
+                  {item.icon}
+                  <Text>{item.label}</Text>
+                </Space>
+              </NavLink>
+            ))}
+          </nav>
+        </>
+      ) : null}
     </Layout>
   );
 }
