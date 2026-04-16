@@ -3,11 +3,21 @@ package com.bobbuy.service;
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.api.ProcurementItemResponse;
+import com.bobbuy.model.Category;
+import com.bobbuy.model.MediaGalleryItem;
+import com.bobbuy.model.MediaType;
+import com.bobbuy.model.MerchantSku;
+import com.bobbuy.model.OrderMethod;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.OrderStatus;
 import com.bobbuy.model.PaymentStatus;
+import com.bobbuy.model.Product;
+import com.bobbuy.model.ProductPatch;
 import com.bobbuy.model.Role;
+import com.bobbuy.model.StockStatus;
+import com.bobbuy.model.StorageCondition;
+import com.bobbuy.model.Supplier;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
 import com.bobbuy.model.User;
@@ -18,9 +28,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -32,6 +45,10 @@ public class BobbuyStore {
     private final Map<Long, Trip> trips = new ConcurrentHashMap<>();
     private final Map<String, OrderHeader> orders = new ConcurrentHashMap<>();
     private final Map<Long, OrderHeader> ordersById = new ConcurrentHashMap<>();
+    private final Map<String, Product> products = new ConcurrentHashMap<>();
+    private final Map<String, Category> categories = new ConcurrentHashMap<>();
+    private final Map<String, Supplier> suppliers = new ConcurrentHashMap<>();
+    private final Map<String, MerchantSku> merchantSkus = new ConcurrentHashMap<>();
     private final AuditLogService auditLogService;
 
     private final AtomicLong userId = new AtomicLong(1000);
@@ -63,6 +80,44 @@ public class BobbuyStore {
 
         orders.put(header.getBusinessId(), header);
         ordersById.put(header.getId(), header);
+
+        Category category = new Category(
+                "cat-1000",
+                new LinkedHashMap<>(Map.of("zh-CN", "茶饮", "en-US", "Tea")),
+                new LinkedHashMap<>(Map.of("zh-CN", "茶类商品", "en-US", "Tea products")),
+                List.of(Map.of("name", "origin", "type", "text")));
+        categories.put(category.getId(), category);
+
+        Supplier supplier = new Supplier(
+                "sup-1000",
+                new LinkedHashMap<>(Map.of("zh-CN", "东京供货商", "en-US", "Tokyo Supplier")),
+                new LinkedHashMap<>(Map.of("zh-CN", "稳定供应抹茶", "en-US", "Stable matcha supplier")),
+                "tokyo-supplier@bobbuy.com");
+        suppliers.put(supplier.getId(), supplier);
+
+        Product product = new Product(
+                "prd-1000",
+                new LinkedHashMap<>(Map.of("zh-CN", "抹茶套装", "en-US", "Matcha Kit")),
+                new LinkedHashMap<>(Map.of("zh-CN", "京都风味抹茶组合")),
+                "BOBBuy Select",
+                32.5,
+                List.of(new MediaGalleryItem(
+                        "https://cdn.bobbuy.example/products/matcha-kit.png",
+                        MediaType.IMAGE,
+                        new LinkedHashMap<>(Map.of("zh-CN", "商品主图", "en-US", "Main image")))),
+                StorageCondition.AMBIENT,
+                OrderMethod.DIRECT_BUY,
+                category.getId());
+        products.put(product.getId(), product);
+
+        MerchantSku merchantSku = new MerchantSku(
+                "msku-1000",
+                product.getId(),
+                supplier.getId(),
+                "TOKYO-MATCHA-001",
+                30.0,
+                StockStatus.IN_STOCK);
+        merchantSkus.put(merchantSku.getId(), merchantSku);
     }
 
     public List<User> listUsers() {
@@ -131,6 +186,93 @@ public class BobbuyStore {
 
     public boolean deleteTrip(Long id) {
         return trips.remove(id) != null;
+    }
+
+    public List<Product> listProducts() {
+        return new ArrayList<>(products.values());
+    }
+
+    public Optional<Product> getProduct(String id) {
+        return Optional.ofNullable(products.get(id));
+    }
+
+    public Product createProduct(Product product) {
+        if (product.getId() == null || product.getId().isBlank()) {
+            product.setId(UUID.randomUUID().toString());
+        }
+        ensureLocalizedFields(product);
+        products.put(product.getId(), product);
+        return product;
+    }
+
+    public Optional<Product> updateProduct(String id, Product product) {
+        if (!products.containsKey(id)) {
+            return Optional.empty();
+        }
+        product.setId(id);
+        ensureLocalizedFields(product);
+        products.put(id, product);
+        return Optional.of(product);
+    }
+
+    public Optional<Product> patchProduct(String id, ProductPatch patch) {
+        if (!products.containsKey(id)) {
+            return Optional.empty();
+        }
+        Product existing = products.get(id);
+        if (patch == null) {
+            return Optional.of(existing);
+        }
+        if (patch.getName() != null) {
+            mergeLocalizedMap(existing, true, patch.getName());
+        }
+        if (patch.getDescription() != null) {
+            mergeLocalizedMap(existing, false, patch.getDescription());
+        }
+        if (patch.getBrand() != null) {
+            existing.setBrand(patch.getBrand());
+        }
+        if (patch.getBasePrice() != null) {
+            existing.setBasePrice(patch.getBasePrice());
+        }
+        if (patch.getMediaGallery() != null) {
+            existing.setMediaGallery(patch.getMediaGallery());
+        }
+        if (patch.getStorageCondition() != null) {
+            existing.setStorageCondition(patch.getStorageCondition());
+        }
+        if (patch.getOrderMethod() != null) {
+            existing.setOrderMethod(patch.getOrderMethod());
+        }
+        if (patch.getCategoryId() != null) {
+            existing.setCategoryId(patch.getCategoryId());
+        }
+        products.put(id, existing);
+        return Optional.of(existing);
+    }
+
+    public List<Category> listCategories() {
+        return new ArrayList<>(categories.values());
+    }
+
+    public Optional<Category> getCategory(String id) {
+        return Optional.ofNullable(categories.get(id));
+    }
+
+    public List<Supplier> listSuppliers() {
+        return new ArrayList<>(suppliers.values());
+    }
+
+    public Optional<Supplier> getSupplier(String id) {
+        return Optional.ofNullable(suppliers.get(id));
+    }
+
+    public List<MerchantSku> listMerchantSkus() {
+        return new ArrayList<>(merchantSkus.values());
+    }
+
+    public Optional<MerchantSku> getMerchantSku(String id) {
+        return Optional.ofNullable(merchantSkus.get(id));
     }
 
     public List<OrderHeader> listOrders() {
@@ -383,5 +525,36 @@ public class BobbuyStore {
         return header.getLines().stream()
                 .mapToInt(OrderLine::getQuantity)
                 .sum();
+    }
+
+    private void ensureLocalizedFields(Product product) {
+        if (product.getName() == null) {
+            product.setName(new HashMap<>());
+        }
+        if (product.getDescription() == null) {
+            product.setDescription(new HashMap<>());
+        }
+        if (product.getMediaGallery() == null) {
+            product.setMediaGallery(new ArrayList<>());
+        }
+    }
+
+    private void mergeLocalizedMap(Product product, boolean isNameField, Map<String, String> patchValues) {
+        Map<String, String> target = isNameField ? product.getName() : product.getDescription();
+        if (target == null) {
+            target = new HashMap<>();
+            if (isNameField) {
+                product.setName(target);
+            } else {
+                product.setDescription(target);
+            }
+        }
+        patchValues.forEach((locale, value) -> {
+            if (value == null) {
+                target.remove(locale);
+            } else {
+                target.put(locale, value);
+            }
+        });
     }
 }
