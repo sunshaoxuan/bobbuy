@@ -4,15 +4,15 @@ import { describe, expect, it, vi } from 'vitest';
 import L10nInput, { type L10nValues } from './L10nInput';
 
 describe('L10nInput', () => {
-  it('updates localized value and applies AI suggestion for missing locale', async () => {
-    const onChange = vi.fn();
-    const requestTranslation = vi.fn().mockResolvedValue('Milk');
+  it('requests AI suggestion for missing locale', async () => {
+    const requestTranslation = vi.fn().mockImplementation(
+      () => new Promise<string>(() => {})
+    );
     const value: L10nValues = { 'zh-CN': '牛奶' };
 
     render(
       <L10nInput
         value={value}
-        onChange={onChange}
         locales={['zh-CN', 'en-US']}
         requestTranslation={requestTranslation}
       />
@@ -21,15 +21,10 @@ describe('L10nInput', () => {
     fireEvent.click(screen.getByRole('button', { name: 'en-US' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/AI 建议：Milk/i)).toBeInTheDocument();
+      expect(requestTranslation).toHaveBeenCalledWith('牛奶', 'zh-CN', 'en-US');
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /应用建议/i }));
-
-    expect(onChange).toHaveBeenCalledWith({
-      'zh-CN': '牛奶',
-      'en-US': 'Milk'
-    });
+    expect(screen.getByText(/AI 建议生成中/i)).toBeInTheDocument();
   });
 
   it('edits value in active locale', () => {
