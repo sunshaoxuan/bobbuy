@@ -6,14 +6,20 @@ import com.bobbuy.model.User;
 import com.bobbuy.model.Role;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
+import com.bobbuy.model.OrderMethod;
+import com.bobbuy.model.Product;
+import com.bobbuy.model.ProductPatch;
 import com.bobbuy.model.OrderStatus;
+import com.bobbuy.model.StorageCondition;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -401,5 +407,72 @@ class BobbuyStoreTest {
     store.updateTripStatus(2000L, com.bobbuy.model.TripStatus.IN_PROGRESS);
     assertThat(auditLogService.listLogs().size()).isEqualTo(before + 1);
     assertThat(auditLogService.listLogs().get(before).getEntityType()).isEqualTo("TRIP");
+  }
+
+  @Test
+  void productPatchMergesLocalizedFieldsAndKeepsExistingValues() {
+    Product seeded = store.getProduct("prd-1000").orElseThrow();
+    assertThat(seeded.getName()).containsEntry("zh-CN", "抹茶套装");
+
+    ProductPatch patch = new ProductPatch();
+    patch.setName(Map.of("en-US", "Matcha Kit Pro", "ja-JP", "抹茶キット"));
+    patch.setDescription(Map.of("en-US", "Kyoto style matcha combo"));
+
+    Product updated = store.patchProduct("prd-1000", patch).orElseThrow();
+    assertThat(updated.getName()).containsEntry("zh-CN", "抹茶套装");
+    assertThat(updated.getName()).containsEntry("en-US", "Matcha Kit Pro");
+    assertThat(updated.getName()).containsEntry("ja-JP", "抹茶キット");
+    assertThat(updated.getDescription()).containsEntry("zh-CN", "京都风味抹茶组合");
+    assertThat(updated.getDescription()).containsEntry("en-US", "Kyoto style matcha combo");
+  }
+
+  @Test
+  void productMasterDataCrudAndLookupCoverage() {
+    assertThat(store.listProducts()).isNotEmpty();
+    assertThat(store.listCategories()).isNotEmpty();
+    assertThat(store.listSuppliers()).isNotEmpty();
+    assertThat(store.listMerchantSkus()).isNotEmpty();
+    assertThat(store.getCategory("cat-1000")).isPresent();
+    assertThat(store.getSupplier("sup-1000")).isPresent();
+    assertThat(store.getMerchantSku("msku-1000")).isPresent();
+    assertThat(store.getMerchantSku("missing")).isEmpty();
+
+    Product draft = new Product();
+    draft.setBrand("Draft");
+    Product created = store.createProduct(draft);
+    assertThat(created.getId()).isNotBlank();
+    assertThat(created.getName()).isEmpty();
+    assertThat(created.getDescription()).isEmpty();
+
+    Product replaced = new Product();
+    replaced.setName(Map.of("en-US", "Updated"));
+    replaced.setDescription(Map.of("en-US", "Updated desc"));
+    replaced.setBrand("Updated Brand");
+    replaced.setBasePrice(88.8);
+    replaced.setStorageCondition(StorageCondition.FRESH);
+    replaced.setOrderMethod(OrderMethod.PRE_ORDER);
+    assertThat(store.updateProduct(created.getId(), replaced)).isPresent();
+    assertThat(store.updateProduct("missing", replaced)).isEmpty();
+
+    ProductPatch nullPatch = null;
+    assertThat(store.patchProduct(created.getId(), nullPatch)).isPresent();
+    assertThat(store.patchProduct("missing", new ProductPatch())).isEmpty();
+
+    ProductPatch patch = new ProductPatch();
+    HashMap<String, String> removeEnAndAddZh = new HashMap<>();
+    removeEnAndAddZh.put("en-US", null);
+    removeEnAndAddZh.put("zh-CN", "更新商品");
+    patch.setName(removeEnAndAddZh);
+    patch.setDescription(Map.of("zh-CN", "更新描述"));
+    patch.setBrand("Patched Brand");
+    patch.setBasePrice(66.6);
+    patch.setStorageCondition(StorageCondition.CHILLED);
+    patch.setOrderMethod(OrderMethod.DIRECT_BUY);
+    patch.setCategoryId("cat-1000");
+    Product patched = store.patchProduct(created.getId(), patch).orElseThrow();
+    assertThat(patched.getName()).doesNotContainKey("en-US");
+    assertThat(patched.getName()).containsEntry("zh-CN", "更新商品");
+    assertThat(patched.getDescription()).containsEntry("zh-CN", "更新描述");
+    assertThat(patched.getBrand()).isEqualTo("Patched Brand");
   }
 }

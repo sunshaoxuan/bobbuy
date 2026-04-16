@@ -3,6 +3,8 @@ package com.bobbuy.model;
 import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ModelTest {
@@ -111,5 +113,45 @@ class ModelTest {
         assertThat(metrics.getLatencyP95Ms()).containsEntry("GET /api/orders", 120L);
         assertThat(metrics.getLatencyP99Ms()).containsEntry("GET /api/orders", 180L);
         assertThat(metrics.getSlowEndpoints()).contains("GET /api/orders");
+    }
+
+    @Test
+    void productAndRelatedMasterDataModelsTest() {
+        Category category = new Category(
+                "cat-1",
+                Map.of("zh-CN", "茶饮"),
+                Map.of("zh-CN", "茶类"),
+                List.of(Map.of("name", "origin", "type", "text")));
+        assertThat(category.getId()).isEqualTo("cat-1");
+        assertThat(category.getName()).containsEntry("zh-CN", "茶饮");
+
+        Supplier supplier = new Supplier(
+                "sup-1",
+                Map.of("zh-CN", "供应商"),
+                Map.of("zh-CN", "描述"),
+                "supplier@bobbuy.com");
+        assertThat(supplier.getContactInfo()).contains("@");
+
+        MediaGalleryItem media = new MediaGalleryItem(
+                "https://cdn.example/image.png",
+                MediaType.IMAGE,
+                Map.of("zh-CN", "主图"));
+        Product product = new Product(
+                "prd-1",
+                Map.of("zh-CN", "抹茶套装"),
+                Map.of("zh-CN", "描述"),
+                "BrandX",
+                19.9,
+                List.of(media),
+                StorageCondition.AMBIENT,
+                OrderMethod.DIRECT_BUY,
+                "cat-1");
+        assertThat(product.getName()).containsEntry("zh-CN", "抹茶套装");
+        assertThat(product.getMediaGallery()).hasSize(1);
+        assertThat(product.getStorageCondition()).isEqualTo(StorageCondition.AMBIENT);
+
+        MerchantSku sku = new MerchantSku("msku-1", "prd-1", "sup-1", "SKU-001", 18.8, StockStatus.IN_STOCK);
+        assertThat(sku.getSkuCode()).isEqualTo("SKU-001");
+        assertThat(sku.getStockStatus()).isEqualTo(StockStatus.IN_STOCK);
     }
 }
