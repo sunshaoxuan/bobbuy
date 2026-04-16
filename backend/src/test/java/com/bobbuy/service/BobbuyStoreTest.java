@@ -1,5 +1,6 @@
 package com.bobbuy.service;
 
+import com.bobbuy.api.BobbuyApplication;
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.model.User;
@@ -32,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest
+@SpringBootTest(classes = BobbuyApplication.class)
 class BobbuyStoreTest {
   @Autowired
   private BobbuyStore store;

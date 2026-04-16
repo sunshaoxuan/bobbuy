@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,6 +58,7 @@ public class BobbuyStore {
     private final SupplierRepository supplierRepository;
     private final MerchantSkuRepository merchantSkuRepository;
     private final AuditLogService auditLogService;
+    private final AtomicLong orderIdentity = new AtomicLong(3000L);
 
     public BobbuyStore(
             UserRepository userRepository,
@@ -142,6 +144,7 @@ public class BobbuyStore {
                 30.0,
                 StockStatus.IN_STOCK);
         merchantSkuRepository.save(merchantSku);
+        orderIdentity.set(3000L);
     }
 
     public List<User> listUsers() {
@@ -331,20 +334,20 @@ public class BobbuyStore {
     }
 
     @Transactional
-    public synchronized OrderHeader upsertOrder(OrderHeader headerInput) {
+    public OrderHeader upsertOrder(OrderHeader headerInput) {
         if (headerInput.getPaymentStatus() == null) {
             headerInput.setPaymentStatus(PaymentStatus.UNPAID);
         }
         if (headerInput.getLines() == null) {
             headerInput.setLines(new ArrayList<>());
         }
-        Optional<OrderHeader> existingOptional = orderHeaderRepository.findByBusinessId(headerInput.getBusinessId());
+        Optional<OrderHeader> existingOptional = orderHeaderRepository.findByBusinessIdForUpdate(headerInput.getBusinessId());
 
         if (existingOptional.isEmpty()) {
             if (isAtLeastConfirmed(headerInput.getStatus())) {
                 reserveTripCapacity(headerInput.getTripId(), calculateTotalQuantity(headerInput));
             }
-            headerInput.setId(nextOrderHeaderId());
+            headerInput.setId(nextOrderIdentity());
             headerInput.setStatusUpdatedAt(LocalDateTime.now());
             for (OrderLine line : headerInput.getLines()) {
                 line.setId(nextOrderIdentity());
@@ -427,8 +430,8 @@ public class BobbuyStore {
     }
 
     @Transactional
-    public synchronized Trip reserveTripCapacity(Long id, int quantity) {
-        Trip trip = getTrip(id)
+    public Trip reserveTripCapacity(Long id, int quantity) {
+        Trip trip = tripRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
         int remaining = trip.getRemainingCapacity();
         if (quantity <= 0) {
@@ -443,8 +446,8 @@ public class BobbuyStore {
     }
 
     @Transactional
-    public synchronized Trip releaseTripCapacity(Long id, int quantity) {
-        Trip trip = getTrip(id)
+    public Trip releaseTripCapacity(Long id, int quantity) {
+        Trip trip = tripRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
         if (quantity <= 0) {
             return trip;
@@ -459,7 +462,7 @@ public class BobbuyStore {
     }
 
     @Transactional
-    public synchronized List<OrderHeader> bulkUpdateOrderStatus(Long tripId, OrderStatus targetStatus) {
+    public List<OrderHeader> bulkUpdateOrderStatus(Long tripId, OrderStatus targetStatus) {
         getTrip(tripId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
         List<OrderHeader> eligible = listOrders(tripId).stream()
@@ -507,14 +510,13 @@ public class BobbuyStore {
     }
 
     public double calculateGmv() {
-        return orderHeaderRepository.findAll().stream()
-                .mapToDouble(OrderHeader::getTotalAmount)
-                .sum();
+        return orderHeaderRepository.sumTotalAmount();
     }
 
     public Map<OrderStatus, Integer> orderStatusCounts() {
         Map<OrderStatus, Integer> counts = new EnumMap<>(OrderStatus.class);
-        orderHeaderRepository.findAll().forEach(order -> counts.merge(order.getStatus(), 1, Integer::sum));
+        orderHeaderRepository.countByStatus().forEach(item ->
+                counts.put(item.getStatus(), (int) item.getTotal()));
         return counts;
     }
 
@@ -618,23 +620,16 @@ public class BobbuyStore {
                 .orElse(2000L);
     }
 
-    private Long nextOrderHeaderId() {
-        return orderHeaderRepository.findTopByOrderByIdDesc()
-                .map(existing -> existing.getId() + 1)
-                .orElse(3000L);
-    }
-
-    private Long nextOrderIdentity() {
-        long maxHeaderId = orderHeaderRepository.findTopByOrderByIdDesc()
+    private synchronized Long nextOrderIdentity() {
+        long current = orderIdentity.incrementAndGet();
+        long persistedMax = orderHeaderRepository.findTopByOrderByIdDesc()
                 .map(OrderHeader::getId)
                 .orElse(2999L);
-        long maxLineId = orderHeaderRepository.findAll().stream()
-                .flatMap(order -> order.getLines().stream())
-                .map(OrderLine::getId)
-                .filter(id -> id != null)
-                .mapToLong(Long::longValue)
-                .max()
-                .orElse(2999L);
-        return Math.max(maxHeaderId, maxLineId) + 1;
+        if (current <= persistedMax) {
+            long adjusted = persistedMax + 1;
+            orderIdentity.set(adjusted);
+            return adjusted;
+        }
+        return current;
     }
 }

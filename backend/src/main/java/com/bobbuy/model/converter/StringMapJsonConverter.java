@@ -30,9 +30,17 @@ public class StringMapJsonConverter implements AttributeConverter<Map<String, St
             return new HashMap<>();
         }
         try {
-            return OBJECT_MAPPER.readValue(dbData, TYPE_REFERENCE);
+            return OBJECT_MAPPER.readValue(normalizeJsonValue(dbData), TYPE_REFERENCE);
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("Failed to deserialize JSON map", e);
         }
+    }
+
+    private String normalizeJsonValue(String dbData) throws JsonProcessingException {
+        String normalized = dbData.trim();
+        if (normalized.startsWith("\"") && normalized.endsWith("\"")) {
+            return OBJECT_MAPPER.readValue(normalized, String.class);
+        }
+        return normalized;
     }
 }

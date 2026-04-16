@@ -1,5 +1,6 @@
 package com.bobbuy.service;
 
+import com.bobbuy.api.BobbuyApplication;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.OrderStatus;
@@ -17,7 +18,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(classes = BobbuyApplication.class)
 class BobbuyStoreCoverageTest {
     @Autowired
     private BobbuyStore store;
