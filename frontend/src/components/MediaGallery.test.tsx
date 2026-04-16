@@ -36,7 +36,7 @@ describe('MediaGallery', () => {
     const onChange = vi.fn();
     render(<MediaGallery value={[]} onChange={onChange} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /添加媒体/i }));
+    fireEvent.click(screen.getByRole('button', { name: /add media/i }));
 
     expect(onChange).toHaveBeenCalledTimes(1);
     const payload = onChange.mock.calls[0][0] as MediaItem[];

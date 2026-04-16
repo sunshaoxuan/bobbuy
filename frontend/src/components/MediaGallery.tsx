@@ -19,10 +19,26 @@ export interface MediaGalleryProps {
   onChange?: (next: MediaItem[]) => void;
   locales?: string[];
   requestTranslation?: TranslateSuggestionFn;
+  emptyDescriptionText?: string;
+  mediaTitlePrefixText?: string;
+  addMediaText?: string;
+  urlPlaceholderText?: string;
+  imageLabelText?: string;
+  videoLabelText?: string;
+  titlePlaceholderText?: string;
 }
 
+let mediaIdCounter = 0;
+
+const createMediaId = (): string => {
+  mediaIdCounter += 1;
+  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? `media-${crypto.randomUUID()}`
+    : `media-${Date.now()}-${mediaIdCounter}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
 const createMediaItem = (): MediaItem => ({
-  id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  id: createMediaId(),
   url: '',
   type: 'image',
   title: {}
@@ -32,7 +48,14 @@ export default function MediaGallery({
   value = [],
   onChange,
   locales = ['zh-CN', 'en-US'],
-  requestTranslation
+  requestTranslation,
+  emptyDescriptionText = 'No media yet, click below to add.',
+  mediaTitlePrefixText = 'Media',
+  addMediaText = 'Add Media',
+  urlPlaceholderText = 'https://example.com/media.jpg',
+  imageLabelText = 'Image',
+  videoLabelText = 'Video',
+  titlePlaceholderText = 'Input media title'
 }: MediaGalleryProps) {
   const updateItem = (id: string, patch: Partial<MediaItem>) => {
     const next = value.map((item) => (item.id === id ? { ...item, ...patch } : item));
@@ -50,13 +73,13 @@ export default function MediaGallery({
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={12}>
       {value.length === 0 ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无媒体，点击下方按钮添加" />
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyDescriptionText} />
       ) : (
         value.map((item) => (
           <Card
             key={item.id}
             size="small"
-            title={`媒体 #${item.id.slice(-4)}`}
+            title={`${mediaTitlePrefixText} #${item.id.slice(-4)}`}
             extra={
               <Button
                 type="text"
@@ -70,7 +93,7 @@ export default function MediaGallery({
             <Space direction="vertical" style={{ width: '100%' }} size={8}>
               <Input
                 value={item.url}
-                placeholder="https://example.com/media.jpg"
+                placeholder={urlPlaceholderText}
                 onChange={(event) => updateItem(item.id, { url: event.target.value })}
               />
               <Radio.Group
@@ -79,8 +102,8 @@ export default function MediaGallery({
                 optionType="button"
                 buttonStyle="solid"
               >
-                <Radio.Button value="image">Image</Radio.Button>
-                <Radio.Button value="video">Video</Radio.Button>
+                <Radio.Button value="image">{imageLabelText}</Radio.Button>
+                <Radio.Button value="video">{videoLabelText}</Radio.Button>
               </Radio.Group>
               {item.url ? (
                 item.type === 'video' ? (
@@ -104,14 +127,14 @@ export default function MediaGallery({
                 onChange={(title) => updateItem(item.id, { title })}
                 locales={locales}
                 requestTranslation={requestTranslation}
-                placeholder="输入媒体标题"
+                placeholder={titlePlaceholderText}
               />
             </Space>
           </Card>
         ))
       )}
       <Button icon={<PlusOutlined />} onClick={addItem}>
-        添加媒体
+        {addMediaText}
       </Button>
     </Space>
   );

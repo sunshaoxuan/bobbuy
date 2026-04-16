@@ -24,7 +24,7 @@ describe('L10nInput', () => {
       expect(requestTranslation).toHaveBeenCalledWith('牛奶', 'zh-CN', 'en-US');
     });
 
-    expect(screen.getByText(/AI 建议生成中/i)).toBeInTheDocument();
+    expect(screen.getByText(/AI suggestion is generating/i)).toBeInTheDocument();
   });
 
   it('edits value in active locale', () => {

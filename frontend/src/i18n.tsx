@@ -172,7 +172,20 @@ const translations: Record<Locale, Dictionary> = {
     'stock.item.brand': '品牌',
     'stock.item.sku': 'SKU 编号',
     'stock.drawer.title': '编辑商品详情',
-    'stock.drawer.save': '保存并关闭'
+    'stock.drawer.save': '保存并关闭',
+    'stock.l10n.name_placeholder': '输入多语种商品名称',
+    'stock.l10n.description_placeholder': '输入多语种描述',
+    'stock.l10n.ai_loading': 'AI 建议生成中...',
+    'stock.l10n.ai_prefix': 'AI 建议',
+    'stock.l10n.ai_apply': '应用建议',
+    'stock.media.label': '媒体图集',
+    'stock.media.empty': '暂无媒体，点击下方按钮添加',
+    'stock.media.item_prefix': '媒体',
+    'stock.media.add': '添加媒体',
+    'stock.media.url_placeholder': 'https://example.com/media.jpg',
+    'stock.media.image': '图片',
+    'stock.media.video': '视频',
+    'stock.media.title_placeholder': '输入媒体标题'
   },
   'en-US': {
     'app.brand_subtitle': 'Global Personal Shopping Console',
@@ -340,7 +353,20 @@ const translations: Record<Locale, Dictionary> = {
     'stock.item.brand': 'Brand',
     'stock.item.sku': 'SKU ID',
     'stock.drawer.title': 'Edit Product Details',
-    'stock.drawer.save': 'Save & Close'
+    'stock.drawer.save': 'Save & Close',
+    'stock.l10n.name_placeholder': 'Input multilingual product name',
+    'stock.l10n.description_placeholder': 'Input multilingual description',
+    'stock.l10n.ai_loading': 'AI suggestion is generating...',
+    'stock.l10n.ai_prefix': 'AI Suggestion',
+    'stock.l10n.ai_apply': 'Apply',
+    'stock.media.label': 'Media Gallery',
+    'stock.media.empty': 'No media yet, click below to add.',
+    'stock.media.item_prefix': 'Media',
+    'stock.media.add': 'Add Media',
+    'stock.media.url_placeholder': 'https://example.com/media.jpg',
+    'stock.media.image': 'Image',
+    'stock.media.video': 'Video',
+    'stock.media.title_placeholder': 'Input media title'
   }
 };
 

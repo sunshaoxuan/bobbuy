@@ -300,7 +300,10 @@ export default function StockMaster() {
             <L10nInput
               locales={['zh-CN', 'en-US']}
               requestTranslation={requestTranslationSuggestion}
-              placeholder="输入多语种商品名称"
+              placeholder={t('stock.l10n.name_placeholder')}
+              loadingSuggestionText={t('stock.l10n.ai_loading')}
+              suggestionPrefixText={t('stock.l10n.ai_prefix')}
+              applySuggestionText={t('stock.l10n.ai_apply')}
             />
           </Form.Item>
           <Form.Item name="sku" label={t('stock.item.sku')}>
@@ -322,13 +325,23 @@ export default function StockMaster() {
             <L10nInput
               locales={['zh-CN', 'en-US']}
               requestTranslation={requestTranslationSuggestion}
-              placeholder="输入多语种描述"
+              placeholder={t('stock.l10n.description_placeholder')}
+              loadingSuggestionText={t('stock.l10n.ai_loading')}
+              suggestionPrefixText={t('stock.l10n.ai_prefix')}
+              applySuggestionText={t('stock.l10n.ai_apply')}
             />
           </Form.Item>
-          <Form.Item name="mediaGallery" label="Media Gallery">
+          <Form.Item name="mediaGallery" label={t('stock.media.label')}>
             <MediaGallery
               locales={['zh-CN', 'en-US']}
               requestTranslation={requestTranslationSuggestion}
+              emptyDescriptionText={t('stock.media.empty')}
+              mediaTitlePrefixText={t('stock.media.item_prefix')}
+              addMediaText={t('stock.media.add')}
+              urlPlaceholderText={t('stock.media.url_placeholder')}
+              imageLabelText={t('stock.media.image')}
+              videoLabelText={t('stock.media.video')}
+              titlePlaceholderText={t('stock.media.title_placeholder')}
             />
           </Form.Item>
         </Form>

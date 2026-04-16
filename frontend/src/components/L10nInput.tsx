@@ -15,6 +15,9 @@ export interface L10nInputProps {
   placeholder?: string;
   requestTranslation?: TranslateSuggestionFn;
   disabled?: boolean;
+  loadingSuggestionText?: string;
+  suggestionPrefixText?: string;
+  applySuggestionText?: string;
 }
 
 const DEFAULT_LOCALES = ['zh-CN', 'en-US'];
@@ -28,7 +31,10 @@ export default function L10nInput({
   defaultLocale = 'zh-CN',
   placeholder,
   requestTranslation,
-  disabled
+  disabled,
+  loadingSuggestionText = 'AI suggestion is generating...',
+  suggestionPrefixText = 'AI Suggestion',
+  applySuggestionText = 'Apply'
 }: L10nInputProps) {
   const [activeLocale, setActiveLocale] = useState(defaultLocale);
   const [suggestions, setSuggestions] = useState<Record<string, string>>({});
@@ -70,11 +76,11 @@ export default function L10nInput({
       return;
     }
 
-    let alive = true;
+    let isMounted = true;
     setLoadingLocale(activeLocale);
     requestTranslation(sourceText, sourceLocale, activeLocale)
       .then((translated) => {
-        if (!alive) {
+        if (!isMounted) {
           return;
         }
         const next = translated?.trim();
@@ -83,17 +89,17 @@ export default function L10nInput({
         }
         setSuggestions((prev) => ({ ...prev, [activeLocale]: next }));
       })
-      .catch(() => {
-        // Ignore AI suggestion failures and keep manual input flow smooth.
+      .catch((error) => {
+        console.debug('L10nInput suggestion failed', error);
       })
       .finally(() => {
-        if (alive) {
+        if (isMounted) {
           setLoadingLocale(undefined);
         }
       });
 
     return () => {
-      alive = false;
+      isMounted = false;
     };
   }, [activeLocale, normalizedLocales, requestTranslation, suggestions, value]);
 
@@ -105,8 +111,9 @@ export default function L10nInput({
         if (!prev[locale]) {
           return prev;
         }
-        const { [locale]: _, ...rest } = prev;
-        return rest;
+        const next = { ...prev };
+        delete next[locale];
+        return next;
       });
     }
   };
@@ -150,11 +157,11 @@ export default function L10nInput({
       {!currentValue && (suggestion || isLoadingSuggestion) ? (
         <Space size={8}>
           <Text type="secondary" italic>
-            {isLoadingSuggestion ? 'AI 建议生成中...' : `AI 建议：${suggestion}`}
+            {isLoadingSuggestion ? loadingSuggestionText : `${suggestionPrefixText}: ${suggestion}`}
           </Text>
           {!isLoadingSuggestion ? (
             <Button type="link" size="small" onClick={applySuggestion} style={{ paddingInline: 0 }}>
-              应用建议
+              {applySuggestionText}
             </Button>
           ) : null}
         </Space>
