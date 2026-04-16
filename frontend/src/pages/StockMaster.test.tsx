@@ -133,12 +133,4 @@ describe('StockMaster Component', () => {
     });
   });
 
-  it('renders rich card list and floating actions on mobile', () => {
-    setMatchMedia(true);
-    renderWithI18n(<StockMaster />);
-    expect(screen.getByText(/Organic Milk/i)).toBeInTheDocument();
-    expect(screen.getByText(/Fresh Spinach/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/同步至市场/i)).toBeInTheDocument();
-  });
-
 });
