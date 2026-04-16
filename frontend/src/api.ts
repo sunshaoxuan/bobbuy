@@ -54,6 +54,20 @@ export type User = {
     rating: number;
 };
 
+export type AiExtractedItem = {
+    id: string;
+    originalName: string;
+    matchedName: string;
+    quantity: number;
+    note: string;
+    price: number;
+    confidence: number;
+};
+
+export type AiParseResponse = {
+    items: AiExtractedItem[];
+};
+
 const fallback = {
     metrics: { users: 2, trips: 1, orders: 1, gmV: 65, orderStatusCounts: { CONFIRMED: 1 } },
     trips: [
@@ -197,6 +211,13 @@ export const api = {
         postJson<Trip, Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>>('/api/trips', trip),
     createOrder: (order: Omit<Order, 'id' | 'statusUpdatedAt' | 'totalAmount'>) =>
         postJson<Order, Omit<Order, 'id' | 'statusUpdatedAt' | 'totalAmount'>>('/api/orders', order),
+    parseOrderText: (text: string) =>
+        postJson<AiParseResponse, { text: string }>('/api/ai/parse', { text }),
+    confirmAiMapping: (originalName: string, matchedName: string) =>
+        postJson<void, { originalName: string; matchedName: string }>('/api/ai/experience/confirm', {
+            originalName,
+            matchedName
+        }),
     updateOrderStatus: (orderId: number, status: string) =>
         patchJson<Order, { status: string }>(`/api/orders/${orderId}/status`, { status }),
     bulkUpdateTripOrderStatus: (tripId: number, targetStatus: string) =>

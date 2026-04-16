@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, Breadcrumb, Typography, List, Avatar, Input, Button, Badge, Tag, Drawer, Space, Divider, message } from 'antd';
 import { RobotOutlined, UserOutlined, SendOutlined, CheckCircleOutlined, ShoppingCartOutlined, PlusOutlined } from '@ant-design/icons';
 import { useI18n } from '../i18n';
+import { api } from '../api';
 
 const { Title, Text } = Typography;
 
@@ -14,43 +15,83 @@ interface ChatMessage {
 
 interface ExtractedItem {
   id: string;
+  originalName: string;
   name: string;
   quantity: number;
+  note?: string;
   price: number;
   confidence: number;
   status: 'detected' | 'added';
+  imageUrl?: string;
 }
 
 export default function OrderDesk() {
   const { t } = useI18n();
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 1, sender: 'customer', text: 'Hi, I need some items from Costco today.', time: '10:00' },
-    { id: 2, sender: 'merchant', text: 'Sure! What can I get for you?', time: '10:01' },
-    { id: 3, sender: 'customer', text: 'Please get 2 boxes of organic milk and 1 pack of croissants.', time: '10:05' },
-    { id: 4, sender: 'ai', text: 'Detected: Organic Milk (x2), Croissants (x1)', time: '10:05' }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([
-    { id: 'SKU-001', name: 'Kirkland Organic Milk (3pk)', quantity: 2, price: 12.99, confidence: 0.98, status: 'detected', imageUrl: '/assets/products/milk.png' } as any,
-    { id: 'SKU-002', name: 'Butter Croissants (12ct)', quantity: 1, price: 9.99, confidence: 0.95, status: 'detected', imageUrl: '/assets/products/croissants.png' } as any
-  ]);
+  const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([]);
+  const [isParsing, setIsParsing] = useState(false);
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
+  const handleSend = async () => {
+    const text = inputValue.trim();
+    if (!text || isParsing) return;
+
+    setIsParsing(true);
     const newMessage: ChatMessage = {
-      id: messages.length + 1,
+      id: Date.now(),
       sender: 'merchant',
-      text: inputValue,
+      text,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
-    setMessages([...messages, newMessage]);
+    setMessages(prev => [...prev, newMessage]);
     setInputValue('');
+
+    try {
+      const parsed = await api.parseOrderText(text);
+      const aiSummary = parsed.items.length
+        ? `Detected: ${parsed.items.map((item) => `${item.matchedName} (x${item.quantity})`).join(', ')}`
+        : 'No item detected';
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        sender: 'ai',
+        text: aiSummary,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+      setExtractedItems(parsed.items.map((item) => ({
+        id: item.id,
+        originalName: item.originalName,
+        name: item.matchedName,
+        quantity: item.quantity,
+        note: item.note,
+        price: item.price,
+        confidence: item.confidence,
+        status: 'detected' as const
+      })));
+    } catch {
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        sender: 'ai',
+        text: 'Parsing failed, please retry.',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } finally {
+      setIsParsing(false);
+    }
   };
 
-  const handleAddToOrder = (itemId: string) => {
-    setExtractedItems(prev => prev.map(item => 
-      item.id === itemId ? { ...item, status: 'added' } : item
+  const handleAddToOrder = async (item: ExtractedItem) => {
+    setExtractedItems(prev => prev.map(current => 
+      current.id === item.id ? { ...current, status: 'added' } : current
     ));
+    try {
+      await api.confirmAiMapping(item.originalName, item.name);
+    } catch {
+      message.error(t('errors.request_failed'));
+      setExtractedItems(prev => prev.map(current =>
+        current.id === item.id ? { ...current, status: 'detected' } : current
+      ));
+      return;
+    }
     message.success(t('orders.form.success'));
   };
 
@@ -102,8 +143,9 @@ export default function OrderDesk() {
               value={inputValue} 
               onChange={e => setInputValue(e.target.value)}
               onPressEnter={handleSend}
+              disabled={isParsing}
             />
-            <Button type="primary" icon={<SendOutlined />} onClick={handleSend} />
+            <Button type="primary" icon={<SendOutlined />} onClick={handleSend} loading={isParsing} />
           </div>
         </Card>
 
@@ -130,6 +172,7 @@ export default function OrderDesk() {
                       {item.status === 'added' && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
                     </div>
                     <Text type="secondary" style={{ fontSize: '0.8em' }}>Qty: {item.quantity} | ${item.price}</Text>
+                    {item.note ? <div><Text type="secondary" style={{ fontSize: '0.75em' }}>Note: {item.note}</Text></div> : null}
                   </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -137,10 +180,10 @@ export default function OrderDesk() {
                   <Button 
                     size="small" 
                     type={item.status === 'added' ? 'text' : 'primary'} 
-                    disabled={item.status === 'added'}
-                    icon={item.status === 'added' ? <CheckCircleOutlined /> : <PlusOutlined />}
-                    onClick={() => handleAddToOrder(item.id)}
-                  >
+                     disabled={item.status === 'added'}
+                     icon={item.status === 'added' ? <CheckCircleOutlined /> : <PlusOutlined />}
+                     onClick={() => void handleAddToOrder(item)}
+                   >
                     {item.status === 'added' ? 'Added' : 'Add'}
                   </Button>
                 </div>
