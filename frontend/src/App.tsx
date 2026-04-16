@@ -7,6 +7,7 @@ import Users from './pages/Users';
 import OrderDesk from './pages/OrderDesk';
 import ProcurementHUD from './pages/ProcurementHUD';
 import PickingMaster from './pages/PickingMaster';
+import StockMaster from './pages/StockMaster';
 import type { Locale } from './i18n';
 import { supportedLocales, useI18n } from './i18n';
 
@@ -23,6 +24,7 @@ export default function App() {
     { key: '/order-desk', label: <NavLink to="/order-desk">{t('nav.order_desk')}</NavLink> },
     { key: '/procurement', label: <NavLink to="/procurement">{t('nav.procurement')}</NavLink> },
     { key: '/picking', label: <NavLink to="/picking">{t('nav.picking')}</NavLink> },
+    { key: '/stock-master', label: <NavLink to="/stock-master">{t('nav.stock_master')}</NavLink> },
     { key: '/users', label: <NavLink to="/users">{t('nav.users')}</NavLink> }
   ];
   return (
@@ -65,6 +67,7 @@ export default function App() {
             <Route path="/order-desk" element={<OrderDesk />} />
             <Route path="/procurement" element={<ProcurementHUD />} />
             <Route path="/picking" element={<PickingMaster />} />
+            <Route path="/stock-master" element={<StockMaster />} />
             <Route path="/users" element={<Users />} />
           </Routes>
         </Content>
