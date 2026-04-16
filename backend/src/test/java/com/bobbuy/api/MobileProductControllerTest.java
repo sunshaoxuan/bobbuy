@@ -1,25 +1,27 @@
 package com.bobbuy.api;
 
 import com.bobbuy.model.ProductPatch;
-import com.bobbuy.service.AuditLogService;
 import com.bobbuy.service.BobbuyStore;
-import com.bobbuy.service.LocalizedJsonbReaderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Locale;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SpringBootTest
 class MobileProductControllerTest {
+    @Autowired
+    private BobbuyStore store;
+    @Autowired
     private MobileProductController controller;
 
     @BeforeEach
     void setUp() {
-        BobbuyStore store = new BobbuyStore(new AuditLogService());
         store.seed();
-        controller = new MobileProductController(store, new LocalizedJsonbReaderService());
     }
 
     @Test

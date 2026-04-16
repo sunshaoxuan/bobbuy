@@ -1,15 +1,15 @@
 package com.bobbuy.service;
 
+import com.bobbuy.api.ProcurementItemResponse;
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
-import com.bobbuy.api.ProcurementItemResponse;
 import com.bobbuy.model.Category;
 import com.bobbuy.model.MediaGalleryItem;
 import com.bobbuy.model.MediaType;
 import com.bobbuy.model.MerchantSku;
-import com.bobbuy.model.OrderMethod;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
+import com.bobbuy.model.OrderMethod;
 import com.bobbuy.model.OrderStatus;
 import com.bobbuy.model.PaymentStatus;
 import com.bobbuy.model.Product;
@@ -21,16 +21,24 @@ import com.bobbuy.model.Supplier;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
 import com.bobbuy.model.User;
+import com.bobbuy.repository.CategoryRepository;
+import com.bobbuy.repository.MerchantSkuRepository;
+import com.bobbuy.repository.OrderHeaderRepository;
+import com.bobbuy.repository.ProductRepository;
+import com.bobbuy.repository.SupplierRepository;
+import com.bobbuy.repository.TripRepository;
+import com.bobbuy.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,59 +49,77 @@ import java.util.stream.Collectors;
 @Service
 public class BobbuyStore {
     private static final Long SYSTEM_USER_ID = 0L;
-    private final Map<Long, User> users = new ConcurrentHashMap<>();
-    private final Map<Long, Trip> trips = new ConcurrentHashMap<>();
-    private final Map<String, OrderHeader> orders = new ConcurrentHashMap<>();
-    private final Map<Long, OrderHeader> ordersById = new ConcurrentHashMap<>();
-    private final Map<String, Product> products = new ConcurrentHashMap<>();
-    private final Map<String, Category> categories = new ConcurrentHashMap<>();
-    private final Map<String, Supplier> suppliers = new ConcurrentHashMap<>();
-    private final Map<String, MerchantSku> merchantSkus = new ConcurrentHashMap<>();
+
+    private final UserRepository userRepository;
+    private final TripRepository tripRepository;
+    private final OrderHeaderRepository orderHeaderRepository;
+    private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
+    private final SupplierRepository supplierRepository;
+    private final MerchantSkuRepository merchantSkuRepository;
     private final AuditLogService auditLogService;
+    private final AtomicLong orderIdentity = new AtomicLong(3000L);
 
-    private final AtomicLong userId = new AtomicLong(1000);
-    private final AtomicLong tripId = new AtomicLong(2000);
-    private final AtomicLong orderId = new AtomicLong(3000);
-
-    public BobbuyStore(AuditLogService auditLogService) {
+    public BobbuyStore(
+            UserRepository userRepository,
+            TripRepository tripRepository,
+            OrderHeaderRepository orderHeaderRepository,
+            ProductRepository productRepository,
+            CategoryRepository categoryRepository,
+            SupplierRepository supplierRepository,
+            MerchantSkuRepository merchantSkuRepository,
+            AuditLogService auditLogService) {
+        this.userRepository = userRepository;
+        this.tripRepository = tripRepository;
+        this.orderHeaderRepository = orderHeaderRepository;
+        this.productRepository = productRepository;
+        this.categoryRepository = categoryRepository;
+        this.supplierRepository = supplierRepository;
+        this.merchantSkuRepository = merchantSkuRepository;
         this.auditLogService = auditLogService;
     }
 
     @PostConstruct
+    @Transactional
     public void seed() {
-        User agent = new User(userId.getAndIncrement(), "Aiko Tan", Role.AGENT, 4.8);
-        User customer = new User(userId.getAndIncrement(), "Chen Li", Role.CUSTOMER, 4.6);
-        users.put(agent.getId(), agent);
-        users.put(customer.getId(), customer);
+        merchantSkuRepository.deleteAll();
+        productRepository.deleteAll();
+        supplierRepository.deleteAll();
+        categoryRepository.deleteAll();
+        orderHeaderRepository.deleteAll();
+        tripRepository.deleteAll();
+        userRepository.deleteAll();
 
-        Trip trip = new Trip(tripId.getAndIncrement(), agent.getId(), "Tokyo", "Shanghai", LocalDate.now().plusDays(5),
+        User agent = new User(1000L, "Aiko Tan", Role.AGENT, 4.8);
+        User customer = new User(1001L, "Chen Li", Role.CUSTOMER, 4.6);
+        userRepository.save(agent);
+        userRepository.save(customer);
+
+        Trip trip = new Trip(2000L, agent.getId(), "Tokyo", "Shanghai", LocalDate.now().plusDays(5),
                 6, 1,
                 TripStatus.PUBLISHED, LocalDateTime.now());
-        trips.put(trip.getId(), trip);
+        tripRepository.save(trip);
 
         OrderHeader header = new OrderHeader("20260117001", customer.getId(), trip.getId());
-        header.setId(orderId.getAndIncrement());
-
+        header.setId(3000L);
         OrderLine line = new OrderLine("SKU001", "Matcha Kit", null, 2, 32.5);
         header.addLine(line);
         header.setTotalAmount(65.0);
-
-        orders.put(header.getBusinessId(), header);
-        ordersById.put(header.getId(), header);
+        orderHeaderRepository.save(header);
 
         Category category = new Category(
                 "cat-1000",
                 new LinkedHashMap<>(Map.of("zh-CN", "茶饮", "en-US", "Tea")),
                 new LinkedHashMap<>(Map.of("zh-CN", "茶类商品", "en-US", "Tea products")),
                 List.of(Map.of("name", "origin", "type", "text")));
-        categories.put(category.getId(), category);
+        categoryRepository.save(category);
 
         Supplier supplier = new Supplier(
                 "sup-1000",
                 new LinkedHashMap<>(Map.of("zh-CN", "东京供货商", "en-US", "Tokyo Supplier")),
                 new LinkedHashMap<>(Map.of("zh-CN", "稳定供应抹茶", "en-US", "Stable matcha supplier")),
                 "tokyo-supplier@bobbuy.com");
-        suppliers.put(supplier.getId(), supplier);
+        supplierRepository.save(supplier);
 
         Product product = new Product(
                 "prd-1000",
@@ -108,7 +134,7 @@ public class BobbuyStore {
                 StorageCondition.AMBIENT,
                 OrderMethod.DIRECT_BUY,
                 category.getId());
-        products.put(product.getId(), product);
+        productRepository.save(product);
 
         MerchantSku merchantSku = new MerchantSku(
                 "msku-1000",
@@ -117,109 +143,123 @@ public class BobbuyStore {
                 "TOKYO-MATCHA-001",
                 30.0,
                 StockStatus.IN_STOCK);
-        merchantSkus.put(merchantSku.getId(), merchantSku);
+        merchantSkuRepository.save(merchantSku);
+        orderIdentity.set(3000L);
     }
 
     public List<User> listUsers() {
-        return new ArrayList<>(users.values());
+        return userRepository.findAll();
     }
 
     public Optional<User> getUser(Long id) {
-        return Optional.ofNullable(users.get(id));
+        return userRepository.findById(id);
     }
 
+    @Transactional
     public User createUser(User user) {
-        user.setId(userId.getAndIncrement());
-        users.put(user.getId(), user);
-        return user;
+        user.setId(nextUserId());
+        return userRepository.save(user);
     }
 
+    @Transactional
     public Optional<User> updateUser(Long id, User user) {
-        if (!users.containsKey(id)) {
+        if (!userRepository.existsById(id)) {
             return Optional.empty();
         }
         user.setId(id);
-        users.put(id, user);
-        return Optional.of(user);
+        return Optional.of(userRepository.save(user));
     }
 
+    @Transactional
     public boolean deleteUser(Long id) {
-        return users.remove(id) != null;
+        if (!userRepository.existsById(id)) {
+            return false;
+        }
+        userRepository.deleteById(id);
+        return true;
     }
 
     public List<Trip> listTrips() {
-        return new ArrayList<>(trips.values());
+        return tripRepository.findAll();
     }
 
     public Optional<Trip> getTrip(Long id) {
-        return Optional.ofNullable(trips.get(id));
+        return tripRepository.findById(id);
     }
 
+    @Transactional
     public Trip createTrip(Trip trip) {
-        trip.setId(tripId.getAndIncrement());
+        trip.setId(nextTripId());
         trip.setReservedCapacity(Math.max(trip.getReservedCapacity(), 0));
         trip.setStatusUpdatedAt(LocalDateTime.now());
-        trips.put(trip.getId(), trip);
-        return trip;
+        return tripRepository.save(trip);
     }
 
+    @Transactional
     public Optional<Trip> updateTrip(Long id, Trip trip) {
-        if (!trips.containsKey(id)) {
+        if (!tripRepository.existsById(id)) {
             return Optional.empty();
         }
         trip.setId(id);
         trip.setStatusUpdatedAt(LocalDateTime.now());
-        trips.put(id, trip);
-        return Optional.of(trip);
+        return Optional.of(tripRepository.save(trip));
     }
 
+    @Transactional
     public Trip updateTripStatus(Long id, TripStatus nextStatus) {
         Trip trip = getTrip(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
         String previousStatus = trip.getStatus().name();
         trip.setStatus(nextStatus);
         trip.setStatusUpdatedAt(LocalDateTime.now());
-        trips.put(id, trip);
+        Trip saved = tripRepository.save(trip);
         auditLogService.logStatusChange("TRIP", id, previousStatus, nextStatus.name(), SYSTEM_USER_ID);
-        return trip;
+        return saved;
     }
 
+    @Transactional
     public boolean deleteTrip(Long id) {
-        return trips.remove(id) != null;
+        if (!tripRepository.existsById(id)) {
+            return false;
+        }
+        tripRepository.deleteById(id);
+        return true;
     }
 
     public List<Product> listProducts() {
-        return new ArrayList<>(products.values());
+        return productRepository.findAll();
     }
 
     public Optional<Product> getProduct(String id) {
-        return Optional.ofNullable(products.get(id));
+        return productRepository.findById(id);
     }
 
+    @Transactional
     public Product createProduct(Product product) {
         if (product.getId() == null || product.getId().isBlank()) {
             product.setId(UUID.randomUUID().toString());
         }
         ensureLocalizedFields(product);
-        products.put(product.getId(), product);
-        return product;
+        return productRepository.save(product);
     }
 
+    @Transactional
     public Optional<Product> updateProduct(String id, Product product) {
-        if (!products.containsKey(id)) {
+        if (!productRepository.existsById(id)) {
             return Optional.empty();
         }
         product.setId(id);
         ensureLocalizedFields(product);
-        products.put(id, product);
-        return Optional.of(product);
+        return Optional.of(productRepository.save(product));
     }
 
+    @Transactional
     public Optional<Product> patchProduct(String id, ProductPatch patch) {
-        if (!products.containsKey(id)) {
+        Optional<Product> existingOptional = productRepository.findById(id);
+        if (existingOptional.isEmpty()) {
             return Optional.empty();
         }
-        Product existing = products.get(id);
+        Product existing = existingOptional.orElseThrow();
         if (patch == null) {
             return Optional.of(existing);
         }
@@ -247,32 +287,31 @@ public class BobbuyStore {
         if (patch.getCategoryId() != null) {
             existing.setCategoryId(patch.getCategoryId());
         }
-        products.put(id, existing);
-        return Optional.of(existing);
+        return Optional.of(productRepository.save(existing));
     }
 
     public List<Category> listCategories() {
-        return new ArrayList<>(categories.values());
+        return categoryRepository.findAll();
     }
 
     public Optional<Category> getCategory(String id) {
-        return Optional.ofNullable(categories.get(id));
+        return categoryRepository.findById(id);
     }
 
     public List<Supplier> listSuppliers() {
-        return new ArrayList<>(suppliers.values());
+        return supplierRepository.findAll();
     }
 
     public Optional<Supplier> getSupplier(String id) {
-        return Optional.ofNullable(suppliers.get(id));
+        return supplierRepository.findById(id);
     }
 
     public List<MerchantSku> listMerchantSkus() {
-        return new ArrayList<>(merchantSkus.values());
+        return merchantSkuRepository.findAll();
     }
 
     public Optional<MerchantSku> getMerchantSku(String id) {
-        return Optional.ofNullable(merchantSkus.get(id));
+        return merchantSkuRepository.findById(id);
     }
 
     public List<OrderHeader> listOrders() {
@@ -281,70 +320,67 @@ public class BobbuyStore {
 
     public List<OrderHeader> listOrders(Long tripId) {
         if (tripId == null) {
-            return new ArrayList<>(orders.values());
+            return orderHeaderRepository.findAll();
         }
-        return orders.values().stream()
-                .filter(order -> tripId.equals(order.getTripId()))
-                .collect(Collectors.toList());
+        return orderHeaderRepository.findByTripId(tripId);
     }
 
     public Optional<OrderHeader> getOrder(Long id) {
-        return Optional.ofNullable(ordersById.get(id));
+        return orderHeaderRepository.findById(id);
     }
 
     public Optional<OrderHeader> getOrderByBusinessId(String businessId) {
-        return Optional.ofNullable(orders.get(businessId));
+        return orderHeaderRepository.findByBusinessId(businessId);
     }
 
-    /**
-     * 核心幂等合并算法 (Upsert Logic)
-     * 严格遵循 ARCH-11 第 3 节
-     */
-    public synchronized OrderHeader upsertOrder(OrderHeader headerInput) {
+    @Transactional
+    public OrderHeader upsertOrder(OrderHeader headerInput) {
         if (headerInput.getPaymentStatus() == null) {
             headerInput.setPaymentStatus(PaymentStatus.UNPAID);
         }
-        OrderHeader existing = orders.get(headerInput.getBusinessId());
+        if (headerInput.getLines() == null) {
+            headerInput.setLines(new ArrayList<>());
+        }
+        Optional<OrderHeader> existingOptional = orderHeaderRepository.findByBusinessIdForUpdate(headerInput.getBusinessId());
 
-        if (existing == null) {
-            // 新建逻辑
+        if (existingOptional.isEmpty()) {
             if (isAtLeastConfirmed(headerInput.getStatus())) {
                 reserveTripCapacity(headerInput.getTripId(), calculateTotalQuantity(headerInput));
             }
-            headerInput.setId(orderId.getAndIncrement());
+            headerInput.setId(nextOrderIdentity());
             headerInput.setStatusUpdatedAt(LocalDateTime.now());
-            // 处理行 ID
             for (OrderLine line : headerInput.getLines()) {
-                line.setId(orderId.getAndIncrement()); // 借用同一计数器
+                line.setId(nextOrderIdentity());
                 line.setHeaderId(headerInput.getId());
             }
             recalculateTotal(headerInput);
-            orders.put(headerInput.getBusinessId(), headerInput);
-            ordersById.put(headerInput.getId(), headerInput);
-            return headerInput;
-        } else {
-            // 合并逻辑 - 业务规则: SKU + Spec 匹配则累加
-            int additionalQuantity = calculateTotalQuantity(headerInput);
-            if (additionalQuantity > 0 && isAtLeastConfirmed(existing.getStatus())) {
-                reserveTripCapacity(existing.getTripId(), additionalQuantity);
-            }
-            for (OrderLine newLine : headerInput.getLines()) {
-                Optional<OrderLine> match = existing.getLines().stream()
-                        .filter(l -> l.canMergeWith(newLine))
-                        .findFirst();
-
-                if (match.isPresent()) {
-                    OrderLine existingLine = match.get();
-                    existingLine.setQuantity(existingLine.getQuantity() + newLine.getQuantity());
-                } else {
-                    newLine.setId(orderId.getAndIncrement());
-                    existing.addLine(newLine);
-                }
-            }
-            existing.setStatusUpdatedAt(LocalDateTime.now());
-            recalculateTotal(existing);
-            return existing;
+            return orderHeaderRepository.save(headerInput);
         }
+
+        OrderHeader existing = existingOptional.orElseThrow();
+        if (existing.getLines() == null) {
+            existing.setLines(new ArrayList<>());
+        }
+        int additionalQuantity = calculateTotalQuantity(headerInput);
+        if (additionalQuantity > 0 && isAtLeastConfirmed(existing.getStatus())) {
+            reserveTripCapacity(existing.getTripId(), additionalQuantity);
+        }
+        for (OrderLine newLine : headerInput.getLines()) {
+            Optional<OrderLine> match = existing.getLines().stream()
+                    .filter(l -> l.canMergeWith(newLine))
+                    .findFirst();
+
+            if (match.isPresent()) {
+                OrderLine existingLine = match.get();
+                existingLine.setQuantity(existingLine.getQuantity() + newLine.getQuantity());
+            } else {
+                newLine.setId(nextOrderIdentity());
+                existing.addLine(newLine);
+            }
+        }
+        existing.setStatusUpdatedAt(LocalDateTime.now());
+        recalculateTotal(existing);
+        return orderHeaderRepository.save(existing);
     }
 
     private void recalculateTotal(OrderHeader header) {
@@ -354,37 +390,48 @@ public class BobbuyStore {
         header.setTotalAmount(total);
     }
 
+    @Transactional
     public Optional<OrderHeader> updateOrder(Long id, OrderHeader order) {
-        if (!ordersById.containsKey(id)) {
+        if (!orderHeaderRepository.existsById(id)) {
             return Optional.empty();
         }
         if (order.getPaymentStatus() == null) {
             order.setPaymentStatus(PaymentStatus.UNPAID);
         }
+        if (order.getLines() == null) {
+            order.setLines(new ArrayList<>());
+        }
         order.setId(id);
+        for (OrderLine line : order.getLines()) {
+            if (line.getId() == null) {
+                line.setId(nextOrderIdentity());
+            }
+            line.setHeaderId(id);
+        }
         order.setStatusUpdatedAt(LocalDateTime.now());
-        ordersById.put(id, order);
-        orders.put(order.getBusinessId(), order);
-        return Optional.of(order);
+        return Optional.of(orderHeaderRepository.save(order));
     }
 
+    @Transactional
     public OrderHeader updateOrderStatus(Long id, OrderStatus nextStatus) {
         OrderHeader order = getOrder(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
         return applyOrderStatusTransition(order, nextStatus, true);
     }
 
+    @Transactional
     public boolean deleteOrder(Long id) {
-        OrderHeader removed = ordersById.remove(id);
-        if (removed != null) {
-            orders.remove(removed.getBusinessId());
-            return true;
+        Optional<OrderHeader> removed = orderHeaderRepository.findById(id);
+        if (removed.isEmpty()) {
+            return false;
         }
-        return false;
+        orderHeaderRepository.deleteById(id);
+        return true;
     }
 
-    public synchronized Trip reserveTripCapacity(Long id, int quantity) {
-        Trip trip = getTrip(id)
+    @Transactional
+    public Trip reserveTripCapacity(Long id, int quantity) {
+        Trip trip = tripRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
         int remaining = trip.getRemainingCapacity();
         if (quantity <= 0) {
@@ -395,12 +442,12 @@ public class BobbuyStore {
         }
         trip.setReservedCapacity(trip.getReservedCapacity() + quantity);
         trip.setStatusUpdatedAt(LocalDateTime.now());
-        trips.put(id, trip);
-        return trip;
+        return tripRepository.save(trip);
     }
 
-    public synchronized Trip releaseTripCapacity(Long id, int quantity) {
-        Trip trip = getTrip(id)
+    @Transactional
+    public Trip releaseTripCapacity(Long id, int quantity) {
+        Trip trip = tripRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
         if (quantity <= 0) {
             return trip;
@@ -411,11 +458,11 @@ public class BobbuyStore {
         }
         trip.setReservedCapacity(trip.getReservedCapacity() - releaseQuantity);
         trip.setStatusUpdatedAt(LocalDateTime.now());
-        trips.put(id, trip);
-        return trip;
+        return tripRepository.save(trip);
     }
 
-    public synchronized List<OrderHeader> bulkUpdateOrderStatus(Long tripId, OrderStatus targetStatus) {
+    @Transactional
+    public List<OrderHeader> bulkUpdateOrderStatus(Long tripId, OrderStatus targetStatus) {
         getTrip(tripId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
         List<OrderHeader> eligible = listOrders(tripId).stream()
@@ -463,14 +510,13 @@ public class BobbuyStore {
     }
 
     public double calculateGmv() {
-        return orders.values().stream()
-                .mapToDouble(OrderHeader::getTotalAmount)
-                .sum();
+        return orderHeaderRepository.sumTotalAmount();
     }
 
     public Map<OrderStatus, Integer> orderStatusCounts() {
         Map<OrderStatus, Integer> counts = new EnumMap<>(OrderStatus.class);
-        orders.values().forEach(order -> counts.merge(order.getStatus(), 1, Integer::sum));
+        orderHeaderRepository.countByStatus().forEach(item ->
+                counts.put(item.getStatus(), (int) item.getTotal()));
         return counts;
     }
 
@@ -497,10 +543,9 @@ public class BobbuyStore {
         String previousStatus = order.getStatus().name();
         order.setStatus(nextStatus);
         order.setStatusUpdatedAt(LocalDateTime.now());
-        orders.put(order.getBusinessId(), order);
-        ordersById.put(order.getId(), order);
+        OrderHeader saved = orderHeaderRepository.save(order);
         auditLogService.logStatusChange("ORDER", order.getId(), previousStatus, nextStatus.name(), SYSTEM_USER_ID);
-        return order;
+        return saved;
     }
 
     private boolean shouldReserveCapacity(OrderStatus current, OrderStatus nextStatus) {
@@ -561,5 +606,30 @@ public class BobbuyStore {
                 target.put(entry.getKey(), entry.getValue());
             }
         }
+    }
+
+    private Long nextUserId() {
+        return userRepository.findTopByOrderByIdDesc()
+                .map(existing -> existing.getId() + 1)
+                .orElse(1000L);
+    }
+
+    private Long nextTripId() {
+        return tripRepository.findTopByOrderByIdDesc()
+                .map(existing -> existing.getId() + 1)
+                .orElse(2000L);
+    }
+
+    private synchronized Long nextOrderIdentity() {
+        long current = orderIdentity.incrementAndGet();
+        long persistedMax = orderHeaderRepository.findTopByOrderByIdDesc()
+                .map(OrderHeader::getId)
+                .orElse(2999L);
+        if (current <= persistedMax) {
+            long adjusted = persistedMax + 1;
+            orderIdentity.set(adjusted);
+            return adjusted;
+        }
+        return current;
     }
 }

@@ -5,10 +5,11 @@ import com.bobbuy.api.response.ApiResponse;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.OrderStatus;
-import com.bobbuy.service.AuditLogService;
 import com.bobbuy.service.BobbuyStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -16,15 +17,16 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@SpringBootTest
 class OrderControllerTest {
+  @Autowired
   private BobbuyStore store;
+  @Autowired
   private OrderController controller;
 
   @BeforeEach
   void setUp() {
-    store = new BobbuyStore(new AuditLogService());
     store.seed();
-    controller = new OrderController(store);
   }
 
   @Test

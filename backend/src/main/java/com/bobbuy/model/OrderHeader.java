@@ -1,5 +1,15 @@
 package com.bobbuy.model;
 
+import com.bobbuy.model.converter.OrderLineListJsonConverter;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,16 +18,27 @@ import java.util.List;
  * 订单头模型 - 代表一次业务层面的购买事件
  * 对齐设计文档: ARCH-11
  */
+@Entity
+@Table(
+        name = "bb_order_header",
+        uniqueConstraints = @UniqueConstraint(name = "uk_bb_order_header_business_id", columnNames = "business_id"))
 public class OrderHeader {
+    @Id
     private Long id; // 物理主键
+    @Column(name = "business_id", nullable = false, length = 64)
     private String businessId; // 业务幂等标识 (Event ID)
     private Long customerId; // 客户 ID
     private Long tripId; // 行程 ID
+    @Enumerated(EnumType.STRING)
     private OrderStatus status; // 订单状态
     private LocalDateTime statusUpdatedAt;
+    @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod; // 支付方式
+    @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus; // 支付状态
     private double totalAmount; // 冗余汇总金额
+    @Convert(converter = OrderLineListJsonConverter.class)
+    @Column(columnDefinition = "jsonb")
     private List<OrderLine> lines = new ArrayList<>(); // 嵌套行条目
 
     public OrderHeader() {

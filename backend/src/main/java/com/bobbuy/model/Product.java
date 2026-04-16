@@ -1,26 +1,47 @@
 package com.bobbuy.model;
 
+import com.bobbuy.model.converter.MediaGalleryJsonConverter;
+import com.bobbuy.model.converter.StringMapJsonConverter;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Entity
+@Table(name = "bb_product")
 public class Product {
+    @Id
     private String id;
 
     @JsonbColumn
+    @Convert(converter = StringMapJsonConverter.class)
+    @Column(columnDefinition = "jsonb")
     private Map<String, String> name = new HashMap<>();
 
     @JsonbColumn
+    @Convert(converter = StringMapJsonConverter.class)
+    @Column(columnDefinition = "jsonb")
     private Map<String, String> description = new HashMap<>();
 
     private String brand;
     private double basePrice;
 
     @JsonbColumn
+    @Convert(converter = MediaGalleryJsonConverter.class)
+    @Column(columnDefinition = "jsonb")
     private List<MediaGalleryItem> mediaGallery = new ArrayList<>();
 
+    @Enumerated(EnumType.STRING)
     private StorageCondition storageCondition;
+    @Enumerated(EnumType.STRING)
     private OrderMethod orderMethod;
     private String categoryId;
 

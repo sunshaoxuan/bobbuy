@@ -1,6 +1,11 @@
 package com.bobbuy.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -8,7 +13,10 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "bb_trip")
 public class Trip {
+  @Id
   private Long id;
 
   @NotNull(message = "{validation.trip.agent_id.required}")
@@ -31,6 +39,7 @@ public class Trip {
   private int reservedCapacity;
 
   @NotNull(message = "{validation.trip.status.required}")
+  @Enumerated(EnumType.STRING)
   private TripStatus status;
 
   private LocalDateTime statusUpdatedAt;
