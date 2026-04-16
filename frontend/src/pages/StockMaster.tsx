@@ -72,6 +72,17 @@ const CATEGORY_ATTRIBUTE_TEMPLATES: Record<'clothing' | 'food', CategoryAttribut
 
 const AUTOSAVE_DELAY_MS = 500;
 const MOBILE_DRAWER_HEIGHT = '82vh';
+const MOBILE_TOOLBAR_COMPACT_SCROLL_THRESHOLD = 24;
+const MOBILE_DYNAMIC_GUTTER = 16;
+const DESKTOP_DYNAMIC_GUTTER = 8;
+const DEFAULT_STOCK_THUMBNAIL = '/assets/products/milk.png';
+const CURRENCY_BY_LOCALE: Record<string, string> = {
+  'zh-CN': 'CNY',
+  'en-US': 'USD'
+};
+const PRICE_FRACTION_DIGITS = 2;
+const MOBILE_BOTTOM_PADDING = '7rem';
+const DESKTOP_BOTTOM_PADDING = '5rem';
 const CLOTHING_CATEGORY_ALIASES = ['clothing', 'apparel', 'fashion', '服装', '时尚', '鞋包'];
 const FOOD_CATEGORY_ALIASES = ['food', 'grocery', 'snack', '食品', '零食', '生鲜'];
 
@@ -129,7 +140,7 @@ export default function StockMaster() {
       setToolbarCompact(false);
       return;
     }
-    const onScroll = () => setToolbarCompact(window.scrollY > 24);
+    const onScroll = () => setToolbarCompact(window.scrollY > MOBILE_TOOLBAR_COMPACT_SCROLL_THRESHOLD);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -186,6 +197,19 @@ export default function StockMaster() {
     }
     return values[locale] || values['zh-CN'] || values['en-US'] || Object.values(values).find(Boolean) || fallback || '';
   };
+
+  const formatPrice = useMemo(
+    () =>
+      new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: CURRENCY_BY_LOCALE[locale] ?? 'USD',
+        minimumFractionDigits: PRICE_FRACTION_DIGITS,
+        maximumFractionDigits: PRICE_FRACTION_DIGITS
+      }),
+    [locale]
+  );
+
+  const getStockThumbnail = (item: StockItem): string => item.mediaGallery?.find((media) => media.type === 'image')?.url ?? DEFAULT_STOCK_THUMBNAIL;
 
   const requestTranslationSuggestion = async (sourceText: string, _sourceLocale: string, targetLocale: string) => {
     if (!sourceText.trim()) {
@@ -366,7 +390,7 @@ export default function StockMaster() {
   const renderMobileCards = () => (
     <Space direction="vertical" size={12} style={{ width: '100%' }}>
       {filteredData.map((item) => {
-        const image = item.mediaGallery?.find((media) => media.type === 'image')?.url ?? '/assets/products/milk.png';
+        const image = getStockThumbnail(item);
         const localizedTitle = getLocalizedFallback(item.nameL10n, item.name);
         return (
           <Card key={item.key} className="stock-mobile-card app-shadow-low">
@@ -383,7 +407,7 @@ export default function StockMaster() {
               </div>
               <div className="stock-mobile-side">
                 <Text className="stock-mobile-metric">
-                  <DollarOutlined /> {item.price.toFixed(2)}
+                  <DollarOutlined /> {formatPrice.format(item.price)}
                 </Text>
                 <Text className="stock-mobile-metric">
                   <DatabaseOutlined /> {item.stock}
@@ -401,7 +425,7 @@ export default function StockMaster() {
         <Card className="stock-mobile-card app-shadow-low">
           <Space direction="vertical" align="center" style={{ width: '100%', padding: '1.5rem 0' }}>
             <InboxOutlined style={{ fontSize: '1.75rem', color: '#d9d9d9' }} />
-            <Text type="secondary">No data</Text>
+            <Text type="secondary">{t('stock.empty')}</Text>
           </Space>
         </Card>
       ) : null}
@@ -409,7 +433,7 @@ export default function StockMaster() {
   );
 
   return (
-    <div style={{ padding: isMobile ? '0 0 7rem 0' : '0 0 5rem 0' }}>
+    <div style={{ padding: isMobile ? `0 0 ${MOBILE_BOTTOM_PADDING} 0` : `0 0 ${DESKTOP_BOTTOM_PADDING} 0` }}>
       <Breadcrumb style={{ marginBottom: '1rem' }}>
         <Breadcrumb.Item>{t('nav.dashboard')}</Breadcrumb.Item>
         <Breadcrumb.Item>{t('nav.stock_master')}</Breadcrumb.Item>
@@ -463,7 +487,7 @@ export default function StockMaster() {
               emptyText: (
                 <div style={{ padding: '2.5rem' }}>
                   <InboxOutlined style={{ fontSize: '2rem', color: '#d9d9d9' }} />
-                  <p>No data</p>
+                  <p>{t('stock.empty')}</p>
                 </div>
               )
             }}
@@ -535,7 +559,7 @@ export default function StockMaster() {
             </Text>
           )}
           {activeCategoryAttributes.length > 0 ? (
-            <Row gutter={[16, isMobile ? 16 : 8]}>
+            <Row gutter={[MOBILE_DYNAMIC_GUTTER, isMobile ? MOBILE_DYNAMIC_GUTTER : DESKTOP_DYNAMIC_GUTTER]}>
               {activeCategoryAttributes.map((field) => (
                 <Col key={field.key} xs={24} sm={24} md={12} lg={12}>
                   <Form.Item name={['dynamicAttributes', field.key]} label={t(field.labelKey)}>

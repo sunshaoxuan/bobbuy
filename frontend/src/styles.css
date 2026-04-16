@@ -7,6 +7,10 @@
   --shadow-low: 0 0.25rem 0.75rem rgba(15, 23, 42, 0.08);
   --shadow-medium: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.12);
   --shadow-high: 0 1rem 2.5rem rgba(15, 23, 42, 0.18);
+  --blur-glass: 0.875rem;
+  --glass-opacity-strong: 0.9;
+  --glass-opacity-medium: 0.82;
+  --glass-opacity-soft: 0.72;
 }
 
 body {
@@ -63,8 +67,8 @@ body {
   position: sticky;
   top: 0;
   z-index: 11;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(0.875rem);
+  background: rgba(255, 255, 255, var(--glass-opacity-soft));
+  backdrop-filter: blur(var(--blur-glass));
   padding-inline: 0.75rem;
 }
 
@@ -97,8 +101,8 @@ body {
   position: fixed;
   inset-inline: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(0.875rem);
+  background: rgba(255, 255, 255, var(--glass-opacity-medium));
+  backdrop-filter: blur(var(--blur-glass));
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.25rem;
@@ -168,7 +172,7 @@ body {
   top: 3.5rem;
   z-index: 9;
   background: rgba(245, 246, 248, 0.9);
-  backdrop-filter: blur(0.5rem);
+  backdrop-filter: blur(calc(var(--blur-glass) * 0.57));
   padding: 0.5rem 0;
   flex-direction: column;
 }
@@ -229,8 +233,8 @@ body {
   position: fixed;
   inset-inline: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(0.625rem);
+  background: rgba(255, 255, 255, var(--glass-opacity-strong));
+  backdrop-filter: blur(calc(var(--blur-glass) * 0.71));
   border-top: 0.0625rem solid #f0f0f0;
   padding: 0.75rem 1.5rem;
   display: flex;

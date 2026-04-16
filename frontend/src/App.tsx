@@ -15,6 +15,7 @@ import { supportedLocales, useI18n } from './i18n';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
+const DESKTOP_SIDER_EXPANDED_WIDTH = '14.5rem';
 
 export default function App() {
   const location = useLocation();
@@ -74,7 +75,7 @@ export default function App() {
           onCollapse={setDesktopCollapsed}
           theme="light"
           className="app-sider app-shadow-high"
-          width={desktopCollapsed ? undefined : 232}
+          width={desktopCollapsed ? undefined : DESKTOP_SIDER_EXPANDED_WIDTH}
         >
           <div className="app-brand-block">
             <Title level={4} style={{ margin: 0 }}>

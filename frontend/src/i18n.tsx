@@ -200,7 +200,8 @@ const translations: Record<Locale, Dictionary> = {
     'stock.media.url_placeholder': 'https://example.com/media.jpg',
     'stock.media.image': '图片',
     'stock.media.video': '视频',
-    'stock.media.title_placeholder': '输入媒体标题'
+    'stock.media.title_placeholder': '输入媒体标题',
+    'stock.empty': '暂无数据'
   },
   'en-US': {
     'app.brand_subtitle': 'Global Personal Shopping Console',
@@ -396,7 +397,8 @@ const translations: Record<Locale, Dictionary> = {
     'stock.media.url_placeholder': 'https://example.com/media.jpg',
     'stock.media.image': 'Image',
     'stock.media.video': 'Video',
-    'stock.media.title_placeholder': 'Input media title'
+    'stock.media.title_placeholder': 'Input media title',
+    'stock.empty': 'No data'
   }
 };
 
