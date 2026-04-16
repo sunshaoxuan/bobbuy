@@ -44,17 +44,19 @@ const CATEGORY_ATTRIBUTE_TEMPLATES: Record<'clothing' | 'food', CategoryAttribut
   ]
 };
 
+const AUTOSAVE_DELAY_MS = 500;
+const CLOTHING_CATEGORY_ALIASES = ['clothing', 'apparel', 'fashion', '服装', '时尚', '鞋包'];
+const FOOD_CATEGORY_ALIASES = ['food', 'grocery', 'snack', '食品', '零食', '生鲜'];
+
 const resolveCategoryTemplate = (category?: string): CategoryAttributeDefinition[] => {
   if (!category) {
     return [];
   }
   const normalized = category.trim().toLowerCase();
-  const clothingAliases = ['clothing', 'apparel', 'fashion', '服装', '时尚', '鞋包'];
-  const foodAliases = ['food', 'grocery', 'snack', '食品', '零食', '生鲜'];
-  if (clothingAliases.some((alias) => normalized.includes(alias))) {
+  if (CLOTHING_CATEGORY_ALIASES.some((alias) => normalized.includes(alias))) {
     return CATEGORY_ATTRIBUTE_TEMPLATES.clothing;
   }
-  if (foodAliases.some((alias) => normalized.includes(alias))) {
+  if (FOOD_CATEGORY_ALIASES.some((alias) => normalized.includes(alias))) {
     return CATEGORY_ATTRIBUTE_TEMPLATES.food;
   }
   return [];
@@ -213,7 +215,7 @@ export default function StockMaster() {
       return nextData;
     });
     if (options.showMessage) {
-      message.success('Item updated');
+      message.success(t('stock.drawer.update_success'));
     }
     if (options.closeAfterSave) {
       closeDrawer();
@@ -226,7 +228,7 @@ export default function StockMaster() {
     });
   };
 
-  const handleDrawerValuesChange = (_changedValues: unknown, allValues: StockItem) => {
+  const handleDrawerValuesChange = (_changedValues: Record<string, unknown>, _allValues: StockItem) => {
     if (!isMobile || !editingItem) {
       return;
     }
@@ -235,10 +237,10 @@ export default function StockMaster() {
       clearTimeout(autosaveTimerRef.current);
     }
     autosaveTimerRef.current = setTimeout(() => {
-      saveEditingItem(allValues, { closeAfterSave: false, showMessage: false });
+      saveEditingItem(form.getFieldsValue(true), { closeAfterSave: false, showMessage: false });
       setSyncStatus('saved');
       autosaveTimerRef.current = null;
-    }, 500);
+    }, AUTOSAVE_DELAY_MS);
   };
 
   useEffect(() => {

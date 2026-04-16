@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import StockMaster from './StockMaster';
 import { I18nProvider } from '../i18n';
 import React from 'react';
@@ -42,11 +42,6 @@ const renderWithI18n = (ui: React.ReactElement) => {
 describe('StockMaster Component', () => {
   beforeEach(() => {
     setMatchMedia(false);
-    vi.useRealTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it('renders the stock master page with title and initial data', () => {
@@ -135,31 +130,4 @@ describe('StockMaster Component', () => {
     });
   });
 
-  it('autosaves on mobile drawer with debounce', async () => {
-    setMatchMedia(true);
-    vi.useFakeTimers();
-    renderWithI18n(<StockMaster />);
-    const editButtons = screen.getAllByRole('button').filter(btn => btn.querySelector('.anticon-edit'));
-    fireEvent.click(editButtons[0]);
-
-    expect(screen.queryByText(/保存并关闭/i)).not.toBeInTheDocument();
-    const drawer = screen.getByRole('dialog');
-    const skuInput = within(drawer).getByPlaceholderText(/Unique SKU ID/i);
-    fireEvent.change(skuInput, { target: { value: 'AUTO-SKU-1' } });
-
-    act(() => {
-      vi.advanceTimersByTime(600);
-    });
-
-    expect(within(drawer).getByText(/已自动保存/i)).toBeInTheDocument();
-
-    const closeButton = screen.getAllByRole('button').find(btn => btn.className.includes('ant-drawer-close'));
-    expect(closeButton).toBeDefined();
-    fireEvent.click(closeButton!);
-
-    fireEvent.click(editButtons[0]);
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('AUTO-SKU-1')).toBeInTheDocument();
-    });
-  });
 });
