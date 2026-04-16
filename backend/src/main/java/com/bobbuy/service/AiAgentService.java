@@ -21,7 +21,8 @@ import java.util.regex.Pattern;
 @Service
 public class AiAgentService {
   private static final Pattern QTY_PATTERN = Pattern.compile("(\\d+|[一二两三四五六七八九十])\\s*(个|袋|箱|盒|pack|packs|pcs|件|份|只|瓶|罐)?", Pattern.CASE_INSENSITIVE);
-  private static final Pattern NOTE_PATTERN = Pattern.compile("(.+?口味)");
+  private static final List<String> QUANTITY_UNITS = List.of("个", "袋", "箱", "盒", "pack", "packs", "pcs", "件", "份", "只", "瓶", "罐");
+  private static final List<String> CHINESE_NUMBERS = List.of("一", "二", "两", "三", "四", "五", "六", "七", "八", "九", "十");
 
   private final LlmGateway llmGateway;
   private final ExperienceMappingRepository experienceMappingRepository;
@@ -147,7 +148,7 @@ public class AiAgentService {
       return 1;
     }
     String token = matcher.group(1);
-    if (token.matches("\\d+")) {
+    if (isDigits(token)) {
       return Integer.parseInt(token);
     }
     return switch (token) {
@@ -166,18 +167,21 @@ public class AiAgentService {
   }
 
   private String extractNote(String text) {
-    Matcher matcher = NOTE_PATTERN.matcher(text == null ? "" : text);
-    if (matcher.find()) {
-      return matcher.group(1).trim();
+    if (text == null || text.isBlank()) {
+      return "";
+    }
+    int index = text.indexOf("口味");
+    if (index > 0) {
+      return text.substring(0, index + 2).trim();
     }
     return "";
   }
 
   private String cleanName(String text) {
     String cleaned = text == null ? "" : text;
-    cleaned = cleaned.replaceAll("(\\d+|[一二两三四五六七八九十])\\s*(个|袋|箱|盒|pack|packs|pcs|件|份|只|瓶|罐)", "");
-    cleaned = cleaned.replaceAll("最少", "");
-    cleaned = cleaned.replaceAll("\\s+", " ").trim();
+    cleaned = cleaned.replace("最少", "");
+    cleaned = removeQuantityTokens(cleaned);
+    cleaned = collapseSpaces(cleaned);
     if (cleaned.endsWith("的")) {
       cleaned = cleaned.substring(0, cleaned.length() - 1).trim();
     }
@@ -257,6 +261,42 @@ public class AiAgentService {
     return value.toLowerCase(Locale.ROOT)
         .replaceAll("[^\\p{IsHan}a-z0-9ぁ-んァ-ヶー]", "")
         .trim();
+  }
+
+  private String removeQuantityTokens(String value) {
+    String result = value;
+    for (String unit : QUANTITY_UNITS) {
+      for (int i = 0; i <= 99; i++) {
+        String number = String.valueOf(i);
+        result = result.replace(number + unit, "");
+        result = result.replace(number + " " + unit, "");
+      }
+      for (String number : CHINESE_NUMBERS) {
+        result = result.replace(number + unit, "");
+        result = result.replace(number + " " + unit, "");
+      }
+    }
+    return result;
+  }
+
+  private String collapseSpaces(String value) {
+    String result = value.trim().replace('\n', ' ').replace('\r', ' ').replace('\t', ' ');
+    while (result.contains("  ")) {
+      result = result.replace("  ", " ");
+    }
+    return result;
+  }
+
+  private boolean isDigits(String token) {
+    if (token == null || token.isEmpty()) {
+      return false;
+    }
+    for (int i = 0; i < token.length(); i++) {
+      if (!Character.isDigit(token.charAt(i))) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private record CandidateItem(String name, int quantity, String note) {
