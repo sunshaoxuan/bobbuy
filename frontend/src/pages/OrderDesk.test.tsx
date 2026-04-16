@@ -79,8 +79,8 @@ describe('OrderDesk Component', () => {
 
         expect(screen.getByText(/AI Intelligent Extraction/i)).toBeInTheDocument();
         expect(await screen.findByText(/Detected: Muffin \(x2\), Tomato \(x1\)/i)).toBeInTheDocument();
-        expect(screen.getByText(/Muffin/i)).toBeInTheDocument();
-        expect(screen.getByText(/Tomato/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Muffin/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/Tomato/i).length).toBeGreaterThan(0);
     });
 
     it('toggles item status when "Add" is clicked', async () => {
@@ -96,7 +96,7 @@ describe('OrderDesk Component', () => {
             target: { value: '马粪蛋糕两个，还有 Tomato' }
         });
         fireEvent.click(screen.getByRole('button', { name: /send/i }));
-        await screen.findByText(/Muffin/i);
+        await screen.findByText(/Detected: Muffin \(x2\), Tomato \(x1\)/i);
 
         const addButtons = screen.getAllByRole('button', { name: /Add/i });
         fireEvent.click(addButtons[0]);
