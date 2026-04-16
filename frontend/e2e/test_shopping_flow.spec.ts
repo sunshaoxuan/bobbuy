@@ -132,12 +132,18 @@ test('shopping flow patches status and writes audit logs', async ({ page }) => {
   await page.getByLabel('Capacity').fill('3');
   await page.getByRole('button', { name: 'Save Trip' }).click();
 
-  await page.request.patch('/api/trips/2000/status', {
-    data: { status: 'PUBLISHED' }
+  await page.evaluate(async () => {
+    await fetch('/api/trips/2000/status', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'PUBLISHED' })
+    });
   });
 
-  const tripAudit = await page.request.get('/api/audit-logs');
-  const tripLogs = (await tripAudit.json()) as { data: AuditLog[] };
+  const tripLogs = (await page.evaluate(async () => {
+    const res = await fetch('/api/audit-logs');
+    return res.json();
+  })) as { data: AuditLog[] };
   expect(tripLogs.data.some((log) => log.entityType === 'TRIP' && log.afterValue === 'PUBLISHED')).toBe(true);
 
   await page.getByRole('link', { name: 'Orders' }).click();
@@ -150,11 +156,17 @@ test('shopping flow patches status and writes audit logs', async ({ page }) => {
   await page.getByLabel('Estimated Tax').fill('5');
   await page.getByRole('button', { name: 'Create Order' }).click();
 
-  await page.request.patch('/api/orders/3000/status', {
-    data: { status: 'CONFIRMED' }
+  await page.evaluate(async () => {
+    await fetch('/api/orders/3000/status', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'CONFIRMED' })
+    });
   });
 
-  const orderAudit = await page.request.get('/api/audit-logs');
-  const orderLogs = (await orderAudit.json()) as { data: AuditLog[] };
+  const orderLogs = (await page.evaluate(async () => {
+    const res = await fetch('/api/audit-logs');
+    return res.json();
+  })) as { data: AuditLog[] };
   expect(orderLogs.data.some((log) => log.entityType === 'ORDER' && log.afterValue === 'CONFIRMED')).toBe(true);
 });
