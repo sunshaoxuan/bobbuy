@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Input, Space, Typography } from 'antd';
+import { Grid, Button, Input, Space, Typography } from 'antd';
+import { CheckOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -129,6 +130,8 @@ export default function L10nInput({
   const currentValue = getDisplayValue(value[activeLocale]);
   const suggestion = suggestions[activeLocale];
   const isLoadingSuggestion = loadingLocale === activeLocale;
+  const screens = Grid.useBreakpoint();
+  const isCompactAction = screens.sm === false;
 
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={8}>
@@ -160,8 +163,15 @@ export default function L10nInput({
             {isLoadingSuggestion ? loadingSuggestionText : `${suggestionPrefixText}: ${suggestion}`}
           </Text>
           {!isLoadingSuggestion ? (
-            <Button type="link" size="small" onClick={applySuggestion} style={{ paddingInline: 0 }}>
-              {applySuggestionText}
+            <Button
+              type="link"
+              size="small"
+              onClick={applySuggestion}
+              style={{ paddingInline: 0 }}
+              icon={isCompactAction ? <CheckOutlined /> : undefined}
+              aria-label={applySuggestionText}
+            >
+              {isCompactAction ? null : applySuggestionText}
             </Button>
           ) : null}
         </Space>

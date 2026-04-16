@@ -1,6 +1,32 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Table, Input, InputNumber, Button, Space, Typography, Tag, message, Breadcrumb, Card, Drawer, Form, Grid, Select } from 'antd';
-import { PlusOutlined, SaveOutlined, DeleteOutlined, InboxOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  Table,
+  Input,
+  InputNumber,
+  Button,
+  Space,
+  Typography,
+  Tag,
+  message,
+  Breadcrumb,
+  Card,
+  Drawer,
+  Form,
+  Grid,
+  Select,
+  Row,
+  Col
+} from 'antd';
+import {
+  PlusOutlined,
+  SaveOutlined,
+  DeleteOutlined,
+  InboxOutlined,
+  EditOutlined,
+  SearchOutlined,
+  DollarOutlined,
+  DatabaseOutlined
+} from '@ant-design/icons';
 import { useI18n } from '../i18n';
 import L10nInput, { type L10nValues } from '../components/L10nInput';
 import MediaGallery, { type MediaItem } from '../components/MediaGallery';
@@ -46,6 +72,17 @@ const CATEGORY_ATTRIBUTE_TEMPLATES: Record<'clothing' | 'food', CategoryAttribut
 
 const AUTOSAVE_DELAY_MS = 500;
 const MOBILE_DRAWER_HEIGHT = '82vh';
+const MOBILE_TOOLBAR_COMPACT_SCROLL_THRESHOLD = 24;
+const MOBILE_DYNAMIC_GUTTER = 16;
+const DESKTOP_DYNAMIC_GUTTER = 8;
+const DEFAULT_STOCK_THUMBNAIL = '/assets/products/milk.png';
+const CURRENCY_BY_LOCALE: Record<string, string> = {
+  'zh-CN': 'CNY',
+  'en-US': 'USD'
+};
+const PRICE_FRACTION_DIGITS = 2;
+const MOBILE_BOTTOM_PADDING = '7rem';
+const DESKTOP_BOTTOM_PADDING = '5rem';
 const CLOTHING_CATEGORY_ALIASES = ['clothing', 'apparel', 'fashion', '服装', '时尚', '鞋包'];
 const FOOD_CATEGORY_ALIASES = ['food', 'grocery', 'snack', '食品', '零食', '生鲜'];
 
@@ -75,6 +112,7 @@ const resolveCategoryTemplate = (category?: string): CategoryAttributeDefinition
 export default function StockMaster() {
   const { t, locale } = useI18n();
   const [searchText, setSearchText] = useState('');
+  const [toolbarCompact, setToolbarCompact] = useState(false);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -96,6 +134,17 @@ export default function StockMaster() {
   useEffect(() => {
     isDrawerOpenRef.current = isDrawerVisible;
   }, [isDrawerVisible]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setToolbarCompact(false);
+      return;
+    }
+    const onScroll = () => setToolbarCompact(window.scrollY > MOBILE_TOOLBAR_COMPACT_SCROLL_THRESHOLD);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [isMobile]);
 
   const [dataSource, setDataSource] = useState<StockItem[]>([
     {
@@ -124,7 +173,7 @@ export default function StockMaster() {
       name: 'Fresh Spinach',
       nameL10n: { 'zh-CN': '新鲜菠菜', 'en-US': 'Fresh Spinach' },
       category: 'Produce',
-      price: 4.50,
+      price: 4.5,
       stock: 100,
       unit: 'bag',
       brand: 'Green Garden',
@@ -149,6 +198,19 @@ export default function StockMaster() {
     return values[locale] || values['zh-CN'] || values['en-US'] || Object.values(values).find(Boolean) || fallback || '';
   };
 
+  const formatPrice = useMemo(
+    () =>
+      new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: CURRENCY_BY_LOCALE[locale] ?? 'USD',
+        minimumFractionDigits: PRICE_FRACTION_DIGITS,
+        maximumFractionDigits: PRICE_FRACTION_DIGITS
+      }),
+    [locale]
+  );
+
+  const getStockThumbnail = (item: StockItem): string => item.mediaGallery?.find((media) => media.type === 'image')?.url ?? DEFAULT_STOCK_THUMBNAIL;
+
   const requestTranslationSuggestion = async (sourceText: string, _sourceLocale: string, targetLocale: string) => {
     if (!sourceText.trim()) {
       return '';
@@ -164,7 +226,7 @@ export default function StockMaster() {
       price: 0,
       stock: 0,
       unit: 'pc',
-      isNew: true,
+      isNew: true
     };
     setDataSource([...dataSource, newData]);
   };
@@ -184,7 +246,7 @@ export default function StockMaster() {
 
   const handlePublish = () => {
     message.success(t('stock.msg.published'));
-    setDataSource(dataSource.map(item => ({ ...item, isNew: false })));
+    setDataSource(dataSource.map((item) => ({ ...item, isNew: false })));
   };
 
   const openDrawer = (record: StockItem) => {
@@ -270,9 +332,8 @@ export default function StockMaster() {
     };
   }, []);
 
-  const filteredData = dataSource.filter(item => 
-    item.name.toLowerCase().includes(searchText.toLowerCase()) || 
-    (item.sku && item.sku.toLowerCase().includes(searchText.toLowerCase()))
+  const filteredData = dataSource.filter(
+    (item) => item.name.toLowerCase().includes(searchText.toLowerCase()) || (item.sku && item.sku.toLowerCase().includes(searchText.toLowerCase()))
   );
 
   const columns = [
@@ -280,121 +341,172 @@ export default function StockMaster() {
       title: t('stock.item.name'),
       dataIndex: 'name',
       render: (text: string, record: StockItem) => (
-        <Input 
-          value={text} 
-          placeholder="e.g. Fuji Apple"
-          onChange={(e) => handleFieldChange(record.key, 'name', e.target.value)} 
-        />
-      ),
+        <Input value={text} placeholder="e.g. Fuji Apple" onChange={(e) => handleFieldChange(record.key, 'name', e.target.value)} />
+      )
     },
     {
       title: t('stock.item.category'),
       dataIndex: 'category',
       render: (text: string, record: StockItem) => (
-        <Input 
-          value={text} 
-          placeholder="e.g. Fruits"
-          onChange={(e) => handleFieldChange(record.key, 'category', e.target.value)} 
-        />
-      ),
+        <Input value={text} placeholder="e.g. Fruits" onChange={(e) => handleFieldChange(record.key, 'category', e.target.value)} />
+      )
     },
     {
       title: t('stock.item.price'),
       dataIndex: 'price',
-      width: 120,
+      width: '8rem',
       render: (val: number, record: StockItem) => (
-        <InputNumber
-          value={val}
-          prefix="$"
-          style={{ width: '100%' }}
-          onChange={(v) => handleFieldChange(record.key, 'price', v)}
-        />
-      ),
+        <InputNumber value={val} prefix="$" style={{ width: '100%' }} onChange={(v) => handleFieldChange(record.key, 'price', v)} />
+      )
     },
     {
       title: t('stock.item.quantity'),
       dataIndex: 'stock',
-      width: 100,
+      width: '7rem',
       render: (val: number, record: StockItem) => (
-        <InputNumber
-          value={val}
-          style={{ width: '100%' }}
-          onChange={(v) => handleFieldChange(record.key, 'stock', v)}
-        />
-      ),
+        <InputNumber value={val} style={{ width: '100%' }} onChange={(v) => handleFieldChange(record.key, 'stock', v)} />
+      )
     },
     {
       title: 'Status',
       key: 'status',
-      width: 100,
-      render: (_: any, record: StockItem) => (
+      width: '7rem',
+      render: (_: any, record: StockItem) =>
         record.isNew ? <Tag color="orange">{t('stock.status.new')}</Tag> : <Tag color="blue">{t('stock.status.modified')}</Tag>
-      ),
     },
     {
       title: 'Action',
       key: 'action',
-      width: 120,
+      width: '8rem',
       render: (_: any, record: StockItem) => (
         <Space>
-          <Button 
-            type="text" 
-            icon={<EditOutlined />} 
-            onClick={() => openDrawer(record)}
-          />
-          <Button 
-            type="text" 
-            danger 
-            icon={<DeleteOutlined />} 
-            onClick={() => handleDelete(record.key)}
-          />
+          <Button type="text" icon={<EditOutlined />} onClick={() => openDrawer(record)} />
+          <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.key)} />
         </Space>
-      ),
-    },
+      )
+    }
   ];
 
+  const renderMobileCards = () => (
+    <Space direction="vertical" size={12} style={{ width: '100%' }}>
+      {filteredData.map((item) => {
+        const image = getStockThumbnail(item);
+        const localizedTitle = getLocalizedFallback(item.nameL10n, item.name);
+        return (
+          <Card key={item.key} className="stock-mobile-card app-shadow-low">
+            <div className="stock-mobile-card-body">
+              <img src={image} alt={localizedTitle} className="stock-mobile-thumb" />
+              <div className="stock-mobile-main">
+                <Text strong className="stock-mobile-title">
+                  {localizedTitle}
+                </Text>
+                <Space size={8} wrap>
+                  <Tag color={item.isNew ? 'orange' : 'blue'}>{item.isNew ? t('stock.status.new') : t('stock.status.modified')}</Tag>
+                  {item.sku ? <Text type="secondary">SKU: {item.sku}</Text> : null}
+                </Space>
+              </div>
+              <div className="stock-mobile-side">
+                <Text className="stock-mobile-metric">
+                  <DollarOutlined /> {formatPrice.format(item.price)}
+                </Text>
+                <Text className="stock-mobile-metric">
+                  <DatabaseOutlined /> {item.stock}
+                </Text>
+                <Space size={4}>
+                  <Button type="text" icon={<EditOutlined />} onClick={() => openDrawer(item)} aria-label={t('stock.master.edit_detail')} />
+                  <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(item.key)} aria-label={t('stock.master.discard')} />
+                </Space>
+              </div>
+            </div>
+          </Card>
+        );
+      })}
+      {filteredData.length === 0 ? (
+        <Card className="stock-mobile-card app-shadow-low">
+          <Space direction="vertical" align="center" style={{ width: '100%', padding: '1.5rem 0' }}>
+            <InboxOutlined style={{ fontSize: '1.75rem', color: '#d9d9d9' }} />
+            <Text type="secondary">{t('stock.empty')}</Text>
+          </Space>
+        </Card>
+      ) : null}
+    </Space>
+  );
+
   return (
-    <div style={{ padding: '0 0 80px 0' }}>
-      <Breadcrumb style={{ marginBottom: 16 }}>
+    <div style={{ padding: isMobile ? `0 0 ${MOBILE_BOTTOM_PADDING} 0` : `0 0 ${DESKTOP_BOTTOM_PADDING} 0` }}>
+      <Breadcrumb style={{ marginBottom: '1rem' }}>
         <Breadcrumb.Item>{t('nav.dashboard')}</Breadcrumb.Item>
         <Breadcrumb.Item>{t('nav.stock_master')}</Breadcrumb.Item>
       </Breadcrumb>
 
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <Title level={3} style={{ margin: 0 }}>{t('stock.master.title')}</Title>
+      <div className={`stock-toolbar ${isMobile ? 'stock-toolbar-mobile' : ''} ${toolbarCompact ? 'stock-toolbar-compact' : ''}`}>
+        <div style={{ minWidth: 0 }}>
+          <Title level={3} style={{ margin: 0 }} className="stock-page-title">
+            {t('stock.master.title')}
+          </Title>
           <Text type="secondary">{t('stock.master.subtitle')}</Text>
         </div>
-        <Space direction="vertical" align="end">
-          <Input 
-            placeholder={t('stock.master.search_placeholder')} 
-            prefix={<SearchOutlined />} 
-            style={{ width: 300, marginBottom: 16 }}
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-          />
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddRow}>
-            {t('stock.master.add_row')}
-          </Button>
-        </Space>
+
+        {isMobile ? (
+          <Space direction="vertical" style={{ width: '100%' }} size={8}>
+            <Input
+              placeholder={t('stock.master.search_placeholder')}
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+            <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow} block>
+              {t('stock.master.add_row')}
+            </Button>
+          </Space>
+        ) : (
+          <Space direction="vertical" align="end">
+            <Input
+              placeholder={t('stock.master.search_placeholder')}
+              prefix={<SearchOutlined />}
+              style={{ width: '20rem' }}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddRow}>
+              {t('stock.master.add_row')}
+            </Button>
+          </Space>
+        )}
       </div>
 
-      <Card bodyStyle={{ padding: 0 }} style={{ overflow: 'hidden', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-        <Table 
-          dataSource={filteredData} 
-          columns={columns} 
-          pagination={false} 
-          locale={{ emptyText: <div style={{ padding: 40 }}><InboxOutlined style={{ fontSize: 32, color: '#d9d9d9' }} /><p>No data</p></div> }}
-        />
-      </Card>
+      {isMobile ? (
+        renderMobileCards()
+      ) : (
+        <Card bodyStyle={{ padding: 0 }} style={{ overflow: 'hidden', borderRadius: '0.75rem' }} className="app-shadow-medium">
+          <Table
+            dataSource={filteredData}
+            columns={columns}
+            pagination={false}
+            locale={{
+              emptyText: (
+                <div style={{ padding: '2.5rem' }}>
+                  <InboxOutlined style={{ fontSize: '2rem', color: '#d9d9d9' }} />
+                  <p>{t('stock.empty')}</p>
+                </div>
+              )
+            }}
+          />
+        </Card>
+      )}
 
       <Drawer
+        rootClassName="stock-drawer"
         title={
           <Space direction="vertical" size={0}>
             <span>{t('stock.drawer.title')}</span>
             {isMobile && (
               <Text type="secondary" style={{ fontSize: 12 }}>
-                {syncStatus === 'saving' ? t('stock.drawer.sync.saving') : syncStatus === 'saved' ? t('stock.drawer.sync.saved') : t('stock.drawer.sync.ready')}
+                {syncStatus === 'saving'
+                  ? t('stock.drawer.sync.saving')
+                  : syncStatus === 'saved'
+                  ? t('stock.drawer.sync.saved')
+                  : t('stock.drawer.sync.ready')}
               </Text>
             )}
           </Space>
@@ -405,14 +517,16 @@ export default function StockMaster() {
         onClose={closeDrawer}
         open={isDrawerVisible}
         destroyOnClose={true}
-        extra={isMobile ? null : (
-          <Space>
-            <Button onClick={closeDrawer}>Cancel</Button>
-            <Button onClick={handleDrawerSave} type="primary">
-              {t('stock.drawer.save')}
-            </Button>
-          </Space>
-        )}
+        extra={
+          isMobile ? null : (
+            <Space>
+              <Button onClick={closeDrawer}>Cancel</Button>
+              <Button onClick={handleDrawerSave} type="primary">
+                {t('stock.drawer.save')}
+              </Button>
+            </Space>
+          )
+        }
       >
         <Form form={form} layout="vertical" onValuesChange={handleDrawerValuesChange}>
           {isMobile && (
@@ -444,17 +558,23 @@ export default function StockMaster() {
               {t('stock.dynamic.section')}
             </Text>
           )}
-          {activeCategoryAttributes.map((field) => (
-            <Form.Item key={field.key} name={['dynamicAttributes', field.key]} label={t(field.labelKey)}>
-              {field.type === 'number' ? (
-                <InputNumber style={{ width: '100%' }} />
-              ) : field.type === 'select' ? (
-                <Select options={field.options?.map((option) => ({ value: option, label: option }))} />
-              ) : (
-                <Input />
-              )}
-            </Form.Item>
-          ))}
+          {activeCategoryAttributes.length > 0 ? (
+            <Row gutter={[MOBILE_DYNAMIC_GUTTER, isMobile ? MOBILE_DYNAMIC_GUTTER : DESKTOP_DYNAMIC_GUTTER]}>
+              {activeCategoryAttributes.map((field) => (
+                <Col key={field.key} xs={24} sm={24} md={12} lg={12}>
+                  <Form.Item name={['dynamicAttributes', field.key]} label={t(field.labelKey)}>
+                    {field.type === 'number' ? (
+                      <InputNumber style={{ width: '100%' }} />
+                    ) : field.type === 'select' ? (
+                      <Select options={field.options?.map((option) => ({ value: option, label: option }))} />
+                    ) : (
+                      <Input />
+                    )}
+                  </Form.Item>
+                </Col>
+              ))}
+            </Row>
+          ) : null}
           <Form.Item name="price" label={t('stock.item.price')}>
             <InputNumber prefix="$" style={{ width: '100%' }} />
           </Form.Item>
@@ -487,25 +607,35 @@ export default function StockMaster() {
         </Form>
       </Drawer>
 
-      <div style={{ 
-        position: 'fixed', 
-        bottom: 0, 
-        right: 0, 
-        left: 220, 
-        background: 'rgba(255, 255, 255, 0.8)', 
-        backdropFilter: 'blur(8px)',
-        padding: '16px 24px',
-        borderTop: '1px solid #f0f0f0',
-        display: 'flex',
-        justifyContent: 'flex-end',
-        gap: 12,
-        zIndex: 100
-      }}>
-        <Button size="large">{t('stock.master.discard')}</Button>
-        <Button type="primary" size="large" icon={<SaveOutlined />} onClick={handlePublish} id="publish-btn">
-          {t('stock.master.publish')}
-        </Button>
-      </div>
+      {isMobile ? (
+        <div className="stock-mobile-fab-group">
+          <Button
+            shape="circle"
+            icon={<PlusOutlined />}
+            aria-label={t('stock.master.add_row')}
+            size="large"
+            className="app-shadow-medium"
+            onClick={handleAddRow}
+          />
+          <Button
+            type="primary"
+            shape="circle"
+            icon={<SaveOutlined />}
+            aria-label={t('stock.master.publish')}
+            size="large"
+            className="app-shadow-high"
+            onClick={handlePublish}
+            id="publish-btn"
+          />
+        </div>
+      ) : (
+        <div className="stock-desktop-actionbar app-shadow-low">
+          <Button size="large">{t('stock.master.discard')}</Button>
+          <Button type="primary" size="large" icon={<SaveOutlined />} onClick={handlePublish} id="publish-btn">
+            {t('stock.master.publish')}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

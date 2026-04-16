@@ -9,9 +9,12 @@ const translations: Record<Locale, Dictionary> = {
   'zh-CN': {
     'app.brand_subtitle': '全球代购指挥台',
     'app.header_title': '产品第一版 · MVP Console',
+    'app.open_menu': '打开导航菜单',
+    'app.bottom_nav': '底部导航',
     'nav.dashboard': '概览',
     'nav.trips': '行程管理',
     'nav.orders': '订单管理',
+    'nav.scan': '扫码',
     'nav.order_desk': 'AI 分拣台',
     'nav.procurement': '采买执行',
     'nav.picking': '拣货复核',
@@ -197,14 +200,18 @@ const translations: Record<Locale, Dictionary> = {
     'stock.media.url_placeholder': 'https://example.com/media.jpg',
     'stock.media.image': '图片',
     'stock.media.video': '视频',
-    'stock.media.title_placeholder': '输入媒体标题'
+    'stock.media.title_placeholder': '输入媒体标题',
+    'stock.empty': '暂无数据'
   },
   'en-US': {
     'app.brand_subtitle': 'Global Personal Shopping Console',
     'app.header_title': 'Product v1 · MVP Console',
+    'app.open_menu': 'Open navigation menu',
+    'app.bottom_nav': 'Bottom navigation',
     'nav.dashboard': 'Overview',
     'nav.trips': 'Trips',
     'nav.orders': 'Orders',
+    'nav.scan': 'Scan',
     'nav.order_desk': 'Order Desk',
     'nav.procurement': 'Procurement',
     'nav.picking': 'Picking Master',
@@ -390,7 +397,8 @@ const translations: Record<Locale, Dictionary> = {
     'stock.media.url_placeholder': 'https://example.com/media.jpg',
     'stock.media.image': 'Image',
     'stock.media.video': 'Video',
-    'stock.media.title_placeholder': 'Input media title'
+    'stock.media.title_placeholder': 'Input media title',
+    'stock.empty': 'No data'
   }
 };
 
