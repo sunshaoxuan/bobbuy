@@ -82,8 +82,20 @@ export default function StockMaster() {
   const screens = Grid.useBreakpoint();
   const isMobile = screens.md === false;
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isDrawerOpenRef = useRef(false);
   const watchedCategory = Form.useWatch('category', form);
   const activeCategoryAttributes = useMemo(() => resolveCategoryTemplate(watchedCategory), [watchedCategory]);
+
+  const clearAutosaveTimer = () => {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    isDrawerOpenRef.current = isDrawerVisible;
+  }, [isDrawerVisible]);
 
   const [dataSource, setDataSource] = useState<StockItem[]>([
     {
@@ -189,10 +201,7 @@ export default function StockMaster() {
   };
 
   const closeDrawer = () => {
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current);
-      autosaveTimerRef.current = null;
-    }
+    clearAutosaveTimer();
     setIsDrawerVisible(false);
     setEditingItem(null);
     setSyncStatus('idle');
@@ -243,21 +252,21 @@ export default function StockMaster() {
       return;
     }
     setSyncStatus('saving');
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current);
-    }
+    clearAutosaveTimer();
     autosaveTimerRef.current = setTimeout(() => {
+      if (!isDrawerOpenRef.current) {
+        clearAutosaveTimer();
+        return;
+      }
       saveEditingItem(form.getFieldsValue(true), { closeAfterSave: false, showMessage: false });
       setSyncStatus('saved');
-      autosaveTimerRef.current = null;
+      clearAutosaveTimer();
     }, AUTOSAVE_DELAY_MS);
   };
 
   useEffect(() => {
     return () => {
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
-      }
+      clearAutosaveTimer();
     };
   }, []);
 
