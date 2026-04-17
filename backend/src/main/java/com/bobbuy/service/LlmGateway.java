@@ -46,7 +46,7 @@ public class LlmGateway {
           .contentType(MediaType.APPLICATION_JSON)
           .body(payload)
           .retrieve()
-          .body(new ParameterizedTypeReference<>() {
+          .body(new ParameterizedTypeReference<Map<String, Object>>() {
           });
       if (raw == null || !(raw.get("response") instanceof String response) || response.isBlank()) {
         return Optional.empty();
@@ -54,6 +54,35 @@ public class LlmGateway {
       List<Map<String, Object>> parsed = objectMapper.readValue(response, new TypeReference<>() {
       });
       return Optional.of(parsed == null ? new ArrayList<>() : parsed);
+    } catch (Exception ignored) {
+      return Optional.empty();
+    }
+  }
+
+  public Optional<String> translate(String text, String targetLocale) {
+    if (text == null || text.isBlank() || ollamaUrl == null || ollamaUrl.isBlank()) {
+      return Optional.empty();
+    }
+
+    String prompt = String.format("请将以下文本翻译成%s，只输出翻译后的文本，不要有任何额外解释。文本：%s", targetLocale, text);
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("model", model);
+    payload.put("stream", false);
+    payload.put("prompt", prompt);
+
+    try {
+      Map<String, Object> raw = RestClient.create(ollamaUrl)
+          .post()
+          .uri("/api/generate")
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(payload)
+          .retrieve()
+          .body(new ParameterizedTypeReference<Map<String, Object>>() {
+          });
+      if (raw == null || !(raw.get("response") instanceof String response) || response.isBlank()) {
+        return Optional.empty();
+      }
+      return Optional.of(response.trim());
     } catch (Exception ignored) {
       return Optional.empty();
     }

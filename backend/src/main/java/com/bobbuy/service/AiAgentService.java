@@ -32,6 +32,10 @@ public class AiAgentService {
     this.experienceMappingRepository = experienceMappingRepository;
   }
 
+  public Optional<String> translate(String text, String targetLocale) {
+    return llmGateway.translate(text, targetLocale);
+  }
+
   public List<ExtractedItem> parse(String text) {
     List<CandidateItem> items = fromLlm(text).orElseGet(() -> parseHeuristically(text));
     if (items.isEmpty()) {

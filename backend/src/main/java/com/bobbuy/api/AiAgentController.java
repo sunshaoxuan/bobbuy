@@ -42,4 +42,11 @@ public class AiAgentController {
     aiAgentService.confirmMapping(request.getOriginalName(), request.getMatchedName());
     return ResponseEntity.ok(ApiResponse.success(null));
   }
+
+  @PostMapping("/translate")
+  public ResponseEntity<ApiResponse<AiTranslateResponse>> translate(@Valid @RequestBody AiTranslateRequest request) {
+    String translated = aiAgentService.translate(request.getText(), request.getTargetLocale())
+        .orElse("");
+    return ResponseEntity.ok(ApiResponse.success(new AiTranslateResponse(translated)));
+  }
 }

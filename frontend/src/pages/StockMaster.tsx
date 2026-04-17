@@ -161,6 +161,7 @@ const normalizeCategories = (categories: MobileCategory[]): MobileCategory[] =>
 export default function StockMaster() {
   const { t, locale } = useI18n();
   const [categories, setCategories] = useState<MobileCategory[]>([]);
+  const [suppliers, setSuppliers] = useState<api.MobileSupplier[]>([]);
   const [searchText, setSearchText] = useState('');
   const [toolbarCompact, setToolbarCompact] = useState(false);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
@@ -184,6 +185,12 @@ export default function StockMaster() {
         return;
       }
       setCategories(normalizeCategories(result));
+    });
+    api.suppliers().then((result) => {
+      if (cancelled) {
+        return;
+      }
+      setSuppliers(result);
     });
     return () => {
       cancelled = true;
@@ -281,7 +288,12 @@ export default function StockMaster() {
     if (!sourceText.trim()) {
       return '';
     }
-    return Promise.resolve(`[AI:${targetLocale}] ${sourceText}`);
+    try {
+      const result = await api.translate(sourceText, targetLocale);
+      return result.translatedText;
+    } catch {
+      return `[Fallback] ${sourceText}`;
+    }
   };
 
   const handleAddRow = () => {
@@ -718,7 +730,13 @@ export default function StockMaster() {
                                 label={t('stock.merchant_codes.merchant')}
                                 style={{ marginBottom: 8 }}
                               >
-                                <Input placeholder={t('stock.merchant_codes.merchant_placeholder')} />
+                                <Select
+                                  placeholder={t('stock.merchant_codes.merchant_placeholder')}
+                                  options={suppliers.map(s => ({
+                                    value: s.id,
+                                    label: getLocalizedFallback(s.name, s.id)
+                                  }))}
+                                />
                               </Form.Item>
                             </Col>
                             <Col span={10}>

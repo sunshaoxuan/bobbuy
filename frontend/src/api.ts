@@ -83,7 +83,19 @@ export type MobileCategory = {
     attributeTemplate: CategoryAttributeTemplateField[];
 };
 
+export type MobileSupplier = {
+    id: string;
+    name: Record<string, string>;
+    description?: Record<string, string>;
+    contactInfo?: string;
+};
+
+export type AiTranslateResponse = {
+    translatedText: string;
+};
+
 const fallbackStockCategories: MobileCategory[] = [
+// ... (rest of file)
     {
         id: 'cat-1001',
         name: { 'zh-CN': '服装', 'en-US': 'Clothing' },
@@ -261,5 +273,11 @@ export const api = {
         patchJson<Order, { status: string }>(`/api/orders/${orderId}/status`, { status }),
     bulkUpdateTripOrderStatus: (tripId: number, targetStatus: string) =>
         patchJson<Order[], { targetStatus: string }>(`/api/trips/${tripId}/orders/bulk-status`, { targetStatus }),
-    stockCategories: () => fetchJson<MobileCategory[]>('/api/mobile/categories', fallback.stockCategories)
+    stockCategories: () => fetchJson<MobileCategory[]>('/api/mobile/categories', fallback.stockCategories),
+    suppliers: () => fetchJson<MobileSupplier[]>('/api/mobile/suppliers', []),
+    translate: (text: string, targetLocale: string) =>
+        postJson<AiTranslateResponse, { text: string; targetLocale: string }>('/api/ai/translate', {
+            text,
+            targetLocale
+        })
 };
