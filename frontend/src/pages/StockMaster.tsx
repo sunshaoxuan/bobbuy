@@ -14,6 +14,7 @@ import {
   Form,
   Grid,
   Select,
+  Radio,
   Tabs,
   Row,
   Col
@@ -653,8 +654,8 @@ export default function StockMaster() {
                       </Row>
                     ) : null}
                     <Form.Item name="storageCondition" label={t('stock.item.storage_condition')}>
-                      <Select
-                        allowClear
+                      <Radio.Group
+                        optionType="button"
                         options={[
                           { value: 'AMBIENT', label: t('stock.storage.ambient') },
                           { value: 'CHILLED', label: t('stock.storage.chilled') }
@@ -662,8 +663,8 @@ export default function StockMaster() {
                       />
                     </Form.Item>
                     <Form.Item name="orderMethod" label={t('stock.item.order_method')}>
-                      <Select
-                        allowClear
+                      <Radio.Group
+                        optionType="button"
                         options={[
                           { value: 'PRE_ORDER', label: t('stock.order.pre_order') },
                           { value: 'DIRECT_BUY', label: t('stock.order.direct_buy') }
