@@ -132,10 +132,10 @@ const getFieldLabel = (field: CategoryAttributeTemplateField, translate: (key: s
   return field.label ?? field.key;
 };
 
-const CATEGORY_FIELD_TYPE_OPTIONS = ['text', 'number', 'select'];
+const CATEGORY_FIELD_TYPE_OPTIONS: readonly CategoryAttributeTemplateField['type'][] = ['text', 'number', 'select'];
 
 const isValidCategoryFieldType = (value: string): value is CategoryAttributeTemplateField['type'] =>
-  CATEGORY_FIELD_TYPE_OPTIONS.includes(value);
+  CATEGORY_FIELD_TYPE_OPTIONS.includes(value as CategoryAttributeTemplateField['type']);
 
 const normalizeCategoryTemplate = (template: CategoryAttributeTemplateField[] | undefined): CategoryAttributeTemplateField[] => {
   if (!template) {
@@ -730,8 +730,8 @@ export default function StockMaster() {
                                 <Input placeholder={t('stock.merchant_codes.sku_placeholder')} />
                               </Form.Item>
                             </Col>
-                            <Col span={4}>
-                              <Button onClick={() => remove(field.name)} danger style={{ marginTop: 30 }}>
+                            <Col span={4} style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 8 }}>
+                              <Button onClick={() => remove(field.name)} danger>
                                 {t('stock.merchant_codes.remove')}
                               </Button>
                             </Col>

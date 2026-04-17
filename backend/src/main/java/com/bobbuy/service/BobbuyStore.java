@@ -112,9 +112,9 @@ public class BobbuyStore {
                 new LinkedHashMap<>(Map.of("zh-CN", "食品", "en-US", "Food")),
                 new LinkedHashMap<>(Map.of("zh-CN", "食品类商品", "en-US", "Food products")),
                 List.of(
-                        Map.of("key", "shelfLifeDays", "labelKey", "stock.dynamic.shelf_life_days", "type", "number"),
-                        Map.of("key", "storageTemp", "labelKey", "stock.dynamic.storage_temp", "type", "text"),
-                        Map.of("key", "flavor", "labelKey", "stock.dynamic.flavor", "type", "text")));
+                        categoryTemplateField("shelfLifeDays", "stock.dynamic.shelf_life_days", "number"),
+                        categoryTemplateField("storageTemp", "stock.dynamic.storage_temp", "text"),
+                        categoryTemplateField("flavor", "stock.dynamic.flavor", "text")));
         categoryRepository.save(foodCategory);
 
         Category clothingCategory = new Category(
@@ -122,9 +122,9 @@ public class BobbuyStore {
                 new LinkedHashMap<>(Map.of("zh-CN", "服装", "en-US", "Clothing")),
                 new LinkedHashMap<>(Map.of("zh-CN", "服装类商品", "en-US", "Clothing products")),
                 List.of(
-                        Map.of("key", "size", "labelKey", "stock.dynamic.size", "type", "select", "options", List.of("XS", "S", "M", "L", "XL")),
-                        Map.of("key", "material", "labelKey", "stock.dynamic.material", "type", "text"),
-                        Map.of("key", "color", "labelKey", "stock.dynamic.color", "type", "text")));
+                        categoryTemplateFieldWithOptions("size", "stock.dynamic.size", List.of("XS", "S", "M", "L", "XL")),
+                        categoryTemplateField("material", "stock.dynamic.material", "text"),
+                        categoryTemplateField("color", "stock.dynamic.color", "text")));
         categoryRepository.save(clothingCategory);
 
         Supplier supplier = new Supplier(
@@ -628,6 +628,20 @@ public class BobbuyStore {
                 target.put(entry.getKey(), entry.getValue());
             }
         }
+    }
+
+    private Map<String, Object> categoryTemplateField(String key, String labelKey, String type) {
+        Map<String, Object> field = new LinkedHashMap<>();
+        field.put("key", key);
+        field.put("labelKey", labelKey);
+        field.put("type", type);
+        return field;
+    }
+
+    private Map<String, Object> categoryTemplateFieldWithOptions(String key, String labelKey, List<String> options) {
+        Map<String, Object> field = categoryTemplateField(key, labelKey, "select");
+        field.put("options", options);
+        return field;
     }
 
     private Long nextUserId() {

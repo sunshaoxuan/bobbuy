@@ -48,9 +48,10 @@ public class Product {
     @JsonbColumn
     @Convert(converter = StringMapJsonConverter.class)
     @Column(name = "merchant_skus", columnDefinition = "jsonb")
-    private Map<String, String> merchantSkus = new HashMap<>();
+    private Map<String, String> merchantSkus;
 
     public Product() {
+        this.merchantSkus = new HashMap<>();
     }
 
     public Product(String id,
@@ -72,7 +73,7 @@ public class Product {
         this.storageCondition = storageCondition;
         this.orderMethod = orderMethod;
         this.categoryId = categoryId;
-        this.merchantSkus = merchantSkus;
+        this.merchantSkus = merchantSkus == null ? new HashMap<>() : merchantSkus;
     }
 
     public String getId() {
