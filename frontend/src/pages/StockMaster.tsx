@@ -27,12 +27,14 @@ import {
   EditOutlined,
   SearchOutlined,
   DollarOutlined,
-  DatabaseOutlined
+  DatabaseOutlined,
+  CameraOutlined
 } from '@ant-design/icons';
 import { useI18n } from '../i18n';
 import L10nInput, { type L10nValues } from '../components/L10nInput';
 import MediaGallery, { type MediaItem } from '../components/MediaGallery';
-import { api, type CategoryAttributeTemplateField, type MobileCategory } from '../api';
+import AiQuickAddModal from '../components/AiQuickAddModal';
+import { api, type CategoryAttributeTemplateField, type MobileCategory, type AiOnboardingSuggestion } from '../api';
 
 const { Title, Text } = Typography;
 
@@ -137,26 +139,24 @@ const CATEGORY_FIELD_TYPE_OPTIONS: readonly CategoryAttributeTemplateField['type
 const isValidCategoryFieldType = (value: string): value is CategoryAttributeTemplateField['type'] =>
   CATEGORY_FIELD_TYPE_OPTIONS.includes(value as CategoryAttributeTemplateField['type']);
 
-const normalizeCategoryTemplate = (template: CategoryAttributeTemplateField[] | undefined): CategoryAttributeTemplateField[] => {
-  if (!template) {
-    return [];
-  }
+const normalizeCategoryTemplate = (template: any[] | undefined): CategoryAttributeTemplateField[] => {
+  if (!Array.isArray(template)) return [];
   return template
-    .filter((field): field is CategoryAttributeTemplateField => Boolean(field?.key && field?.type && isValidCategoryFieldType(field.type)))
-    .map((field) => ({
-      key: field.key,
-      type: field.type,
-      labelKey: field.labelKey,
-      label: field.label,
-      options: field.options
+    .filter(f => f && f.key && f.type)
+    .map(f => ({
+      key: f.key,
+      type: f.type,
+      labelKey: f.labelKey,
+      label: f.label,
+      options: Array.isArray(f.options) ? f.options : undefined
     }));
 };
 
 const normalizeCategories = (categories: MobileCategory[]): MobileCategory[] =>
-  categories.map((category) => ({
+  categories?.map(category => ({
     ...category,
     attributeTemplate: normalizeCategoryTemplate(category.attributeTemplate)
-  }));
+  })) || [];
 
 export default function StockMaster() {
   const { t, locale } = useI18n();
@@ -165,6 +165,7 @@ export default function StockMaster() {
   const [searchText, setSearchText] = useState('');
   const [toolbarCompact, setToolbarCompact] = useState(false);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+  const [isQuickAddVisible, setIsQuickAddVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [form] = Form.useForm();
@@ -339,6 +340,36 @@ export default function StockMaster() {
     });
     setIsDrawerVisible(true);
     setSyncStatus('idle');
+  };
+
+  const handleQuickAddSuccess = (suggestion: AiOnboardingSuggestion) => {
+    setIsQuickAddVisible(false);
+    const newKey = Date.now().toString();
+    const newItem: StockItem = {
+      key: newKey,
+      name: suggestion.name,
+      nameL10n: { 'zh-CN': suggestion.name, 'en-US': suggestion.name },
+      category: suggestion.categoryId || '',
+      price: suggestion.price || 0,
+      stock: 0,
+      unit: 'pc',
+      brand: suggestion.brand,
+      description: suggestion.description,
+      descriptionL10n: { 'zh-CN': suggestion.description || '', 'en-US': suggestion.description || '' },
+      mediaGallery: suggestion.mediaGallery?.map((m, i) => ({
+        id: `ai-${Date.now()}-${i}`,
+        url: m.url,
+        type: (m.type as 'image' | 'video') || 'image',
+        title: { 'zh-CN': m.title || '', 'en-US': m.title || '' }
+      })) || [],
+      isNew: true
+    };
+    
+    // Add to datasource so it can be 'saved' in the drawer
+    setDataSource(prev => [...prev, newItem]);
+    
+    // Open drawer
+    openDrawer(newItem);
   };
 
   const closeDrawer = () => {
@@ -538,9 +569,14 @@ export default function StockMaster() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
-            <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow} block>
-              {t('stock.master.add_row')}
-            </Button>
+            <Space style={{ width: '100%' }}>
+              <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow} block>
+                {t('stock.master.add_row')}
+              </Button>
+              <Button type="primary" icon={<CameraOutlined />} onClick={() => setIsQuickAddVisible(true)} block>
+                {t('stock.master.quick_snap')}
+              </Button>
+            </Space>
           </Space>
         ) : (
           <Space direction="vertical" align="end">
@@ -551,9 +587,14 @@ export default function StockMaster() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddRow}>
-              {t('stock.master.add_row')}
-            </Button>
+            <Space>
+              <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow}>
+                {t('stock.master.add_row')}
+              </Button>
+              <Button type="primary" icon={<CameraOutlined />} onClick={() => setIsQuickAddVisible(true)}>
+                {t('stock.master.quick_snap')}
+              </Button>
+            </Space>
           </Space>
         )}
       </div>
@@ -797,6 +838,11 @@ export default function StockMaster() {
           </Button>
         </div>
       )}
+      <AiQuickAddModal
+        visible={isQuickAddVisible}
+        onCancel={() => setIsQuickAddVisible(false)}
+        onSuccess={handleQuickAddSuccess}
+      />
     </div>
   );
 }

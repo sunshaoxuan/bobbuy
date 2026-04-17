@@ -2,6 +2,7 @@ package com.bobbuy.api;
 
 import com.bobbuy.api.response.ApiResponse;
 import com.bobbuy.service.AiAgentService;
+import com.bobbuy.service.AiProductOnboardingService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,9 +16,11 @@ import java.util.List;
 @RequestMapping("/api/ai")
 public class AiAgentController {
   private final AiAgentService aiAgentService;
+  private final AiProductOnboardingService aiProductOnboardingService;
 
-  public AiAgentController(AiAgentService aiAgentService) {
+  public AiAgentController(AiAgentService aiAgentService, AiProductOnboardingService aiProductOnboardingService) {
     this.aiAgentService = aiAgentService;
+    this.aiProductOnboardingService = aiProductOnboardingService;
   }
 
   @PostMapping("/parse")
@@ -48,5 +51,12 @@ public class AiAgentController {
     String translated = aiAgentService.translate(request.getText(), request.getTargetLocale())
         .orElse("");
     return ResponseEntity.ok(ApiResponse.success(new AiTranslateResponse(translated)));
+  }
+
+  @PostMapping("/onboard/scan")
+  public ResponseEntity<ApiResponse<AiOnboardingSuggestion>> scan(@Valid @RequestBody AiOnboardScanRequest request) {
+    return aiProductOnboardingService.onboardFromPhoto(request.getBase64Image())
+        .map(suggestion -> ResponseEntity.ok(ApiResponse.success(suggestion)))
+        .orElseGet(() -> ResponseEntity.badRequest().body(ApiResponse.error("Failed to extract product info from image")));
   }
 }

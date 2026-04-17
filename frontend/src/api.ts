@@ -249,6 +249,19 @@ async function patchJson<TResponse, TBody>(url: string, body: TBody): Promise<TR
     return payload as TResponse;
 }
 
+export type AiOnboardingSuggestion = {
+    name: string;
+    brand?: string;
+    description?: string;
+    price?: number;
+    categoryId?: string;
+    itemNumber?: string;
+    storageCondition?: string;
+    orderMethod?: string;
+    mediaGallery?: { url: string; title?: string; type: string }[];
+    attributes?: Record<string, string>;
+};
+
 export const api = {
     metrics: () => fetchJson<Metrics>('/api/metrics', fallback.metrics),
     trips: () => fetchJson<Trip[]>('/api/trips', fallback.trips),
@@ -279,5 +292,7 @@ export const api = {
         postJson<AiTranslateResponse, { text: string; targetLocale: string }>('/api/ai/translate', {
             text,
             targetLocale
-        })
+        }),
+    onboardScan: (base64Image: string) =>
+        postJson<AiOnboardingSuggestion, { base64Image: string }>('/api/ai/onboard/scan', { base64Image })
 };

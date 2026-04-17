@@ -34,29 +34,15 @@ public class LlmGateway {
     }
 
     String prompt = "请将输入文本提取为JSON数组，每个对象包含name, quantity, note字段，只输出JSON数组。输入：" + text;
-    Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("model", model);
-    payload.put("stream", false);
-    payload.put("prompt", prompt);
-
-    try {
-      Map<String, Object> raw = RestClient.create(ollamaUrl)
-          .post()
-          .uri("/api/generate")
-          .contentType(MediaType.APPLICATION_JSON)
-          .body(payload)
-          .retrieve()
-          .body(new ParameterizedTypeReference<Map<String, Object>>() {
-          });
-      if (raw == null || !(raw.get("response") instanceof String response) || response.isBlank()) {
-        return Optional.empty();
+    return generate(prompt, model, null).map(response -> {
+      try {
+        List<Map<String, Object>> parsed = objectMapper.readValue(response, new TypeReference<>() {
+        });
+        return parsed == null ? new ArrayList<>() : parsed;
+      } catch (Exception e) {
+        return new ArrayList<>();
       }
-      List<Map<String, Object>> parsed = objectMapper.readValue(response, new TypeReference<>() {
-      });
-      return Optional.of(parsed == null ? new ArrayList<>() : parsed);
-    } catch (Exception ignored) {
-      return Optional.empty();
-    }
+    });
   }
 
   public Optional<String> translate(String text, String targetLocale) {
@@ -65,10 +51,21 @@ public class LlmGateway {
     }
 
     String prompt = String.format("请将以下文本翻译成%s，只输出翻译后的文本，不要有任何额外解释。文本：%s", targetLocale, text);
+    return generate(prompt, model, null).map(String::trim);
+  }
+
+  public Optional<String> generate(String prompt, String targetModel, List<String> base64Images) {
+    if (prompt == null || prompt.isBlank() || ollamaUrl == null || ollamaUrl.isBlank()) {
+      return Optional.empty();
+    }
+
     Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("model", model);
+    payload.put("model", targetModel != null ? targetModel : model);
     payload.put("stream", false);
     payload.put("prompt", prompt);
+    if (base64Images != null && !base64Images.isEmpty()) {
+      payload.put("images", base64Images);
+    }
 
     try {
       Map<String, Object> raw = RestClient.create(ollamaUrl)
@@ -82,7 +79,7 @@ public class LlmGateway {
       if (raw == null || !(raw.get("response") instanceof String response) || response.isBlank()) {
         return Optional.empty();
       }
-      return Optional.of(response.trim());
+      return Optional.of(response);
     } catch (Exception ignored) {
       return Optional.empty();
     }
