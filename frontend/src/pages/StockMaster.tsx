@@ -14,6 +14,7 @@ import {
   Form,
   Grid,
   Select,
+  Tabs,
   Row,
   Col
 } from 'antd';
@@ -30,6 +31,7 @@ import {
 import { useI18n } from '../i18n';
 import L10nInput, { type L10nValues } from '../components/L10nInput';
 import MediaGallery, { type MediaItem } from '../components/MediaGallery';
+import { api, type CategoryAttributeTemplateField, type MobileCategory } from '../api';
 
 const { Title, Text } = Typography;
 
@@ -47,27 +49,15 @@ interface StockItem {
   sku?: string;
   mediaGallery?: MediaItem[];
   dynamicAttributes?: Record<string, string | number>;
+  merchantSkus?: Record<string, string>;
+  storageCondition?: 'AMBIENT' | 'CHILLED';
+  orderMethod?: 'PRE_ORDER' | 'DIRECT_BUY';
   isNew?: boolean;
 }
 
-interface CategoryAttributeDefinition {
-  key: string;
-  labelKey: string;
-  type: 'text' | 'number' | 'select';
-  options?: string[];
-}
-
-const CATEGORY_ATTRIBUTE_TEMPLATES: Record<'clothing' | 'food', CategoryAttributeDefinition[]> = {
-  clothing: [
-    { key: 'size', labelKey: 'stock.dynamic.size', type: 'select', options: ['XS', 'S', 'M', 'L', 'XL'] },
-    { key: 'material', labelKey: 'stock.dynamic.material', type: 'text' },
-    { key: 'color', labelKey: 'stock.dynamic.color', type: 'text' }
-  ],
-  food: [
-    { key: 'shelfLifeDays', labelKey: 'stock.dynamic.shelf_life_days', type: 'number' },
-    { key: 'storageTemp', labelKey: 'stock.dynamic.storage_temp', type: 'text' },
-    { key: 'flavor', labelKey: 'stock.dynamic.flavor', type: 'text' }
-  ]
+type MerchantSkuEntry = {
+  merchant?: string;
+  sku?: string;
 };
 
 const AUTOSAVE_DELAY_MS = 500;
@@ -83,34 +73,93 @@ const CURRENCY_BY_LOCALE: Record<string, string> = {
 const PRICE_FRACTION_DIGITS = 2;
 const MOBILE_BOTTOM_PADDING = '7rem';
 const DESKTOP_BOTTOM_PADDING = '5rem';
-const CLOTHING_CATEGORY_ALIASES = ['clothing', 'apparel', 'fashion', '服装', '时尚', '鞋包'];
-const FOOD_CATEGORY_ALIASES = ['food', 'grocery', 'snack', '食品', '零食', '生鲜'];
+const normalizeTokens = (value: string) => value.toLowerCase().split(/[^a-z0-9\u4e00-\u9fa5]+/i).filter(Boolean);
 
-const matchesCategoryAlias = (normalized: string, alias: string) => {
-  const isEnglishAlias = /^[a-z]+$/i.test(alias);
-  if (!isEnglishAlias) {
-    return normalized.includes(alias);
+const matchesByName = (input: string, candidate: string) => {
+  const normalizedInput = input.trim().toLowerCase();
+  const normalizedCandidate = candidate.trim().toLowerCase();
+  if (!normalizedInput || !normalizedCandidate) {
+    return false;
   }
-  const latinTokens = normalized.split(/[^a-z]+/i).filter(Boolean);
-  return normalized === alias || latinTokens.includes(alias);
+  if (normalizedInput === normalizedCandidate || normalizedInput.includes(normalizedCandidate)) {
+    return true;
+  }
+  const inputTokens = normalizeTokens(normalizedInput);
+  const candidateTokens = normalizeTokens(normalizedCandidate);
+  return candidateTokens.every((token) => inputTokens.includes(token));
 };
 
-const resolveCategoryTemplate = (category?: string): CategoryAttributeDefinition[] => {
-  if (!category) {
+const resolveCategoryTemplate = (categoryInput: string | undefined, categories: MobileCategory[]): CategoryAttributeTemplateField[] => {
+  if (!categoryInput) {
     return [];
   }
-  const normalized = category.trim().toLowerCase();
-  if (CLOTHING_CATEGORY_ALIASES.some((alias) => matchesCategoryAlias(normalized, alias))) {
-    return CATEGORY_ATTRIBUTE_TEMPLATES.clothing;
-  }
-  if (FOOD_CATEGORY_ALIASES.some((alias) => matchesCategoryAlias(normalized, alias))) {
-    return CATEGORY_ATTRIBUTE_TEMPLATES.food;
-  }
-  return [];
+  const normalized = categoryInput.trim().toLowerCase();
+  const matchedCategory = categories.find((category) => {
+    if (category.id.toLowerCase() === normalized) {
+      return true;
+    }
+    return Object.values(category.name ?? {}).some((name) => matchesByName(normalized, name));
+  });
+  return matchedCategory?.attributeTemplate ?? [];
 };
+
+const mapMerchantSkusToEntries = (merchantSkus?: Record<string, string>): MerchantSkuEntry[] => {
+  if (!merchantSkus) {
+    return [];
+  }
+  return Object.entries(merchantSkus).map(([merchant, sku]) => ({ merchant, sku }));
+};
+
+const mapEntriesToMerchantSkus = (entries?: MerchantSkuEntry[]): Record<string, string> => {
+  if (!entries) {
+    return {};
+  }
+  return entries.reduce<Record<string, string>>((acc, entry) => {
+    const merchant = entry.merchant?.trim();
+    const sku = entry.sku?.trim();
+    if (merchant && sku) {
+      acc[merchant] = sku;
+    }
+    return acc;
+  }, {});
+};
+
+const getFieldLabel = (field: CategoryAttributeTemplateField, translate: (key: string) => string) => {
+  if (field.labelKey) {
+    return translate(field.labelKey);
+  }
+  return field.label ?? field.key;
+};
+
+const CATEGORY_FIELD_TYPE_OPTIONS = ['text', 'number', 'select'];
+
+const isValidCategoryFieldType = (value: string): value is CategoryAttributeTemplateField['type'] =>
+  CATEGORY_FIELD_TYPE_OPTIONS.includes(value);
+
+const normalizeCategoryTemplate = (template: CategoryAttributeTemplateField[] | undefined): CategoryAttributeTemplateField[] => {
+  if (!template) {
+    return [];
+  }
+  return template
+    .filter((field): field is CategoryAttributeTemplateField => Boolean(field?.key && field?.type && isValidCategoryFieldType(field.type)))
+    .map((field) => ({
+      key: field.key,
+      type: field.type,
+      labelKey: field.labelKey,
+      label: field.label,
+      options: field.options
+    }));
+};
+
+const normalizeCategories = (categories: MobileCategory[]): MobileCategory[] =>
+  categories.map((category) => ({
+    ...category,
+    attributeTemplate: normalizeCategoryTemplate(category.attributeTemplate)
+  }));
 
 export default function StockMaster() {
   const { t, locale } = useI18n();
+  const [categories, setCategories] = useState<MobileCategory[]>([]);
   const [searchText, setSearchText] = useState('');
   const [toolbarCompact, setToolbarCompact] = useState(false);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
@@ -122,7 +171,23 @@ export default function StockMaster() {
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDrawerOpenRef = useRef(false);
   const watchedCategory = Form.useWatch('category', form);
-  const activeCategoryAttributes = useMemo(() => resolveCategoryTemplate(watchedCategory), [watchedCategory]);
+  const activeCategoryAttributes = useMemo(
+    () => resolveCategoryTemplate(watchedCategory, categories),
+    [watchedCategory, categories]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    api.stockCategories().then((result) => {
+      if (cancelled) {
+        return;
+      }
+      setCategories(normalizeCategories(result));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const clearAutosaveTimer = () => {
     if (autosaveTimerRef.current) {
@@ -256,7 +321,8 @@ export default function StockMaster() {
       nameL10n: record.nameL10n ?? { 'zh-CN': record.name, 'en-US': record.name },
       descriptionL10n: record.descriptionL10n ?? { 'zh-CN': record.description ?? '', 'en-US': record.description ?? '' },
       mediaGallery: record.mediaGallery ?? [],
-      dynamicAttributes: record.dynamicAttributes ?? {}
+      dynamicAttributes: record.dynamicAttributes ?? {},
+      merchantSkuEntries: mapMerchantSkusToEntries(record.merchantSkus)
     });
     setIsDrawerVisible(true);
     setSyncStatus('idle');
@@ -281,17 +347,21 @@ export default function StockMaster() {
       }
       const nextData = [...prevData];
       const currentItem = nextData[index];
+      const rawValues = values as Partial<StockItem> & { merchantSkuEntries?: MerchantSkuEntry[] };
+      const { merchantSkuEntries, ...safeValues } = rawValues;
+      const merchantSkus = mapEntriesToMerchantSkus(merchantSkuEntries);
       const nextNameL10n: L10nValues = values.nameL10n ?? currentItem.nameL10n ?? {};
       const nextDescriptionL10n: L10nValues = values.descriptionL10n ?? currentItem.descriptionL10n ?? {};
       nextData[index] = {
         ...currentItem,
-        ...values,
+        ...safeValues,
         nameL10n: nextNameL10n,
         descriptionL10n: nextDescriptionL10n,
         name: getLocalizedFallback(nextNameL10n, currentItem.name),
         description: getLocalizedFallback(nextDescriptionL10n, currentItem.description),
         mediaGallery: values.mediaGallery ?? currentItem.mediaGallery ?? [],
-        dynamicAttributes: values.dynamicAttributes ?? currentItem.dynamicAttributes ?? {}
+        dynamicAttributes: values.dynamicAttributes ?? currentItem.dynamicAttributes ?? {},
+        merchantSkus
       };
       return nextData;
     });
@@ -534,76 +604,148 @@ export default function StockMaster() {
               {t('stock.drawer.autosave_hint')}
             </Text>
           )}
-          <Form.Item name="nameL10n" label={`${t('stock.item.name')} (L10n)`} rules={[{ required: true }]}>
-            <L10nInput
-              locales={['zh-CN', 'en-US']}
-              requestTranslation={requestTranslationSuggestion}
-              placeholder={t('stock.l10n.name_placeholder')}
-              loadingSuggestionText={t('stock.l10n.ai_loading')}
-              suggestionPrefixText={t('stock.l10n.ai_prefix')}
-              applySuggestionText={t('stock.l10n.ai_apply')}
-            />
-          </Form.Item>
-          <Form.Item name="sku" label={t('stock.item.sku')}>
-            <Input placeholder="Unique SKU ID" />
-          </Form.Item>
-          <Form.Item name="brand" label={t('stock.item.brand')}>
-            <Input placeholder="Brand Name" />
-          </Form.Item>
-          <Form.Item name="category" label={t('stock.item.category')}>
-            <Input />
-          </Form.Item>
-          {activeCategoryAttributes.length > 0 && (
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>
-              {t('stock.dynamic.section')}
-            </Text>
-          )}
-          {activeCategoryAttributes.length > 0 ? (
-            <Row gutter={[MOBILE_DYNAMIC_GUTTER, isMobile ? MOBILE_DYNAMIC_GUTTER : DESKTOP_DYNAMIC_GUTTER]}>
-              {activeCategoryAttributes.map((field) => (
-                <Col key={field.key} xs={24} sm={24} md={12} lg={12}>
-                  <Form.Item name={['dynamicAttributes', field.key]} label={t(field.labelKey)}>
-                    {field.type === 'number' ? (
-                      <InputNumber style={{ width: '100%' }} />
-                    ) : field.type === 'select' ? (
-                      <Select options={field.options?.map((option) => ({ value: option, label: option }))} />
-                    ) : (
+          <Tabs
+            items={[
+              {
+                key: 'basic',
+                label: t('stock.tabs.basic'),
+                children: (
+                  <>
+                    <Form.Item name="nameL10n" label={`${t('stock.item.name')} (L10n)`} rules={[{ required: true }]}>
+                      <L10nInput
+                        locales={['zh-CN', 'en-US']}
+                        requestTranslation={requestTranslationSuggestion}
+                        placeholder={t('stock.l10n.name_placeholder')}
+                        loadingSuggestionText={t('stock.l10n.ai_loading')}
+                        suggestionPrefixText={t('stock.l10n.ai_prefix')}
+                        applySuggestionText={t('stock.l10n.ai_apply')}
+                      />
+                    </Form.Item>
+                    <Form.Item name="sku" label={t('stock.item.sku')}>
+                      <Input placeholder="Unique SKU ID" />
+                    </Form.Item>
+                    <Form.Item name="brand" label={t('stock.item.brand')}>
+                      <Input placeholder="Brand Name" />
+                    </Form.Item>
+                    <Form.Item name="category" label={t('stock.item.category')}>
                       <Input />
+                    </Form.Item>
+                    {activeCategoryAttributes.length > 0 && (
+                      <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                        {t('stock.dynamic.section')}
+                      </Text>
                     )}
-                  </Form.Item>
-                </Col>
-              ))}
-            </Row>
-          ) : null}
-          <Form.Item name="price" label={t('stock.item.price')}>
-            <InputNumber prefix="$" style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="stock" label={t('stock.item.quantity')}>
-            <InputNumber style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="descriptionL10n" label={`${t('stock.item.description')} (L10n)`}>
-            <L10nInput
-              locales={['zh-CN', 'en-US']}
-              requestTranslation={requestTranslationSuggestion}
-              placeholder={t('stock.l10n.description_placeholder')}
-              loadingSuggestionText={t('stock.l10n.ai_loading')}
-              suggestionPrefixText={t('stock.l10n.ai_prefix')}
-              applySuggestionText={t('stock.l10n.ai_apply')}
-            />
-          </Form.Item>
-          <Form.Item name="mediaGallery" label={t('stock.media.label')}>
-            <MediaGallery
-              locales={['zh-CN', 'en-US']}
-              requestTranslation={requestTranslationSuggestion}
-              emptyDescriptionText={t('stock.media.empty')}
-              mediaTitlePrefixText={t('stock.media.item_prefix')}
-              addMediaText={t('stock.media.add')}
-              urlPlaceholderText={t('stock.media.url_placeholder')}
-              imageLabelText={t('stock.media.image')}
-              videoLabelText={t('stock.media.video')}
-              titlePlaceholderText={t('stock.media.title_placeholder')}
-            />
-          </Form.Item>
+                    {activeCategoryAttributes.length > 0 ? (
+                      <Row gutter={[MOBILE_DYNAMIC_GUTTER, isMobile ? MOBILE_DYNAMIC_GUTTER : DESKTOP_DYNAMIC_GUTTER]}>
+                        {activeCategoryAttributes.map((field) => (
+                          <Col key={field.key} xs={24} sm={24} md={12} lg={12}>
+                            <Form.Item name={['dynamicAttributes', field.key]} label={getFieldLabel(field, t)}>
+                              {field.type === 'number' ? (
+                                <InputNumber style={{ width: '100%' }} />
+                              ) : field.type === 'select' ? (
+                                <Select options={field.options?.map((option) => ({ value: option, label: option }))} />
+                              ) : (
+                                <Input />
+                              )}
+                            </Form.Item>
+                          </Col>
+                        ))}
+                      </Row>
+                    ) : null}
+                    <Form.Item name="storageCondition" label={t('stock.item.storage_condition')}>
+                      <Select
+                        allowClear
+                        options={[
+                          { value: 'AMBIENT', label: t('stock.storage.ambient') },
+                          { value: 'CHILLED', label: t('stock.storage.chilled') }
+                        ]}
+                      />
+                    </Form.Item>
+                    <Form.Item name="orderMethod" label={t('stock.item.order_method')}>
+                      <Select
+                        allowClear
+                        options={[
+                          { value: 'PRE_ORDER', label: t('stock.order.pre_order') },
+                          { value: 'DIRECT_BUY', label: t('stock.order.direct_buy') }
+                        ]}
+                      />
+                    </Form.Item>
+                    <Form.Item name="price" label={t('stock.item.price')}>
+                      <InputNumber prefix="$" style={{ width: '100%' }} />
+                    </Form.Item>
+                    <Form.Item name="stock" label={t('stock.item.quantity')}>
+                      <InputNumber style={{ width: '100%' }} />
+                    </Form.Item>
+                    <Form.Item name="descriptionL10n" label={`${t('stock.item.description')} (L10n)`}>
+                      <L10nInput
+                        locales={['zh-CN', 'en-US']}
+                        requestTranslation={requestTranslationSuggestion}
+                        placeholder={t('stock.l10n.description_placeholder')}
+                        loadingSuggestionText={t('stock.l10n.ai_loading')}
+                        suggestionPrefixText={t('stock.l10n.ai_prefix')}
+                        applySuggestionText={t('stock.l10n.ai_apply')}
+                      />
+                    </Form.Item>
+                    <Form.Item name="mediaGallery" label={t('stock.media.label')}>
+                      <MediaGallery
+                        locales={['zh-CN', 'en-US']}
+                        requestTranslation={requestTranslationSuggestion}
+                        emptyDescriptionText={t('stock.media.empty')}
+                        mediaTitlePrefixText={t('stock.media.item_prefix')}
+                        addMediaText={t('stock.media.add')}
+                        urlPlaceholderText={t('stock.media.url_placeholder')}
+                        imageLabelText={t('stock.media.image')}
+                        videoLabelText={t('stock.media.video')}
+                        titlePlaceholderText={t('stock.media.title_placeholder')}
+                      />
+                    </Form.Item>
+                  </>
+                )
+              },
+              {
+                key: 'merchantCodes',
+                label: t('stock.tabs.merchant_codes'),
+                children: (
+                  <Form.List name="merchantSkuEntries">
+                    {(fields, { add, remove }) => (
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        {fields.map((field) => (
+                          <Row key={field.key} gutter={8} align="middle">
+                            <Col span={10}>
+                              <Form.Item
+                                name={[field.name, 'merchant']}
+                                label={t('stock.merchant_codes.merchant')}
+                                style={{ marginBottom: 8 }}
+                              >
+                                <Input placeholder={t('stock.merchant_codes.merchant_placeholder')} />
+                              </Form.Item>
+                            </Col>
+                            <Col span={10}>
+                              <Form.Item
+                                name={[field.name, 'sku']}
+                                label={t('stock.merchant_codes.sku')}
+                                style={{ marginBottom: 8 }}
+                              >
+                                <Input placeholder={t('stock.merchant_codes.sku_placeholder')} />
+                              </Form.Item>
+                            </Col>
+                            <Col span={4}>
+                              <Button onClick={() => remove(field.name)} danger style={{ marginTop: 30 }}>
+                                {t('stock.merchant_codes.remove')}
+                              </Button>
+                            </Col>
+                          </Row>
+                        ))}
+                        <Button onClick={() => add()} type="dashed" block>
+                          {t('stock.merchant_codes.add')}
+                        </Button>
+                      </Space>
+                    )}
+                  </Form.List>
+                )
+              }
+            ]}
+          />
         </Form>
       </Drawer>
 

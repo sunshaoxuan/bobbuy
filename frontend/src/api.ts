@@ -68,6 +68,21 @@ export type AiParseResponse = {
     items: AiExtractedItem[];
 };
 
+export type CategoryAttributeTemplateField = {
+    key: string;
+    labelKey?: string;
+    label?: string;
+    type: 'text' | 'number' | 'select';
+    options?: string[];
+};
+
+export type MobileCategory = {
+    id: string;
+    name: Record<string, string>;
+    description?: Record<string, string>;
+    attributeTemplate: CategoryAttributeTemplateField[];
+};
+
 const fallback = {
     metrics: { users: 2, trips: 1, orders: 1, gmV: 65, orderStatusCounts: { CONFIRMED: 1 } },
     trips: [
@@ -106,6 +121,28 @@ const fallback = {
     users: [
         { id: 1000, name: 'Aiko Tan', role: 'AGENT', rating: 4.8 },
         { id: 1001, name: 'Chen Li', role: 'CUSTOMER', rating: 4.6 }
+    ],
+    stockCategories: [
+        {
+            id: 'cat-1001',
+            name: { 'zh-CN': '服装', 'en-US': 'Clothing' },
+            description: { 'zh-CN': '服装类商品', 'en-US': 'Clothing products' },
+            attributeTemplate: [
+                { key: 'size', labelKey: 'stock.dynamic.size', type: 'select', options: ['XS', 'S', 'M', 'L', 'XL'] },
+                { key: 'material', labelKey: 'stock.dynamic.material', type: 'text' },
+                { key: 'color', labelKey: 'stock.dynamic.color', type: 'text' }
+            ]
+        },
+        {
+            id: 'cat-1000',
+            name: { 'zh-CN': '食品', 'en-US': 'Food' },
+            description: { 'zh-CN': '食品类商品', 'en-US': 'Food products' },
+            attributeTemplate: [
+                { key: 'shelfLifeDays', labelKey: 'stock.dynamic.shelf_life_days', type: 'number' },
+                { key: 'storageTemp', labelKey: 'stock.dynamic.storage_temp', type: 'text' },
+                { key: 'flavor', labelKey: 'stock.dynamic.flavor', type: 'text' }
+            ]
+        }
     ]
 };
 
@@ -221,5 +258,6 @@ export const api = {
     updateOrderStatus: (orderId: number, status: string) =>
         patchJson<Order, { status: string }>(`/api/orders/${orderId}/status`, { status }),
     bulkUpdateTripOrderStatus: (tripId: number, targetStatus: string) =>
-        patchJson<Order[], { targetStatus: string }>(`/api/trips/${tripId}/orders/bulk-status`, { targetStatus })
+        patchJson<Order[], { targetStatus: string }>(`/api/trips/${tripId}/orders/bulk-status`, { targetStatus }),
+    stockCategories: () => fetchJson<MobileCategory[]>('/api/mobile/categories', fallback.stockCategories)
 };

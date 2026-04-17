@@ -107,12 +107,25 @@ public class BobbuyStore {
         header.setTotalAmount(65.0);
         orderHeaderRepository.save(header);
 
-        Category category = new Category(
+        Category foodCategory = new Category(
                 "cat-1000",
-                new LinkedHashMap<>(Map.of("zh-CN", "茶饮", "en-US", "Tea")),
-                new LinkedHashMap<>(Map.of("zh-CN", "茶类商品", "en-US", "Tea products")),
-                List.of(Map.of("name", "origin", "type", "text")));
-        categoryRepository.save(category);
+                new LinkedHashMap<>(Map.of("zh-CN", "食品", "en-US", "Food")),
+                new LinkedHashMap<>(Map.of("zh-CN", "食品类商品", "en-US", "Food products")),
+                List.of(
+                        Map.of("key", "shelfLifeDays", "labelKey", "stock.dynamic.shelf_life_days", "type", "number"),
+                        Map.of("key", "storageTemp", "labelKey", "stock.dynamic.storage_temp", "type", "text"),
+                        Map.of("key", "flavor", "labelKey", "stock.dynamic.flavor", "type", "text")));
+        categoryRepository.save(foodCategory);
+
+        Category clothingCategory = new Category(
+                "cat-1001",
+                new LinkedHashMap<>(Map.of("zh-CN", "服装", "en-US", "Clothing")),
+                new LinkedHashMap<>(Map.of("zh-CN", "服装类商品", "en-US", "Clothing products")),
+                List.of(
+                        Map.of("key", "size", "labelKey", "stock.dynamic.size", "type", "select", "options", List.of("XS", "S", "M", "L", "XL")),
+                        Map.of("key", "material", "labelKey", "stock.dynamic.material", "type", "text"),
+                        Map.of("key", "color", "labelKey", "stock.dynamic.color", "type", "text")));
+        categoryRepository.save(clothingCategory);
 
         Supplier supplier = new Supplier(
                 "sup-1000",
@@ -133,7 +146,8 @@ public class BobbuyStore {
                         new LinkedHashMap<>(Map.of("zh-CN", "商品主图", "en-US", "Main image")))),
                 StorageCondition.AMBIENT,
                 OrderMethod.DIRECT_BUY,
-                category.getId());
+                foodCategory.getId(),
+                new LinkedHashMap<>(Map.of(supplier.getId(), "TOKYO-MATCHA-001")));
         productRepository.save(product);
 
         MerchantSku merchantSku = new MerchantSku(
@@ -286,6 +300,9 @@ public class BobbuyStore {
         }
         if (patch.getCategoryId() != null) {
             existing.setCategoryId(patch.getCategoryId());
+        }
+        if (patch.getMerchantSkus() != null) {
+            existing.setMerchantSkus(patch.getMerchantSkus());
         }
         return Optional.of(productRepository.save(existing));
     }
@@ -587,6 +604,11 @@ public class BobbuyStore {
             product.setMediaGallery(new ArrayList<>());
         } else {
             product.setMediaGallery(new ArrayList<>(product.getMediaGallery()));
+        }
+        if (product.getMerchantSkus() == null) {
+            product.setMerchantSkus(new HashMap<>());
+        } else {
+            product.setMerchantSkus(new HashMap<>(product.getMerchantSkus()));
         }
     }
 

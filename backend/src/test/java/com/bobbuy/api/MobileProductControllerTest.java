@@ -37,6 +37,7 @@ class MobileProductControllerTest {
         ProductPatch patch = new ProductPatch();
         patch.setName(Map.of("ja-JP", "抹茶キット", "en-US", "Matcha Kit Updated"));
         patch.setDescription(Map.of("en-US", "Kyoto style matcha combo"));
+        patch.setMerchantSkus(Map.of("sup-1000", "TOKYO-MATCHA-NEW"));
 
         MobileProductResponse response = controller.patch("prd-1000", patch, Locale.JAPAN).getBody().getData();
 
@@ -45,5 +46,6 @@ class MobileProductControllerTest {
         assertThat(response.getProduct().getName()).containsEntry("zh-CN", "抹茶套装");
         assertThat(response.getProduct().getName()).containsEntry("en-US", "Matcha Kit Updated");
         assertThat(response.getProduct().getDescription()).containsEntry("en-US", "Kyoto style matcha combo");
+        assertThat(response.getProduct().getMerchantSkus()).containsEntry("sup-1000", "TOKYO-MATCHA-NEW");
     }
 }

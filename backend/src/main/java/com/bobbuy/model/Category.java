@@ -31,8 +31,8 @@ public class Category {
 
     @JsonbColumn
     @Convert(converter = CategoryAttributeDefinitionsJsonConverter.class)
-    @Column(columnDefinition = "jsonb")
-    private List<Map<String, Object>> attributeDefinitions = new ArrayList<>();
+    @Column(name = "attribute_template", columnDefinition = "jsonb")
+    private List<Map<String, Object>> attributeTemplate = new ArrayList<>();
 
     public Category() {
     }
@@ -40,11 +40,11 @@ public class Category {
     public Category(String id,
                     Map<String, String> name,
                     Map<String, String> description,
-                    List<Map<String, Object>> attributeDefinitions) {
+                    List<Map<String, Object>> attributeTemplate) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.attributeDefinitions = attributeDefinitions;
+        this.attributeTemplate = attributeTemplate;
     }
 
     public String getId() {
@@ -71,11 +71,11 @@ public class Category {
         this.description = description;
     }
 
-    public List<Map<String, Object>> getAttributeDefinitions() {
-        return attributeDefinitions;
+    public List<Map<String, Object>> getAttributeTemplate() {
+        return attributeTemplate;
     }
 
-    public void setAttributeDefinitions(List<Map<String, Object>> attributeDefinitions) {
-        this.attributeDefinitions = attributeDefinitions;
+    public void setAttributeTemplate(List<Map<String, Object>> attributeTemplate) {
+        this.attributeTemplate = attributeTemplate;
     }
 }
