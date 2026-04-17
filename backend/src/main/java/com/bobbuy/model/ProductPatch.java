@@ -12,6 +12,7 @@ public class ProductPatch {
     private StorageCondition storageCondition;
     private OrderMethod orderMethod;
     private String categoryId;
+    private Map<String, String> merchantSkus;
 
     public Map<String, String> getName() {
         return name;
@@ -75,5 +76,13 @@ public class ProductPatch {
 
     public void setCategoryId(String categoryId) {
         this.categoryId = categoryId;
+    }
+
+    public Map<String, String> getMerchantSkus() {
+        return merchantSkus;
+    }
+
+    public void setMerchantSkus(Map<String, String> merchantSkus) {
+        this.merchantSkus = merchantSkus;
     }
 }

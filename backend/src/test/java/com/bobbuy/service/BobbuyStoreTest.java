@@ -417,6 +417,7 @@ class BobbuyStoreTest {
   void productPatchMergesLocalizedFieldsAndKeepsExistingValues() {
     Product seeded = store.getProduct("prd-1000").orElseThrow();
     assertThat(seeded.getName()).containsEntry("zh-CN", "抹茶套装");
+    assertThat(seeded.getMerchantSkus()).containsEntry("sup-1000", "TOKYO-MATCHA-001");
 
     ProductPatch patch = new ProductPatch();
     patch.setName(Map.of("en-US", "Matcha Kit Pro", "ja-JP", "抹茶キット"));
@@ -473,10 +474,12 @@ class BobbuyStoreTest {
     patch.setStorageCondition(StorageCondition.CHILLED);
     patch.setOrderMethod(OrderMethod.DIRECT_BUY);
     patch.setCategoryId("cat-1000");
+    patch.setMerchantSkus(Map.of("sup-1000", "TOKYO-MATCHA-002", "sup-2000", "TOKYO-MATCHA-003"));
     Product patched = store.patchProduct(created.getId(), patch).orElseThrow();
     assertThat(patched.getName()).doesNotContainKey("en-US");
     assertThat(patched.getName()).containsEntry("zh-CN", "更新商品");
     assertThat(patched.getDescription()).containsEntry("zh-CN", "更新描述");
     assertThat(patched.getBrand()).isEqualTo("Patched Brand");
+    assertThat(patched.getMerchantSkus()).containsEntry("sup-1000", "TOKYO-MATCHA-002");
   }
 }

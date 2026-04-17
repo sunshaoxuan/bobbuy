@@ -145,10 +145,12 @@ class ModelTest {
                 List.of(media),
                 StorageCondition.AMBIENT,
                 OrderMethod.DIRECT_BUY,
-                "cat-1");
+                "cat-1",
+                Map.of("sup-1", "SKU-001"));
         assertThat(product.getName()).containsEntry("zh-CN", "抹茶套装");
         assertThat(product.getMediaGallery()).hasSize(1);
         assertThat(product.getStorageCondition()).isEqualTo(StorageCondition.AMBIENT);
+        assertThat(product.getMerchantSkus()).containsEntry("sup-1", "SKU-001");
 
         MerchantSku sku = new MerchantSku("msku-1", "prd-1", "sup-1", "SKU-001", 18.8, StockStatus.IN_STOCK);
         assertThat(sku.getSkuCode()).isEqualTo("SKU-001");

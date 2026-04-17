@@ -107,12 +107,25 @@ public class BobbuyStore {
         header.setTotalAmount(65.0);
         orderHeaderRepository.save(header);
 
-        Category category = new Category(
+        Category foodCategory = new Category(
                 "cat-1000",
-                new LinkedHashMap<>(Map.of("zh-CN", "茶饮", "en-US", "Tea")),
-                new LinkedHashMap<>(Map.of("zh-CN", "茶类商品", "en-US", "Tea products")),
-                List.of(Map.of("name", "origin", "type", "text")));
-        categoryRepository.save(category);
+                new LinkedHashMap<>(Map.of("zh-CN", "食品", "en-US", "Food")),
+                new LinkedHashMap<>(Map.of("zh-CN", "食品类商品", "en-US", "Food products")),
+                List.of(
+                        categoryTemplateField("shelfLifeDays", "stock.dynamic.shelf_life_days", "number"),
+                        categoryTemplateField("storageTemp", "stock.dynamic.storage_temp", "text"),
+                        categoryTemplateField("flavor", "stock.dynamic.flavor", "text")));
+        categoryRepository.save(foodCategory);
+
+        Category clothingCategory = new Category(
+                "cat-1001",
+                new LinkedHashMap<>(Map.of("zh-CN", "服装", "en-US", "Clothing")),
+                new LinkedHashMap<>(Map.of("zh-CN", "服装类商品", "en-US", "Clothing products")),
+                List.of(
+                        categoryTemplateFieldWithOptions("size", "stock.dynamic.size", List.of("XS", "S", "M", "L", "XL")),
+                        categoryTemplateField("material", "stock.dynamic.material", "text"),
+                        categoryTemplateField("color", "stock.dynamic.color", "text")));
+        categoryRepository.save(clothingCategory);
 
         Supplier supplier = new Supplier(
                 "sup-1000",
@@ -133,7 +146,8 @@ public class BobbuyStore {
                         new LinkedHashMap<>(Map.of("zh-CN", "商品主图", "en-US", "Main image")))),
                 StorageCondition.AMBIENT,
                 OrderMethod.DIRECT_BUY,
-                category.getId());
+                foodCategory.getId(),
+                new LinkedHashMap<>(Map.of(supplier.getId(), "TOKYO-MATCHA-001")));
         productRepository.save(product);
 
         MerchantSku merchantSku = new MerchantSku(
@@ -286,6 +300,9 @@ public class BobbuyStore {
         }
         if (patch.getCategoryId() != null) {
             existing.setCategoryId(patch.getCategoryId());
+        }
+        if (patch.getMerchantSkus() != null) {
+            existing.setMerchantSkus(patch.getMerchantSkus());
         }
         return Optional.of(productRepository.save(existing));
     }
@@ -588,6 +605,11 @@ public class BobbuyStore {
         } else {
             product.setMediaGallery(new ArrayList<>(product.getMediaGallery()));
         }
+        if (product.getMerchantSkus() == null) {
+            product.setMerchantSkus(new HashMap<>());
+        } else {
+            product.setMerchantSkus(new HashMap<>(product.getMerchantSkus()));
+        }
     }
 
     private void mergeLocalizedMap(Product product, boolean isNameField, Map<String, String> patchValues) {
@@ -606,6 +628,20 @@ public class BobbuyStore {
                 target.put(entry.getKey(), entry.getValue());
             }
         }
+    }
+
+    private Map<String, Object> categoryTemplateField(String key, String labelKey, String type) {
+        Map<String, Object> field = new LinkedHashMap<>();
+        field.put("key", key);
+        field.put("labelKey", labelKey);
+        field.put("type", type);
+        return field;
+    }
+
+    private Map<String, Object> categoryTemplateFieldWithOptions(String key, String labelKey, List<String> options) {
+        Map<String, Object> field = categoryTemplateField(key, labelKey, "select");
+        field.put("options", options);
+        return field;
     }
 
     private Long nextUserId() {

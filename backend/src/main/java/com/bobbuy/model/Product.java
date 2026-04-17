@@ -45,7 +45,13 @@ public class Product {
     private OrderMethod orderMethod;
     private String categoryId;
 
+    @JsonbColumn
+    @Convert(converter = StringMapJsonConverter.class)
+    @Column(name = "merchant_skus", columnDefinition = "jsonb")
+    private Map<String, String> merchantSkus;
+
     public Product() {
+        this.merchantSkus = new HashMap<>();
     }
 
     public Product(String id,
@@ -53,10 +59,11 @@ public class Product {
                    Map<String, String> description,
                    String brand,
                    double basePrice,
-                   List<MediaGalleryItem> mediaGallery,
-                   StorageCondition storageCondition,
-                   OrderMethod orderMethod,
-                   String categoryId) {
+                    List<MediaGalleryItem> mediaGallery,
+                    StorageCondition storageCondition,
+                    OrderMethod orderMethod,
+                    String categoryId,
+                    Map<String, String> merchantSkus) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -66,6 +73,7 @@ public class Product {
         this.storageCondition = storageCondition;
         this.orderMethod = orderMethod;
         this.categoryId = categoryId;
+        this.merchantSkus = merchantSkus == null ? new HashMap<>() : merchantSkus;
     }
 
     public String getId() {
@@ -138,5 +146,13 @@ public class Product {
 
     public void setCategoryId(String categoryId) {
         this.categoryId = categoryId;
+    }
+
+    public Map<String, String> getMerchantSkus() {
+        return merchantSkus;
+    }
+
+    public void setMerchantSkus(Map<String, String> merchantSkus) {
+        this.merchantSkus = merchantSkus;
     }
 }
