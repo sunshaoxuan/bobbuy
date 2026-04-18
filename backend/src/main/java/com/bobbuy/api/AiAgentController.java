@@ -9,6 +9,7 @@ import com.bobbuy.model.ProductPatch;
 import com.bobbuy.service.AiAgentService;
 import com.bobbuy.service.AiProductOnboardingService;
 import com.bobbuy.service.BobbuyStore;
+import com.bobbuy.service.ProcurementHudService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,13 +27,16 @@ public class AiAgentController {
   private final AiAgentService aiAgentService;
   private final AiProductOnboardingService aiProductOnboardingService;
   private final BobbuyStore store;
+  private final ProcurementHudService procurementHudService;
 
   public AiAgentController(AiAgentService aiAgentService,
                            AiProductOnboardingService aiProductOnboardingService,
-                           BobbuyStore store) {
+                           BobbuyStore store,
+                           ProcurementHudService procurementHudService) {
     this.aiAgentService = aiAgentService;
     this.aiProductOnboardingService = aiProductOnboardingService;
     this.store = store;
+    this.procurementHudService = procurementHudService;
   }
 
   @PostMapping("/parse")
@@ -124,6 +128,8 @@ public class AiAgentController {
 
       result = store.createProduct(newProduct);
     }
+
+    procurementHudService.reconcileInventory(result.getId(), 1);
 
     // Return a simple response with the product
     return ResponseEntity.ok(ApiResponse.success(

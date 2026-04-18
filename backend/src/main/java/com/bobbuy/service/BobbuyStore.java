@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -194,11 +195,17 @@ public class BobbuyStore {
     }
 
     public List<Trip> listTrips() {
-        return tripRepository.findAll();
+        return tripRepository.findAll().stream()
+                .peek(this::refreshTripDynamicLoad)
+                .toList();
     }
 
     public Optional<Trip> getTrip(Long id) {
-        return tripRepository.findById(id);
+        return tripRepository.findById(id)
+                .map(trip -> {
+                    refreshTripDynamicLoad(trip);
+                    return trip;
+                });
     }
 
     @Transactional
@@ -358,9 +365,13 @@ public class BobbuyStore {
         if (headerInput.getPaymentStatus() == null) {
             headerInput.setPaymentStatus(PaymentStatus.UNPAID);
         }
+        if (headerInput.getCreatedAt() == null) {
+            headerInput.setCreatedAt(LocalDateTime.now());
+        }
         if (headerInput.getLines() == null) {
             headerInput.setLines(new ArrayList<>());
         }
+        normalizeLinePurchasedQuantities(headerInput.getLines());
         Optional<OrderHeader> existingOptional = orderHeaderRepository.findByBusinessIdForUpdate(headerInput.getBusinessId());
 
         if (existingOptional.isEmpty()) {
@@ -393,6 +404,7 @@ public class BobbuyStore {
             if (match.isPresent()) {
                 OrderLine existingLine = match.get();
                 existingLine.setQuantity(existingLine.getQuantity() + newLine.getQuantity());
+                existingLine.setPurchasedQuantity(existingLine.getPurchasedQuantity() + newLine.getPurchasedQuantity());
             } else {
                 newLine.setId(nextOrderIdentity());
                 existing.addLine(newLine);
@@ -418,9 +430,15 @@ public class BobbuyStore {
         if (order.getPaymentStatus() == null) {
             order.setPaymentStatus(PaymentStatus.UNPAID);
         }
+        if (order.getCreatedAt() == null) {
+            order.setCreatedAt(orderHeaderRepository.findById(id)
+                    .map(OrderHeader::getCreatedAt)
+                    .orElse(LocalDateTime.now()));
+        }
         if (order.getLines() == null) {
             order.setLines(new ArrayList<>());
         }
+        normalizeLinePurchasedQuantities(order.getLines());
         order.setId(id);
         for (OrderLine line : order.getLines()) {
             if (line.getId() == null) {
@@ -590,6 +608,34 @@ public class BobbuyStore {
         return header.getLines().stream()
                 .mapToInt(OrderLine::getQuantity)
                 .sum();
+    }
+
+    private void normalizeLinePurchasedQuantities(List<OrderLine> lines) {
+        if (lines == null) {
+            return;
+        }
+        for (OrderLine line : lines) {
+            int cappedPurchased = Math.min(Math.max(line.getPurchasedQuantity(), 0), Math.max(line.getQuantity(), 0));
+            line.setPurchasedQuantity(cappedPurchased);
+        }
+    }
+
+    private void refreshTripDynamicLoad(Trip trip) {
+        if (trip == null || trip.getId() == null) {
+            return;
+        }
+        int purchasedQuantity = orderHeaderRepository.findByTripId(trip.getId()).stream()
+                .sorted(Comparator.comparing(OrderHeader::getId))
+                .mapToInt(order -> order.getLines().stream()
+                        .mapToInt(line -> {
+                            if (line.getPurchasedQuantity() > 0) {
+                                return line.getPurchasedQuantity();
+                            }
+                            return isAtLeastConfirmed(order.getStatus()) ? line.getQuantity() : 0;
+                        })
+                        .sum())
+                .sum();
+        trip.recalculateCurrentLoad(purchasedQuantity, 1D, 1D);
     }
 
     private void ensureLocalizedFields(Product product) {

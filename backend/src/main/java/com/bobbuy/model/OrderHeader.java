@@ -29,6 +29,7 @@ public class OrderHeader {
     private String businessId; // 业务幂等标识 (Event ID)
     private Long customerId; // 客户 ID
     private Long tripId; // 行程 ID
+    private LocalDateTime createdAt;
     @Enumerated(EnumType.STRING)
     private OrderStatus status; // 订单状态
     private LocalDateTime statusUpdatedAt;
@@ -48,6 +49,7 @@ public class OrderHeader {
         this.businessId = businessId;
         this.customerId = customerId;
         this.tripId = tripId;
+        this.createdAt = LocalDateTime.now();
         this.status = OrderStatus.NEW;
         this.statusUpdatedAt = LocalDateTime.now();
         this.paymentStatus = PaymentStatus.UNPAID;
@@ -92,6 +94,14 @@ public class OrderHeader {
 
     public void setStatus(OrderStatus status) {
         this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public LocalDateTime getStatusUpdatedAt() {

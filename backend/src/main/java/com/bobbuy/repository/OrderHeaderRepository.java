@@ -16,11 +16,19 @@ public interface OrderHeaderRepository extends JpaRepository<OrderHeader, Long> 
 
     List<OrderHeader> findByTripId(Long tripId);
 
+    List<OrderHeader> findByTripIdOrderByCreatedAtAscIdAsc(Long tripId);
+
+    List<OrderHeader> findByStatusOrderByCreatedAtAscIdAsc(OrderStatus status);
+
     Optional<OrderHeader> findTopByOrderByIdDesc();
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from OrderHeader o where o.businessId = :businessId")
     Optional<OrderHeader> findByBusinessIdForUpdate(@Param("businessId") String businessId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select o from OrderHeader o where o.status = :status order by o.createdAt asc, o.id asc")
+    List<OrderHeader> findByStatusForUpdate(@Param("status") OrderStatus status);
 
     @Query("select coalesce(sum(o.totalAmount), 0) from OrderHeader o")
     double sumTotalAmount();

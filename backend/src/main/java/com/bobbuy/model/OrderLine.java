@@ -11,6 +11,7 @@ public class OrderLine {
     private String itemName; // 商品名称 (冗余用于展现)
     private String spec; // 规格区分 (用于隔离权重品)
     private int quantity; // 数量
+    private int purchasedQuantity; // 已采购数量
     private double unitPrice; // 单价
 
     public OrderLine() {
@@ -21,6 +22,7 @@ public class OrderLine {
         this.itemName = itemName;
         this.spec = spec;
         this.quantity = quantity;
+        this.purchasedQuantity = 0;
         this.unitPrice = unitPrice;
     }
 
@@ -79,6 +81,14 @@ public class OrderLine {
 
     public void setUnitPrice(double unitPrice) {
         this.unitPrice = unitPrice;
+    }
+
+    public int getPurchasedQuantity() {
+        return purchasedQuantity;
+    }
+
+    public void setPurchasedQuantity(int purchasedQuantity) {
+        this.purchasedQuantity = Math.max(purchasedQuantity, 0);
     }
 
     /**

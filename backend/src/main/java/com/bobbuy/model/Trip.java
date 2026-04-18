@@ -6,6 +6,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -43,6 +44,12 @@ public class Trip {
   private TripStatus status;
 
   private LocalDateTime statusUpdatedAt;
+
+  @Transient
+  private double currentWeight;
+
+  @Transient
+  private double currentVolume;
 
   public Trip() {
   }
@@ -134,5 +141,26 @@ public class Trip {
 
   public void setStatusUpdatedAt(LocalDateTime statusUpdatedAt) {
     this.statusUpdatedAt = statusUpdatedAt;
+  }
+
+  public double getCurrentWeight() {
+    return currentWeight;
+  }
+
+  public void setCurrentWeight(double currentWeight) {
+    this.currentWeight = Math.max(currentWeight, 0D);
+  }
+
+  public double getCurrentVolume() {
+    return currentVolume;
+  }
+
+  public void setCurrentVolume(double currentVolume) {
+    this.currentVolume = Math.max(currentVolume, 0D);
+  }
+
+  public void recalculateCurrentLoad(int purchasedQuantity, double weightPerUnit, double volumePerUnit) {
+    setCurrentWeight(purchasedQuantity * Math.max(weightPerUnit, 0D));
+    setCurrentVolume(purchasedQuantity * Math.max(volumePerUnit, 0D));
   }
 }
