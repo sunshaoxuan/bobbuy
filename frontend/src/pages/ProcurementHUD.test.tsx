@@ -8,7 +8,7 @@ vi.mock('antd', async () => {
     const antd = await vi.importActual<typeof import('antd')>('antd');
     return {
         ...antd,
-        Table: ({ dataSource = [] }: any) => <div>{dataSource.map((item: any) => item.businessId).join(' ')}</div>,
+        Table: ({ dataSource = [] }: any) => <div>{dataSource.map((item: any) => item.businessId ?? item.category ?? '').join(' ')}</div>,
         Select: ({ options = [], onChange, value }: any) => (
             <select
                 data-testid="trip-select"
@@ -34,10 +34,19 @@ vi.mock('../api', () => ({
             tripId: 2000,
             totalEstimatedProfit: 20,
             currentPurchasedAmount: 80,
+            currentFxRate: 1,
+            referenceFxRate: 1,
+            totalTripExpenses: 5,
             currentWeight: 6,
             currentVolume: 2,
             categoryCompletionPercent: {}
         }),
+        procurementExpenses: () => Promise.resolve([
+            { id: 1, tripId: 2000, cost: 5, category: '停车费', createdAt: '2026-01-01T00:00:00' }
+        ]),
+        createProcurementExpense: () => Promise.resolve({ id: 2, tripId: 2000, cost: 1, category: '运费', createdAt: '2026-01-01T00:00:00' }),
+        manualReconcile: () => Promise.resolve({ skuId: 'prd-1000', fromBusinessId: '20260117001', toBusinessId: '20260117002', transferredQuantity: 1 }),
+        exportProcurementSettlement: () => Promise.resolve(new Blob()),
         orders: () => Promise.resolve([
             {
                 id: 3000,
@@ -73,6 +82,7 @@ describe('ProcurementHUD Component', () => {
         expect(await screen.findByText(/Profit Insight|利润透视/i)).toBeInTheDocument();
         expect(await screen.findByText(/Capacity Redline|容积红线/i)).toBeInTheDocument();
         expect(await screen.findByText(/Reconcile Detail|对账详情/i)).toBeInTheDocument();
+        expect((await screen.findAllByText(/Extra Expenses|额外支出列表/i)).length).toBeGreaterThan(0);
         expect(await screen.findByText('20260117001')).toBeInTheDocument();
     });
 });

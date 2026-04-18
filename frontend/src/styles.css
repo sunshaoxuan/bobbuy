@@ -256,3 +256,9 @@ body {
 .stock-drawer .ant-drawer-content-wrapper {
   transition: transform 240ms ease-in-out !important;
 }
+
+.procurement-glass-card {
+  background: rgba(255, 255, 255, var(--glass-opacity-medium)) !important;
+  backdrop-filter: blur(var(--blur-glass));
+  box-shadow: var(--shadow-low);
+}

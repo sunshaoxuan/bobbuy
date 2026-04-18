@@ -122,9 +122,27 @@ export type ProcurementHudStats = {
     tripId: number;
     totalEstimatedProfit: number;
     currentPurchasedAmount: number;
+    currentFxRate: number;
+    referenceFxRate: number;
+    totalTripExpenses: number;
     currentWeight: number;
     currentVolume: number;
     categoryCompletionPercent: Record<string, number>;
+};
+
+export type TripExpense = {
+    id: number;
+    tripId: number;
+    cost: number;
+    category: string;
+    createdAt: string;
+};
+
+export type ManualReconcileResponse = {
+    skuId: string;
+    fromBusinessId: string;
+    toBusinessId: string;
+    transferredQuantity: number;
 };
 
 const fallbackStockCategories: MobileCategory[] = [
@@ -381,8 +399,33 @@ export const api = {
             tripId,
             totalEstimatedProfit: 0,
             currentPurchasedAmount: 0,
+            currentFxRate: 1,
+            referenceFxRate: 1,
+            totalTripExpenses: 0,
             currentWeight: 0,
             currentVolume: 0,
             categoryCompletionPercent: {}
-        })
+        }),
+    procurementExpenses: (tripId: number) => fetchJson<TripExpense[]>(`/api/procurement/${tripId}/expenses`, []),
+    createProcurementExpense: (tripId: number, payload: { cost: number; category: string }) =>
+        postJson<TripExpense, { cost: number; category: string }>(`/api/procurement/${tripId}/expenses`, payload),
+    manualReconcile: (
+        tripId: number,
+        payload: { skuId: string; fromBusinessId: string; toBusinessId: string; quantity: number }
+    ) =>
+        postJson<ManualReconcileResponse, { skuId: string; fromBusinessId: string; toBusinessId: string; quantity: number }>(
+            `/api/procurement/${tripId}/manual-reconcile`,
+            payload
+        ),
+    exportProcurementSettlement: async (tripId: number, format: 'csv' | 'pdf') => {
+        const response = await fetch(`/api/procurement/${tripId}/export?format=${format}`, {
+            headers: { 'Accept-Language': getStoredLocale() }
+        });
+        if (!response.ok) {
+            const errorMessage = await parseErrorMessage(response);
+            message.error(errorMessage);
+            throw new Error(errorMessage);
+        }
+        return response.blob();
+    }
 };

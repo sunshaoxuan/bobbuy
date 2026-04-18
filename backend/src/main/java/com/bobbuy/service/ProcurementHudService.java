@@ -2,6 +2,8 @@ package com.bobbuy.service;
 
 import com.bobbuy.api.ProcurementDeficitItemResponse;
 import com.bobbuy.api.ProcurementHudResponse;
+import com.bobbuy.api.TripExpenseRequest;
+import com.bobbuy.api.TripExpenseResponse;
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.model.OrderHeader;
@@ -9,9 +11,11 @@ import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.OrderStatus;
 import com.bobbuy.model.Product;
 import com.bobbuy.model.Trip;
+import com.bobbuy.model.TripExpense;
 import com.bobbuy.repository.OrderHeaderRepository;
 import com.bobbuy.repository.ProductRepository;
 import com.bobbuy.repository.TripRepository;
+import com.bobbuy.repository.TripExpenseRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,24 +43,22 @@ public class ProcurementHudService {
   private final TripRepository tripRepository;
   private final OrderHeaderRepository orderHeaderRepository;
   private final ProductRepository productRepository;
+  private final TripExpenseRepository tripExpenseRepository;
+  private final FxRateService fxRateService;
   private final double referenceFxRate;
-  private final double currentFxRate;
 
   public ProcurementHudService(TripRepository tripRepository,
                                OrderHeaderRepository orderHeaderRepository,
                                ProductRepository productRepository,
-                               @Value("${bobbuy.fx.reference-rate:1.0}") double referenceFxRate,
-                               @Value("${bobbuy.fx.current-rate:#{null}}") Double configuredCurrentFxRate) {
+                               TripExpenseRepository tripExpenseRepository,
+                               FxRateService fxRateService,
+                               @Value("${bobbuy.fx.reference-rate:1.0}") double referenceFxRate) {
     this.tripRepository = tripRepository;
     this.orderHeaderRepository = orderHeaderRepository;
     this.productRepository = productRepository;
+    this.tripExpenseRepository = tripExpenseRepository;
+    this.fxRateService = fxRateService;
     this.referenceFxRate = referenceFxRate;
-    if (configuredCurrentFxRate == null) {
-      log.warn("FX rate property 'bobbuy.fx.current-rate' is missing or null, fallback to {}", DEFAULT_FX_RATE);
-      this.currentFxRate = DEFAULT_FX_RATE;
-    } else {
-      this.currentFxRate = configuredCurrentFxRate;
-    }
   }
 
   @Transactional(readOnly = true)
@@ -65,8 +67,8 @@ public class ProcurementHudService {
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
     List<OrderHeader> orders = orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId);
 
-    double purchasedAmount = 0D;
-    double expectedRevenue = 0D;
+    double actualCostBase = 0D;
+    double expectedRevenueBase = 0D;
     double totalWeight = 0D;
     double totalVolume = 0D;
 
@@ -78,8 +80,8 @@ public class ProcurementHudService {
         int required = Math.max(line.getQuantity(), 0);
         int purchased = Math.min(Math.max(line.getPurchasedQuantity(), 0), required);
 
-        expectedRevenue += required * line.getUnitPrice() * safeRate(referenceFxRate, "bobbuy.fx.reference-rate");
-        purchasedAmount += purchased * line.getUnitPrice() * safeRate(currentFxRate, "bobbuy.fx.current-rate");
+        expectedRevenueBase += required * line.getUnitPrice();
+        actualCostBase += purchased * line.getUnitPrice();
 
         Optional<Product> product = resolveProduct(line.getSkuId());
         totalWeight += purchased * sanitizePhysicalMetric(product.map(Product::getWeight).orElse(null));
@@ -96,15 +98,48 @@ public class ProcurementHudService {
 
     trip.setCurrentWeight(totalWeight);
     trip.setCurrentVolume(totalVolume);
-    double estimatedProfit = expectedRevenue - purchasedAmount;
+    double safeReferenceRate = safeRate(referenceFxRate, "bobbuy.fx.reference-rate");
+    double safeCurrentRate = safeRate(fxRateService.resolveCurrentRate(), "bobbuy.fx.current-rate.dynamic");
+    double totalTripExpenses = Math.max(tripExpenseRepository.sumCostByTripId(tripId), 0D);
+    double purchasedAmount = actualCostBase * safeCurrentRate;
+    double estimatedProfit = (expectedRevenueBase * safeReferenceRate) - purchasedAmount - totalTripExpenses;
 
     return new ProcurementHudResponse(
         tripId,
         round2(estimatedProfit),
         round2(purchasedAmount),
+        round2(safeCurrentRate),
+        round2(safeReferenceRate),
+        round2(totalTripExpenses),
         trip.getCurrentWeight(),
         trip.getCurrentVolume(),
         calculateCategoryCompletion(categoryExpected, categoryPurchased));
+  }
+
+  @Transactional(readOnly = true)
+  public List<TripExpenseResponse> getTripExpenses(Long tripId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    return tripExpenseRepository.findByTripIdOrderByCreatedAtDescIdDesc(tripId).stream()
+        .map(item -> new TripExpenseResponse(
+            item.getId(),
+            item.getTripId(),
+            round2(item.getCost()),
+            item.getCategory(),
+            item.getCreatedAt()))
+        .toList();
+  }
+
+  @Transactional
+  public TripExpenseResponse createTripExpense(Long tripId, TripExpenseRequest request) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    if (request == null || request.getCost() <= 0 || request.getCategory() == null || request.getCategory().isBlank()) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.expense.invalid");
+    }
+    TripExpense expense = new TripExpense(tripId, request.getCost(), request.getCategory().trim(), LocalDateTime.now());
+    TripExpense saved = tripExpenseRepository.save(expense);
+    return new TripExpenseResponse(saved.getId(), saved.getTripId(), round2(saved.getCost()), saved.getCategory(), saved.getCreatedAt());
   }
 
   @Transactional(readOnly = true)
@@ -216,6 +251,47 @@ public class ProcurementHudService {
       orderHeaderRepository.saveAll(changedOrders);
     }
     return new ReconcileInventoryResult(reconciled, targetTripId, new ArrayList<>(allocatedBusinessIds));
+  }
+
+  @Transactional(isolation = Isolation.SERIALIZABLE)
+  public int manualReconcile(Long tripId, String skuId, String fromBusinessId, String toBusinessId, int quantity) {
+    if (tripId == null || skuId == null || skuId.isBlank() || fromBusinessId == null || fromBusinessId.isBlank()
+        || toBusinessId == null || toBusinessId.isBlank() || quantity <= 0 || Objects.equals(fromBusinessId, toBusinessId)) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.reconcile.invalid");
+    }
+
+    List<OrderHeader> orders = orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId);
+    OrderHeader fromOrder = orders.stream()
+        .filter(order -> Objects.equals(order.getBusinessId(), fromBusinessId))
+        .findFirst()
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.procurement.reconcile.source_not_found"));
+    OrderHeader toOrder = orders.stream()
+        .filter(order -> Objects.equals(order.getBusinessId(), toBusinessId))
+        .findFirst()
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.procurement.reconcile.target_not_found"));
+
+    OrderLine sourceLine = safeLines(fromOrder).stream()
+        .filter(line -> Objects.equals(line.getSkuId(), skuId))
+        .findFirst()
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.procurement.reconcile.source_line_not_found"));
+    OrderLine targetLine = safeLines(toOrder).stream()
+        .filter(line -> Objects.equals(line.getSkuId(), skuId))
+        .findFirst()
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.procurement.reconcile.target_line_not_found"));
+
+    int sourcePurchased = Math.max(sourceLine.getPurchasedQuantity(), 0);
+    int targetRequired = Math.max(targetLine.getQuantity(), 0);
+    int targetPurchased = Math.min(Math.max(targetLine.getPurchasedQuantity(), 0), targetRequired);
+    int targetDeficit = Math.max(targetRequired - targetPurchased, 0);
+    int transferred = Math.min(quantity, Math.min(sourcePurchased, targetDeficit));
+    if (transferred <= 0) {
+      return 0;
+    }
+
+    sourceLine.setPurchasedQuantity(sourcePurchased - transferred);
+    targetLine.setPurchasedQuantity(targetPurchased + transferred);
+    orderHeaderRepository.saveAll(List.of(fromOrder, toOrder));
+    return transferred;
   }
 
   private List<OrderLine> safeLines(OrderHeader order) {
