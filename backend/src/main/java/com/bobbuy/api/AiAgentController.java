@@ -11,6 +11,7 @@ import com.bobbuy.service.AiProductOnboardingService;
 import com.bobbuy.service.BobbuyStore;
 import com.bobbuy.service.ProcurementHudService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,15 +29,18 @@ public class AiAgentController {
   private final AiProductOnboardingService aiProductOnboardingService;
   private final BobbuyStore store;
   private final ProcurementHudService procurementHudService;
+  private final int defaultReconcileQuantity;
 
   public AiAgentController(AiAgentService aiAgentService,
                            AiProductOnboardingService aiProductOnboardingService,
                            BobbuyStore store,
-                           ProcurementHudService procurementHudService) {
+                           ProcurementHudService procurementHudService,
+                           @Value("${bobbuy.procurement.reconcile-default-quantity:1}") int defaultReconcileQuantity) {
     this.aiAgentService = aiAgentService;
     this.aiProductOnboardingService = aiProductOnboardingService;
     this.store = store;
     this.procurementHudService = procurementHudService;
+    this.defaultReconcileQuantity = defaultReconcileQuantity;
   }
 
   @PostMapping("/parse")
@@ -129,7 +133,7 @@ public class AiAgentController {
       result = store.createProduct(newProduct);
     }
 
-    procurementHudService.reconcileInventory(result.getId(), 1);
+    procurementHudService.reconcileInventory(result.getId(), defaultReconcileQuantity);
 
     // Return a simple response with the product
     return ResponseEntity.ok(ApiResponse.success(

@@ -12,6 +12,8 @@ import com.bobbuy.model.Trip;
 import com.bobbuy.repository.OrderHeaderRepository;
 import com.bobbuy.repository.ProductRepository;
 import com.bobbuy.repository.TripRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -29,23 +31,30 @@ import java.util.stream.Collectors;
 @Service
 public class ProcurementHudService {
   private static final String UNCATEGORIZED = "UNCATEGORIZED";
+  private static final Logger log = LoggerFactory.getLogger(ProcurementHudService.class);
 
   private final TripRepository tripRepository;
   private final OrderHeaderRepository orderHeaderRepository;
   private final ProductRepository productRepository;
   private final double referenceFxRate;
   private final double currentFxRate;
+  private final double unitWeight;
+  private final double unitVolume;
 
   public ProcurementHudService(TripRepository tripRepository,
                                OrderHeaderRepository orderHeaderRepository,
                                ProductRepository productRepository,
                                @Value("${bobbuy.fx.reference-rate:1.0}") double referenceFxRate,
-                               @Value("${bobbuy.fx.current-rate:${bobbuy.fx.reference-rate:1.0}}") double currentFxRate) {
+                               @Value("${bobbuy.fx.current-rate:${bobbuy.fx.reference-rate:1.0}}") double currentFxRate,
+                               @Value("${bobbuy.trip.unit-weight:1.0}") double unitWeight,
+                               @Value("${bobbuy.trip.unit-volume:1.0}") double unitVolume) {
     this.tripRepository = tripRepository;
     this.orderHeaderRepository = orderHeaderRepository;
     this.productRepository = productRepository;
     this.referenceFxRate = referenceFxRate;
     this.currentFxRate = currentFxRate;
+    this.unitWeight = unitWeight;
+    this.unitVolume = unitVolume;
   }
 
   @Transactional(readOnly = true)
@@ -66,8 +75,8 @@ public class ProcurementHudService {
         int required = Math.max(line.getQuantity(), 0);
         int purchased = Math.min(Math.max(line.getPurchasedQuantity(), 0), required);
 
-        expectedRevenue += required * line.getUnitPrice() * safeRate(referenceFxRate);
-        purchasedAmount += purchased * line.getUnitPrice() * safeRate(currentFxRate);
+        expectedRevenue += required * line.getUnitPrice() * safeRate(referenceFxRate, "bobbuy.fx.reference-rate");
+        purchasedAmount += purchased * line.getUnitPrice() * safeRate(currentFxRate, "bobbuy.fx.current-rate");
         totalPurchasedUnits += purchased;
 
         String categoryId = resolveCategory(line.getSkuId());
@@ -76,7 +85,7 @@ public class ProcurementHudService {
       }
     }
 
-    trip.recalculateCurrentLoad(totalPurchasedUnits, 1D, 1D);
+    trip.recalculateCurrentLoad(totalPurchasedUnits, unitWeight, unitVolume);
     double estimatedProfit = expectedRevenue - purchasedAmount;
 
     return new ProcurementHudResponse(
@@ -213,8 +222,12 @@ public class ProcurementHudService {
     return completion;
   }
 
-  private double safeRate(double rate) {
-    return rate > 0 ? rate : 1D;
+  private double safeRate(double rate, String rateName) {
+    if (rate > 0) {
+      return rate;
+    }
+    log.warn("Invalid FX rate '{}' configured as {}, fallback to 1.0", rateName, rate);
+    return 1D;
   }
 
   private double round2(double value) {

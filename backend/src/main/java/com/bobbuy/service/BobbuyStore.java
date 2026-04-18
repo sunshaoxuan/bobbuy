@@ -29,6 +29,7 @@ import com.bobbuy.repository.SupplierRepository;
 import com.bobbuy.repository.TripRepository;
 import com.bobbuy.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +60,8 @@ public class BobbuyStore {
     private final SupplierRepository supplierRepository;
     private final MerchantSkuRepository merchantSkuRepository;
     private final AuditLogService auditLogService;
+    private final double unitWeight;
+    private final double unitVolume;
     private final AtomicLong orderIdentity = new AtomicLong(3000L);
 
     public BobbuyStore(
@@ -69,7 +72,9 @@ public class BobbuyStore {
             CategoryRepository categoryRepository,
             SupplierRepository supplierRepository,
             MerchantSkuRepository merchantSkuRepository,
-            AuditLogService auditLogService) {
+            AuditLogService auditLogService,
+            @Value("${bobbuy.trip.unit-weight:1.0}") double unitWeight,
+            @Value("${bobbuy.trip.unit-volume:1.0}") double unitVolume) {
         this.userRepository = userRepository;
         this.tripRepository = tripRepository;
         this.orderHeaderRepository = orderHeaderRepository;
@@ -78,6 +83,8 @@ public class BobbuyStore {
         this.supplierRepository = supplierRepository;
         this.merchantSkuRepository = merchantSkuRepository;
         this.auditLogService = auditLogService;
+        this.unitWeight = unitWeight;
+        this.unitVolume = unitVolume;
     }
 
     @PostConstruct
@@ -635,7 +642,7 @@ public class BobbuyStore {
                         })
                         .sum())
                 .sum();
-        trip.recalculateCurrentLoad(purchasedQuantity, 1D, 1D);
+        trip.recalculateCurrentLoad(purchasedQuantity, unitWeight, unitVolume);
     }
 
     private void ensureLocalizedFields(Product product) {
