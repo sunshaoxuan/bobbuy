@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Card, Empty, Input, Radio, Space } from 'antd';
+import { Button, Card, Empty, Input, Radio, Space, Checkbox } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import L10nInput, { type L10nValues } from './L10nInput';
 import { getStoredLocale, translate } from '../i18n';
@@ -10,7 +10,8 @@ export interface MediaItem {
   id: string;
   url: string;
   type: MediaType;
-  title: L10nValues;
+  title?: L10nValues;
+  visible?: boolean;
 }
 
 type TranslateSuggestionFn = (sourceText: string, sourceLocale: string, targetLocale: string) => Promise<string>;
@@ -43,7 +44,8 @@ const createMediaItem = (): MediaItem => ({
   id: createMediaId(),
   url: '',
   type: 'image',
-  title: {}
+  title: {},
+  visible: true
 });
 
 export default function MediaGallery({
@@ -107,6 +109,12 @@ export default function MediaGallery({
                 <Radio.Button value="image">{imageLabelText}</Radio.Button>
                 <Radio.Button value="video">{videoLabelText}</Radio.Button>
               </Radio.Group>
+              <Checkbox 
+                checked={item.visible !== false} 
+                onChange={(e) => updateItem(item.id, { visible: e.target.checked })}
+              >
+                {i18n('stock.media.visible_toggle')}
+              </Checkbox>
               {item.url ? (
                 item.type === 'video' ? (
                   <video

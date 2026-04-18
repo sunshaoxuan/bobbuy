@@ -8,7 +8,11 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        headers: {
+          'Origin': 'http://localhost:8080',
+          'Referer': 'http://localhost:8080/'
+        }
       }
     }
   }

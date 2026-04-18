@@ -7,6 +7,8 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,18 +21,16 @@ public class Category {
     @Id
     private String id;
 
-    @JsonbColumn
-    @Convert(converter = StringMapJsonConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, String> name = new HashMap<>();
 
-    @JsonbColumn
-    @Convert(converter = StringMapJsonConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, String> description = new HashMap<>();
 
     @JsonbColumn
-    @Convert(converter = CategoryAttributeDefinitionsJsonConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attribute_template", columnDefinition = "jsonb")
     private List<Map<String, Object>> attributeTemplate = new ArrayList<>();
 

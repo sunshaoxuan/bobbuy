@@ -16,53 +16,44 @@
 - **🛡️ 信任与合规体系**：建立数字化的信用评分模型、内容审核机制及争议处理流程，确保交易安全。
 
 ## 🛠 技术架构
-- **后端 (Backend)**：基于 **Spring Cloud Alibaba** 的高性能微服务架构，提供金融级的服务治理与分布式事务支持。
+- **后端 (Backend)**：基于 **Spring Boot 3** 的高性能微服务架构，提供金融级的服务治理支持。
 - **前端 (Frontend)**：**React 18** 结合 **Ant Design** 体系，提供移动优先（Mobile-First）且响应迅速的用户交互体验。
+- **资源与代理**：**Nginx** 生产级静态资源服务与 API 反向代理。
 - **数据与存储 (Storage)**：
-  - **PostgreSQL**：依托 JSONB 特性和关系型约束，处理复杂元数据。
+  - **PostgreSQL 15**：依托 JSONB 特性和关系型约束，处理复杂元数据。
   - **MinIO**：兼容 S3 协议的大规模对象存储。
-- **中间件 (Middleware)**：**Redis** (分布式状态管理) + **Apache Kafka** (高吞吐异步消息流)。
+- **中间件 (Middleware)**：**Redis** (分布式状态管理) + **RabbitMQ** (异步任务队列)。
 
 ## 🚀 发展路线
-1. **Phase 1: 核心链路构建 (Core MVP)**：聚焦核心代购流程的数字化与 AI 辅助分析能力的落地。
-2. **Phase 2: 感知体验升级 (Experience Enhancement)**：推出跨平台原生应用，强化 AI 对话交互与物流集成。
-3. **Phase 3: 全球规模化扩张 (Scale-up & Global Expansion)**：全面开放全球市场接口，构建去中心化的全球服务网络。
+1. **Phase 1: 核心链路构建 (Core MVP)**：聚焦核心代购流程的数字化与 AI 辅助分析能力的落地。 [DONE]
+2. **Phase 2: 全栈容器化与基础设施现代化 (Modernization)**：实现一键 Docker 编排，保障生产环境一致性，迁移至 PG/MinIO。 [IN PROGRESS]
+3. **Phase 3: 采购 HUD 与 规模化运营 (Scale-up)**：推出实时利润看板，强化物流集成与全球服务网络。
 
 ## 📂 文档索引
+- [MIGRATION-01: PostgreSQL 与 MinIO 迁移记录](docs/migrations/MIGRATION-01-PostgreSQL与MinIO容器化迁移.md)
+- [ARCH-13: 全栈容器化部署方案](docs/architecture/ARCH-13-全栈容器化部署方案.md)
 - [PROD-01: 原始需求清单](docs/design/PROD-01-原始需求清单.md)
-- [PROD-02: 业务功能详细说明](docs/design/PROD-02-业务功能详细说明.md)
-- [PLAN-01: 下一阶段开发任务规划](docs/plans/PLAN-01-下一阶段开发任务规划.md)
-- [ARCH-01: 平台技术架构选型](docs/design/ARCH-01-平台技术架构选型.md)
-- [ARCH-02: 参与者管理与身份认证详细设计](docs/design/ARCH-02-参与者管理与身份认证详细设计.md)
-- [ARCH-03: 行程发布与费用定价详细设计](docs/design/ARCH-03-行程发布与费用定价详细设计.md)
-- [ARCH-04: 订单确认模块详细设计](docs/design/ARCH-04-订单确认模块详细设计.md)
-- [ARCH-05: 采购执行与商品采集详细设计](docs/design/ARCH-05-采购执行与商品采集详细设计.md)
-- [ARCH-06: 最终结账与线下结算详细设计](docs/design/ARCH-06-最终结账与线下结算详细设计.md)
-- [ARCH-07: 利润核算与经营分析详细设计](docs/design/ARCH-07-利润核算与经营分析详细设计.md)
-- [ARCH-08: 智能路径规划与配送导航详细设计](docs/design/ARCH-08-智能路径规划与配送导航详细设计.md)
-- [ARCH-09: 多语言与AI翻译引擎详细设计](docs/design/ARCH-09-多语言与AI翻译引擎详细设计.md)
-- [ARCH-10: UI交互与画面布局详细设计](docs/design/ARCH-10-UI交互与画面布局详细设计.md)
-- [GUIDE-08: i18n国际化规范](docs/guides/GUIDE-08-i18n规范.md)
-- [系统方案设计 (原始)](docs/BOBBuy%20平台系统方案设计.docx)
+- [ARCH-01: 平台技术架构选型](docs/architecture/ARCH-01-平台技术架构选型.md)
+- [ARCH-11: 订单头行模型与业务幂等详细设计](docs/architecture/ARCH-11-订单头行模型与业务幂等详细设计说明书.md)
+- [ARCH-12: 商品主数据模型与多语种交互设计](docs/architecture/ARCH-12-商品主数据模型与多语种交互设计.md)
 
-## 🧩 MVP v1 本地运行
+## 🐳 快速开始 (Docker Compose)
 
-> 本仓库已补齐首版 MVP 的后端 API 与前端控制台，实现行程发布、订单管理、参与者管理与基础指标概览。
+本项目已实现标准全栈容器化，推荐直接使用 Docker 启动完整环境。
 
-### 后端 (Spring Boot 3)
-```bash
-cd backend
-mvn spring-boot:run
+### 1. 启动全栈服务
+在仓库根目录下执行：
+```powershell
+docker-compose -p bobbuy up -d
 ```
 
-### 前端 (React + Ant Design)
-```bash
-cd frontend
-npm install
-npm run dev
-```
+### 2. 访问入口
+- **前端控制台**：[http://localhost](http://localhost)
+- **后端 API**：[http://localhost/api](http://localhost/api) (或直接访问容器端口 8080)
+- **MinIO 控制台**：[http://localhost:9001](http://localhost:9001) (默认 Access Key: `minioadmin`, Secret Key: `minioadmin`)
 
-浏览器访问 `http://localhost:5173` 查看控制台，默认会调用 `http://localhost:8080/api`。
+### 3. 数据持久化
+所有数据库和存储数据默认挂载在项目根目录下的 `data/` 卷中。
 
 ---
 © 2026 BOBBuy 团队. 保留所有权利。

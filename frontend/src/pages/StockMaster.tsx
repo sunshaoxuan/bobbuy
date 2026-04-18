@@ -58,6 +58,7 @@ interface StockItem {
   orderMethod?: 'PRE_ORDER' | 'DIRECT_BUY';
   priceTiers?: { tierName: string; price: number; currency: string; agentOnly: boolean }[];
   isNew?: boolean;
+  suggestion?: AiOnboardingSuggestion;
 }
 
 type MerchantSkuEntry = {
@@ -224,50 +225,38 @@ export default function StockMaster() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [isMobile]);
 
-  const [dataSource, setDataSource] = useState<StockItem[]>([
-    {
-      key: '1',
-      name: 'Organic Milk',
-       nameL10n: { 'zh-CN': '有机牛奶', 'ja-JP': 'オーガニックミルク', 'en-US': 'Organic Milk' },
-      category: 'Dairy',
-      price: 12.99,
-      stock: 50,
-      unit: '3pk',
-      brand: 'Organic Valley',
-      sku: 'OM-001',
-      description: 'Fresh organic milk from local farms.',
-       descriptionL10n: { 'zh-CN': '来自本地农场的新鲜有机牛奶。', 'ja-JP': '地元農場の新鮮なオーガニックミルク。', 'en-US': 'Fresh organic milk from local farms.' },
-      mediaGallery: [
-        {
-          id: 'milk-image-1',
-          url: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
-          type: 'image',
-           title: { 'zh-CN': '牛奶正面图', 'ja-JP': 'ミルク正面', 'en-US': 'Milk front view' }
-        }
-      ]
-    },
-    {
-      key: '2',
-      name: 'Fresh Spinach',
-       nameL10n: { 'zh-CN': '新鲜菠菜', 'ja-JP': '新鮮ほうれん草', 'en-US': 'Fresh Spinach' },
-      category: 'Produce',
-      price: 4.5,
-      stock: 100,
-      unit: 'bag',
-      brand: 'Green Garden',
-      sku: 'FS-002',
-      description: 'Pre-washed baby spinach leaves.',
-       descriptionL10n: { 'zh-CN': '免洗嫩菠菜叶。', 'ja-JP': '洗浄済みベビーほうれん草。', 'en-US': 'Pre-washed baby spinach leaves.' },
-      mediaGallery: [
-        {
-          id: 'spinach-video-1',
-          url: 'https://www.w3schools.com/html/mov_bbb.mp4',
-          type: 'video',
-           title: { 'zh-CN': '菠菜展示视频', 'ja-JP': 'ほうれん草紹介動画', 'en-US': 'Spinach showcase video' }
-        }
-      ]
-    }
-  ]);
+  const [dataSource, setDataSource] = useState<StockItem[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.products().then((result) => {
+      if (cancelled) return;
+      const mapped: StockItem[] = result.map(res => ({
+        key: res.product.id,
+        name: res.displayName,
+        nameL10n: res.product.name,
+        category: res.product.categoryId || '',
+        price: res.product.basePrice,
+        stock: 0, // Placeholder
+        unit: 'pc',
+        description: res.displayDescription,
+        descriptionL10n: res.product.description,
+        brand: res.product.brand,
+        sku: res.product.itemNumber,
+        mediaGallery: res.product.mediaGallery?.map((m, i) => ({
+          id: `${res.product.id}-${i}`,
+          url: m.url,
+          type: (m.type as 'image' | 'video') || 'image',
+          title: m.title
+        })) || [],
+        priceTiers: res.product.priceTiers || [],
+        isNew: false
+      }));
+      setDataSource(mapped);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
 
   const getLocalizedFallback = (values?: L10nValues, fallback?: string) => {
     if (!values) {
@@ -322,14 +311,123 @@ export default function StockMaster() {
     const newData = [...dataSource];
     const index = newData.findIndex((item) => key === item.key);
     if (index > -1) {
-      newData[index] = { ...newData[index], [field]: value };
+      const updatedItem = { ...newData[index], [field]: value };
+      newData[index] = updatedItem;
       setDataSource(newData);
+      
+      // Auto-save on table change
+      clearAutosaveTimer();
+      autosaveTimerRef.current = setTimeout(() => {
+        syncItemToBackend(updatedItem);
+      }, AUTOSAVE_DELAY_MS);
     }
   };
 
-  const handlePublish = () => {
-    message.success(t('stock.msg.published'));
-    setDataSource(dataSource.map((item) => ({ ...item, isNew: false })));
+  const handleQuickAddSuccess = async (suggestion: AiOnboardingSuggestion) => {
+    // 1. Immediately call backend to confirm/persist to prevent data loss
+    const hide = message.loading(t('stock.master.publishing'), 0);
+    try {
+      const response = await api.onboardConfirm(suggestion) as any;
+      const product = response.product;
+
+      // 2. Map the response (now with real DB ID) back to the UI
+      const newItem: StockItem = {
+        key: product.id,
+        name: response.displayName,
+        nameL10n: product.name,
+        category: product.categoryId || '',
+        price: product.basePrice,
+        stock: 0,
+        unit: 'pc',
+        description: response.displayDescription,
+        descriptionL10n: product.description,
+        brand: product.brand,
+        sku: product.itemNumber,
+        // @ts-ignore
+        mediaGallery: (product.mediaGallery?.map((m: any, i: number) => ({
+           id: `${product.id}-${i}`,
+           url: m.url,
+           type: (m.type as 'image' | 'video') || 'image',
+           title: m.title || {}
+        })) || []) as MediaItem[],
+        priceTiers: product.priceTiers || [],
+        isNew: false // Mark as NOT new (already synced)
+      };
+      
+      setDataSource([newItem, ...dataSource]);
+      message.success(t('stock.msg.published'));
+      
+      // Open drawer for further refinement if needed
+      openDrawer(newItem);
+    } catch (err) {
+      console.error('[Auto-save] Failed:', err);
+      message.error(t('stock.master.publish_failed'));
+      
+      // Fallback: add to local state as 'New' so user can try again
+      const fallbackItem: StockItem = {
+        key: `suggest-${Date.now()}`,
+        name: suggestion.name,
+        category: suggestion.categoryId || '',
+        price: suggestion.price || 0,
+        stock: 0,
+        unit: 'pc',
+        description: suggestion.description,
+        brand: suggestion.brand,
+        sku: suggestion.itemNumber,
+        // @ts-ignore
+        mediaGallery: (suggestion.mediaGallery?.map((m: any, i: number) => ({
+           id: `media-${i}`,
+           url: m.url,
+           type: (m.type as 'image' | 'video') || 'image',
+           title: m.title || { 'zh-CN': '', 'ja-JP': '', 'en-US': '' },
+           visible: true
+        })) || []) as MediaItem[],
+        priceTiers: suggestion.detectedPriceTiers || [],
+        isNew: true,
+        suggestion: suggestion
+      };
+      setDataSource([fallbackItem, ...dataSource]);
+      openDrawer(fallbackItem);
+    } finally {
+      hide();
+      setIsQuickAddVisible(false);
+    }
+  };
+
+  const syncItemToBackend = async (item: StockItem) => {
+    setSyncStatus('saving');
+    // Preparation: Map current UI state to a suggestion/patch object
+    const suggestion: AiOnboardingSuggestion = {
+      name: item.name,
+      price: item.price,
+      itemNumber: item.sku,
+      categoryId: item.category,
+      brand: item.brand,
+      description: item.description,
+      // @ts-ignore
+      mediaGallery: item.mediaGallery?.map(m => ({ url: m.url, type: m.type, title: m.title, visible: m.visible !== false })),
+      detectedPriceTiers: item.priceTiers,
+      storageCondition: item.storageCondition,
+      orderMethod: item.orderMethod,
+      originalPhotoBase64: item.suggestion?.originalPhotoBase64
+    };
+
+    try {
+      if (item.isNew) { 
+        const response = await api.onboardConfirm(suggestion) as any;
+        // Update item key and status in background
+        setDataSource(prev => prev.map(it => it.key === item.key ? { ...it, key: response.product?.id || item.key, isNew: false } : it));
+        setSyncStatus('saved');
+      } else {
+        // Existing product update via Patch
+        await api.onboardConfirm({ ...suggestion, existingProductFound: true, existingProductId: item.key });
+        setSyncStatus('saved');
+      }
+    } catch (err) {
+      console.error('[Sync] Failed:', err);
+      setSyncStatus('idle');
+      // message.error('Background sync failed');
+    }
   };
 
   const openDrawer = (record: StockItem, defaultTab?: string) => {
@@ -347,41 +445,6 @@ export default function StockMaster() {
     setSyncStatus('idle');
   };
 
-  const handleQuickAddSuccess = (suggestion: AiOnboardingSuggestion) => {
-    setIsQuickAddVisible(false);
-    const newKey = Date.now().toString();
-    const newItem: StockItem = {
-      key: newKey,
-      name: suggestion.name,
-       nameL10n: { 'zh-CN': suggestion.name, 'ja-JP': suggestion.name, 'en-US': suggestion.name },
-      category: suggestion.categoryId || '',
-      price: suggestion.price || 0,
-      stock: 0,
-      unit: 'pc',
-      sku: suggestion.itemNumber, // Map itemNumber to SKU for list visibility
-      brand: suggestion.brand,
-      description: suggestion.description,
-       descriptionL10n: { 'zh-CN': suggestion.description || '', 'ja-JP': suggestion.description || '', 'en-US': suggestion.description || '' },
-      mediaGallery: suggestion.mediaGallery?.map((m, i) => ({
-        id: `ai-${Date.now()}-${i}`,
-        url: m.url,
-        type: (m.type as 'image' | 'video') || 'image',
-         title: { 'zh-CN': m.title || '', 'ja-JP': m.title || '', 'en-US': m.title || '' }
-      })) || [],
-      priceTiers: suggestion.detectedPriceTiers || [],
-      isNew: true
-    };
-    
-    // Prepend to datasource so it appears at the very top immediately
-    setDataSource(prev => [newItem, ...prev]);
-
-    // Default to priceTiers tab when existing product matched (for Agent confirmation)
-    const defaultTab = suggestion.existingProductFound ? 'priceTiers' : 'basic';
-    
-    // Open drawer
-    openDrawer(newItem, defaultTab);
-  };
-
   const closeDrawer = () => {
     clearAutosaveTimer();
     setIsDrawerVisible(false);
@@ -396,9 +459,8 @@ export default function StockMaster() {
     }
     setDataSource((prevData) => {
       const index = prevData.findIndex((item) => editingItem.key === item.key);
-      if (index < 0) {
-        return prevData;
-      }
+      if (index < 0) return prevData;
+      
       const nextData = [...prevData];
       const currentItem = nextData[index];
       const rawValues = values as Partial<StockItem> & { merchantSkuEntries?: MerchantSkuEntry[] };
@@ -406,7 +468,8 @@ export default function StockMaster() {
       const merchantSkus = mapEntriesToMerchantSkus(merchantSkuEntries);
       const nextNameL10n: L10nValues = values.nameL10n ?? currentItem.nameL10n ?? {};
       const nextDescriptionL10n: L10nValues = values.descriptionL10n ?? currentItem.descriptionL10n ?? {};
-      nextData[index] = {
+      
+      const updatedItem = {
         ...currentItem,
         ...safeValues,
         nameL10n: nextNameL10n,
@@ -418,11 +481,19 @@ export default function StockMaster() {
         dynamicAttributes: values.dynamicAttributes ?? currentItem.dynamicAttributes ?? {},
         merchantSkus
       };
+      
+      nextData[index] = updatedItem;
+      
+      // Background sync to backend
+      syncItemToBackend(updatedItem);
+      
       return nextData;
     });
+
     if (options.showMessage) {
       message.success(t('stock.drawer.update_success'));
     }
+    
     if (options.closeAfterSave) {
       closeDrawer();
     }
@@ -589,12 +660,14 @@ export default function StockMaster() {
               onChange={(e) => setSearchText(e.target.value)}
             />
             <Space style={{ width: '100%' }}>
-              <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow} block>
-                {t('stock.master.add_row')}
-              </Button>
-              <Button type="primary" icon={<CameraOutlined />} onClick={() => setIsQuickAddVisible(true)} block>
-                {t('stock.master.quick_snap')}
-              </Button>
+              <Space style={{ width: '100%' }}>
+                <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow} block>
+                  {t('stock.master.add_row')}
+                </Button>
+                <Button type="primary" icon={<CameraOutlined />} onClick={() => setIsQuickAddVisible(true)} block>
+                  {t('stock.master.quick_snap')}
+                </Button>
+              </Space>
             </Space>
           </Space>
         ) : (
@@ -606,14 +679,18 @@ export default function StockMaster() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
-            <Space>
-              <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow}>
-                {t('stock.master.add_row')}
-              </Button>
-              <Button type="primary" icon={<CameraOutlined />} onClick={() => setIsQuickAddVisible(true)}>
-                {t('stock.master.quick_snap')}
-              </Button>
-            </Space>
+              <Space>
+                <Text type="secondary" style={{ marginRight: 12 }}>
+                  {syncStatus === 'saving' ? t('stock.drawer.sync.saving') : 
+                   syncStatus === 'saved' ? t('stock.drawer.sync.saved') : ''}
+                </Text>
+                <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow}>
+                  {t('stock.master.add_row')}
+                </Button>
+                <Button type="primary" icon={<CameraOutlined />} onClick={() => setIsQuickAddVisible(true)}>
+                  {t('stock.master.quick_snap')}
+                </Button>
+              </Space>
           </Space>
         )}
       </div>
@@ -876,8 +953,6 @@ export default function StockMaster() {
           />
         </Form>
       </Drawer>
-
-      {isMobile ? (
         <div className="stock-mobile-fab-group">
           <Button
             shape="circle"
@@ -887,25 +962,7 @@ export default function StockMaster() {
             className="app-shadow-medium"
             onClick={handleAddRow}
           />
-          <Button
-            type="primary"
-            shape="circle"
-            icon={<SaveOutlined />}
-            aria-label={t('stock.master.publish')}
-            size="large"
-            className="app-shadow-high"
-            onClick={handlePublish}
-            id="publish-btn"
-          />
         </div>
-      ) : (
-        <div className="stock-desktop-actionbar app-shadow-low">
-          <Button size="large">{t('stock.master.discard')}</Button>
-          <Button type="primary" size="large" icon={<SaveOutlined />} onClick={handlePublish} id="publish-btn">
-            {t('stock.master.publish')}
-          </Button>
-        </div>
-      )}
       <AiQuickAddModal
         visible={isQuickAddVisible}
         onCancel={() => setIsQuickAddVisible(false)}

@@ -148,7 +148,8 @@ public class AiProductOnboardingService {
                 new HashMap<>(),
                 existingFound,
                 existingId,
-                detectedTiers
+                detectedTiers,
+                base64Image
             ));
 
         } catch (Exception e) {

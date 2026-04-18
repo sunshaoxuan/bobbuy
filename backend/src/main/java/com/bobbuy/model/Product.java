@@ -10,6 +10,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,21 +24,18 @@ public class Product {
     @Id
     private String id;
 
-    @JsonbColumn
-    @Convert(converter = StringMapJsonConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, String> name = new HashMap<>();
 
-    @JsonbColumn
-    @Convert(converter = StringMapJsonConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, String> description = new HashMap<>();
 
     private String brand;
     private double basePrice;
 
-    @JsonbColumn
-    @Convert(converter = MediaGalleryJsonConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private List<MediaGalleryItem> mediaGallery = new ArrayList<>();
 
@@ -46,15 +45,13 @@ public class Product {
     private OrderMethod orderMethod;
     private String categoryId;
 
-    @JsonbColumn
-    @Convert(converter = StringMapJsonConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "merchant_skus", columnDefinition = "jsonb")
     private Map<String, String> merchantSkus;
 
     private String itemNumber; // For AI matching and shelf identification
 
-    @JsonbColumn
-    @Convert(converter = PriceTierListJsonConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "price_tiers", columnDefinition = "jsonb")
     private List<PriceTier> priceTiers = new ArrayList<>();
 

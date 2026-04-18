@@ -9,6 +9,7 @@ import com.bobbuy.model.ProductPatch;
 import com.bobbuy.service.AiAgentService;
 import com.bobbuy.service.AiProductOnboardingService;
 import com.bobbuy.service.BobbuyStore;
+import com.bobbuy.service.ImageStorageService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,13 +27,16 @@ public class AiAgentController {
   private final AiAgentService aiAgentService;
   private final AiProductOnboardingService aiProductOnboardingService;
   private final BobbuyStore store;
+  private final ImageStorageService imageStorageService;
 
   public AiAgentController(AiAgentService aiAgentService,
                            AiProductOnboardingService aiProductOnboardingService,
-                           BobbuyStore store) {
+                           BobbuyStore store,
+                           ImageStorageService imageStorageService) {
     this.aiAgentService = aiAgentService;
     this.aiProductOnboardingService = aiProductOnboardingService;
     this.store = store;
+    this.imageStorageService = imageStorageService;
   }
 
   @PostMapping("/parse")
@@ -76,6 +80,8 @@ public class AiAgentController {
   public ResponseEntity<ApiResponse<MobileProductResponse>> confirmOnboard(@Valid @RequestBody AiOnboardingSuggestion suggestion) {
     Product result;
 
+    String evidenceImageUrl = imageStorageService.saveBase64(suggestion.originalPhotoBase64());
+    
     if (suggestion.existingProductFound() && suggestion.existingProductId() != null) {
       // Incremental update: patch existing product with detected price tiers
       ProductPatch patch = new ProductPatch();
@@ -85,9 +91,13 @@ public class AiAgentController {
       if (suggestion.detectedPriceTiers() != null && !suggestion.detectedPriceTiers().isEmpty()) {
         patch.setPriceTiers(suggestion.detectedPriceTiers());
       }
-      if (suggestion.mediaGallery() != null && !suggestion.mediaGallery().isEmpty()) {
-        patch.setMediaGallery(suggestion.mediaGallery());
+      
+      List<com.bobbuy.model.MediaGalleryItem> gallery = new java.util.ArrayList<>(suggestion.mediaGallery() != null ? suggestion.mediaGallery() : List.of());
+      if (evidenceImageUrl != null) {
+        gallery.add(0, new com.bobbuy.model.MediaGalleryItem(evidenceImageUrl, com.bobbuy.model.MediaType.IMAGE, new HashMap<>()));
       }
+      patch.setMediaGallery(gallery);
+      
       if (suggestion.brand() != null) {
         patch.setBrand(suggestion.brand());
       }
@@ -112,7 +122,13 @@ public class AiAgentController {
 
       newProduct.setBrand(suggestion.brand());
       newProduct.setBasePrice(suggestion.price() != null ? suggestion.price() : 0.0);
-      newProduct.setMediaGallery(suggestion.mediaGallery() != null ? suggestion.mediaGallery() : List.of());
+      
+      List<com.bobbuy.model.MediaGalleryItem> gallery = new java.util.ArrayList<>(suggestion.mediaGallery() != null ? suggestion.mediaGallery() : List.of());
+      if (evidenceImageUrl != null) {
+        gallery.add(0, new com.bobbuy.model.MediaGalleryItem(evidenceImageUrl, com.bobbuy.model.MediaType.IMAGE, new HashMap<>()));
+      }
+      newProduct.setMediaGallery(gallery);
+      
       newProduct.setStorageCondition(suggestion.storageCondition());
       newProduct.setOrderMethod(suggestion.orderMethod());
       newProduct.setCategoryId(suggestion.categoryId());

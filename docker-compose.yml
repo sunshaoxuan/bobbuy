@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # Infrastructure Services
+  postgres:
+    image: postgres:15-alpine
+    container_name: bobbuy-postgres
+    environment:
+      POSTGRES_DB: bobbuy
+      POSTGRES_USER: bobbuy
+      POSTGRES_PASSWORD: bobbuypassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - bobbuy-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: bobbuy-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: bobbuyadmin
+      MINIO_ROOT_PASSWORD: bobbuypassword
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - bobbuy-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: bobbuy-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - bobbuy-net
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: bobbuy-rabbitmq
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: bobbuy
+      RABBITMQ_DEFAULT_PASS: bobbuypassword
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+    networks:
+      - bobbuy-net
+
+  # Application Services
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bobbuy-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/bobbuy
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+      - SPRING_DATASOURCE_USERNAME=bobbuy
+      - SPRING_DATASOURCE_PASSWORD=bobbuypassword
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+      - BOBBUY_MINIO_ENDPOINT=http://minio:9000
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - postgres
+      - minio
+      - redis
+      - rabbitmq
+    networks:
+      - bobbuy-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bobbuy-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - bobbuy-net
+
+networks:
+  bobbuy-net:
+    name: bobbuy-net
+    driver: bridge
