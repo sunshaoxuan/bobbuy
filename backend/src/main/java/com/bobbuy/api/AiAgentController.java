@@ -11,6 +11,7 @@ import com.bobbuy.service.AiProductOnboardingService;
 import com.bobbuy.service.BobbuyStore;
 import com.bobbuy.service.ImageStorageService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -140,6 +141,8 @@ public class AiAgentController {
 
       result = store.createProduct(newProduct);
     }
+
+    procurementHudService.reconcileInventory(result.getId(), defaultReconcileQuantity);
 
     // Return a simple response with the product
     return ResponseEntity.ok(ApiResponse.success(

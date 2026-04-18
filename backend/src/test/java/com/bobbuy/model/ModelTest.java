@@ -46,6 +46,9 @@ class ModelTest {
         assertThat(trip.getReservedCapacity()).isEqualTo(3);
         assertThat(trip.getStatus()).isEqualTo(TripStatus.COMPLETED);
         assertThat(trip.getStatusUpdatedAt()).isEqualTo(now);
+        trip.recalculateCurrentLoad(3, 1.5, 2.0);
+        assertThat(trip.getCurrentWeight()).isEqualTo(4.5);
+        assertThat(trip.getCurrentVolume()).isEqualTo(6.0);
     }
 
     @Test
@@ -66,6 +69,7 @@ class ModelTest {
         assertThat(header.getLines()).hasSize(1);
         assertThat(line1.getHeaderId()).isEqualTo(10L);
         assertThat(header.getBusinessId()).isEqualTo("BUS-001");
+        assertThat(header.getCreatedAt()).isNotNull();
         assertThat(header.getCustomerId()).isEqualTo(100L);
         assertThat(header.getTripId()).isEqualTo(200L);
         assertThat(header.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
@@ -80,6 +84,10 @@ class ModelTest {
         assertThat(line1.getItemName()).isEqualTo("A");
         assertThat(line1.getUnitPrice()).isEqualTo(10.0);
         assertThat(line1.getQuantity()).isEqualTo(1);
+        assertThat(line1.getPurchasedQuantity()).isEqualTo(0);
+
+        line1.setPurchasedQuantity(5);
+        assertThat(line1.getPurchasedQuantity()).isEqualTo(5);
     }
 
     @Test
