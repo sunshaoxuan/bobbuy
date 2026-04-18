@@ -10,6 +10,7 @@ import OrderDesk from './pages/OrderDesk';
 import ProcurementHUD from './pages/ProcurementHUD';
 import PickingMaster from './pages/PickingMaster';
 import StockMaster from './pages/StockMaster';
+import ClientHomeV2 from './pages/ClientHomeV2';
 import type { Locale } from './i18n';
 import { supportedLocales, useI18n } from './i18n';
 
@@ -51,6 +52,7 @@ export default function App() {
   const pageTitles: Record<string, string> = useMemo(
     () => ({
       '/': t('nav.dashboard'),
+      '/dashboard': t('nav.dashboard'),
       '/trips': t('nav.trips'),
       '/orders': t('nav.orders'),
       '/order-desk': t('nav.order_desk'),
@@ -125,7 +127,8 @@ export default function App() {
         <Content style={{ padding: contentPadding }} className="app-content">
           <div className="app-page-transition">
             <Routes>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<ClientHomeV2 />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/trips" element={<Trips />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/order-desk" element={<OrderDesk />} />
