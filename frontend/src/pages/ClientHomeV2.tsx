@@ -55,6 +55,12 @@ export default function ClientHomeV2() {
     setLiveFeed((prev) => [{ id: `${Date.now()}-${Math.random()}`, story }, ...prev].slice(0, 8));
   }, []);
 
+  const buildLiveStory = useCallback(
+    (businessId: string, itemName: string) =>
+      `${businessId} ${t('zen.live_story_connector')} ${itemName}`,
+    [t]
+  );
+
   const hydrateLiveFeed = useCallback((orderList: Order[]) => {
     const initial = orderList
       .flatMap((order) =>
@@ -62,12 +68,12 @@ export default function ClientHomeV2() {
           .filter((line) => (line.purchasedQuantity ?? line.quantity ?? 0) > 0)
           .map((line) => ({
             id: `${order.id}-${line.skuId}`,
-            story: `${order.businessId} 刚刚购入了 ${line.itemName}`
+            story: buildLiveStory(order.businessId, line.itemName)
           }))
       )
       .slice(0, 6);
     setLiveFeed(initial);
-  }, []);
+  }, [buildLiveStory]);
 
   const refreshTripData = useCallback(
     async (tripId: number, appendStories = false) => {
@@ -81,7 +87,7 @@ export default function ClientHomeV2() {
             const previous = previousPurchasedRef.current[key] ?? 0;
             const current = line.purchasedQuantity ?? line.quantity ?? 0;
             if (current > previous) {
-              pushLiveStory(`${order.businessId} 刚刚购入了 ${line.itemName}`);
+              pushLiveStory(buildLiveStory(order.businessId, line.itemName));
             }
           }
         }
@@ -96,7 +102,7 @@ export default function ClientHomeV2() {
       const nextBusinessId = ledger[0]?.businessId ?? orderList[0]?.businessId;
       setActiveBusinessId((prev) => prev ?? nextBusinessId);
     },
-    [hydrateLiveFeed, pushLiveStory]
+    [buildLiveStory, hydrateLiveFeed, pushLiveStory]
   );
 
   useEffect(() => {
@@ -219,13 +225,13 @@ export default function ClientHomeV2() {
       <main className="zen-main">
         <section className="zen-hero">
           <Text className="zen-kicker">PROJECT ZEN</Text>
-          <Title className="zen-hero-title">文雅、高级、干干净净</Title>
-          <Text className="zen-hero-subtitle">回归商品本质，留下空气。</Text>
+          <Title className="zen-hero-title">{t('zen.hero_title')}</Title>
+          <Text className="zen-hero-subtitle">{t('zen.hero_subtitle')}</Text>
         </section>
 
-        <section className="zen-product-rail" aria-label="Airy Product Flow">
+        <section className="zen-product-rail" aria-label={t('zen.product_rail_aria_label')}>
           {products.length === 0 ? (
-            <Empty description="No products" />
+            <Empty description={t('zen.products_empty')} />
           ) : (
             products.map((item) => {
               const media = item.product.mediaGallery?.find((entry) => entry.type === 'image');
@@ -238,7 +244,12 @@ export default function ClientHomeV2() {
                       {item.displayName}
                     </Title>
                     <Text className="zen-product-description">{item.displayDescription || item.product.brand || '—'}</Text>
-                    <Text className="zen-product-price">¥ {item.product.basePrice.toFixed(2)}</Text>
+                    <Text
+                      className="zen-product-price"
+                      aria-label={`${t('zen.price_aria_prefix')} ${item.product.basePrice.toFixed(2)} ${t('zen.price_aria_suffix')}`}
+                    >
+                      ¥ {item.product.basePrice.toFixed(2)}
+                    </Text>
                   </div>
                 </article>
               );
@@ -246,12 +257,12 @@ export default function ClientHomeV2() {
           )}
         </section>
 
-        <section className="zen-live-feed" aria-label="Minimal Live Feed">
+        <section className="zen-live-feed" aria-label={t('zen.live_feed_aria_label')}>
           <Title level={5} className="zen-section-title">
-            实况流
+            {t('zen.live_feed_title')}
           </Title>
           <div className="zen-live-stream">
-            {liveFeed.length === 0 ? <Text type="secondary">暂无更新</Text> : null}
+            {liveFeed.length === 0 ? <Text type="secondary">{t('zen.live_feed_empty')}</Text> : null}
             {liveFeed.map((item) => (
               <p key={item.id} className="zen-live-line">
                 {item.story}
@@ -260,30 +271,30 @@ export default function ClientHomeV2() {
           </div>
         </section>
 
-        <section className="zen-statement" aria-label="Paper Style Billing">
+        <section className="zen-statement" aria-label={t('zen.statement_aria_label')}>
           <div className="zen-statement-header">
             <Title level={5} className="zen-section-title">
-              个人对账单
+              {t('zen.statement_title')}
             </Title>
             <Space size={8}>
               <Select
                 size="small"
                 value={activeBusinessId}
-                placeholder="Business ID"
+                placeholder={t('zen.statement_select_business')}
                 className="zen-select"
                 options={statementBusinessIds.map((businessId) => ({ value: businessId, label: businessId }))}
                 onChange={setActiveBusinessId}
               />
               <Button size="small" className="zen-statement-download" onClick={downloadStatementPdf}>
-                下载 PDF
+                {t('zen.statement_download_pdf')}
               </Button>
             </Space>
           </div>
           <div className="zen-receipt">
             <div className="zen-receipt-row zen-receipt-head">
-              <span>ITEM</span>
-              <span>QTY</span>
-              <span>AMOUNT</span>
+              <span>{t('zen.receipt_item')}</span>
+              <span>{t('zen.receipt_qty')}</span>
+              <span>{t('zen.receipt_amount')}</span>
             </div>
             {statementLines.length === 0 ? (
               <div className="zen-receipt-row">
@@ -302,17 +313,17 @@ export default function ClientHomeV2() {
             )}
             <div className="zen-receipt-divider" />
             <div className="zen-receipt-row">
-              <span>Total Receivable</span>
+              <span>{t('zen.statement_total_receivable')}</span>
               <span />
               <span>{statementSummary.totalReceivable.toFixed(2)}</span>
             </div>
             <div className="zen-receipt-row">
-              <span>Paid Deposit</span>
+              <span>{t('zen.statement_paid_deposit')}</span>
               <span />
               <span>{statementSummary.paidDeposit.toFixed(2)}</span>
             </div>
             <div className="zen-receipt-row zen-receipt-outstanding">
-              <span>待付尾款</span>
+              <span>{t('zen.statement_outstanding')}</span>
               <span />
               <span>{statementSummary.outstandingBalance.toFixed(2)}</span>
             </div>

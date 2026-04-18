@@ -1,5 +1,16 @@
 @import "antd/dist/reset.css";
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+JP:wght@500;600;700&display=swap");
+
+@font-face {
+  font-family: "Inter";
+  src: local("Inter");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Serif JP";
+  src: local("Noto Serif JP");
+  font-display: swap;
+}
 
 :root {
   --zen-bg: #faf9f6;
