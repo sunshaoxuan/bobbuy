@@ -2,6 +2,7 @@ package com.bobbuy.service;
 
 import com.bobbuy.api.AiOnboardingSuggestion;
 import com.bobbuy.api.BobbuyApplication;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = BobbuyApplication.class)
 @ActiveProfiles("test")
+@Disabled("Manual integration test requiring local sample files and external AI dependencies")
 public class AiVisionIntegrationManualTest {
 
     @Autowired

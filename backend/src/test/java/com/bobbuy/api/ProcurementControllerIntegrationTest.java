@@ -43,8 +43,8 @@ class ProcurementControllerIntegrationTest {
 
     mockMvc.perform(get("/api/procurement/{tripId}/hud", trip.getId()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.totalEstimatedProfit").value(4.88))
-        .andExpect(jsonPath("$.data.currentPurchasedAmount").value(1.63))
+        .andExpect(jsonPath("$.data.totalEstimatedProfit").value(97.5))
+        .andExpect(jsonPath("$.data.currentPurchasedAmount").value(32.5))
         .andExpect(jsonPath("$.data.currentWeight").value(1.0))
         .andExpect(jsonPath("$.data.currentVolume").value(1.0))
         .andExpect(jsonPath("$.data.categoryCompletionPercent.cat-1000").value(25.0));

@@ -91,8 +91,9 @@ describe('StockMaster Component', () => {
     fireEvent.click(editButtons[0]);
     
     expect(screen.getByText(/编辑商品详情/i)).toBeInTheDocument();
-    // Use the SKU or description input to verify detail editing
-    const skuInput = screen.getByPlaceholderText(/输入唯一 SKU 编号/i);
+    // Use drawer-scoped SKU input to avoid matching table inline editors
+    const drawer = screen.getByRole('dialog');
+    const skuInput = within(drawer).getByPlaceholderText(/输入唯一 SKU 编号/i);
     fireEvent.change(skuInput, { target: { value: 'NEW-SKU-999' } });
     
     const saveButton = screen.getByText(/保存并关闭/i);
