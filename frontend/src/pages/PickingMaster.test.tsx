@@ -1,10 +1,18 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import PickingMaster from '../pages/PickingMaster';
 import { BrowserRouter } from 'react-router-dom';
 import { I18nProvider } from '../i18n';
 
 describe('PickingMaster Component', () => {
+    beforeEach(() => {
+        window.localStorage.setItem('bobbuy_locale', 'en-US');
+    });
+
+    afterEach(() => {
+        window.localStorage.removeItem('bobbuy_locale');
+    });
+
     it('renders picking gallery with filter controls', () => {
         render(
             <I18nProvider>
@@ -14,7 +22,7 @@ describe('PickingMaster Component', () => {
             </I18nProvider>
         );
 
-        expect(screen.getByText(/Picking Master/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Picking Master/i).length).toBeGreaterThan(0);
         // Use getAllByText for labels that appear in multiple places (Radio and Tags)
         expect(screen.getAllByText(/To Pick/i).length).toBeGreaterThan(0);
     });

@@ -1,6 +1,7 @@
 import type { Dictionary } from './types';
 
-const messages: Dictionary = {    'language.ja': '日本語',
+const messages: Dictionary = {
+    'language.ja': '日本語',
     'app.brand_subtitle': 'Global Personal Shopping Console',
     'app.header_title': 'Product v1 · MVP Console',
     'app.open_menu': 'Open navigation menu',

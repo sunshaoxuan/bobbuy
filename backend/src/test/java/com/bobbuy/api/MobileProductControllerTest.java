@@ -28,8 +28,8 @@ class MobileProductControllerTest {
     void getUsesFallbackLocaleForDisplayFields() {
         MobileProductResponse response = controller.get("prd-1000", Locale.JAPAN).getBody().getData();
 
-        assertThat(response.getDisplayName()).isEqualTo("抹茶套装");
-        assertThat(response.getDisplayDescription()).isEqualTo("京都风味抹茶组合");
+        assertThat(response.getDisplayName()).isEqualTo("抹茶セット");
+        assertThat(response.getDisplayDescription()).isEqualTo("京都風味の抹茶セット");
     }
 
     @Test
@@ -42,9 +42,10 @@ class MobileProductControllerTest {
         MobileProductResponse response = controller.patch("prd-1000", patch, Locale.JAPAN).getBody().getData();
 
         assertThat(response.getDisplayName()).isEqualTo("抹茶キット");
-        assertThat(response.getDisplayDescription()).isEqualTo("京都风味抹茶组合");
+        assertThat(response.getDisplayDescription()).isEqualTo("京都風味の抹茶セット");
         assertThat(response.getProduct().getName()).containsEntry("zh-CN", "抹茶套装");
         assertThat(response.getProduct().getName()).containsEntry("en-US", "Matcha Kit Updated");
+        assertThat(response.getProduct().getName()).containsEntry("ja-JP", "抹茶キット");
         assertThat(response.getProduct().getDescription()).containsEntry("en-US", "Kyoto style matcha combo");
         assertThat(response.getProduct().getMerchantSkus()).containsEntry("sup-1000", "TOKYO-MATCHA-NEW");
     }

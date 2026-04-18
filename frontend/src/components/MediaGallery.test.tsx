@@ -1,9 +1,13 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 import MediaGallery, { type MediaItem } from './MediaGallery';
 
 describe('MediaGallery', () => {
+  afterEach(() => {
+    window.localStorage.removeItem('bobbuy_locale');
+  });
+
   it('renders video preview and updates title', () => {
     const onChange = vi.fn();
     const value: MediaItem[] = [
@@ -33,6 +37,7 @@ describe('MediaGallery', () => {
   });
 
   it('adds a media item', () => {
+    window.localStorage.setItem('bobbuy_locale', 'en-US');
     const onChange = vi.fn();
     render(<MediaGallery value={[]} onChange={onChange} />);
 

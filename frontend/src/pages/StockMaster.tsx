@@ -296,7 +296,7 @@ export default function StockMaster() {
       const result = await api.translate(sourceText, targetLocale);
       return result.translatedText;
     } catch {
-      return sourceText;
+      return `[Fallback] ${sourceText}`;
     }
   };
 
