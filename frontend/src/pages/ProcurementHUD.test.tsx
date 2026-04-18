@@ -44,9 +44,26 @@ vi.mock('../api', () => ({
         procurementExpenses: () => Promise.resolve([
             { id: 1, tripId: 2000, cost: 5, category: '停车费', createdAt: '2026-01-01T00:00:00' }
         ]),
+        procurementAuditLogs: () => Promise.resolve([
+            {
+                id: 1,
+                tripId: 2000,
+                actionType: 'EXPENSE_CREATE',
+                operatorName: 'SYSTEM',
+                originalValue: '{"cost":0}',
+                modifiedValue: '{"cost":5}',
+                previousHash: 'GENESIS',
+                currentHash: 'abc',
+                createdAt: '2026-01-01T00:00:00'
+            }
+        ]),
+        customerBalanceLedger: () => Promise.resolve([
+            { businessId: '20260117001', customerId: 1001, totalReceivable: 100, paidDeposit: 0, outstandingBalance: 100 }
+        ]),
         createProcurementExpense: () => Promise.resolve({ id: 2, tripId: 2000, cost: 1, category: '运费', createdAt: '2026-01-01T00:00:00' }),
         manualReconcile: () => Promise.resolve({ skuId: 'prd-1000', fromBusinessId: '20260117001', toBusinessId: '20260117002', transferredQuantity: 1 }),
         exportProcurementSettlement: () => Promise.resolve(new Blob()),
+        exportCustomerStatement: () => Promise.resolve(new Blob()),
         orders: () => Promise.resolve([
             {
                 id: 3000,
@@ -83,6 +100,8 @@ describe('ProcurementHUD Component', () => {
         expect(await screen.findByText(/Capacity Redline|容积红线/i)).toBeInTheDocument();
         expect(await screen.findByText(/Reconcile Detail|对账详情/i)).toBeInTheDocument();
         expect((await screen.findAllByText(/Extra Expenses|额外支出列表/i)).length).toBeGreaterThan(0);
-        expect(await screen.findByText('20260117001')).toBeInTheDocument();
+        expect(await screen.findByText(/Customer Balance Ledger|客户结算/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Operation History|操作历史/i)).toBeInTheDocument();
+        expect((await screen.findAllByText('20260117001')).length).toBeGreaterThan(0);
     });
 });

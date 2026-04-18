@@ -2,6 +2,8 @@ package com.bobbuy.api;
 
 import com.bobbuy.api.response.ApiMeta;
 import com.bobbuy.api.response.ApiResponse;
+import com.bobbuy.model.OrderHeader;
+import com.bobbuy.service.FinancialPdfService;
 import com.bobbuy.service.ProcurementHudService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -21,9 +23,12 @@ import java.util.List;
 @RequestMapping("/api/procurement")
 public class ProcurementController {
   private final ProcurementHudService procurementHudService;
+  private final FinancialPdfService financialPdfService;
 
-  public ProcurementController(ProcurementHudService procurementHudService) {
+  public ProcurementController(ProcurementHudService procurementHudService,
+                               FinancialPdfService financialPdfService) {
     this.procurementHudService = procurementHudService;
+    this.financialPdfService = financialPdfService;
   }
 
   @GetMapping("/{tripId}/hud")
@@ -73,7 +78,7 @@ public class ProcurementController {
     List<TripExpenseResponse> expenses = procurementHudService.getTripExpenses(tripId);
     String csvContent = buildSettlementCsv(hud, expenses);
     if ("pdf".equalsIgnoreCase(format)) {
-      byte[] pdfBytes = buildSimplePdf(csvContent);
+      byte[] pdfBytes = financialPdfService.buildTripSettlementPdf(hud, expenses);
       return ResponseEntity.ok()
           .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=trip-" + tripId + "-settlement.pdf")
           .contentType(MediaType.APPLICATION_PDF)
@@ -83,6 +88,29 @@ public class ProcurementController {
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=trip-" + tripId + "-settlement.csv")
         .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
         .body(csvContent.getBytes(StandardCharsets.UTF_8));
+  }
+
+  @GetMapping("/{tripId}/ledger")
+  public ResponseEntity<ApiResponse<List<CustomerBalanceLedgerResponse>>> customerLedger(@PathVariable Long tripId) {
+    List<CustomerBalanceLedgerResponse> entries = procurementHudService.getCustomerBalanceLedger(tripId);
+    return ResponseEntity.ok(ApiResponse.success(entries, new ApiMeta(entries.size())));
+  }
+
+  @GetMapping("/{tripId}/audit-logs")
+  public ResponseEntity<ApiResponse<List<FinancialAuditLogResponse>>> financialAuditLogs(@PathVariable Long tripId) {
+    List<FinancialAuditLogResponse> logs = procurementHudService.getFinancialAuditLogs(tripId);
+    return ResponseEntity.ok(ApiResponse.success(logs, new ApiMeta(logs.size())));
+  }
+
+  @GetMapping("/{tripId}/customers/{businessId}/statement")
+  public ResponseEntity<byte[]> exportCustomerStatement(@PathVariable Long tripId,
+                                                        @PathVariable String businessId) {
+    OrderHeader order = procurementHudService.getTripOrderByBusinessId(tripId, businessId);
+    byte[] pdfBytes = financialPdfService.buildCustomerStatementPdf(order);
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=trip-" + tripId + "-customer-" + businessId + "-statement.pdf")
+        .contentType(MediaType.APPLICATION_PDF)
+        .body(pdfBytes);
   }
 
   private String buildSettlementCsv(ProcurementHudResponse hud, List<TripExpenseResponse> expenses) {
@@ -112,47 +140,5 @@ public class ProcurementController {
       return "\"" + value.replace("\"", "\"\"") + "\"";
     }
     return value;
-  }
-
-  private byte[] buildSimplePdf(String text) {
-    String[] lines = text.replace("\r", "").split("\n");
-    StringBuilder contentBuilder = new StringBuilder("BT /F1 10 Tf 40 800 Td 12 TL ");
-    for (int i = 0; i < lines.length; i++) {
-      String safeLine = lines[i]
-          .replace("\\", "\\\\")
-          .replace("(", "\\(")
-          .replace(")", "\\)");
-      contentBuilder.append("(").append(safeLine).append(") Tj");
-      if (i < lines.length - 1) {
-        contentBuilder.append(" T* ");
-      }
-    }
-    contentBuilder.append(" ET");
-    String content = contentBuilder.toString();
-    byte[] streamBytes = content.getBytes(StandardCharsets.UTF_8);
-    StringBuilder pdf = new StringBuilder();
-    pdf.append("%PDF-1.4\n");
-    int obj1 = pdf.length();
-    pdf.append("1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n");
-    int obj2 = pdf.length();
-    pdf.append("2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n");
-    int obj3 = pdf.length();
-    pdf.append("3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj\n");
-    int obj4 = pdf.length();
-    pdf.append("4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n");
-    int obj5 = pdf.length();
-    pdf.append("5 0 obj << /Length ").append(streamBytes.length).append(" >> stream\n");
-    pdf.append(content).append("\nendstream endobj\n");
-    int xref = pdf.length();
-    pdf.append("xref\n0 6\n0000000000 65535 f \n")
-        .append(String.format("%010d 00000 n \n", obj1))
-        .append(String.format("%010d 00000 n \n", obj2))
-        .append(String.format("%010d 00000 n \n", obj3))
-        .append(String.format("%010d 00000 n \n", obj4))
-        .append(String.format("%010d 00000 n \n", obj5))
-        .append("trailer << /Size 6 /Root 1 0 R >>\nstartxref\n")
-        .append(xref)
-        .append("\n%%EOF");
-    return pdf.toString().getBytes(StandardCharsets.UTF_8);
   }
 }

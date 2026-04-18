@@ -2,13 +2,18 @@ package com.bobbuy.service;
 
 import com.bobbuy.api.ProcurementDeficitItemResponse;
 import com.bobbuy.api.ProcurementHudResponse;
+import com.bobbuy.api.CustomerBalanceLedgerResponse;
+import com.bobbuy.api.FinancialAuditLogResponse;
 import com.bobbuy.api.TripExpenseRequest;
 import com.bobbuy.api.TripExpenseResponse;
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.OrderStatus;
+import com.bobbuy.model.PaymentStatus;
 import com.bobbuy.model.Product;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripExpense;
@@ -32,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,20 +50,26 @@ public class ProcurementHudService {
   private final OrderHeaderRepository orderHeaderRepository;
   private final ProductRepository productRepository;
   private final TripExpenseRepository tripExpenseRepository;
+  private final FinancialAuditTrailService financialAuditTrailService;
   private final FxRateService fxRateService;
+  private final ObjectMapper objectMapper;
   private final double referenceFxRate;
 
   public ProcurementHudService(TripRepository tripRepository,
                                OrderHeaderRepository orderHeaderRepository,
                                ProductRepository productRepository,
                                TripExpenseRepository tripExpenseRepository,
+                               FinancialAuditTrailService financialAuditTrailService,
                                FxRateService fxRateService,
+                               ObjectMapper objectMapper,
                                @Value("${bobbuy.fx.reference-rate:1.0}") double referenceFxRate) {
     this.tripRepository = tripRepository;
     this.orderHeaderRepository = orderHeaderRepository;
     this.productRepository = productRepository;
     this.tripExpenseRepository = tripExpenseRepository;
+    this.financialAuditTrailService = financialAuditTrailService;
     this.fxRateService = fxRateService;
+    this.objectMapper = objectMapper;
     this.referenceFxRate = referenceFxRate;
   }
 
@@ -139,6 +151,16 @@ public class ProcurementHudService {
     }
     TripExpense expense = new TripExpense(tripId, request.getCost(), request.getCategory().trim(), LocalDateTime.now());
     TripExpense saved = tripExpenseRepository.save(expense);
+    Map<String, Object> original = new HashMap<>();
+    original.put("cost", 0D);
+    original.put("category", "");
+    Map<String, Object> modified = new HashMap<>();
+    modified.put("cost", round2(saved.getCost()));
+    modified.put("category", saved.getCategory());
+    financialAuditTrailService.logExpenseCreate(
+        tripId,
+        serializeAuditPayload(original),
+        serializeAuditPayload(modified));
     return new TripExpenseResponse(saved.getId(), saved.getTripId(), round2(saved.getCost()), saved.getCategory(), saved.getCreatedAt());
   }
 
@@ -291,7 +313,66 @@ public class ProcurementHudService {
     sourceLine.setPurchasedQuantity(sourcePurchased - transferred);
     targetLine.setPurchasedQuantity(targetPurchased + transferred);
     orderHeaderRepository.saveAll(List.of(fromOrder, toOrder));
+    Map<String, Object> original = new HashMap<>();
+    original.put("skuId", skuId);
+    original.put("fromBusinessId", fromBusinessId);
+    original.put("toBusinessId", toBusinessId);
+    original.put("fromPurchased", sourcePurchased);
+    original.put("toPurchased", targetPurchased);
+
+    Map<String, Object> modified = new HashMap<>();
+    modified.put("skuId", skuId);
+    modified.put("fromBusinessId", fromBusinessId);
+    modified.put("toBusinessId", toBusinessId);
+    modified.put("fromPurchased", sourceLine.getPurchasedQuantity());
+    modified.put("toPurchased", targetLine.getPurchasedQuantity());
+    modified.put("transferred", transferred);
+
+    financialAuditTrailService.logManualReconcile(
+        tripId,
+        serializeAuditPayload(original),
+        serializeAuditPayload(modified));
     return transferred;
+  }
+
+  @Transactional(readOnly = true)
+  public List<FinancialAuditLogResponse> getFinancialAuditLogs(Long tripId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    return financialAuditTrailService.listByTripId(tripId);
+  }
+
+  @Transactional(readOnly = true)
+  public List<CustomerBalanceLedgerResponse> getCustomerBalanceLedger(Long tripId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
+        .map(order -> {
+          double totalReceivable = safeLines(order).stream()
+              .mapToDouble(line -> {
+                int settledQty = Math.max(line.getPurchasedQuantity(), 0) > 0 ? line.getPurchasedQuantity() : line.getQuantity();
+                return settledQty * line.getUnitPrice();
+              })
+              .sum();
+          double paidDeposit = order.getPaymentStatus() == PaymentStatus.PAID ? totalReceivable : 0D;
+          return new CustomerBalanceLedgerResponse(
+              order.getBusinessId(),
+              order.getCustomerId(),
+              round2(totalReceivable),
+              round2(paidDeposit),
+              round2(Math.max(totalReceivable - paidDeposit, 0D)));
+        })
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public OrderHeader getTripOrderByBusinessId(Long tripId, String businessId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
+        .filter(order -> Objects.equals(order.getBusinessId(), businessId))
+        .findFirst()
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
   }
 
   private List<OrderLine> safeLines(OrderHeader order) {
@@ -334,6 +415,14 @@ public class ProcurementHudService {
 
   private double round2(double value) {
     return Math.round(value * 100D) / 100D;
+  }
+
+  private String serializeAuditPayload(Map<String, Object> payload) {
+    try {
+      return objectMapper.writeValueAsString(payload);
+    } catch (JsonProcessingException ex) {
+      throw new IllegalStateException("Failed to serialize audit payload", ex);
+    }
   }
 
   private static final class DeficitAggregate {

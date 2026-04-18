@@ -109,4 +109,58 @@ class ProcurementControllerIntegrationTest {
         .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("application/pdf")))
         .andExpect(result -> assertThat(result.getResponse().getContentAsByteArray().length).isGreaterThan(0));
   }
+
+  @Test
+  void auditLogAndLedgerEndpointsReturnFinancialData() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader fromOrder = new OrderHeader("LEDGER-FROM", 1001L, trip.getId());
+    OrderLine fromLine = new OrderLine("prd-1000", "抹茶セット", null, 3, 10.0);
+    fromLine.setPurchasedQuantity(2);
+    fromOrder.addLine(fromLine);
+    store.upsertOrder(fromOrder);
+
+    OrderHeader toOrder = new OrderHeader("LEDGER-TO", 1001L, trip.getId());
+    toOrder.addLine(new OrderLine("prd-1000", "抹茶セット", null, 3, 10.0));
+    store.upsertOrder(toOrder);
+
+    mockMvc.perform(post("/api/procurement/{tripId}/expenses", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"category":"停车费","cost":12.5}
+                """))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(post("/api/procurement/{tripId}/manual-reconcile", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"skuId":"prd-1000","fromBusinessId":"LEDGER-FROM","toBusinessId":"LEDGER-TO","quantity":1}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.transferredQuantity").value(1));
+
+    mockMvc.perform(get("/api/procurement/{tripId}/ledger", trip.getId()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(2))
+        .andExpect(jsonPath("$.data[0].businessId").value("LEDGER-FROM"))
+        .andExpect(jsonPath("$.data[0].totalReceivable").value(10.0));
+
+    mockMvc.perform(get("/api/procurement/{tripId}/audit-logs", trip.getId()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(2))
+        .andExpect(jsonPath("$.data[0].actionType").exists())
+        .andExpect(jsonPath("$.data[0].currentHash").exists());
+  }
+
+  @Test
+  void customerStatementPdfEndpointReturnsDocument() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader order = new OrderHeader("CUST-PDF-1", 1001L, trip.getId());
+    order.addLine(new OrderLine("prd-1000", "抹茶セット", null, 2, 32.5));
+    store.upsertOrder(order);
+
+    mockMvc.perform(get("/api/procurement/{tripId}/customers/{businessId}/statement", trip.getId(), "CUST-PDF-1"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("application/pdf")))
+        .andExpect(result -> assertThat(result.getResponse().getContentAsByteArray().length).isGreaterThan(0));
+  }
 }
