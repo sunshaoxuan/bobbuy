@@ -102,4 +102,47 @@ class ProcurementHudServiceTest {
     assertThat(result.tripId()).isEqualTo(trip.getId());
     assertThat(result.allocatedBusinessIds()).containsExactly("RECON-DETAIL");
   }
+
+  @Test
+  void getHudStatsSubtractsTripExpensesFromProfit() {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader order = new OrderHeader("HUD-EXPENSE", 1001L, trip.getId());
+    OrderLine line = new OrderLine("prd-1000", "Matcha", null, 2, 10.0);
+    line.setPurchasedQuantity(2);
+    order.addLine(line);
+    store.upsertOrder(order);
+    procurementHudService.createTripExpense(trip.getId(), buildExpense("停车费", 3.0));
+
+    ProcurementHudResponse hud = procurementHudService.getHudStats(trip.getId());
+
+    assertThat(hud.getTotalTripExpenses()).isEqualTo(3.0);
+    assertThat(hud.getTotalEstimatedProfit()).isEqualTo(-3.0);
+  }
+
+  @Test
+  void manualReconcileTransfersPurchasedQuantityBetweenOrders() {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader fromOrder = new OrderHeader("MANUAL-FROM", 1001L, trip.getId());
+    OrderLine fromLine = new OrderLine("prd-1000", "Matcha", null, 3, 10.0);
+    fromLine.setPurchasedQuantity(2);
+    fromOrder.addLine(fromLine);
+    store.upsertOrder(fromOrder);
+
+    OrderHeader toOrder = new OrderHeader("MANUAL-TO", 1001L, trip.getId());
+    toOrder.addLine(new OrderLine("prd-1000", "Matcha", null, 3, 10.0));
+    store.upsertOrder(toOrder);
+
+    int moved = procurementHudService.manualReconcile(trip.getId(), "prd-1000", "MANUAL-FROM", "MANUAL-TO", 1);
+
+    assertThat(moved).isEqualTo(1);
+    assertThat(store.getOrderByBusinessId("MANUAL-FROM").orElseThrow().getLines().get(0).getPurchasedQuantity()).isEqualTo(1);
+    assertThat(store.getOrderByBusinessId("MANUAL-TO").orElseThrow().getLines().get(0).getPurchasedQuantity()).isEqualTo(1);
+  }
+
+  private com.bobbuy.api.TripExpenseRequest buildExpense(String category, double cost) {
+    com.bobbuy.api.TripExpenseRequest request = new com.bobbuy.api.TripExpenseRequest();
+    request.setCategory(category);
+    request.setCost(cost);
+    return request;
+  }
 }

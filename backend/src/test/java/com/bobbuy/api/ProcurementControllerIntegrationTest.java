@@ -15,8 +15,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -45,6 +49,9 @@ class ProcurementControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.totalEstimatedProfit").value(97.5))
         .andExpect(jsonPath("$.data.currentPurchasedAmount").value(32.5))
+        .andExpect(jsonPath("$.data.currentFxRate").value(1.0))
+        .andExpect(jsonPath("$.data.referenceFxRate").value(1.0))
+        .andExpect(jsonPath("$.data.totalTripExpenses").value(0.0))
         .andExpect(jsonPath("$.data.currentWeight").value(0.5))
         .andExpect(jsonPath("$.data.currentVolume").value(0.2))
         .andExpect(jsonPath("$.data.categoryCompletionPercent.cat-1000").value(25.0));
@@ -66,5 +73,40 @@ class ProcurementControllerIntegrationTest {
         .andExpect(jsonPath("$.data[0].deficitQuantity").value(3))
         .andExpect(jsonPath("$.data[0].completionPercent").value(25.0))
         .andExpect(jsonPath("$.data[0].priority").value("HIGH"));
+  }
+
+  @Test
+  void expensesEndpointCreatesAndListsTripExpense() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+
+    mockMvc.perform(post("/api/procurement/{tripId}/expenses", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"category":"停车费","cost":12.5}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.category").value("停车费"))
+        .andExpect(jsonPath("$.data.cost").value(12.5));
+
+    mockMvc.perform(get("/api/procurement/{tripId}/expenses", trip.getId()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(1))
+        .andExpect(jsonPath("$.data[0].category").value("停车费"))
+        .andExpect(jsonPath("$.data[0].cost").value(12.5));
+  }
+
+  @Test
+  void exportEndpointReturnsCsvAndPdf() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+
+    mockMvc.perform(get("/api/procurement/{tripId}/export?format=csv", trip.getId()))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+        .andExpect(content().string(org.hamcrest.Matchers.containsString("tripId,currentFxRate")));
+
+    mockMvc.perform(get("/api/procurement/{tripId}/export?format=pdf", trip.getId()))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("application/pdf")))
+        .andExpect(result -> assertThat(result.getResponse().getContentAsByteArray().length).isGreaterThan(0));
   }
 }

@@ -27,6 +27,7 @@ import com.bobbuy.repository.OrderHeaderRepository;
 import com.bobbuy.repository.ProductRepository;
 import com.bobbuy.repository.SupplierRepository;
 import com.bobbuy.repository.TripRepository;
+import com.bobbuy.repository.TripExpenseRepository;
 import com.bobbuy.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
@@ -59,6 +60,7 @@ public class BobbuyStore {
     private final CategoryRepository categoryRepository;
     private final SupplierRepository supplierRepository;
     private final MerchantSkuRepository merchantSkuRepository;
+    private final TripExpenseRepository tripExpenseRepository;
     private final AuditLogService auditLogService;
     private final double unitWeight;
     private final double unitVolume;
@@ -72,6 +74,7 @@ public class BobbuyStore {
             CategoryRepository categoryRepository,
             SupplierRepository supplierRepository,
             MerchantSkuRepository merchantSkuRepository,
+            TripExpenseRepository tripExpenseRepository,
             AuditLogService auditLogService,
             @Value("${bobbuy.trip.unit-weight:1.0}") double unitWeight,
             @Value("${bobbuy.trip.unit-volume:1.0}") double unitVolume) {
@@ -82,6 +85,7 @@ public class BobbuyStore {
         this.categoryRepository = categoryRepository;
         this.supplierRepository = supplierRepository;
         this.merchantSkuRepository = merchantSkuRepository;
+        this.tripExpenseRepository = tripExpenseRepository;
         this.auditLogService = auditLogService;
         this.unitWeight = unitWeight;
         this.unitVolume = unitVolume;
@@ -94,6 +98,7 @@ public class BobbuyStore {
         productRepository.deleteAll();
         supplierRepository.deleteAll();
         categoryRepository.deleteAll();
+        tripExpenseRepository.deleteAll();
         orderHeaderRepository.deleteAll();
         tripRepository.deleteAll();
         userRepository.deleteAll();
