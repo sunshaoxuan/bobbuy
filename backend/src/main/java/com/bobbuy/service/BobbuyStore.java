@@ -22,6 +22,7 @@ import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
 import com.bobbuy.model.User;
 import com.bobbuy.repository.CategoryRepository;
+import com.bobbuy.repository.FinancialAuditLogRepository;
 import com.bobbuy.repository.MerchantSkuRepository;
 import com.bobbuy.repository.OrderHeaderRepository;
 import com.bobbuy.repository.ProductRepository;
@@ -61,6 +62,7 @@ public class BobbuyStore {
     private final SupplierRepository supplierRepository;
     private final MerchantSkuRepository merchantSkuRepository;
     private final TripExpenseRepository tripExpenseRepository;
+    private final FinancialAuditLogRepository financialAuditLogRepository;
     private final AuditLogService auditLogService;
     private final double unitWeight;
     private final double unitVolume;
@@ -75,6 +77,7 @@ public class BobbuyStore {
             SupplierRepository supplierRepository,
             MerchantSkuRepository merchantSkuRepository,
             TripExpenseRepository tripExpenseRepository,
+            FinancialAuditLogRepository financialAuditLogRepository,
             AuditLogService auditLogService,
             @Value("${bobbuy.trip.unit-weight:1.0}") double unitWeight,
             @Value("${bobbuy.trip.unit-volume:1.0}") double unitVolume) {
@@ -86,6 +89,7 @@ public class BobbuyStore {
         this.supplierRepository = supplierRepository;
         this.merchantSkuRepository = merchantSkuRepository;
         this.tripExpenseRepository = tripExpenseRepository;
+        this.financialAuditLogRepository = financialAuditLogRepository;
         this.auditLogService = auditLogService;
         this.unitWeight = unitWeight;
         this.unitVolume = unitVolume;
@@ -98,6 +102,7 @@ public class BobbuyStore {
         productRepository.deleteAll();
         supplierRepository.deleteAll();
         categoryRepository.deleteAll();
+        financialAuditLogRepository.deleteAll();
         tripExpenseRepository.deleteAll();
         orderHeaderRepository.deleteAll();
         tripRepository.deleteAll();

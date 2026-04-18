@@ -145,6 +145,26 @@ export type ManualReconcileResponse = {
     transferredQuantity: number;
 };
 
+export type CustomerBalanceLedgerEntry = {
+    businessId: string;
+    customerId: number;
+    totalReceivable: number;
+    paidDeposit: number;
+    outstandingBalance: number;
+};
+
+export type FinancialAuditLog = {
+    id: number;
+    tripId: number;
+    actionType: string;
+    operatorName: string;
+    originalValue: string;
+    modifiedValue: string;
+    previousHash: string;
+    currentHash: string;
+    createdAt: string;
+};
+
 const fallbackStockCategories: MobileCategory[] = [
 // ... (rest of file)
     {
@@ -409,6 +429,10 @@ export const api = {
     procurementExpenses: (tripId: number) => fetchJson<TripExpense[]>(`/api/procurement/${tripId}/expenses`, []),
     createProcurementExpense: (tripId: number, payload: { cost: number; category: string }) =>
         postJson<TripExpense, { cost: number; category: string }>(`/api/procurement/${tripId}/expenses`, payload),
+    procurementAuditLogs: (tripId: number) =>
+        fetchJson<FinancialAuditLog[]>(`/api/procurement/${tripId}/audit-logs`, []),
+    customerBalanceLedger: (tripId: number) =>
+        fetchJson<CustomerBalanceLedgerEntry[]>(`/api/procurement/${tripId}/ledger`, []),
     manualReconcile: (
         tripId: number,
         payload: { skuId: string; fromBusinessId: string; toBusinessId: string; quantity: number }
@@ -419,6 +443,17 @@ export const api = {
         ),
     exportProcurementSettlement: async (tripId: number, format: 'csv' | 'pdf') => {
         const response = await fetch(`/api/procurement/${tripId}/export?format=${format}`, {
+            headers: { 'Accept-Language': getStoredLocale() }
+        });
+        if (!response.ok) {
+            const errorMessage = await parseErrorMessage(response);
+            message.error(errorMessage);
+            throw new Error(errorMessage);
+        }
+        return response.blob();
+    },
+    exportCustomerStatement: async (tripId: number, businessId: string) => {
+        const response = await fetch(`/api/procurement/${tripId}/customers/${encodeURIComponent(businessId)}/statement`, {
             headers: { 'Accept-Language': getStoredLocale() }
         });
         if (!response.ok) {

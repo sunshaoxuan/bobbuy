@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Breadcrumb,
   Button,
@@ -16,10 +16,19 @@ import {
   Statistic,
   Table,
   Tag,
+  Timeline,
   Typography,
   message
 } from 'antd';
-import { api, type Order, type ProcurementHudStats, type Trip, type TripExpense } from '../api';
+import {
+  api,
+  type CustomerBalanceLedgerEntry,
+  type FinancialAuditLog,
+  type Order,
+  type ProcurementHudStats,
+  type Trip,
+  type TripExpense
+} from '../api';
 import { useI18n } from '../i18n';
 
 const { Text } = Typography;
@@ -39,6 +48,8 @@ export default function ProcurementDashboard() {
   const [hudStats, setHudStats] = useState<ProcurementHudStats>();
   const [orders, setOrders] = useState<Order[]>([]);
   const [expenses, setExpenses] = useState<TripExpense[]>([]);
+  const [auditLogs, setAuditLogs] = useState<FinancialAuditLog[]>([]);
+  const [ledgerEntries, setLedgerEntries] = useState<CustomerBalanceLedgerEntry[]>([]);
   const [reconcileRows, setReconcileRows] = useState<ReconcileDetailRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,21 +57,33 @@ export default function ProcurementDashboard() {
   const [targetBusinessId, setTargetBusinessId] = useState<string>();
   const [transferQuantity, setTransferQuantity] = useState<number>(1);
   const [expenseForm] = Form.useForm<{ category: string; cost: number }>();
+  const refreshRequestRef = useRef(0);
 
   const refreshTripData = useCallback(async (tripId: number) => {
+    const requestId = refreshRequestRef.current + 1;
+    refreshRequestRef.current = requestId;
     setLoading(true);
     try {
-      const [hud, orderList, expenseList] = await Promise.all([
+      const [hud, orderList, expenseList, tripAuditLogs, customerLedger] = await Promise.all([
         api.procurementHud(tripId),
         api.orders(tripId),
-        api.procurementExpenses(tripId)
+        api.procurementExpenses(tripId),
+        api.procurementAuditLogs(tripId),
+        api.customerBalanceLedger(tripId)
       ]);
+      if (refreshRequestRef.current !== requestId) {
+        return;
+      }
       setHudStats(hud);
       setOrders(orderList);
       setExpenses(expenseList);
+      setAuditLogs(tripAuditLogs);
+      setLedgerEntries(customerLedger);
       setReconcileRows(buildReconcileRows(orderList));
     } finally {
-      setLoading(false);
+      if (refreshRequestRef.current === requestId) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -92,6 +115,14 @@ export default function ProcurementDashboard() {
     };
     window.addEventListener('procurement:reconciled', handler);
     return () => window.removeEventListener('procurement:reconciled', handler);
+  }, [refreshTripData, selectedTripId]);
+
+  useEffect(() => {
+    if (!selectedTripId) {
+      return;
+    }
+    const timer = window.setInterval(() => refreshTripData(selectedTripId), 15000);
+    return () => window.clearInterval(timer);
   }, [refreshTripData, selectedTripId]);
 
   const selectedTrip = useMemo(() => trips.find((trip) => trip.id === selectedTripId), [selectedTripId, trips]);
@@ -168,6 +199,21 @@ export default function ProcurementDashboard() {
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = `trip-${selectedTripId}-settlement.${format}`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCustomerStatement = async (businessId: string) => {
+    if (!selectedTripId) {
+      return;
+    }
+    const blob = await api.exportCustomerStatement(selectedTripId, businessId);
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `trip-${selectedTripId}-customer-${businessId}-statement.pdf`;
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
@@ -266,6 +312,47 @@ export default function ProcurementDashboard() {
             />
           )}
         </Space>
+      </Card>
+
+      <Card title={t('procurement.customer_ledger')} loading={loading} className="procurement-glass-card">
+        {ledgerEntries.length === 0 ? (
+          <Empty description={t('procurement.no_ledger_data')} />
+        ) : (
+          <Table<CustomerBalanceLedgerEntry>
+            rowKey="businessId"
+            size="small"
+            pagination={false}
+            dataSource={ledgerEntries}
+            columns={[
+              { title: t('procurement.business_id'), dataIndex: 'businessId', key: 'businessId' },
+              { title: t('orders.header.customer_id'), dataIndex: 'customerId', key: 'customerId' },
+              { title: t('procurement.total_receivable'), dataIndex: 'totalReceivable', key: 'totalReceivable' },
+              { title: t('procurement.paid_deposit'), dataIndex: 'paidDeposit', key: 'paidDeposit' },
+              { title: t('procurement.outstanding_balance'), dataIndex: 'outstandingBalance', key: 'outstandingBalance' },
+              {
+                title: t('procurement.customer_statement'),
+                key: 'statement',
+                render: (_, row) => (
+                  <Button size="small" onClick={() => exportCustomerStatement(row.businessId)}>
+                    {t('procurement.export_pdf')}
+                  </Button>
+                )
+              }
+            ]}
+          />
+        )}
+      </Card>
+
+      <Card title={t('procurement.operation_history')} loading={loading} className="procurement-glass-card">
+        {auditLogs.length === 0 ? (
+          <Empty description={t('procurement.no_audit_logs')} />
+        ) : (
+          <Timeline
+            items={auditLogs.map((log) => ({
+              children: `${log.createdAt} · ${log.actionType} · ${log.operatorName} · ${log.originalValue} -> ${log.modifiedValue}`
+            }))}
+          />
+        )}
       </Card>
 
       <Card title={t('procurement.reconcile_detail')} loading={loading} className="procurement-glass-card">

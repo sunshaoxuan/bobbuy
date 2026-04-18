@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -40,6 +41,12 @@ public class GlobalExceptionHandler {
           return m != null ? m : messageSource.getMessage("error.validation.failed", null, LocaleContextHolder.getLocale());
         })
         .collect(Collectors.joining("; "));
+    return ResponseEntity.badRequest().body(new ApiError(ErrorCode.INVALID_REQUEST.name(), message));
+  }
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<ApiError> handleNotReadable(HttpMessageNotReadableException ex) {
+    String message = messageSource.getMessage("error.validation.failed", null, LocaleContextHolder.getLocale());
     return ResponseEntity.badRequest().body(new ApiError(ErrorCode.INVALID_REQUEST.name(), message));
   }
 

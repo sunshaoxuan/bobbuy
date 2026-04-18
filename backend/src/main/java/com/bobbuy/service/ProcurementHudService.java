@@ -2,6 +2,8 @@ package com.bobbuy.service;
 
 import com.bobbuy.api.ProcurementDeficitItemResponse;
 import com.bobbuy.api.ProcurementHudResponse;
+import com.bobbuy.api.CustomerBalanceLedgerResponse;
+import com.bobbuy.api.FinancialAuditLogResponse;
 import com.bobbuy.api.TripExpenseRequest;
 import com.bobbuy.api.TripExpenseResponse;
 import com.bobbuy.api.response.ApiException;
@@ -9,6 +11,7 @@ import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.OrderStatus;
+import com.bobbuy.model.PaymentStatus;
 import com.bobbuy.model.Product;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripExpense;
@@ -44,6 +47,7 @@ public class ProcurementHudService {
   private final OrderHeaderRepository orderHeaderRepository;
   private final ProductRepository productRepository;
   private final TripExpenseRepository tripExpenseRepository;
+  private final FinancialAuditTrailService financialAuditTrailService;
   private final FxRateService fxRateService;
   private final double referenceFxRate;
 
@@ -51,12 +55,14 @@ public class ProcurementHudService {
                                OrderHeaderRepository orderHeaderRepository,
                                ProductRepository productRepository,
                                TripExpenseRepository tripExpenseRepository,
+                               FinancialAuditTrailService financialAuditTrailService,
                                FxRateService fxRateService,
                                @Value("${bobbuy.fx.reference-rate:1.0}") double referenceFxRate) {
     this.tripRepository = tripRepository;
     this.orderHeaderRepository = orderHeaderRepository;
     this.productRepository = productRepository;
     this.tripExpenseRepository = tripExpenseRepository;
+    this.financialAuditTrailService = financialAuditTrailService;
     this.fxRateService = fxRateService;
     this.referenceFxRate = referenceFxRate;
   }
@@ -139,6 +145,10 @@ public class ProcurementHudService {
     }
     TripExpense expense = new TripExpense(tripId, request.getCost(), request.getCategory().trim(), LocalDateTime.now());
     TripExpense saved = tripExpenseRepository.save(expense);
+    financialAuditTrailService.logExpenseCreate(
+        tripId,
+        "{\"cost\":0,\"category\":\"\"}",
+        "{\"cost\":" + round2(saved.getCost()) + ",\"category\":\"" + saved.getCategory() + "\"}");
     return new TripExpenseResponse(saved.getId(), saved.getTripId(), round2(saved.getCost()), saved.getCategory(), saved.getCreatedAt());
   }
 
@@ -291,7 +301,54 @@ public class ProcurementHudService {
     sourceLine.setPurchasedQuantity(sourcePurchased - transferred);
     targetLine.setPurchasedQuantity(targetPurchased + transferred);
     orderHeaderRepository.saveAll(List.of(fromOrder, toOrder));
+    financialAuditTrailService.logManualReconcile(
+        tripId,
+        "{\"skuId\":\"" + skuId + "\",\"fromBusinessId\":\"" + fromBusinessId + "\",\"toBusinessId\":\"" + toBusinessId
+            + "\",\"fromPurchased\":" + sourcePurchased + ",\"toPurchased\":" + targetPurchased + "}",
+        "{\"skuId\":\"" + skuId + "\",\"fromBusinessId\":\"" + fromBusinessId + "\",\"toBusinessId\":\"" + toBusinessId
+            + "\",\"fromPurchased\":" + sourceLine.getPurchasedQuantity() + ",\"toPurchased\":" + targetLine.getPurchasedQuantity()
+            + ",\"transferred\":" + transferred + "}");
     return transferred;
+  }
+
+  @Transactional(readOnly = true)
+  public List<FinancialAuditLogResponse> getFinancialAuditLogs(Long tripId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    return financialAuditTrailService.listByTripId(tripId);
+  }
+
+  @Transactional(readOnly = true)
+  public List<CustomerBalanceLedgerResponse> getCustomerBalanceLedger(Long tripId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
+        .map(order -> {
+          double totalReceivable = safeLines(order).stream()
+              .mapToDouble(line -> {
+                int settledQty = Math.max(line.getPurchasedQuantity(), 0) > 0 ? line.getPurchasedQuantity() : line.getQuantity();
+                return settledQty * line.getUnitPrice();
+              })
+              .sum();
+          double paidDeposit = order.getPaymentStatus() == PaymentStatus.PAID ? totalReceivable : 0D;
+          return new CustomerBalanceLedgerResponse(
+              order.getBusinessId(),
+              order.getCustomerId(),
+              round2(totalReceivable),
+              round2(paidDeposit),
+              round2(Math.max(totalReceivable - paidDeposit, 0D)));
+        })
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public OrderHeader getTripOrderByBusinessId(Long tripId, String businessId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
+        .filter(order -> Objects.equals(order.getBusinessId(), businessId))
+        .findFirst()
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
   }
 
   private List<OrderLine> safeLines(OrderHeader order) {
