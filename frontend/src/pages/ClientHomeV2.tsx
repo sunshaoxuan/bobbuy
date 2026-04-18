@@ -1,0 +1,324 @@
+import { Button, Empty, Grid, Select, Space, Typography, message } from 'antd';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { api, type CustomerBalanceLedgerEntry, type MobileProductResponse, type Order, type Trip } from '../api';
+import { useI18n } from '../i18n';
+
+const { Title, Text } = Typography;
+
+type LiveFeedItem = {
+  id: string;
+  story: string;
+};
+
+type StatementLine = {
+  key: string;
+  itemName: string;
+  quantity: number;
+  amount: number;
+};
+
+const ZEN_PLACEHOLDER_IMAGE =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000"><rect width="100%" height="100%" fill="%23f1efe8"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%23807b72" font-size="48" font-family="Inter,Arial">BOBBuy</text></svg>';
+
+export default function ClientHomeV2() {
+  const { t } = useI18n();
+  const screens = Grid.useBreakpoint();
+  const isMobile = screens.md === false;
+  const [scrolled, setScrolled] = useState(false);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [selectedTripId, setSelectedTripId] = useState<number>();
+  const [products, setProducts] = useState<MobileProductResponse[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ledgerEntries, setLedgerEntries] = useState<CustomerBalanceLedgerEntry[]>([]);
+  const [activeBusinessId, setActiveBusinessId] = useState<string>();
+  const [liveFeed, setLiveFeed] = useState<LiveFeedItem[]>([]);
+  const previousPurchasedRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 6);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const buildPurchasedSnapshot = (orderList: Order[]) => {
+    const snapshot: Record<string, number> = {};
+    for (const order of orderList) {
+      for (const line of order.lines ?? []) {
+        snapshot[`${order.businessId}-${line.skuId}`] = line.purchasedQuantity ?? line.quantity ?? 0;
+      }
+    }
+    return snapshot;
+  };
+
+  const pushLiveStory = useCallback((story: string) => {
+    setLiveFeed((prev) => [{ id: `${Date.now()}-${Math.random()}`, story }, ...prev].slice(0, 8));
+  }, []);
+
+  const hydrateLiveFeed = useCallback((orderList: Order[]) => {
+    const initial = orderList
+      .flatMap((order) =>
+        (order.lines ?? [])
+          .filter((line) => (line.purchasedQuantity ?? line.quantity ?? 0) > 0)
+          .map((line) => ({
+            id: `${order.id}-${line.skuId}`,
+            story: `${order.businessId} 刚刚购入了 ${line.itemName}`
+          }))
+      )
+      .slice(0, 6);
+    setLiveFeed(initial);
+  }, []);
+
+  const refreshTripData = useCallback(
+    async (tripId: number, appendStories = false) => {
+      const [orderList, ledger] = await Promise.all([api.orders(tripId), api.customerBalanceLedger(tripId)]);
+      const nextSnapshot = buildPurchasedSnapshot(orderList);
+
+      if (appendStories) {
+        for (const order of orderList) {
+          for (const line of order.lines ?? []) {
+            const key = `${order.businessId}-${line.skuId}`;
+            const previous = previousPurchasedRef.current[key] ?? 0;
+            const current = line.purchasedQuantity ?? line.quantity ?? 0;
+            if (current > previous) {
+              pushLiveStory(`${order.businessId} 刚刚购入了 ${line.itemName}`);
+            }
+          }
+        }
+      } else {
+        hydrateLiveFeed(orderList);
+      }
+
+      previousPurchasedRef.current = nextSnapshot;
+      setOrders(orderList);
+      setLedgerEntries(ledger);
+
+      const nextBusinessId = ledger[0]?.businessId ?? orderList[0]?.businessId;
+      setActiveBusinessId((prev) => prev ?? nextBusinessId);
+    },
+    [hydrateLiveFeed, pushLiveStory]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([api.trips(), api.products()]).then(async ([tripList, productList]) => {
+      if (cancelled) {
+        return;
+      }
+      setTrips(tripList);
+      setProducts(productList.slice(0, 6));
+      if (tripList.length > 0) {
+        setSelectedTripId(tripList[0].id);
+        await refreshTripData(tripList[0].id, false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshTripData]);
+
+  useEffect(() => {
+    if (!selectedTripId) {
+      return;
+    }
+    const onReconciled = (event: Event) => {
+      const detail = (event as CustomEvent<{ tripId?: number }>).detail;
+      if (detail?.tripId && detail.tripId !== selectedTripId) {
+        return;
+      }
+      refreshTripData(selectedTripId, true);
+    };
+    window.addEventListener('procurement:reconciled', onReconciled);
+    const timer = window.setInterval(() => refreshTripData(selectedTripId, true), 15000);
+    return () => {
+      window.removeEventListener('procurement:reconciled', onReconciled);
+      window.clearInterval(timer);
+    };
+  }, [refreshTripData, selectedTripId]);
+
+  const statementBusinessIds = useMemo(
+    () => Array.from(new Set([...ledgerEntries.map((entry) => entry.businessId), ...orders.map((order) => order.businessId)])),
+    [ledgerEntries, orders]
+  );
+
+  const statementLines = useMemo<StatementLine[]>(() => {
+    if (!activeBusinessId) {
+      return [];
+    }
+    return orders
+      .filter((order) => order.businessId === activeBusinessId)
+      .flatMap((order) =>
+        (order.lines ?? []).map((line) => ({
+          key: `${order.id}-${line.skuId}`,
+          itemName: line.itemName,
+          quantity: line.quantity ?? 0,
+          amount: Number(((line.quantity ?? 0) * (line.unitPrice ?? 0)).toFixed(2))
+        }))
+      );
+  }, [activeBusinessId, orders]);
+
+  const statementSummary = useMemo(() => {
+    const ledger = ledgerEntries.find((entry) => entry.businessId === activeBusinessId);
+    const total = statementLines.reduce((sum, line) => sum + line.amount, 0);
+    return {
+      totalReceivable: ledger?.totalReceivable ?? Number(total.toFixed(2)),
+      paidDeposit: ledger?.paidDeposit ?? 0,
+      outstandingBalance: ledger?.outstandingBalance ?? Number(total.toFixed(2))
+    };
+  }, [activeBusinessId, ledgerEntries, statementLines]);
+
+  const downloadStatementPdf = async () => {
+    if (!selectedTripId || !activeBusinessId) {
+      return;
+    }
+    try {
+      const blob = await api.exportCustomerStatement(selectedTripId, activeBusinessId);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `trip-${selectedTripId}-customer-${activeBusinessId}-statement.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    } catch {
+      message.error(t('errors.request_failed'));
+    }
+  };
+
+  const onTripChange = async (tripId: number) => {
+    setSelectedTripId(tripId);
+    setActiveBusinessId(undefined);
+    await refreshTripData(tripId, false);
+  };
+
+  return (
+    <div className="zen-page">
+      <header className={`zen-home-nav${scrolled ? ' is-scrolled' : ''}`}>
+        <div className="zen-home-nav-inner">
+          <Title level={4} className="zen-brand">
+            BOBBuy
+          </Title>
+          <Space size={isMobile ? 8 : 12}>
+            <Select
+              size="small"
+              value={selectedTripId}
+              placeholder={t('orders.trip.select.placeholder')}
+              className="zen-select"
+              options={trips.map((trip) => ({
+                value: trip.id,
+                label: `${trip.origin} → ${trip.destination}`
+              }))}
+              onChange={onTripChange}
+            />
+          </Space>
+        </div>
+      </header>
+
+      <main className="zen-main">
+        <section className="zen-hero">
+          <Text className="zen-kicker">PROJECT ZEN</Text>
+          <Title className="zen-hero-title">文雅、高级、干干净净</Title>
+          <Text className="zen-hero-subtitle">回归商品本质，留下空气。</Text>
+        </section>
+
+        <section className="zen-product-rail" aria-label="Airy Product Flow">
+          {products.length === 0 ? (
+            <Empty description="No products" />
+          ) : (
+            products.map((item) => {
+              const media = item.product.mediaGallery?.find((entry) => entry.type === 'image');
+              const imageUrl = media?.url || ZEN_PLACEHOLDER_IMAGE;
+              return (
+                <article key={item.product.id} className="zen-product-card">
+                  <img src={imageUrl} alt={item.displayName} className="zen-product-image" loading="lazy" />
+                  <div className="zen-product-copy">
+                    <Title level={4} className="zen-product-title">
+                      {item.displayName}
+                    </Title>
+                    <Text className="zen-product-description">{item.displayDescription || item.product.brand || '—'}</Text>
+                    <Text className="zen-product-price">¥ {item.product.basePrice.toFixed(2)}</Text>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </section>
+
+        <section className="zen-live-feed" aria-label="Minimal Live Feed">
+          <Title level={5} className="zen-section-title">
+            实况流
+          </Title>
+          <div className="zen-live-stream">
+            {liveFeed.length === 0 ? <Text type="secondary">暂无更新</Text> : null}
+            {liveFeed.map((item) => (
+              <p key={item.id} className="zen-live-line">
+                {item.story}
+              </p>
+            ))}
+          </div>
+        </section>
+
+        <section className="zen-statement" aria-label="Paper Style Billing">
+          <div className="zen-statement-header">
+            <Title level={5} className="zen-section-title">
+              个人对账单
+            </Title>
+            <Space size={8}>
+              <Select
+                size="small"
+                value={activeBusinessId}
+                placeholder="Business ID"
+                className="zen-select"
+                options={statementBusinessIds.map((businessId) => ({ value: businessId, label: businessId }))}
+                onChange={setActiveBusinessId}
+              />
+              <Button size="small" className="zen-statement-download" onClick={downloadStatementPdf}>
+                下载 PDF
+              </Button>
+            </Space>
+          </div>
+          <div className="zen-receipt">
+            <div className="zen-receipt-row zen-receipt-head">
+              <span>ITEM</span>
+              <span>QTY</span>
+              <span>AMOUNT</span>
+            </div>
+            {statementLines.length === 0 ? (
+              <div className="zen-receipt-row">
+                <span>—</span>
+                <span>0</span>
+                <span>0.00</span>
+              </div>
+            ) : (
+              statementLines.map((line) => (
+                <div key={line.key} className="zen-receipt-row">
+                  <span>{line.itemName}</span>
+                  <span>{line.quantity}</span>
+                  <span>{line.amount.toFixed(2)}</span>
+                </div>
+              ))
+            )}
+            <div className="zen-receipt-divider" />
+            <div className="zen-receipt-row">
+              <span>Total Receivable</span>
+              <span />
+              <span>{statementSummary.totalReceivable.toFixed(2)}</span>
+            </div>
+            <div className="zen-receipt-row">
+              <span>Paid Deposit</span>
+              <span />
+              <span>{statementSummary.paidDeposit.toFixed(2)}</span>
+            </div>
+            <div className="zen-receipt-row zen-receipt-outstanding">
+              <span>待付尾款</span>
+              <span />
+              <span>{statementSummary.outstandingBalance.toFixed(2)}</span>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
