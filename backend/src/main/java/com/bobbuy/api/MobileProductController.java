@@ -28,6 +28,19 @@ public class MobileProductController {
         this.localizedJsonbReaderService = localizedJsonbReaderService;
     }
 
+    @GetMapping
+    public ResponseEntity<ApiResponse<java.util.List<MobileProductResponse>>> list(Locale locale) {
+        try {
+            java.util.List<MobileProductResponse> products = store.listProducts().stream()
+                    .map(product -> toResponse(product, locale))
+                    .toList();
+            return ResponseEntity.ok(ApiResponse.success(products));
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(MobileProductController.class).error("Failed to list products", e);
+            throw e;
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<MobileProductResponse>> get(@PathVariable String id, Locale locale) {
         Product product = store.getProduct(id)
@@ -45,8 +58,9 @@ public class MobileProductController {
     }
 
     private MobileProductResponse toResponse(Product product, Locale locale) {
-        String displayName = localizedJsonbReaderService.read(product.getName(), locale);
-        String displayDescription = localizedJsonbReaderService.read(product.getDescription(), locale);
+        if (product == null) return null;
+        String displayName = localizedJsonbReaderService.read(product.getName() != null ? product.getName() : java.util.Collections.emptyMap(), locale);
+        String displayDescription = localizedJsonbReaderService.read(product.getDescription() != null ? product.getDescription() : java.util.Collections.emptyMap(), locale);
         return new MobileProductResponse(product, displayName, displayDescription);
     }
 }

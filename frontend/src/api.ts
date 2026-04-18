@@ -68,6 +68,10 @@ export type AiParseResponse = {
     items: AiExtractedItem[];
 };
 
+export type AiTranslateResponse = {
+    translatedText: string;
+};
+
 export type CategoryAttributeTemplateField = {
     key: string;
     labelKey?: string;
@@ -90,8 +94,22 @@ export type MobileSupplier = {
     contactInfo?: string;
 };
 
-export type AiTranslateResponse = {
-    translatedText: string;
+export type MobileProductResponse = {
+    product: {
+        id: string;
+        name: Record<string, string>;
+        description?: Record<string, string>;
+        brand?: string;
+        basePrice: number;
+        categoryId?: string;
+        itemNumber?: string;
+        storageCondition?: string;
+        orderMethod?: string;
+        mediaGallery?: { url: string; title?: Record<string, string>; type: string }[];
+        priceTiers?: PriceTier[];
+    };
+    displayName: string;
+    displayDescription: string;
 };
 
 const fallbackStockCategories: MobileCategory[] = [
@@ -269,11 +287,12 @@ export type AiOnboardingSuggestion = {
     itemNumber?: string;
     storageCondition?: string;
     orderMethod?: string;
-    mediaGallery?: { url: string; title?: string; type: string }[];
+    mediaGallery?: { url: string; title?: Record<string, string>; type: string; visible?: boolean }[];
     attributes?: Record<string, string>;
     existingProductFound?: boolean;
     existingProductId?: string;
     detectedPriceTiers?: PriceTier[];
+    originalPhotoBase64?: string;
 };
 
 export const api = {
@@ -310,5 +329,6 @@ export const api = {
     onboardScan: (base64Image: string) =>
         postJson<AiOnboardingSuggestion, { base64Image: string }>('/api/ai/onboard/scan', { base64Image }),
     onboardConfirm: (suggestion: AiOnboardingSuggestion) =>
-        postJson<unknown, AiOnboardingSuggestion>('/api/ai/onboard/confirm', suggestion)
+        postJson<unknown, AiOnboardingSuggestion>('/api/ai/onboard/confirm', suggestion),
+    products: () => fetchJson<MobileProductResponse[]>('/api/mobile/products', [])
 };

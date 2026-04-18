@@ -9,6 +9,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -38,7 +40,7 @@ public class OrderHeader {
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus; // 支付状态
     private double totalAmount; // 冗余汇总金额
-    @Convert(converter = OrderLineListJsonConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private List<OrderLine> lines = new ArrayList<>(); // 嵌套行条目
 

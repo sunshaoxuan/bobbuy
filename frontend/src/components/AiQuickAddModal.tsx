@@ -33,7 +33,8 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
         
         setCurrentStep(1);
         const result = await api.onboardScan(base64);
-        setSuggestion(result);
+        // Inject the original photo into the suggestion
+        setSuggestion({ ...result, originalPhotoBase64: base64 });
         
         setCurrentStep(2);
         await new Promise(resolve => setTimeout(resolve, 800));

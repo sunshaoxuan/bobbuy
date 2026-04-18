@@ -19,3 +19,6 @@ playwright/.cache/
 
 # Java build artifacts
 backend/target/
+
+# Docker persistence volumes
+data/

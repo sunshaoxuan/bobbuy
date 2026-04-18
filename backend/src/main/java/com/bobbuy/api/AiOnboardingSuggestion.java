@@ -21,6 +21,7 @@ public record AiOnboardingSuggestion(
     Map<String, String> attributes,
     boolean existingProductFound,
     String existingProductId,
-    List<PriceTier> detectedPriceTiers
+    List<PriceTier> detectedPriceTiers,
+    String originalPhotoBase64
 ) {
 }
