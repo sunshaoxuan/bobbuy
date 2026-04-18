@@ -8,6 +8,8 @@ import com.bobbuy.api.TripExpenseRequest;
 import com.bobbuy.api.TripExpenseResponse;
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.OrderStatus;
@@ -35,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,6 +52,7 @@ public class ProcurementHudService {
   private final TripExpenseRepository tripExpenseRepository;
   private final FinancialAuditTrailService financialAuditTrailService;
   private final FxRateService fxRateService;
+  private final ObjectMapper objectMapper;
   private final double referenceFxRate;
 
   public ProcurementHudService(TripRepository tripRepository,
@@ -57,6 +61,7 @@ public class ProcurementHudService {
                                TripExpenseRepository tripExpenseRepository,
                                FinancialAuditTrailService financialAuditTrailService,
                                FxRateService fxRateService,
+                               ObjectMapper objectMapper,
                                @Value("${bobbuy.fx.reference-rate:1.0}") double referenceFxRate) {
     this.tripRepository = tripRepository;
     this.orderHeaderRepository = orderHeaderRepository;
@@ -64,6 +69,7 @@ public class ProcurementHudService {
     this.tripExpenseRepository = tripExpenseRepository;
     this.financialAuditTrailService = financialAuditTrailService;
     this.fxRateService = fxRateService;
+    this.objectMapper = objectMapper;
     this.referenceFxRate = referenceFxRate;
   }
 
@@ -145,10 +151,16 @@ public class ProcurementHudService {
     }
     TripExpense expense = new TripExpense(tripId, request.getCost(), request.getCategory().trim(), LocalDateTime.now());
     TripExpense saved = tripExpenseRepository.save(expense);
+    Map<String, Object> original = new HashMap<>();
+    original.put("cost", 0D);
+    original.put("category", "");
+    Map<String, Object> modified = new HashMap<>();
+    modified.put("cost", round2(saved.getCost()));
+    modified.put("category", saved.getCategory());
     financialAuditTrailService.logExpenseCreate(
         tripId,
-        "{\"cost\":0,\"category\":\"\"}",
-        "{\"cost\":" + round2(saved.getCost()) + ",\"category\":\"" + saved.getCategory() + "\"}");
+        serializeAuditPayload(original),
+        serializeAuditPayload(modified));
     return new TripExpenseResponse(saved.getId(), saved.getTripId(), round2(saved.getCost()), saved.getCategory(), saved.getCreatedAt());
   }
 
@@ -301,13 +313,25 @@ public class ProcurementHudService {
     sourceLine.setPurchasedQuantity(sourcePurchased - transferred);
     targetLine.setPurchasedQuantity(targetPurchased + transferred);
     orderHeaderRepository.saveAll(List.of(fromOrder, toOrder));
+    Map<String, Object> original = new HashMap<>();
+    original.put("skuId", skuId);
+    original.put("fromBusinessId", fromBusinessId);
+    original.put("toBusinessId", toBusinessId);
+    original.put("fromPurchased", sourcePurchased);
+    original.put("toPurchased", targetPurchased);
+
+    Map<String, Object> modified = new HashMap<>();
+    modified.put("skuId", skuId);
+    modified.put("fromBusinessId", fromBusinessId);
+    modified.put("toBusinessId", toBusinessId);
+    modified.put("fromPurchased", sourceLine.getPurchasedQuantity());
+    modified.put("toPurchased", targetLine.getPurchasedQuantity());
+    modified.put("transferred", transferred);
+
     financialAuditTrailService.logManualReconcile(
         tripId,
-        "{\"skuId\":\"" + skuId + "\",\"fromBusinessId\":\"" + fromBusinessId + "\",\"toBusinessId\":\"" + toBusinessId
-            + "\",\"fromPurchased\":" + sourcePurchased + ",\"toPurchased\":" + targetPurchased + "}",
-        "{\"skuId\":\"" + skuId + "\",\"fromBusinessId\":\"" + fromBusinessId + "\",\"toBusinessId\":\"" + toBusinessId
-            + "\",\"fromPurchased\":" + sourceLine.getPurchasedQuantity() + ",\"toPurchased\":" + targetLine.getPurchasedQuantity()
-            + ",\"transferred\":" + transferred + "}");
+        serializeAuditPayload(original),
+        serializeAuditPayload(modified));
     return transferred;
   }
 
@@ -391,6 +415,14 @@ public class ProcurementHudService {
 
   private double round2(double value) {
     return Math.round(value * 100D) / 100D;
+  }
+
+  private String serializeAuditPayload(Map<String, Object> payload) {
+    try {
+      return objectMapper.writeValueAsString(payload);
+    } catch (JsonProcessingException ex) {
+      throw new IllegalStateException("Failed to serialize audit payload", ex);
+    }
   }
 
   private static final class DeficitAggregate {

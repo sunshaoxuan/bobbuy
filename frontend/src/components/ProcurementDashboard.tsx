@@ -349,7 +349,7 @@ export default function ProcurementDashboard() {
         ) : (
           <Timeline
             items={auditLogs.map((log) => ({
-              children: `${log.createdAt} · ${log.actionType} · ${log.operatorName} · ${log.originalValue} -> ${log.modifiedValue}`
+              children: `${log.createdAt} · ${log.actionType} · ${log.operatorName} · ${formatAuditPayload(log.originalValue)} -> ${formatAuditPayload(log.modifiedValue)}`
             }))}
           />
         )}
@@ -423,4 +423,15 @@ function buildReconcileRows(orders: Order[]): ReconcileDetailRow[] {
         purchasedQuantity: line.purchasedQuantity ?? 0
       }))
   );
+}
+
+function formatAuditPayload(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return Object.entries(parsed)
+      .map(([key, value]) => `${key}:${String(value)}`)
+      .join(', ');
+  } catch {
+    return raw;
+  }
 }

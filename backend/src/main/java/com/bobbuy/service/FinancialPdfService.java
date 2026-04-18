@@ -4,6 +4,7 @@ import com.bobbuy.api.ProcurementHudResponse;
 import com.bobbuy.api.TripExpenseResponse;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
+import com.bobbuy.model.PaymentStatus;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -77,7 +78,7 @@ public class FinancialPdfService {
       document.add(new Paragraph(" "));
 
       double totalReceivable = calculateTotalReceivable(order);
-      double paidDeposit = order.getPaymentStatus() != null && order.getPaymentStatus().name().equals("PAID")
+      double paidDeposit = order.getPaymentStatus() == PaymentStatus.PAID
           ? totalReceivable : 0D;
       double outstanding = Math.max(totalReceivable - paidDeposit, 0D);
       document.add(new Paragraph("总应收 / Total Receivable: " + round2(totalReceivable), body));
