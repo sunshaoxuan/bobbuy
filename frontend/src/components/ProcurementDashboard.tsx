@@ -403,6 +403,7 @@ export default function ProcurementDashboard() {
               {t('procurement.add_expense')}
             </Button>
           </Form>
+          <Text>{t('procurement.upload_receipt')}</Text>
           <Input
             type="file"
             accept="image/*"
