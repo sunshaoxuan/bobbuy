@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Grid, Button, Input, Space, Typography } from 'antd';
 import { CheckOutlined } from '@ant-design/icons';
+import { getStoredLocale, translate } from '../i18n';
 
 const { Text } = Typography;
 
@@ -21,7 +22,8 @@ export interface L10nInputProps {
   applySuggestionText?: string;
 }
 
-const DEFAULT_LOCALES = ['zh-CN', 'en-US'];
+const DEFAULT_LOCALES = ['zh-CN', 'ja-JP', 'en-US'];
+const i18n = (key: string) => translate(getStoredLocale(), key);
 
 const getDisplayValue = (value: string | undefined): string => value ?? '';
 
@@ -33,9 +35,9 @@ export default function L10nInput({
   placeholder,
   requestTranslation,
   disabled,
-  loadingSuggestionText = 'AI suggestion is generating...',
-  suggestionPrefixText = 'AI Suggestion',
-  applySuggestionText = 'Apply'
+  loadingSuggestionText = i18n('stock.l10n.ai_loading'),
+  suggestionPrefixText = i18n('stock.l10n.ai_prefix'),
+  applySuggestionText = i18n('stock.l10n.ai_apply')
 }: L10nInputProps) {
   const [activeLocale, setActiveLocale] = useState(defaultLocale);
   const [suggestions, setSuggestions] = useState<Record<string, string>>({});

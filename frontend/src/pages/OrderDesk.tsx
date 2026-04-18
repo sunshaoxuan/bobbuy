@@ -49,8 +49,8 @@ export default function OrderDesk() {
     try {
       const parsed = await api.parseOrderText(text);
       const aiSummary = parsed.items.length
-        ? `Detected: ${parsed.items.map((item) => `${item.matchedName} (x${item.quantity})`).join(', ')}`
-        : 'No item detected';
+        ? `${t('order_desk.detected_prefix')}: ${parsed.items.map((item) => `${item.matchedName} (x${item.quantity})`).join(', ')}`
+        : t('order_desk.no_item_detected');
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         sender: 'ai',
@@ -71,7 +71,7 @@ export default function OrderDesk() {
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         sender: 'ai',
-        text: 'Parsing failed, please retry.',
+        text: t('order_desk.parse_failed'),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
     } finally {
@@ -92,7 +92,7 @@ export default function OrderDesk() {
       ));
       return;
     }
-    message.success(t('orders.form.success'));
+    message.success(t('order_desk.item_added'));
   };
 
   return (
@@ -107,8 +107,8 @@ export default function OrderDesk() {
         <Card title={
           <Space>
             <Avatar style={{ backgroundColor: '#1890ff' }} icon={<UserOutlined />} />
-            <span>Customer: Alice Wang</span>
-            <Badge status="processing" text="Online" />
+            <span>{t('order_desk.customer_label')}: Alice Wang</span>
+            <Badge status="processing" text={t('common.online')} />
           </Space>
         } style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }} bodyStyle={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -124,12 +124,12 @@ export default function OrderDesk() {
                     boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                   }}>
                     <div style={{ fontWeight: 600, fontSize: '0.8em', marginBottom: 4, display: 'flex', justifyContent: 'space-between', color: msg.sender === 'merchant' ? '#e6f7ff' : '#8c8c8c' }}>
-                      <span>{msg.sender.toUpperCase()}</span>
+                      <span>{t(`order_desk.sender.${msg.sender}`)}</span>
                       <span style={{ marginLeft: 8 }}>{msg.time}</span>
                     </div>
                     <div>{msg.text}</div>
                     {msg.sender === 'ai' && (
-                      <Tag color="processing" style={{ marginTop: 8, border: 'none' }}>Matched Item</Tag>
+                      <Tag color="processing" style={{ marginTop: 8, border: 'none' }}>{t('order_desk.matched_item')}</Tag>
                     )}
                   </div>
                 </Space>
@@ -139,7 +139,7 @@ export default function OrderDesk() {
           
           <div style={{ position: 'absolute', bottom: 16, left: 16, right: 16, display: 'flex', gap: 8 }}>
             <Input 
-              placeholder="Type a message..." 
+              placeholder={t('order_desk.input_placeholder')}
               value={inputValue} 
               onChange={e => setInputValue(e.target.value)}
               onPressEnter={handleSend}
@@ -151,13 +151,13 @@ export default function OrderDesk() {
 
         {/* AI Extraction Panel */}
         <Card 
-          title={<Space><RobotOutlined /> <Title level={5} style={{ margin: 0 }}>AI Intelligent Extraction</Title></Space>}
+          title={<Space><RobotOutlined /> <Title level={5} style={{ margin: 0 }}>{t('order_desk.extraction_title')}</Title></Space>}
           style={{ width: 320, height: '100%' }}
           bodyStyle={{ padding: 16 }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <Text type="secondary">{extractedItems.length} items detected</Text>
-            <Button size="small" type="link">Clear All</Button>
+            <Text type="secondary">{extractedItems.length} {t('order_desk.items_detected')}</Text>
+            <Button size="small" type="link">{t('order_desk.clear_all')}</Button>
           </div>
           
           <List
@@ -171,12 +171,12 @@ export default function OrderDesk() {
                       <Text strong style={{ fontSize: '0.9em' }}>{item.name}</Text>
                       {item.status === 'added' && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
                     </div>
-                    <Text type="secondary" style={{ fontSize: '0.8em' }}>Qty: {item.quantity} | ${item.price}</Text>
-                    {item.note ? <div><Text type="secondary" style={{ fontSize: '0.75em' }}>Note: {item.note}</Text></div> : null}
+                     <Text type="secondary" style={{ fontSize: '0.8em' }}>{t('order_desk.qty_label')}: {item.quantity} | ${item.price}</Text>
+                     {item.note ? <div><Text type="secondary" style={{ fontSize: '0.75em' }}>{t('order_desk.note_label')}: {item.note}</Text></div> : null}
                   </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text type="secondary" style={{ fontSize: '0.75em' }}>Confidence: {(item.confidence * 100).toFixed(0)}%</Text>
+                   <Text type="secondary" style={{ fontSize: '0.75em' }}>{t('order_desk.confidence_label')}: {(item.confidence * 100).toFixed(0)}%</Text>
                   <Button 
                     size="small" 
                     type={item.status === 'added' ? 'text' : 'primary'} 
@@ -184,8 +184,8 @@ export default function OrderDesk() {
                      icon={item.status === 'added' ? <CheckCircleOutlined /> : <PlusOutlined />}
                      onClick={() => void handleAddToOrder(item)}
                    >
-                    {item.status === 'added' ? 'Added' : 'Add'}
-                  </Button>
+                     {item.status === 'added' ? t('order_desk.added') : t('order_desk.add')}
+                   </Button>
                 </div>
               </Card>
             )}
@@ -194,7 +194,7 @@ export default function OrderDesk() {
           <Divider />
           
           <Button type="primary" block icon={<ShoppingCartOutlined />} size="large">
-            Confirm Full Order
+            {t('order_desk.confirm_full_order')}
           </Button>
         </Card>
       </div>

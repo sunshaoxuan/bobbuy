@@ -1,6 +1,8 @@
 package com.bobbuy.api;
 
 import com.bobbuy.api.response.ApiResponse;
+import com.bobbuy.api.response.ApiException;
+import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.model.PriceTier;
 import com.bobbuy.model.Product;
 import com.bobbuy.model.ProductPatch;
@@ -67,7 +69,7 @@ public class AiAgentController {
   public ResponseEntity<ApiResponse<AiOnboardingSuggestion>> scan(@Valid @RequestBody AiOnboardScanRequest request) {
     return aiProductOnboardingService.onboardFromPhoto(request.getBase64Image())
         .map(suggestion -> ResponseEntity.ok(ApiResponse.success(suggestion)))
-        .orElseGet(() -> ResponseEntity.badRequest().body(ApiResponse.error("Failed to extract product info from image")));
+        .orElseThrow(() -> new ApiException(ErrorCode.INVALID_REQUEST, "error.ai.extract_failed"));
   }
 
   @PostMapping("/onboard/confirm")
@@ -90,19 +92,20 @@ public class AiAgentController {
         patch.setBrand(suggestion.brand());
       }
       result = store.patchProduct(suggestion.existingProductId(), patch)
-          .orElseThrow(() -> new com.bobbuy.api.response.ApiException(
-              com.bobbuy.api.response.ErrorCode.RESOURCE_NOT_FOUND, "error.product.not_found"));
+          .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.product.not_found"));
     } else {
       // Create new product
       Product newProduct = new Product();
       Map<String, String> nameMap = new HashMap<>();
       nameMap.put("zh-CN", suggestion.name());
+      nameMap.put("ja-JP", suggestion.name());
       nameMap.put("en-US", suggestion.name());
       newProduct.setName(nameMap);
 
       Map<String, String> descMap = new HashMap<>();
       if (suggestion.description() != null) {
         descMap.put("zh-CN", suggestion.description());
+        descMap.put("ja-JP", suggestion.description());
         descMap.put("en-US", suggestion.description());
       }
       newProduct.setDescription(descMap);

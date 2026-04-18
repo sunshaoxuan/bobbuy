@@ -6,9 +6,9 @@ import { useI18n } from '../i18n';
 
 const { Text } = Typography;
 
-const statusOptions = ['NEW', 'CONFIRMED', 'PURCHASED', 'DELIVERED', 'SETTLED', 'CANCELLED'];
-const currencyOptions = ['CNY', 'JPY', 'USD', 'EUR'];
-const paymentMethodOptions = ['ALIPAY', 'WECHAT', 'CASH'];
+const statusOptions = ['NEW', 'CONFIRMED', 'PURCHASED', 'DELIVERED', 'SETTLED', 'CANCELLED'] as const;
+const currencyOptions = ['CNY', 'JPY', 'USD', 'EUR'] as const;
+const paymentMethodOptions = ['ALIPAY', 'WECHAT', 'CASH'] as const;
 
 export default function Orders() {
   const { t } = useI18n();
@@ -174,7 +174,7 @@ export default function Orders() {
           <Text>
             {t('orders.header.total')}: {order.totalAmount?.toFixed(2)}
           </Text>
-          <Tag color="gold">{order.status}</Tag>
+          <Tag color="gold">{t(`enum.order_status.${order.status}`)}</Tag>
         </div>
       </div>
     ),
@@ -185,14 +185,14 @@ export default function Orders() {
             <Select
               value={order.status}
               onChange={(newStatus) => handleStatusChange(order.id, newStatus, order.status)}
-              options={statusOptions.map((status) => ({ value: status, label: status }))}
+              options={statusOptions.map((status) => ({ value: status, label: t(`enum.order_status.${status}`) }))}
               disabled={order.status === 'SETTLED' || order.status === 'CANCELLED'}
               style={{ width: 160 }}
             />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Text type="secondary">{t('orders.header.payment_status')}</Text>
-            <Tag color="blue">{order.paymentStatus ?? 'UNPAID'}</Tag>
+            <Tag color="blue">{t(`enum.payment_status.${order.paymentStatus ?? 'UNPAID'}`)}</Tag>
           </div>
         <Table<OrderLine>
           dataSource={order.lines}
@@ -352,7 +352,7 @@ export default function Orders() {
             rules={[{ required: true, message: t('orders.form.currency.required') }]}
           >
             <Select
-              options={currencyOptions.map((currency) => ({ value: currency }))}
+              options={currencyOptions.map((currency) => ({ value: currency, label: t(`enum.currency.${currency}`) }))}
               placeholder={t('orders.form.currency.placeholder')}
             />
           </Form.Item>
@@ -362,7 +362,7 @@ export default function Orders() {
             rules={[{ required: true, message: t('orders.form.payment_method.required') }]}
           >
             <Select
-              options={paymentMethodOptions.map((method) => ({ value: method }))}
+              options={paymentMethodOptions.map((method) => ({ value: method, label: t(`enum.payment_method.${method}`) }))}
               placeholder={t('orders.form.payment_method.placeholder')}
             />
           </Form.Item>
@@ -371,7 +371,10 @@ export default function Orders() {
             name="status"
             rules={[{ required: true, message: t('orders.form.status.required') }]}
           >
-            <Select options={statusOptions.map((status) => ({ value: status }))} placeholder={t('orders.form.status.placeholder')} />
+            <Select
+              options={statusOptions.map((status) => ({ value: status, label: t(`enum.order_status.${status}`) }))}
+              placeholder={t('orders.form.status.placeholder')}
+            />
           </Form.Item>
           <Button type="primary" htmlType="submit" loading={submitting} disabled={submitting}>
             {t('orders.form.submit')}

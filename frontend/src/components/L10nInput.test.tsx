@@ -1,10 +1,15 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 import L10nInput, { type L10nValues } from './L10nInput';
 
 describe('L10nInput', () => {
+  afterEach(() => {
+    window.localStorage.removeItem('bobbuy_locale');
+  });
+
   it('requests AI suggestion for missing locale', async () => {
+    window.localStorage.setItem('bobbuy_locale', 'en-US');
     const requestTranslation = vi.fn().mockImplementation(
       () => new Promise<string>(() => {})
     );

@@ -2,6 +2,7 @@ import React from 'react';
 import { Button, Card, Empty, Input, Radio, Space } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import L10nInput, { type L10nValues } from './L10nInput';
+import { getStoredLocale, translate } from '../i18n';
 
 export type MediaType = 'image' | 'video';
 
@@ -29,6 +30,7 @@ export interface MediaGalleryProps {
 }
 
 let mediaIdCounter = 0;
+const i18n = (key: string) => translate(getStoredLocale(), key);
 
 const createMediaId = (): string => {
   mediaIdCounter += 1;
@@ -47,15 +49,15 @@ const createMediaItem = (): MediaItem => ({
 export default function MediaGallery({
   value = [],
   onChange,
-  locales = ['zh-CN', 'en-US'],
+  locales = ['zh-CN', 'ja-JP', 'en-US'],
   requestTranslation,
-  emptyDescriptionText = 'No media yet, click below to add.',
-  mediaTitlePrefixText = 'Media',
-  addMediaText = 'Add Media',
-  urlPlaceholderText = 'https://example.com/media.jpg',
-  imageLabelText = 'Image',
-  videoLabelText = 'Video',
-  titlePlaceholderText = 'Input media title'
+  emptyDescriptionText = i18n('stock.media.empty'),
+  mediaTitlePrefixText = i18n('stock.media.item_prefix'),
+  addMediaText = i18n('stock.media.add'),
+  urlPlaceholderText = i18n('stock.media.url_placeholder'),
+  imageLabelText = i18n('stock.media.image'),
+  videoLabelText = i18n('stock.media.video'),
+  titlePlaceholderText = i18n('stock.media.title_placeholder')
 }: MediaGalleryProps) {
   const updateItem = (id: string, patch: Partial<MediaItem>) => {
     const next = value.map((item) => (item.id === id ? { ...item, ...patch } : item));
@@ -115,11 +117,11 @@ export default function MediaGallery({
                   />
                 ) : (
                   <img
-                    data-testid={`media-preview-image-${item.id}`}
-                    src={item.url}
-                    alt="media-preview"
-                    style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8 }}
-                  />
+                     data-testid={`media-preview-image-${item.id}`}
+                     src={item.url}
+                     alt={i18n('stock.media.preview_alt')}
+                     style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8 }}
+                   />
                 )
               ) : null}
               <L10nInput

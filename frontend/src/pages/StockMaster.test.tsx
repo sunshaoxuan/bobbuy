@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { cleanup, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import StockMaster from './StockMaster';
 import { I18nProvider } from '../i18n';
 import React from 'react';
@@ -47,6 +47,11 @@ describe('StockMaster Component', () => {
     setMatchMedia(false);
   });
 
+  afterEach(async () => {
+    cleanup();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+
   it('renders the stock master page with title and initial data', () => {
     renderWithI18n(<StockMaster />);
     expect(screen.getByText(/库存大师 - 批量上架/i)).toBeInTheDocument();
@@ -87,7 +92,7 @@ describe('StockMaster Component', () => {
     
     expect(screen.getByText(/编辑商品详情/i)).toBeInTheDocument();
     // Use the SKU or description input to verify detail editing
-    const skuInput = screen.getByPlaceholderText(/Unique SKU ID/i);
+    const skuInput = screen.getByPlaceholderText(/输入唯一 SKU 编号/i);
     fireEvent.change(skuInput, { target: { value: 'NEW-SKU-999' } });
     
     const saveButton = screen.getByText(/保存并关闭/i);

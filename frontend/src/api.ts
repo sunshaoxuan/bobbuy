@@ -98,8 +98,8 @@ const fallbackStockCategories: MobileCategory[] = [
 // ... (rest of file)
     {
         id: 'cat-1001',
-        name: { 'zh-CN': '服装', 'en-US': 'Clothing' },
-        description: { 'zh-CN': '服装类商品', 'en-US': 'Clothing products' },
+        name: { 'zh-CN': '服装', 'ja-JP': '衣料品', 'en-US': 'Clothing' },
+        description: { 'zh-CN': '服装类商品', 'ja-JP': '衣料品カテゴリ', 'en-US': 'Clothing products' },
         attributeTemplate: [
             { key: 'size', labelKey: 'stock.dynamic.size', type: 'select', options: ['XS', 'S', 'M', 'L', 'XL'] },
             { key: 'material', labelKey: 'stock.dynamic.material', type: 'text' },
@@ -108,8 +108,8 @@ const fallbackStockCategories: MobileCategory[] = [
     },
     {
         id: 'cat-1000',
-        name: { 'zh-CN': '食品', 'en-US': 'Food' },
-        description: { 'zh-CN': '食品类商品', 'en-US': 'Food products' },
+        name: { 'zh-CN': '食品', 'ja-JP': '食品', 'en-US': 'Food' },
+        description: { 'zh-CN': '食品类商品', 'ja-JP': '食品カテゴリ', 'en-US': 'Food products' },
         attributeTemplate: [
             { key: 'shelfLifeDays', labelKey: 'stock.dynamic.shelf_life_days', type: 'number' },
             { key: 'storageTemp', labelKey: 'stock.dynamic.storage_temp', type: 'text' },

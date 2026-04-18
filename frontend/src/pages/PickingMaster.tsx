@@ -45,13 +45,13 @@ export default function PickingMaster() {
 
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <Title level={4} style={{ margin: 0 }}>Picking Master</Title>
-          <Text type="secondary">Visual verification for delivery</Text>
+          <Title level={4} style={{ margin: 0 }}>{t('picking.title')}</Title>
+          <Text type="secondary">{t('picking.subtitle')}</Text>
         </div>
         <Radio.Group value={filter} onChange={e => setFilter(e.target.value)} buttonStyle="solid">
-          <Radio.Button value="all">All</Radio.Button>
-          <Radio.Button value="todo">To Pick ({items.filter(i => !i.picked).length})</Radio.Button>
-          <Radio.Button value="done">Picked ({items.filter(i => i.picked).length})</Radio.Button>
+          <Radio.Button value="all">{t('picking.filter.all')}</Radio.Button>
+          <Radio.Button value="todo">{t('picking.filter.todo')} ({items.filter(i => !i.picked).length})</Radio.Button>
+          <Radio.Button value="done">{t('picking.filter.done')} ({items.filter(i => i.picked).length})</Radio.Button>
         </Radio.Group>
       </div>
 
@@ -78,7 +78,7 @@ export default function PickingMaster() {
                     </div>
                   )}
                   <div style={{ position: 'absolute', top: 8, right: 8 }}>
-                    <Tag color={item.picked ? 'success' : 'warning'}>{item.picked ? 'Picked' : 'To Pick'}</Tag>
+                    <Tag color={item.picked ? 'success' : 'warning'}>{item.picked ? t('picking.filter.done') : t('picking.filter.todo')}</Tag>
                   </div>
                 </div>
               }
@@ -100,7 +100,7 @@ export default function PickingMaster() {
       {items.length === 0 && (
         <Card style={{ textAlign: 'center', padding: '40px 0' }}>
           <ShoppingCartOutlined style={{ fontSize: '3em', color: '#f0f0f0', marginBottom: 16 }} />
-          <div>No items to pick</div>
+          <div>{t('picking.empty')}</div>
         </Card>
       )}
     </div>

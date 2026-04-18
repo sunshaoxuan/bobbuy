@@ -109,8 +109,8 @@ public class BobbuyStore {
 
         Category foodCategory = new Category(
                 "cat-1000",
-                new LinkedHashMap<>(Map.of("zh-CN", "食品", "en-US", "Food")),
-                new LinkedHashMap<>(Map.of("zh-CN", "食品类商品", "en-US", "Food products")),
+                new LinkedHashMap<>(Map.of("zh-CN", "食品", "ja-JP", "食品", "en-US", "Food")),
+                new LinkedHashMap<>(Map.of("zh-CN", "食品类商品", "ja-JP", "食品カテゴリ", "en-US", "Food products")),
                 List.of(
                         categoryTemplateField("shelfLifeDays", "stock.dynamic.shelf_life_days", "number"),
                         categoryTemplateField("storageTemp", "stock.dynamic.storage_temp", "text"),
@@ -119,8 +119,8 @@ public class BobbuyStore {
 
         Category clothingCategory = new Category(
                 "cat-1001",
-                new LinkedHashMap<>(Map.of("zh-CN", "服装", "en-US", "Clothing")),
-                new LinkedHashMap<>(Map.of("zh-CN", "服装类商品", "en-US", "Clothing products")),
+                new LinkedHashMap<>(Map.of("zh-CN", "服装", "ja-JP", "衣料品", "en-US", "Clothing")),
+                new LinkedHashMap<>(Map.of("zh-CN", "服装类商品", "ja-JP", "衣料品カテゴリ", "en-US", "Clothing products")),
                 List.of(
                         categoryTemplateFieldWithOptions("size", "stock.dynamic.size", List.of("XS", "S", "M", "L", "XL")),
                         categoryTemplateField("material", "stock.dynamic.material", "text"),
@@ -129,21 +129,21 @@ public class BobbuyStore {
 
         Supplier supplier = new Supplier(
                 "sup-1000",
-                new LinkedHashMap<>(Map.of("zh-CN", "东京供货商", "en-US", "Tokyo Supplier")),
-                new LinkedHashMap<>(Map.of("zh-CN", "稳定供应抹茶", "en-US", "Stable matcha supplier")),
+                new LinkedHashMap<>(Map.of("zh-CN", "东京供货商", "ja-JP", "東京サプライヤー", "en-US", "Tokyo Supplier")),
+                new LinkedHashMap<>(Map.of("zh-CN", "稳定供应抹茶", "ja-JP", "抹茶を安定供給", "en-US", "Stable matcha supplier")),
                 "tokyo-supplier@bobbuy.com");
         supplierRepository.save(supplier);
 
         Product product = new Product(
                 "prd-1000",
-                new LinkedHashMap<>(Map.of("zh-CN", "抹茶套装", "en-US", "Matcha Kit")),
-                new LinkedHashMap<>(Map.of("zh-CN", "京都风味抹茶组合")),
+                new LinkedHashMap<>(Map.of("zh-CN", "抹茶套装", "ja-JP", "抹茶セット", "en-US", "Matcha Kit")),
+                new LinkedHashMap<>(Map.of("zh-CN", "京都风味抹茶组合", "ja-JP", "京都風味の抹茶セット", "en-US", "Kyoto-style matcha set")),
                 "BOBBuy Select",
                 32.5,
                 List.of(new MediaGalleryItem(
                         "https://cdn.bobbuy.example/products/matcha-kit.png",
                         MediaType.IMAGE,
-                        new LinkedHashMap<>(Map.of("zh-CN", "商品主图", "en-US", "Main image")))),
+                        new LinkedHashMap<>(Map.of("zh-CN", "商品主图", "ja-JP", "商品メイン画像", "en-US", "Main image")))),
                 StorageCondition.AMBIENT,
                 OrderMethod.DIRECT_BUY,
                 foodCategory.getId(),

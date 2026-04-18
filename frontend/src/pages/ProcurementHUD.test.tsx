@@ -1,10 +1,18 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import ProcurementHUD from '../pages/ProcurementHUD';
 import { BrowserRouter } from 'react-router-dom';
 import { I18nProvider } from '../i18n';
 
 describe('ProcurementHUD Component', () => {
+    beforeEach(() => {
+        window.localStorage.setItem('bobbuy_locale', 'en-US');
+    });
+
+    afterEach(() => {
+        window.localStorage.removeItem('bobbuy_locale');
+    });
+
     it('renders HUD metrics and customer panels', () => {
         render(
             <I18nProvider>

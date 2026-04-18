@@ -17,6 +17,7 @@ vi.mock('antd', async () => {
 
 describe('OrderDesk Component', () => {
     beforeEach(() => {
+        window.localStorage.setItem('bobbuy_locale', 'en-US');
         vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
             const url = String(input);
             if (url.includes('/api/ai/parse')) {
@@ -61,6 +62,7 @@ describe('OrderDesk Component', () => {
 
     afterEach(() => {
         vi.unstubAllGlobals();
+        window.localStorage.removeItem('bobbuy_locale');
     });
 
     it('sends text and renders parsed items in sidebar', async () => {
