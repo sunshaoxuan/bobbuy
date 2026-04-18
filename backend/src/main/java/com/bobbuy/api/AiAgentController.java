@@ -1,8 +1,12 @@
 package com.bobbuy.api;
 
 import com.bobbuy.api.response.ApiResponse;
+import com.bobbuy.model.PriceTier;
+import com.bobbuy.model.Product;
+import com.bobbuy.model.ProductPatch;
 import com.bobbuy.service.AiAgentService;
 import com.bobbuy.service.AiProductOnboardingService;
+import com.bobbuy.service.BobbuyStore;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,17 +14,23 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ai")
 public class AiAgentController {
   private final AiAgentService aiAgentService;
   private final AiProductOnboardingService aiProductOnboardingService;
+  private final BobbuyStore store;
 
-  public AiAgentController(AiAgentService aiAgentService, AiProductOnboardingService aiProductOnboardingService) {
+  public AiAgentController(AiAgentService aiAgentService,
+                           AiProductOnboardingService aiProductOnboardingService,
+                           BobbuyStore store) {
     this.aiAgentService = aiAgentService;
     this.aiProductOnboardingService = aiProductOnboardingService;
+    this.store = store;
   }
 
   @PostMapping("/parse")
@@ -58,5 +68,62 @@ public class AiAgentController {
     return aiProductOnboardingService.onboardFromPhoto(request.getBase64Image())
         .map(suggestion -> ResponseEntity.ok(ApiResponse.success(suggestion)))
         .orElseGet(() -> ResponseEntity.badRequest().body(ApiResponse.error("Failed to extract product info from image")));
+  }
+
+  @PostMapping("/onboard/confirm")
+  public ResponseEntity<ApiResponse<MobileProductResponse>> confirmOnboard(@Valid @RequestBody AiOnboardingSuggestion suggestion) {
+    Product result;
+
+    if (suggestion.existingProductFound() && suggestion.existingProductId() != null) {
+      // Incremental update: patch existing product with detected price tiers
+      ProductPatch patch = new ProductPatch();
+      if (suggestion.price() != null) {
+        patch.setBasePrice(suggestion.price());
+      }
+      if (suggestion.detectedPriceTiers() != null && !suggestion.detectedPriceTiers().isEmpty()) {
+        patch.setPriceTiers(suggestion.detectedPriceTiers());
+      }
+      if (suggestion.mediaGallery() != null && !suggestion.mediaGallery().isEmpty()) {
+        patch.setMediaGallery(suggestion.mediaGallery());
+      }
+      if (suggestion.brand() != null) {
+        patch.setBrand(suggestion.brand());
+      }
+      result = store.patchProduct(suggestion.existingProductId(), patch)
+          .orElseThrow(() -> new com.bobbuy.api.response.ApiException(
+              com.bobbuy.api.response.ErrorCode.RESOURCE_NOT_FOUND, "error.product.not_found"));
+    } else {
+      // Create new product
+      Product newProduct = new Product();
+      Map<String, String> nameMap = new HashMap<>();
+      nameMap.put("zh-CN", suggestion.name());
+      nameMap.put("en-US", suggestion.name());
+      newProduct.setName(nameMap);
+
+      Map<String, String> descMap = new HashMap<>();
+      if (suggestion.description() != null) {
+        descMap.put("zh-CN", suggestion.description());
+        descMap.put("en-US", suggestion.description());
+      }
+      newProduct.setDescription(descMap);
+
+      newProduct.setBrand(suggestion.brand());
+      newProduct.setBasePrice(suggestion.price() != null ? suggestion.price() : 0.0);
+      newProduct.setMediaGallery(suggestion.mediaGallery() != null ? suggestion.mediaGallery() : List.of());
+      newProduct.setStorageCondition(suggestion.storageCondition());
+      newProduct.setOrderMethod(suggestion.orderMethod());
+      newProduct.setCategoryId(suggestion.categoryId());
+      newProduct.setItemNumber(suggestion.itemNumber());
+      newProduct.setMerchantSkus(new HashMap<>());
+      if (suggestion.detectedPriceTiers() != null) {
+        newProduct.setPriceTiers(suggestion.detectedPriceTiers());
+      }
+
+      result = store.createProduct(newProduct);
+    }
+
+    // Return a simple response with the product
+    return ResponseEntity.ok(ApiResponse.success(
+        new MobileProductResponse(result, suggestion.name(), suggestion.description())));
   }
 }

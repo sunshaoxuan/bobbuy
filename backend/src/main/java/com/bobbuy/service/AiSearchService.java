@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 /**
  * Service for executing AI-driven web research using secure API keys.
@@ -15,15 +15,15 @@ import javax.annotation.PostConstruct;
 public class AiSearchService {
     private static final Logger log = LoggerFactory.getLogger(AiSearchService.class);
 
-    @Value("${bobbuy.ai.secret.brave.salt}")
+    @Value("${bobbuy.ai.secret.brave.salt:}")
     private String braveSalt;
-    @Value("${bobbuy.ai.secret.brave.nonce}")
+    @Value("${bobbuy.ai.secret.brave.nonce:}")
     private String braveNonce;
-    @Value("${bobbuy.ai.secret.brave.ciphertext}")
+    @Value("${bobbuy.ai.secret.brave.ciphertext:}")
     private String braveCiphertext;
-    @Value("${bobbuy.ai.secret.brave.tag}")
+    @Value("${bobbuy.ai.secret.brave.tag:}")
     private String braveTag;
-    @Value("${bobbuy.ai.secret.brave.iterations}")
+    @Value("${bobbuy.ai.secret.brave.iterations:200000}")
     private int braveIterations;
 
     // The master password should be provided via environment variable for security
@@ -34,6 +34,10 @@ public class AiSearchService {
 
     @PostConstruct
     public void init() {
+        if (braveSalt == null || braveSalt.isBlank() || braveCiphertext == null || braveCiphertext.isBlank()) {
+            log.warn("Brave Search API key configuration is not present. Web research will be disabled.");
+            return;
+        }
         try {
             log.info("Initializing AiSearchService: Decrypting Brave Search API Key...");
             this.decryptedBraveKey = EncryptionUtils.decrypt(

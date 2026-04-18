@@ -2,6 +2,7 @@ package com.bobbuy.api;
 
 import com.bobbuy.model.MediaGalleryItem;
 import com.bobbuy.model.OrderMethod;
+import com.bobbuy.model.PriceTier;
 import com.bobbuy.model.StorageCondition;
 
 import java.util.List;

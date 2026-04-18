@@ -128,7 +128,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
           <>
             {suggestion?.existingProductFound && (
               <Alert
-                message={t('stock.ai_quick_add.existing_found')}
+                message={`${t('stock.ai_quick_add.existing_found')}${suggestion.existingProductId ? `：${suggestion.existingProductId}` : ''}`}
                 description={t('stock.ai_quick_add.existing_update_hint')}
                 type="info"
                 showIcon

@@ -2,6 +2,7 @@ package com.bobbuy.service;
 
 import com.bobbuy.api.AiOnboardingSuggestion;
 import com.bobbuy.model.MediaGalleryItem;
+import com.bobbuy.model.MediaType;
 import com.bobbuy.model.OrderMethod;
 import com.bobbuy.model.PriceTier;
 import com.bobbuy.model.Product;
@@ -18,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AiProductOnboardingService {
@@ -25,31 +27,34 @@ public class AiProductOnboardingService {
 
     private final LlmGateway llmGateway;
     private final AiSearchService aiSearchService;
+    private final WebSearchService webSearchService;
     private final ProductRepository productRepository;
     private final ObjectMapper objectMapper;
 
-    public AiProductOnboardingService(LlmGateway llmGateway, 
-                                     AiSearchService aiSearchService, 
-                                     ProductRepository productRepository, 
+    public AiProductOnboardingService(LlmGateway llmGateway,
+                                     AiSearchService aiSearchService,
+                                     WebSearchService webSearchService,
+                                     ProductRepository productRepository,
                                      ObjectMapper objectMapper) {
         this.llmGateway = llmGateway;
         this.aiSearchService = aiSearchService;
+        this.webSearchService = webSearchService;
         this.productRepository = productRepository;
         this.objectMapper = objectMapper;
     }
 
     public Optional<AiOnboardingSuggestion> onboardFromPhoto(String base64Image) {
-        // 1. Vision Extract (Enhanced for Price Tiers)
+        // 1. Vision Extract (Edge Node - Llava)
         String prompt = """
             请分析这张商品实拍图（货架图），提取商品信息并以JSON格式输出。
-            特别注意提取“会员价”、“优惠价”以及价格下方的“货号/Item Number”。
+            特别注意提取"会员价"、"优惠价"以及价格下方的"货号/Item Number"。
             需要包含以下字段：
             - name: 商品名称
             - brand: 品牌
             - basePrice: 标准零售价（数字）
             - itemNumber: 货号（如有）
             - priceTiers: 价格数组，每个对象含 tierName (如 "Member", "Sale"), price, note
-            
+
             只输出JSON对象，不要有额外解释。
             """;
 
@@ -63,9 +68,10 @@ public class AiProductOnboardingService {
             String name = (String) extracted.getOrDefault("name", "Unknown Product");
             String brand = (String) extracted.get("brand");
             String itemNumber = (String) extracted.get("itemNumber");
-            Double basePrice = extracted.get("basePrice") instanceof Number n ? n.doubleValue() : null;
+            Double basePrice = extracted.get("basePrice") instanceof Number n ? n.doubleValue()
+                    : extracted.get("price") instanceof Number n2 ? n2.doubleValue() : null;
 
-            // 2. Matching Logic (Incremental Update Detection)
+            // 2. Incremental Matching (itemNumber is the unique key)
             boolean existingFound = false;
             String existingId = null;
             if (itemNumber != null && !itemNumber.isBlank()) {
@@ -77,14 +83,25 @@ public class AiProductOnboardingService {
                 }
             }
 
-            // 3. Deep Research (Secure via AiSearchService)
+            // 3. Deep Research (Brave via WebSearchService)
             String searchQuery = brand != null ? brand + " " + name : name;
-            String searchResults = aiSearchService.search(searchQuery);
+            List<WebSearchService.SearchResult> searchResults = webSearchService.search(searchQuery);
 
+            // Build media gallery from search results
             List<MediaGalleryItem> gallery = new ArrayList<>();
-            // In a real implementation, we would parse the searchResults for images and descriptions
-            
-            // 4. Map Tiers
+            String researchSnippet = "";
+            if (!searchResults.isEmpty()) {
+                WebSearchService.SearchResult topResult = searchResults.get(0);
+                researchSnippet = topResult.snippet();
+                for (String imageUrl : topResult.imageUrls()) {
+                    gallery.add(new MediaGalleryItem(imageUrl, MediaType.IMAGE, new HashMap<>()));
+                }
+            }
+
+            // 4. Knowledge Synthesis (Cloud Core - Qwen)
+            String description = synthesize(name, brand, basePrice, visionResponse.get(), researchSnippet);
+
+            // 5. Map Price Tiers
             List<PriceTier> detectedTiers = new ArrayList<>();
             if (extracted.get("priceTiers") instanceof List<?> tiers) {
                 for (Object t : tiers) {
@@ -92,7 +109,7 @@ public class AiProductOnboardingService {
                         detectedTiers.add(new PriceTier(
                             (String) m.get("tierName"),
                             ((Number) m.get("price")).doubleValue(),
-                            "JPY", // Default currency
+                            "JPY",
                             false
                         ));
                     }
@@ -102,7 +119,7 @@ public class AiProductOnboardingService {
             return Optional.of(new AiOnboardingSuggestion(
                 name,
                 brand,
-                searchResults, // Using search results as description for enrichment
+                description,
                 basePrice,
                 null,
                 itemNumber,
@@ -119,5 +136,25 @@ public class AiProductOnboardingService {
             log.error("Failed to parse vision response", e);
             return Optional.empty();
         }
+    }
+
+    /**
+     * Synthesis step: sends Vision extraction and web research snippets to the
+     * Cloud Core (Qwen) model to produce a final enriched description.
+     */
+    private String synthesize(String name, String brand, Double price, String visionJson, String searchSnippet) {
+        if (searchSnippet == null || searchSnippet.isBlank()) {
+            return "";
+        }
+        String synthesisPrompt = String.format("""
+            你是一个商品信息整合助手。以下是两段关于同一商品的信息：
+            1. AI 视觉识别结果：%s
+            2. 网页搜索摘要：%s
+
+            请将这两段信息整合为一段简洁专业的中文商品描述（100字以内），只输出描述文本。
+            """, visionJson, searchSnippet);
+
+        return llmGateway.generate(synthesisPrompt, null, null)
+                .orElse(searchSnippet);
     }
 }

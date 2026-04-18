@@ -304,6 +304,9 @@ public class BobbuyStore {
         if (patch.getMerchantSkus() != null) {
             existing.setMerchantSkus(patch.getMerchantSkus());
         }
+        if (patch.getPriceTiers() != null) {
+            existing.setPriceTiers(patch.getPriceTiers());
+        }
         return Optional.of(productRepository.save(existing));
     }
 

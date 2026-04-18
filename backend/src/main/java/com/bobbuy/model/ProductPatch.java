@@ -13,6 +13,7 @@ public class ProductPatch {
     private OrderMethod orderMethod;
     private String categoryId;
     private Map<String, String> merchantSkus;
+    private List<PriceTier> priceTiers;
 
     public Map<String, String> getName() {
         return name;
@@ -84,5 +85,13 @@ public class ProductPatch {
 
     public void setMerchantSkus(Map<String, String> merchantSkus) {
         this.merchantSkus = merchantSkus;
+    }
+
+    public List<PriceTier> getPriceTiers() {
+        return priceTiers;
+    }
+
+    public void setPriceTiers(List<PriceTier> priceTiers) {
+        this.priceTiers = priceTiers;
     }
 }

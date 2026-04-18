@@ -17,7 +17,8 @@ import {
   Radio,
   Tabs,
   Row,
-  Col
+  Col,
+  Checkbox
 } from 'antd';
 import {
   PlusOutlined,
@@ -168,6 +169,7 @@ export default function StockMaster() {
   const [isQuickAddVisible, setIsQuickAddVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [activeTabKey, setActiveTabKey] = useState<string>('basic');
   const [form] = Form.useForm();
   const screens = Grid.useBreakpoint();
   const isMobile = screens.md === false;
@@ -328,7 +330,7 @@ export default function StockMaster() {
     setDataSource(dataSource.map((item) => ({ ...item, isNew: false })));
   };
 
-  const openDrawer = (record: StockItem) => {
+  const openDrawer = (record: StockItem, defaultTab?: string) => {
     setEditingItem(record);
     form.setFieldsValue({
       ...record,
@@ -338,6 +340,7 @@ export default function StockMaster() {
       dynamicAttributes: record.dynamicAttributes ?? {},
       merchantSkuEntries: mapMerchantSkusToEntries(record.merchantSkus)
     });
+    setActiveTabKey(defaultTab ?? 'basic');
     setIsDrawerVisible(true);
     setSyncStatus('idle');
   };
@@ -367,9 +370,12 @@ export default function StockMaster() {
     
     // Add to datasource so it can be 'saved' in the drawer
     setDataSource(prev => [...prev, newItem]);
+
+    // Default to priceTiers tab when existing product matched (for Agent confirmation)
+    const defaultTab = suggestion.existingProductFound ? 'priceTiers' : 'basic';
     
     // Open drawer
-    openDrawer(newItem);
+    openDrawer(newItem, defaultTab);
   };
 
   const closeDrawer = () => {
@@ -659,6 +665,8 @@ export default function StockMaster() {
             </Text>
           )}
           <Tabs
+            activeKey={activeTabKey}
+            onChange={setActiveTabKey}
             items={[
               {
                 key: 'basic',
@@ -754,8 +762,6 @@ export default function StockMaster() {
                       />
                     </Form.Item>
                   </>
-                )
-              },
                 )
               },
               {

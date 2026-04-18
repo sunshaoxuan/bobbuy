@@ -306,5 +306,7 @@ export const api = {
             targetLocale
         }),
     onboardScan: (base64Image: string) =>
-        postJson<AiOnboardingSuggestion, { base64Image: string }>('/api/ai/onboard/scan', { base64Image })
+        postJson<AiOnboardingSuggestion, { base64Image: string }>('/api/ai/onboard/scan', { base64Image }),
+    onboardConfirm: (suggestion: AiOnboardingSuggestion) =>
+        postJson<unknown, AiOnboardingSuggestion>('/api/ai/onboard/confirm', suggestion)
 };
