@@ -1,6 +1,7 @@
 package com.bobbuy.model;
 
 import com.bobbuy.model.converter.MediaGalleryJsonConverter;
+import com.bobbuy.model.converter.PriceTierListJsonConverter;
 import com.bobbuy.model.converter.StringMapJsonConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -161,5 +162,21 @@ public class Product {
 
     public void setMerchantSkus(Map<String, String> merchantSkus) {
         this.merchantSkus = merchantSkus;
+    }
+
+    public String getItemNumber() {
+        return itemNumber;
+    }
+
+    public void setItemNumber(String itemNumber) {
+        this.itemNumber = itemNumber;
+    }
+
+    public List<PriceTier> getPriceTiers() {
+        return priceTiers;
+    }
+
+    public void setPriceTiers(List<PriceTier> priceTiers) {
+        this.priceTiers = priceTiers;
     }
 }
