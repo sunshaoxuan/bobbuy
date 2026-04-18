@@ -339,6 +339,7 @@ const messages: Dictionary = {
     'procurement.export_pdf': 'PDFエクスポート',
     'procurement.receipt': 'レシート',
     'procurement.preview_receipt': 'レシートを表示',
+    'procurement.upload_receipt': 'レシート画像をアップロード',
     'procurement.receipt_selected': 'レシート画像を選択済み',
     'procurement.ocr_status': 'OCR ステータス',
     'procurement.logistics_tracking': '物流追跡',

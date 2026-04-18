@@ -339,6 +339,7 @@ const messages: Dictionary = {
     'procurement.export_pdf': '导出 PDF',
     'procurement.receipt': '小票',
     'procurement.preview_receipt': '预览小票',
+    'procurement.upload_receipt': '上传小票图片',
     'procurement.receipt_selected': '已选择小票图片',
     'procurement.ocr_status': 'OCR 状态',
     'procurement.logistics_tracking': '物流追踪',

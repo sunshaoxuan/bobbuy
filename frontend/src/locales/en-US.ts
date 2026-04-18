@@ -339,6 +339,7 @@ const messages: Dictionary = {
     'procurement.export_pdf': 'Export PDF',
     'procurement.receipt': 'Receipt',
     'procurement.preview_receipt': 'Preview Receipt',
+    'procurement.upload_receipt': 'Upload receipt image',
     'procurement.receipt_selected': 'Receipt image selected',
     'procurement.ocr_status': 'OCR Status',
     'procurement.logistics_tracking': 'Logistics Tracking',

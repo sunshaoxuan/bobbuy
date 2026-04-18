@@ -58,6 +58,7 @@ public class ImageStorageService {
     }
 
     public String saveBase64(String base64Content) {
+        // Backward-compatible API: callers that need objectKey + URL should use saveBase64ToObject.
         UploadResult result = saveBase64ToObject(base64Content);
         return result == null ? null : result.publicUrl();
     }

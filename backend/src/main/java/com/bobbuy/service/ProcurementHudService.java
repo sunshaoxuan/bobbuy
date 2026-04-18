@@ -56,6 +56,8 @@ import java.util.stream.Collectors;
 @Service
 public class ProcurementHudService {
   private static final String UNCATEGORIZED = "UNCATEGORIZED";
+  private static final String OCR_STATUS_NOT_UPLOADED = "NOT_UPLOADED";
+  private static final String OCR_STATUS_PENDING = "PENDING";
   private static final double DEFAULT_PURCHASER_RATIO = 70D;
   private static final double DEFAULT_PROMOTER_RATIO = 30D;
   private static final double DEFAULT_FX_RATE = 1D;
@@ -181,7 +183,7 @@ public class ProcurementHudService {
     ImageStorageService.UploadResult receiptUpload = imageStorageService.saveBase64ToObject(request.getReceiptImageBase64());
     String receiptObjectKey = receiptUpload == null ? null : receiptUpload.objectKey();
     String receiptThumbnailUrl = receiptUpload == null ? null : receiptUpload.publicUrl();
-    String ocrStatus = receiptObjectKey == null ? "NOT_UPLOADED" : "PENDING";
+    String ocrStatus = receiptObjectKey == null ? OCR_STATUS_NOT_UPLOADED : OCR_STATUS_PENDING;
 
     TripExpense expense = new TripExpense(
         tripId,
@@ -607,7 +609,7 @@ public class ProcurementHudService {
   private LogisticsStatus resolveLogisticsStatus(TripLogisticsTracking tracking) {
     String normalized = tracking.getTrackingNumber() == null ? "" : tracking.getTrackingNumber().trim().toUpperCase();
     if (tracking.getProvider() == LogisticsProvider.TRACK17) {
-      return normalized.contains("DELIVERED") ? LogisticsStatus.DELIVERED : LogisticsStatus.IN_TRANSIT;
+      return LogisticsStatus.PENDING;
     }
     if (normalized.contains("DELIVERED") || normalized.endsWith("DLV")) {
       return LogisticsStatus.DELIVERED;

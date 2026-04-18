@@ -403,7 +403,12 @@ export default function ProcurementDashboard() {
               {t('procurement.add_expense')}
             </Button>
           </Form>
-          <Input type="file" accept="image/*" onChange={onSelectExpenseReceipt} />
+          <Input
+            type="file"
+            accept="image/*"
+            aria-label={t('procurement.upload_receipt')}
+            onChange={onSelectExpenseReceipt}
+          />
           {expenseReceiptBase64 ? <Text type="secondary">{t('procurement.receipt_selected')}</Text> : null}
           <Text strong>
             {t('procurement.total_expenses')}: {(hudStats?.totalTripExpenses ?? 0).toFixed(2)}
