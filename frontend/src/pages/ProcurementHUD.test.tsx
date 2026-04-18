@@ -4,6 +4,27 @@ import ProcurementHUD from '../pages/ProcurementHUD';
 import { BrowserRouter } from 'react-router-dom';
 import { I18nProvider } from '../i18n';
 
+vi.mock('antd', async () => {
+    const antd = await vi.importActual<typeof import('antd')>('antd');
+    return {
+        ...antd,
+        Table: ({ dataSource = [] }: any) => <div>{dataSource.map((item: any) => item.businessId).join(' ')}</div>,
+        Select: ({ options = [], onChange, value }: any) => (
+            <select
+                data-testid="trip-select"
+                value={value}
+                onChange={(event) => onChange?.(Number(event.target.value))}
+            >
+                {options.map((option: any) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </select>
+        )
+    };
+});
+
 vi.mock('../api', () => ({
     api: {
         trips: () => Promise.resolve([

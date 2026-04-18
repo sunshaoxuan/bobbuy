@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 @Service
 public class ProcurementHudService {
   private static final String UNCATEGORIZED = "UNCATEGORIZED";
+  private static final double DEFAULT_FX_RATE = 1D;
   private static final Logger log = LoggerFactory.getLogger(ProcurementHudService.class);
 
   private final TripRepository tripRepository;
@@ -51,8 +52,8 @@ public class ProcurementHudService {
     this.productRepository = productRepository;
     this.referenceFxRate = referenceFxRate;
     if (configuredCurrentFxRate == null) {
-      log.warn("FX rate property 'bobbuy.fx.current-rate' is missing, fallback to 1.0");
-      this.currentFxRate = 1D;
+      log.warn("FX rate property 'bobbuy.fx.current-rate' is missing or null, fallback to {}", DEFAULT_FX_RATE);
+      this.currentFxRate = DEFAULT_FX_RATE;
     } else {
       this.currentFxRate = configuredCurrentFxRate;
     }
@@ -245,7 +246,7 @@ public class ProcurementHudService {
       return rate;
     }
     log.warn("Invalid FX rate '{}' configured as {}, fallback to 1.0", rateName, rate);
-    return 1D;
+    return DEFAULT_FX_RATE;
   }
 
   private double sanitizePhysicalMetric(Double metric) {

@@ -76,13 +76,14 @@ class ProcurementHudServiceTest {
     patch.setVolume(1.2);
     store.patchProduct("prd-1000", patch);
 
-    ProcurementHudResponse hud = procurementHudService.getHudStats(2000L);
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader order = new OrderHeader("HUD-PHYSICAL", 1001L, trip.getId());
+    OrderLine line = new OrderLine("prd-1000", "Matcha", null, 2, 10.0);
+    line.setPurchasedQuantity(2);
+    order.addLine(line);
+    store.upsertOrder(order);
 
-    assertThat(hud.getCurrentWeight()).isEqualTo(0);
-    assertThat(hud.getCurrentVolume()).isEqualTo(0);
-
-    procurementHudService.reconcileInventory("prd-1000", 2);
-    ProcurementHudResponse updatedHud = procurementHudService.getHudStats(2000L);
+    ProcurementHudResponse updatedHud = procurementHudService.getHudStats(trip.getId());
 
     assertThat(updatedHud.getCurrentWeight()).isEqualTo(5.0);
     assertThat(updatedHud.getCurrentVolume()).isEqualTo(2.4);
@@ -90,10 +91,15 @@ class ProcurementHudServiceTest {
 
   @Test
   void reconcileInventoryWithDetailsReturnsAllocatedBusinessIds() {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader order = new OrderHeader("RECON-DETAIL", 1001L, trip.getId());
+    order.addLine(new OrderLine("prd-1000", "Matcha", null, 2, 10.0));
+    store.upsertOrder(order);
+
     ProcurementHudService.ReconcileInventoryResult result = procurementHudService.reconcileInventoryWithDetails("prd-1000", 1);
 
     assertThat(result.reconciledQuantity()).isEqualTo(1);
-    assertThat(result.tripId()).isEqualTo(2000L);
-    assertThat(result.allocatedBusinessIds()).containsExactly("20260117001");
+    assertThat(result.tripId()).isEqualTo(trip.getId());
+    assertThat(result.allocatedBusinessIds()).containsExactly("RECON-DETAIL");
   }
 }

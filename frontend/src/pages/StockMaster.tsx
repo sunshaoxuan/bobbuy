@@ -67,6 +67,12 @@ type MerchantSkuEntry = {
   sku?: string;
 };
 
+type ReconcileResponse = {
+  reconciledQuantity?: number;
+  reconciledTripId?: number;
+  allocatedBusinessIds?: string[];
+};
+
 const AUTOSAVE_DELAY_MS = 500;
 const MOBILE_DRAWER_HEIGHT = '82vh';
 const MOBILE_TOOLBAR_COMPACT_SCROLL_THRESHOLD = 24;
@@ -433,9 +439,12 @@ export default function StockMaster() {
     }
   };
 
-  const handleReconcileFeedback = (response: { reconciledQuantity?: number; reconciledTripId?: number; allocatedBusinessIds?: string[] }) => {
+  const hasReconciliationToNotify = (response: ReconcileResponse, ids: string[]) =>
+    (response?.reconciledQuantity ?? 0) > 0 && ids.length > 0;
+
+  const handleReconcileFeedback = (response: ReconcileResponse) => {
     const ids = response?.allocatedBusinessIds ?? [];
-    if ((response?.reconciledQuantity ?? 0) <= 0 || ids.length === 0) {
+    if (!hasReconciliationToNotify(response, ids)) {
       return;
     }
     notification.success({
