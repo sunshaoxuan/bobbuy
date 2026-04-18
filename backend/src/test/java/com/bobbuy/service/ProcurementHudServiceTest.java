@@ -1,8 +1,10 @@
 package com.bobbuy.service;
 
 import com.bobbuy.api.BobbuyApplication;
+import com.bobbuy.api.ProcurementHudResponse;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
+import com.bobbuy.model.ProductPatch;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,5 +67,33 @@ class ProcurementHudServiceTest {
     assertThat(reconciled).isEqualTo(1);
     assertThat(store.getOrder(createdTrip1.getId()).orElseThrow().getLines().get(0).getPurchasedQuantity()).isEqualTo(1);
     assertThat(store.getOrder(createdTrip2.getId()).orElseThrow().getLines().get(0).getPurchasedQuantity()).isEqualTo(0);
+  }
+
+  @Test
+  void getHudStatsUsesProductPhysicalMetricsInsteadOfStaticUnitWeight() {
+    ProductPatch patch = new ProductPatch();
+    patch.setWeight(2.5);
+    patch.setVolume(1.2);
+    store.patchProduct("prd-1000", patch);
+
+    ProcurementHudResponse hud = procurementHudService.getHudStats(2000L);
+
+    assertThat(hud.getCurrentWeight()).isEqualTo(0);
+    assertThat(hud.getCurrentVolume()).isEqualTo(0);
+
+    procurementHudService.reconcileInventory("prd-1000", 2);
+    ProcurementHudResponse updatedHud = procurementHudService.getHudStats(2000L);
+
+    assertThat(updatedHud.getCurrentWeight()).isEqualTo(5.0);
+    assertThat(updatedHud.getCurrentVolume()).isEqualTo(2.4);
+  }
+
+  @Test
+  void reconcileInventoryWithDetailsReturnsAllocatedBusinessIds() {
+    ProcurementHudService.ReconcileInventoryResult result = procurementHudService.reconcileInventoryWithDetails("prd-1000", 1);
+
+    assertThat(result.reconciledQuantity()).isEqualTo(1);
+    assertThat(result.tripId()).isEqualTo(2000L);
+    assertThat(result.allocatedBusinessIds()).containsExactly("20260117001");
   }
 }

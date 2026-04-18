@@ -150,6 +150,8 @@ class ModelTest {
                 Map.of("zh-CN", "描述"),
                 "BrandX",
                 19.9,
+                0.7,
+                0.3,
                 List.of(media),
                 StorageCondition.AMBIENT,
                 OrderMethod.DIRECT_BUY,
@@ -159,6 +161,8 @@ class ModelTest {
         assertThat(product.getMediaGallery()).hasSize(1);
         assertThat(product.getStorageCondition()).isEqualTo(StorageCondition.AMBIENT);
         assertThat(product.getMerchantSkus()).containsEntry("sup-1", "SKU-001");
+        assertThat(product.getWeight()).isEqualTo(0.7);
+        assertThat(product.getVolume()).isEqualTo(0.3);
 
         MerchantSku sku = new MerchantSku("msku-1", "prd-1", "sup-1", "SKU-001", 18.8, StockStatus.IN_STOCK);
         assertThat(sku.getSkuCode()).isEqualTo("SKU-001");

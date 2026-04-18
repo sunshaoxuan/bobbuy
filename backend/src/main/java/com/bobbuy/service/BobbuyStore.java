@@ -148,6 +148,8 @@ public class BobbuyStore {
                 new LinkedHashMap<>(Map.of("zh-CN", "京都风味抹茶组合", "ja-JP", "京都風味の抹茶セット", "en-US", "Kyoto-style matcha set")),
                 "BOBBuy Select",
                 32.5,
+                0.5,
+                0.2,
                 List.of(new MediaGalleryItem(
                         "https://cdn.bobbuy.example/products/matcha-kit.png",
                         MediaType.IMAGE,
@@ -302,6 +304,12 @@ public class BobbuyStore {
         }
         if (patch.getBasePrice() != null) {
             existing.setBasePrice(patch.getBasePrice());
+        }
+        if (patch.getWeight() != null) {
+            existing.setWeight(patch.getWeight());
+        }
+        if (patch.getVolume() != null) {
+            existing.setVolume(patch.getVolume());
         }
         if (patch.getMediaGallery() != null) {
             existing.setMediaGallery(patch.getMediaGallery());
