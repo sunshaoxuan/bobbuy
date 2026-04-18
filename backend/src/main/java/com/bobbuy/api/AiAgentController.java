@@ -10,6 +10,7 @@ import com.bobbuy.service.AiAgentService;
 import com.bobbuy.service.AiProductOnboardingService;
 import com.bobbuy.service.BobbuyStore;
 import com.bobbuy.service.ImageStorageService;
+import com.bobbuy.service.ProcurementHudService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -29,15 +30,21 @@ public class AiAgentController {
   private final AiProductOnboardingService aiProductOnboardingService;
   private final BobbuyStore store;
   private final ImageStorageService imageStorageService;
+  private final ProcurementHudService procurementHudService;
+
+  @Value("${bobbuy.ai.default-reconcile-quantity:1}")
+  private int defaultReconcileQuantity;
 
   public AiAgentController(AiAgentService aiAgentService,
                            AiProductOnboardingService aiProductOnboardingService,
                            BobbuyStore store,
-                           ImageStorageService imageStorageService) {
+                           ImageStorageService imageStorageService,
+                           ProcurementHudService procurementHudService) {
     this.aiAgentService = aiAgentService;
     this.aiProductOnboardingService = aiProductOnboardingService;
     this.store = store;
     this.imageStorageService = imageStorageService;
+    this.procurementHudService = procurementHudService;
   }
 
   @PostMapping("/parse")
