@@ -232,6 +232,14 @@ const translations: Record<Locale, Dictionary> = {
     'stock.media.image': '图片',
     'stock.media.video': '视频',
     'stock.media.title_placeholder': '输入媒体标题',
+    'stock.tabs.price_tiers': '价格阶梯 (Agent 专用)',
+    'stock.price_tier.tier_name': '阶梯名称',
+    'stock.price_tier.price': '价格',
+    'stock.price_tier.agent_only': '仅 Agent 可见',
+    'stock.price_tier.add': '新增价格阶梯',
+    'stock.price_tier.tier_placeholder': '例如：会员价, 代理结算价',
+    'stock.ai_quick_add.existing_found': '检测到已有商品',
+    'stock.ai_quick_add.existing_update_hint': 'AI 已匹配到现有货号，将执行增量更新。',
     'stock.empty': '暂无数据'
   },
   'en-US': {
@@ -460,6 +468,14 @@ const translations: Record<Locale, Dictionary> = {
     'stock.media.image': 'Image',
     'stock.media.video': 'Video',
     'stock.media.title_placeholder': 'Input media title',
+    'stock.tabs.price_tiers': 'Price Tiers (Agent)',
+    'stock.price_tier.tier_name': 'Tier Name',
+    'stock.price_tier.price': 'Price',
+    'stock.price_tier.agent_only': 'Agent Only',
+    'stock.price_tier.add': 'Add Price Tier',
+    'stock.price_tier.tier_placeholder': 'e.g. Member, Agent Cost',
+    'stock.ai_quick_add.existing_found': 'Existing Product Detected',
+    'stock.ai_quick_add.existing_update_hint': 'AI matched an existing Item Number. Performing incremental update.',
     'stock.empty': 'No data'
   }
 };

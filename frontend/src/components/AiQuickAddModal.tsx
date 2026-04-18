@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Modal, Upload, Button, Steps, Result, Spin, message, Space, Typography } from 'antd';
+import { Modal, Upload, Button, Steps, Result, Spin, message, Space, Typography, Alert } from 'antd';
 import type { RcFile } from 'antd/es/upload';
-import { CameraOutlined, UploadOutlined, FileSearchOutlined, GlobalOutlined, CheckCircleOutlined, PictureOutlined } from '@ant-design/icons';
+import { CameraOutlined, UploadOutlined, FileSearchOutlined, GlobalOutlined, CheckCircleOutlined, PictureOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { api, type AiOnboardingSuggestion } from '../api';
 import { useI18n } from '../i18n';
 
@@ -19,9 +19,11 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
   const [loading, setLoading] = useState(false);
   const [fileList, setFileList] = useState<any[]>([]);
 
+  const [suggestion, setSuggestion] = useState<AiOnboardingSuggestion | null>(null);
+
   const handleUpload = async (file: RcFile) => {
     setLoading(true);
-    setCurrentStep(1); // Scanning
+    setCurrentStep(1); 
 
     try {
       const reader = new FileReader();
@@ -29,28 +31,31 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
       reader.onload = async () => {
         const base64 = reader.result as string;
         
-        // Step 1: Scanning & Extracting
         setCurrentStep(1);
-        const suggestion = await api.onboardScan(base64);
+        const result = await api.onboardScan(base64);
+        setSuggestion(result);
         
-        // Step 2: Researching (Simulated delay or handled in backend)
         setCurrentStep(2);
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Step 3: Enriching (Simulated delay)
         setCurrentStep(3);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-        setCurrentStep(4); // Success
+        setCurrentStep(4); 
         setLoading(false);
-        onSuccess(suggestion);
       };
     } catch (error) {
       setLoading(false);
       setCurrentStep(0);
       message.error(t('stock.ai_quick_add.failed'));
     }
-    return false; // Prevent default upload
+    return false;
+  };
+
+  const handleFinish = () => {
+    if (suggestion) {
+      onSuccess(suggestion);
+    }
   };
 
   const steps = [
@@ -66,7 +71,11 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
       title={t('stock.ai_quick_add.title')}
       open={visible}
       onCancel={onCancel}
-      footer={null}
+      footer={currentStep === 4 ? [
+        <Button key="ok" type="primary" onClick={handleFinish}>
+          {t('stock.master.edit_detail')}
+        </Button>
+      ] : null}
       width={600}
       centered
       destroyOnClose
@@ -116,11 +125,23 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
         )}
 
         {currentStep === 4 && (
-          <Result
-            status="success"
-            title={t('stock.ai_quick_add.success_title')}
-            subTitle={t('stock.ai_quick_add.success_subtitle')}
-          />
+          <>
+            {suggestion?.existingProductFound && (
+              <Alert
+                message={t('stock.ai_quick_add.existing_found')}
+                description={t('stock.ai_quick_add.existing_update_hint')}
+                type="info"
+                showIcon
+                icon={<InfoCircleOutlined />}
+                style={{ marginBottom: 24 }}
+              />
+            )}
+            <Result
+              status="success"
+              title={t('stock.ai_quick_add.success_title')}
+              subTitle={t('stock.ai_quick_add.success_subtitle')}
+            />
+          </>
         )}
       </div>
     </Modal>

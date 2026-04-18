@@ -249,6 +249,15 @@ async function patchJson<TResponse, TBody>(url: string, body: TBody): Promise<TR
     return payload as TResponse;
 }
 
+export type PriceTier = {
+    tierName: string;
+    price: number;
+    currency: string;
+    agentOnly: boolean;
+    note?: string;
+    updatedAt?: string;
+};
+
 export type AiOnboardingSuggestion = {
     name: string;
     brand?: string;
@@ -260,6 +269,9 @@ export type AiOnboardingSuggestion = {
     orderMethod?: string;
     mediaGallery?: { url: string; title?: string; type: string }[];
     attributes?: Record<string, string>;
+    existingProductFound?: boolean;
+    existingProductId?: string;
+    detectedPriceTiers?: PriceTier[];
 };
 
 export const api = {

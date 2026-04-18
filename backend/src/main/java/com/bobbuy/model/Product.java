@@ -50,6 +50,13 @@ public class Product {
     @Column(name = "merchant_skus", columnDefinition = "jsonb")
     private Map<String, String> merchantSkus;
 
+    private String itemNumber; // For AI matching and shelf identification
+
+    @JsonbColumn
+    @Convert(converter = PriceTierListJsonConverter.class)
+    @Column(name = "price_tiers", columnDefinition = "jsonb")
+    private List<PriceTier> priceTiers = new ArrayList<>();
+
     public Product() {
         this.merchantSkus = new HashMap<>();
     }

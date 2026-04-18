@@ -17,6 +17,9 @@ public record AiOnboardingSuggestion(
     StorageCondition storageCondition,
     OrderMethod orderMethod,
     List<MediaGalleryItem> mediaGallery,
-    Map<String, String> attributes
+    Map<String, String> attributes,
+    boolean existingProductFound,
+    String existingProductId,
+    List<PriceTier> detectedPriceTiers
 ) {
 }

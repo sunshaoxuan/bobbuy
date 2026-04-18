@@ -756,6 +756,57 @@ export default function StockMaster() {
                   </>
                 )
               },
+                )
+              },
+              {
+                key: 'priceTiers',
+                label: t('stock.tabs.price_tiers'),
+                children: (
+                  <Form.List name="priceTiers">
+                    {(fields, { add, remove }) => (
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        {fields.map((field) => (
+                          <Card key={field.key} size="small" className="price-tier-card">
+                            <Row gutter={8} align="middle">
+                              <Col span={10}>
+                                <Form.Item
+                                  name={[field.name, 'tierName']}
+                                  label={t('stock.price_tier.tier_name')}
+                                  style={{ marginBottom: 8 }}
+                                >
+                                  <Input placeholder={t('stock.price_tier.tier_placeholder')} />
+                                </Form.Item>
+                              </Col>
+                              <Col span={10}>
+                                <Form.Item
+                                  name={[field.name, 'price']}
+                                  label={t('stock.price_tier.price')}
+                                  style={{ marginBottom: 8 }}
+                                >
+                                  <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                              </Col>
+                              <Col span={4} style={{ textAlign: 'right', paddingBottom: 8 }}>
+                                <Button onClick={() => remove(field.name)} danger size="small" icon={<DeleteOutlined />} />
+                              </Col>
+                            </Row>
+                            <Form.Item
+                              name={[field.name, 'agentOnly']}
+                              valuePropName="checked"
+                              style={{ marginBottom: 0 }}
+                            >
+                              <Checkbox>{t('stock.price_tier.agent_only')}</Checkbox>
+                            </Form.Item>
+                          </Card>
+                        ))}
+                        <Button onClick={() => add()} type="dashed" block icon={<PlusOutlined />}>
+                          {t('stock.price_tier.add')}
+                        </Button>
+                      </Space>
+                    )}
+                  </Form.List>
+                )
+              },
               {
                 key: 'merchantCodes',
                 label: t('stock.tabs.merchant_codes'),
@@ -790,9 +841,7 @@ export default function StockMaster() {
                               </Form.Item>
                             </Col>
                             <Col span={4} style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 8 }}>
-                              <Button onClick={() => remove(field.name)} danger>
-                                {t('stock.merchant_codes.remove')}
-                              </Button>
+                              <Button onClick={() => remove(field.name)} danger icon={<DeleteOutlined />} />
                             </Col>
                           </Row>
                         ))}
