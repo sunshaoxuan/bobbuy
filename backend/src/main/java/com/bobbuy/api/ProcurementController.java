@@ -115,13 +115,20 @@ public class ProcurementController {
   }
 
   private byte[] buildSimplePdf(String text) {
-    String safeText = text
-        .replace("\\", "\\\\")
-        .replace("(", "\\(")
-        .replace(")", "\\)")
-        .replace("\r", "")
-        .replace("\n", "\\n");
-    String content = "BT /F1 10 Tf 40 800 Td (" + safeText + ") Tj ET";
+    String[] lines = text.replace("\r", "").split("\n");
+    StringBuilder contentBuilder = new StringBuilder("BT /F1 10 Tf 40 800 Td 12 TL ");
+    for (int i = 0; i < lines.length; i++) {
+      String safeLine = lines[i]
+          .replace("\\", "\\\\")
+          .replace("(", "\\(")
+          .replace(")", "\\)");
+      contentBuilder.append("(").append(safeLine).append(") Tj");
+      if (i < lines.length - 1) {
+        contentBuilder.append(" T* ");
+      }
+    }
+    contentBuilder.append(" ET");
+    String content = contentBuilder.toString();
     byte[] streamBytes = content.getBytes(StandardCharsets.UTF_8);
     StringBuilder pdf = new StringBuilder();
     pdf.append("%PDF-1.4\n");

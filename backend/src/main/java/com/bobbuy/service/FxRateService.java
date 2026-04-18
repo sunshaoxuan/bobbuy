@@ -21,6 +21,8 @@ public class FxRateService {
   private static final Logger log = LoggerFactory.getLogger(FxRateService.class);
   private static final Pattern RATE_PATTERN = Pattern.compile("(\\d+(?:\\.\\d+)?)");
   private static final double DEFAULT_RATE = 1D;
+  private static final double MIN_REASONABLE_EXCHANGE_RATE = 0.001D;
+  private static final double MAX_REASONABLE_EXCHANGE_RATE = 1D;
   private static final String DEFAULT_BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
   private static final String QUERY = "JPY to CNY exchange rate";
 
@@ -94,7 +96,9 @@ public class FxRateService {
     Matcher matcher = RATE_PATTERN.matcher(payload);
     while (matcher.find()) {
       Optional<Double> parsed = parsePositiveDouble(matcher.group(1), "Brave Search response");
-      if (parsed.isPresent() && parsed.get() < 100D) {
+      if (parsed.isPresent()
+          && parsed.get() > MIN_REASONABLE_EXCHANGE_RATE
+          && parsed.get() < MAX_REASONABLE_EXCHANGE_RATE) {
         return parsed;
       }
     }

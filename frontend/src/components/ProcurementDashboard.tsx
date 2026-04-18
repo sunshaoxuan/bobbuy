@@ -125,7 +125,7 @@ export default function ProcurementDashboard() {
 
   const openReconcileModal = (row: ReconcileDetailRow) => {
     setEditingRow(row);
-    setTransferQuantity(Math.max(Math.min(row.purchasedQuantity, 1), 1));
+    setTransferQuantity(1);
     setTargetBusinessId(undefined);
     setIsModalOpen(true);
   };
