@@ -39,7 +39,11 @@ vi.mock('../api', () => ({
             totalTripExpenses: 5,
             currentWeight: 6,
             currentVolume: 2,
-            categoryCompletionPercent: {}
+            categoryCompletionPercent: {},
+            partnerShares: [
+                { partnerRole: 'PURCHASER', ratioPercent: 70, amount: 14 },
+                { partnerRole: 'PROMOTER', ratioPercent: 30, amount: 6 }
+            ]
         }),
         procurementExpenses: () => Promise.resolve([
             { id: 1, tripId: 2000, cost: 5, category: '停车费', createdAt: '2026-01-01T00:00:00' }
@@ -64,6 +68,45 @@ vi.mock('../api', () => ({
         manualReconcile: () => Promise.resolve({ skuId: 'prd-1000', fromBusinessId: '20260117001', toBusinessId: '20260117002', transferredQuantity: 1 }),
         exportProcurementSettlement: () => Promise.resolve(new Blob()),
         exportCustomerStatement: () => Promise.resolve(new Blob()),
+        expenseReceiptPreview: () => Promise.resolve({ expenseId: 1, previewUrl: 'https://example.com/preview' }),
+        procurementProfitSharing: () => Promise.resolve({
+            tripId: 2000,
+            purchaserRatioPercent: 70,
+            promoterRatioPercent: 30,
+            shares: [
+                { partnerRole: 'PURCHASER', ratioPercent: 70, amount: 14 },
+                { partnerRole: 'PROMOTER', ratioPercent: 30, amount: 6 }
+            ]
+        }),
+        updateProcurementProfitSharing: () => Promise.resolve({
+            tripId: 2000,
+            purchaserRatioPercent: 70,
+            promoterRatioPercent: 30,
+            shares: []
+        }),
+        procurementLogistics: () => Promise.resolve([]),
+        createProcurementLogistics: () => Promise.resolve({
+            id: 1,
+            tripId: 2000,
+            trackingNumber: 'MOCK-1',
+            channel: 'DOMESTIC',
+            provider: 'MOCK',
+            status: 'IN_TRANSIT',
+            lastMessage: 'Package in transit',
+            settlementReminderTriggered: false,
+            lastCheckedAt: '2026-01-01T00:00:00'
+        }),
+        refreshProcurementLogistics: () => Promise.resolve({
+            id: 1,
+            tripId: 2000,
+            trackingNumber: 'MOCK-1',
+            channel: 'DOMESTIC',
+            provider: 'MOCK',
+            status: 'DELIVERED',
+            lastMessage: 'Delivered',
+            settlementReminderTriggered: true,
+            lastCheckedAt: '2026-01-01T00:00:00'
+        }),
         orders: () => Promise.resolve([
             {
                 id: 3000,
