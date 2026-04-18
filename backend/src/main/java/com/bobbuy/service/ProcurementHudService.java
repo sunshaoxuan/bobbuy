@@ -4,6 +4,12 @@ import com.bobbuy.api.ProcurementDeficitItemResponse;
 import com.bobbuy.api.ProcurementHudResponse;
 import com.bobbuy.api.CustomerBalanceLedgerResponse;
 import com.bobbuy.api.FinancialAuditLogResponse;
+import com.bobbuy.api.LogisticsTrackingRequest;
+import com.bobbuy.api.LogisticsTrackingResponse;
+import com.bobbuy.api.PartnerProfitShareResponse;
+import com.bobbuy.api.ProfitSharingConfigRequest;
+import com.bobbuy.api.ProfitSharingConfigResponse;
+import com.bobbuy.api.ReceiptPreviewResponse;
 import com.bobbuy.api.TripExpenseRequest;
 import com.bobbuy.api.TripExpenseResponse;
 import com.bobbuy.api.response.ApiException;
@@ -17,10 +23,17 @@ import com.bobbuy.model.PaymentStatus;
 import com.bobbuy.model.Product;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripExpense;
+import com.bobbuy.model.TripLogisticsTracking;
+import com.bobbuy.model.TripProfitShareConfig;
+import com.bobbuy.model.LogisticsChannel;
+import com.bobbuy.model.LogisticsProvider;
+import com.bobbuy.model.LogisticsStatus;
 import com.bobbuy.repository.OrderHeaderRepository;
 import com.bobbuy.repository.ProductRepository;
 import com.bobbuy.repository.TripRepository;
 import com.bobbuy.repository.TripExpenseRepository;
+import com.bobbuy.repository.TripLogisticsTrackingRepository;
+import com.bobbuy.repository.TripProfitShareConfigRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +56,10 @@ import java.util.stream.Collectors;
 @Service
 public class ProcurementHudService {
   private static final String UNCATEGORIZED = "UNCATEGORIZED";
+  private static final String OCR_STATUS_NOT_UPLOADED = "NOT_UPLOADED";
+  private static final String OCR_STATUS_PENDING = "PENDING";
+  private static final double DEFAULT_PURCHASER_RATIO = 70D;
+  private static final double DEFAULT_PROMOTER_RATIO = 30D;
   private static final double DEFAULT_FX_RATE = 1D;
   private static final Logger log = LoggerFactory.getLogger(ProcurementHudService.class);
 
@@ -50,8 +67,11 @@ public class ProcurementHudService {
   private final OrderHeaderRepository orderHeaderRepository;
   private final ProductRepository productRepository;
   private final TripExpenseRepository tripExpenseRepository;
+  private final TripProfitShareConfigRepository tripProfitShareConfigRepository;
+  private final TripLogisticsTrackingRepository tripLogisticsTrackingRepository;
   private final FinancialAuditTrailService financialAuditTrailService;
   private final FxRateService fxRateService;
+  private final ImageStorageService imageStorageService;
   private final ObjectMapper objectMapper;
   private final double referenceFxRate;
 
@@ -59,16 +79,22 @@ public class ProcurementHudService {
                                OrderHeaderRepository orderHeaderRepository,
                                ProductRepository productRepository,
                                TripExpenseRepository tripExpenseRepository,
+                               TripProfitShareConfigRepository tripProfitShareConfigRepository,
+                               TripLogisticsTrackingRepository tripLogisticsTrackingRepository,
                                FinancialAuditTrailService financialAuditTrailService,
                                FxRateService fxRateService,
+                               ImageStorageService imageStorageService,
                                ObjectMapper objectMapper,
                                @Value("${bobbuy.fx.reference-rate:1.0}") double referenceFxRate) {
     this.tripRepository = tripRepository;
     this.orderHeaderRepository = orderHeaderRepository;
     this.productRepository = productRepository;
     this.tripExpenseRepository = tripExpenseRepository;
+    this.tripProfitShareConfigRepository = tripProfitShareConfigRepository;
+    this.tripLogisticsTrackingRepository = tripLogisticsTrackingRepository;
     this.financialAuditTrailService = financialAuditTrailService;
     this.fxRateService = fxRateService;
+    this.imageStorageService = imageStorageService;
     this.objectMapper = objectMapper;
     this.referenceFxRate = referenceFxRate;
   }
@@ -115,6 +141,8 @@ public class ProcurementHudService {
     double totalTripExpenses = Math.max(tripExpenseRepository.sumCostByTripId(tripId), 0D);
     double purchasedAmount = actualCostBase * safeCurrentRate;
     double estimatedProfit = (expectedRevenueBase * safeReferenceRate) - purchasedAmount - totalTripExpenses;
+    TripProfitShareConfig config = getOrCreateProfitShareConfig(tripId);
+    List<PartnerProfitShareResponse> partnerShares = calculatePartnerShares(estimatedProfit, config);
 
     return new ProcurementHudResponse(
         tripId,
@@ -125,7 +153,8 @@ public class ProcurementHudService {
         round2(totalTripExpenses),
         trip.getCurrentWeight(),
         trip.getCurrentVolume(),
-        calculateCategoryCompletion(categoryExpected, categoryPurchased));
+        calculateCategoryCompletion(categoryExpected, categoryPurchased),
+        partnerShares);
   }
 
   @Transactional(readOnly = true)
@@ -138,6 +167,8 @@ public class ProcurementHudService {
             item.getTripId(),
             round2(item.getCost()),
             item.getCategory(),
+            item.getReceiptThumbnailUrl(),
+            item.getOcrStatus(),
             item.getCreatedAt()))
         .toList();
   }
@@ -149,7 +180,19 @@ public class ProcurementHudService {
     if (request == null || request.getCost() <= 0 || request.getCategory() == null || request.getCategory().isBlank()) {
       throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.expense.invalid");
     }
-    TripExpense expense = new TripExpense(tripId, request.getCost(), request.getCategory().trim(), LocalDateTime.now());
+    ImageStorageService.UploadResult receiptUpload = imageStorageService.saveBase64ToObject(request.getReceiptImageBase64());
+    String receiptObjectKey = receiptUpload == null ? null : receiptUpload.objectKey();
+    String receiptThumbnailUrl = receiptUpload == null ? null : receiptUpload.publicUrl();
+    String ocrStatus = receiptObjectKey == null ? OCR_STATUS_NOT_UPLOADED : OCR_STATUS_PENDING;
+
+    TripExpense expense = new TripExpense(
+        tripId,
+        request.getCost(),
+        request.getCategory().trim(),
+        receiptObjectKey,
+        receiptThumbnailUrl,
+        ocrStatus,
+        LocalDateTime.now());
     TripExpense saved = tripExpenseRepository.save(expense);
     Map<String, Object> original = new HashMap<>();
     original.put("cost", 0D);
@@ -157,11 +200,20 @@ public class ProcurementHudService {
     Map<String, Object> modified = new HashMap<>();
     modified.put("cost", round2(saved.getCost()));
     modified.put("category", saved.getCategory());
+    modified.put("receiptObjectKey", saved.getReceiptObjectKey());
+    modified.put("ocrStatus", saved.getOcrStatus());
     financialAuditTrailService.logExpenseCreate(
         tripId,
         serializeAuditPayload(original),
         serializeAuditPayload(modified));
-    return new TripExpenseResponse(saved.getId(), saved.getTripId(), round2(saved.getCost()), saved.getCategory(), saved.getCreatedAt());
+    return new TripExpenseResponse(
+        saved.getId(),
+        saved.getTripId(),
+        round2(saved.getCost()),
+        saved.getCategory(),
+        saved.getReceiptThumbnailUrl(),
+        saved.getOcrStatus(),
+        saved.getCreatedAt());
   }
 
   @Transactional(readOnly = true)
@@ -343,6 +395,133 @@ public class ProcurementHudService {
   }
 
   @Transactional(readOnly = true)
+  public ProfitSharingConfigResponse getProfitSharingConfig(Long tripId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    TripProfitShareConfig config = getOrCreateProfitShareConfig(tripId);
+    double netProfit = getHudStats(tripId).getTotalEstimatedProfit();
+    return new ProfitSharingConfigResponse(
+        tripId,
+        round2(config.getPurchaserRatioPercent()),
+        round2(config.getPromoterRatioPercent()),
+        calculatePartnerShares(netProfit, config));
+  }
+
+  @Transactional
+  public ProfitSharingConfigResponse updateProfitSharingConfig(Long tripId, ProfitSharingConfigRequest request) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    if (request == null
+        || request.getPurchaserRatioPercent() < 0
+        || request.getPromoterRatioPercent() < 0
+        || Math.abs((request.getPurchaserRatioPercent() + request.getPromoterRatioPercent()) - 100D) > 0.001D) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.profit_share.invalid");
+    }
+    TripProfitShareConfig config = getOrCreateProfitShareConfig(tripId);
+    Map<String, Object> original = new HashMap<>();
+    original.put("purchaserRatioPercent", round2(config.getPurchaserRatioPercent()));
+    original.put("promoterRatioPercent", round2(config.getPromoterRatioPercent()));
+
+    config.setPurchaserRatioPercent(round2(request.getPurchaserRatioPercent()));
+    config.setPromoterRatioPercent(round2(request.getPromoterRatioPercent()));
+    config.setUpdatedAt(LocalDateTime.now());
+    tripProfitShareConfigRepository.save(config);
+
+    Map<String, Object> modified = new HashMap<>();
+    modified.put("purchaserRatioPercent", round2(config.getPurchaserRatioPercent()));
+    modified.put("promoterRatioPercent", round2(config.getPromoterRatioPercent()));
+    financialAuditTrailService.logProfitShareRatioUpdate(
+        tripId,
+        serializeAuditPayload(original),
+        serializeAuditPayload(modified));
+    double netProfit = getHudStats(tripId).getTotalEstimatedProfit();
+    return new ProfitSharingConfigResponse(
+        tripId,
+        round2(config.getPurchaserRatioPercent()),
+        round2(config.getPromoterRatioPercent()),
+        calculatePartnerShares(netProfit, config));
+  }
+
+  @Transactional(readOnly = true)
+  public List<LogisticsTrackingResponse> getTripLogisticsTrackings(Long tripId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    return tripLogisticsTrackingRepository.findByTripIdOrderByUpdatedAtDescIdDesc(tripId).stream()
+        .map(this::toLogisticsResponse)
+        .toList();
+  }
+
+  @Transactional
+  public LogisticsTrackingResponse createTripLogisticsTracking(Long tripId, LogisticsTrackingRequest request) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    if (request == null || request.getTrackingNumber() == null || request.getTrackingNumber().isBlank()) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.logistics.invalid");
+    }
+    LocalDateTime now = LocalDateTime.now();
+    TripLogisticsTracking tracking = new TripLogisticsTracking(
+        tripId,
+        request.getTrackingNumber().trim(),
+        parseChannel(request.getChannel()),
+        parseProvider(request.getProvider()),
+        LogisticsStatus.PENDING,
+        "Tracking created",
+        false,
+        now,
+        now,
+        now);
+    return toLogisticsResponse(tripLogisticsTrackingRepository.save(tracking));
+  }
+
+  @Transactional
+  public LogisticsTrackingResponse refreshTripLogisticsTracking(Long tripId, Long trackingId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    TripLogisticsTracking tracking = tripLogisticsTrackingRepository.findById(trackingId)
+        .filter(item -> Objects.equals(item.getTripId(), tripId))
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.procurement.logistics.not_found"));
+    LogisticsStatus status = resolveLogisticsStatus(tracking);
+    tracking.setStatus(status);
+    tracking.setLastMessage(resolveLogisticsMessage(tracking, status));
+    tracking.setLastCheckedAt(LocalDateTime.now());
+    tracking.setUpdatedAt(LocalDateTime.now());
+    if (status == LogisticsStatus.DELIVERED && !tracking.isSettlementReminderTriggered()) {
+      tracking.setSettlementReminderTriggered(true);
+      Map<String, Object> original = new HashMap<>();
+      original.put("trackingId", tracking.getId());
+      original.put("trackingNumber", tracking.getTrackingNumber());
+      original.put("settlementReminderTriggered", false);
+      Map<String, Object> modified = new HashMap<>();
+      modified.put("trackingId", tracking.getId());
+      modified.put("trackingNumber", tracking.getTrackingNumber());
+      modified.put("settlementReminderTriggered", true);
+      modified.put("status", LogisticsStatus.DELIVERED.name());
+      financialAuditTrailService.logSettlementReminderTriggered(
+          tripId,
+          serializeAuditPayload(original),
+          serializeAuditPayload(modified));
+    }
+    return toLogisticsResponse(tripLogisticsTrackingRepository.save(tracking));
+  }
+
+  @Transactional(readOnly = true)
+  public ReceiptPreviewResponse getExpenseReceiptPreview(Long tripId, Long expenseId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    TripExpense expense = tripExpenseRepository.findById(expenseId)
+        .filter(item -> Objects.equals(item.getTripId(), tripId))
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.procurement.expense.not_found"));
+    if (expense.getReceiptObjectKey() == null || expense.getReceiptObjectKey().isBlank()) {
+      throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.procurement.receipt.not_found");
+    }
+    String previewUrl = imageStorageService.generatePreviewUrl(expense.getReceiptObjectKey());
+    if (previewUrl == null || previewUrl.isBlank()) {
+      throw new ApiException(ErrorCode.INTERNAL_ERROR, "error.procurement.receipt.preview_failed");
+    }
+    return new ReceiptPreviewResponse(expenseId, previewUrl);
+  }
+
+  @Transactional(readOnly = true)
   public List<CustomerBalanceLedgerResponse> getCustomerBalanceLedger(Long tripId) {
     tripRepository.findById(tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
@@ -373,6 +552,84 @@ public class ProcurementHudService {
         .filter(order -> Objects.equals(order.getBusinessId(), businessId))
         .findFirst()
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
+  }
+
+  private TripProfitShareConfig getOrCreateProfitShareConfig(Long tripId) {
+    return tripProfitShareConfigRepository.findById(tripId)
+        .orElseGet(() -> new TripProfitShareConfig(
+            tripId,
+            DEFAULT_PURCHASER_RATIO,
+            DEFAULT_PROMOTER_RATIO,
+            LocalDateTime.now()));
+  }
+
+  private List<PartnerProfitShareResponse> calculatePartnerShares(double netProfit, TripProfitShareConfig config) {
+    double purchaserShare = round2(netProfit * config.getPurchaserRatioPercent() / 100D);
+    double promoterShare = round2(netProfit * config.getPromoterRatioPercent() / 100D);
+    return List.of(
+        new PartnerProfitShareResponse("PURCHASER", round2(config.getPurchaserRatioPercent()), purchaserShare),
+        new PartnerProfitShareResponse("PROMOTER", round2(config.getPromoterRatioPercent()), promoterShare));
+  }
+
+  private LogisticsTrackingResponse toLogisticsResponse(TripLogisticsTracking tracking) {
+    return new LogisticsTrackingResponse(
+        tracking.getId(),
+        tracking.getTripId(),
+        tracking.getTrackingNumber(),
+        tracking.getChannel().name(),
+        tracking.getProvider().name(),
+        tracking.getStatus().name(),
+        tracking.getLastMessage(),
+        tracking.isSettlementReminderTriggered(),
+        tracking.getLastCheckedAt());
+  }
+
+  private LogisticsChannel parseChannel(String rawChannel) {
+    if (rawChannel == null || rawChannel.isBlank()) {
+      return LogisticsChannel.DOMESTIC;
+    }
+    try {
+      return LogisticsChannel.valueOf(rawChannel.trim().toUpperCase());
+    } catch (IllegalArgumentException ex) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.logistics.invalid_channel");
+    }
+  }
+
+  private LogisticsProvider parseProvider(String rawProvider) {
+    if (rawProvider == null || rawProvider.isBlank()) {
+      return LogisticsProvider.MOCK;
+    }
+    try {
+      return LogisticsProvider.valueOf(rawProvider.trim().toUpperCase());
+    } catch (IllegalArgumentException ex) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.logistics.invalid_provider");
+    }
+  }
+
+  private LogisticsStatus resolveLogisticsStatus(TripLogisticsTracking tracking) {
+    String normalized = tracking.getTrackingNumber() == null ? "" : tracking.getTrackingNumber().trim().toUpperCase();
+    if (tracking.getProvider() == LogisticsProvider.TRACK17) {
+      return LogisticsStatus.PENDING;
+    }
+    if (normalized.contains("DELIVERED") || normalized.endsWith("DLV")) {
+      return LogisticsStatus.DELIVERED;
+    }
+    if (normalized.contains("EXCEPTION") || normalized.contains("FAILED")) {
+      return LogisticsStatus.EXCEPTION;
+    }
+    return LogisticsStatus.IN_TRANSIT;
+  }
+
+  private String resolveLogisticsMessage(TripLogisticsTracking tracking, LogisticsStatus status) {
+    if (tracking.getProvider() == LogisticsProvider.TRACK17) {
+      return "17track gateway reserved, using mock fallback";
+    }
+    return switch (status) {
+      case DELIVERED -> "Package delivered, settlement reminder triggered";
+      case EXCEPTION -> "Package exception detected";
+      case IN_TRANSIT -> "Package in transit";
+      case PENDING -> "Pending";
+    };
   }
 
   private List<OrderLine> safeLines(OrderHeader order) {

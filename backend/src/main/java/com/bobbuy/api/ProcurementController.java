@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,10 +49,45 @@ public class ProcurementController {
     return ResponseEntity.ok(ApiResponse.success(items, new ApiMeta(items.size())));
   }
 
+  @GetMapping("/{tripId}/expenses/{expenseId}/receipt-preview")
+  public ResponseEntity<ApiResponse<ReceiptPreviewResponse>> receiptPreview(@PathVariable Long tripId,
+                                                                            @PathVariable Long expenseId) {
+    return ResponseEntity.ok(ApiResponse.success(procurementHudService.getExpenseReceiptPreview(tripId, expenseId)));
+  }
+
   @PostMapping("/{tripId}/expenses")
   public ResponseEntity<ApiResponse<TripExpenseResponse>> createExpense(@PathVariable Long tripId,
                                                                         @RequestBody TripExpenseRequest request) {
     return ResponseEntity.ok(ApiResponse.success(procurementHudService.createTripExpense(tripId, request)));
+  }
+
+  @GetMapping("/{tripId}/profit-sharing")
+  public ResponseEntity<ApiResponse<ProfitSharingConfigResponse>> profitSharing(@PathVariable Long tripId) {
+    return ResponseEntity.ok(ApiResponse.success(procurementHudService.getProfitSharingConfig(tripId)));
+  }
+
+  @PatchMapping("/{tripId}/profit-sharing")
+  public ResponseEntity<ApiResponse<ProfitSharingConfigResponse>> updateProfitSharing(@PathVariable Long tripId,
+                                                                                       @RequestBody ProfitSharingConfigRequest request) {
+    return ResponseEntity.ok(ApiResponse.success(procurementHudService.updateProfitSharingConfig(tripId, request)));
+  }
+
+  @GetMapping("/{tripId}/logistics")
+  public ResponseEntity<ApiResponse<List<LogisticsTrackingResponse>>> logistics(@PathVariable Long tripId) {
+    List<LogisticsTrackingResponse> items = procurementHudService.getTripLogisticsTrackings(tripId);
+    return ResponseEntity.ok(ApiResponse.success(items, new ApiMeta(items.size())));
+  }
+
+  @PostMapping("/{tripId}/logistics")
+  public ResponseEntity<ApiResponse<LogisticsTrackingResponse>> createLogistics(@PathVariable Long tripId,
+                                                                                 @RequestBody LogisticsTrackingRequest request) {
+    return ResponseEntity.ok(ApiResponse.success(procurementHudService.createTripLogisticsTracking(tripId, request)));
+  }
+
+  @PostMapping("/{tripId}/logistics/{trackingId}/refresh")
+  public ResponseEntity<ApiResponse<LogisticsTrackingResponse>> refreshLogistics(@PathVariable Long tripId,
+                                                                                  @PathVariable Long trackingId) {
+    return ResponseEntity.ok(ApiResponse.success(procurementHudService.refreshTripLogisticsTracking(tripId, trackingId)));
   }
 
   @PostMapping("/{tripId}/manual-reconcile")

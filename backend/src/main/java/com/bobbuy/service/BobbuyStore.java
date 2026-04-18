@@ -29,6 +29,8 @@ import com.bobbuy.repository.ProductRepository;
 import com.bobbuy.repository.SupplierRepository;
 import com.bobbuy.repository.TripRepository;
 import com.bobbuy.repository.TripExpenseRepository;
+import com.bobbuy.repository.TripLogisticsTrackingRepository;
+import com.bobbuy.repository.TripProfitShareConfigRepository;
 import com.bobbuy.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,6 +64,8 @@ public class BobbuyStore {
     private final SupplierRepository supplierRepository;
     private final MerchantSkuRepository merchantSkuRepository;
     private final TripExpenseRepository tripExpenseRepository;
+    private final TripLogisticsTrackingRepository tripLogisticsTrackingRepository;
+    private final TripProfitShareConfigRepository tripProfitShareConfigRepository;
     private final FinancialAuditLogRepository financialAuditLogRepository;
     private final AuditLogService auditLogService;
     private final double unitWeight;
@@ -77,6 +81,8 @@ public class BobbuyStore {
             SupplierRepository supplierRepository,
             MerchantSkuRepository merchantSkuRepository,
             TripExpenseRepository tripExpenseRepository,
+            TripLogisticsTrackingRepository tripLogisticsTrackingRepository,
+            TripProfitShareConfigRepository tripProfitShareConfigRepository,
             FinancialAuditLogRepository financialAuditLogRepository,
             AuditLogService auditLogService,
             @Value("${bobbuy.trip.unit-weight:1.0}") double unitWeight,
@@ -89,6 +95,8 @@ public class BobbuyStore {
         this.supplierRepository = supplierRepository;
         this.merchantSkuRepository = merchantSkuRepository;
         this.tripExpenseRepository = tripExpenseRepository;
+        this.tripLogisticsTrackingRepository = tripLogisticsTrackingRepository;
+        this.tripProfitShareConfigRepository = tripProfitShareConfigRepository;
         this.financialAuditLogRepository = financialAuditLogRepository;
         this.auditLogService = auditLogService;
         this.unitWeight = unitWeight;
@@ -103,6 +111,8 @@ public class BobbuyStore {
         supplierRepository.deleteAll();
         categoryRepository.deleteAll();
         financialAuditLogRepository.deleteAll();
+        tripLogisticsTrackingRepository.deleteAll();
+        tripProfitShareConfigRepository.deleteAll();
         tripExpenseRepository.deleteAll();
         orderHeaderRepository.deleteAll();
         tripRepository.deleteAll();

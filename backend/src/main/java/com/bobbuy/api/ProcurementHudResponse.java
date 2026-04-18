@@ -1,6 +1,7 @@
 package com.bobbuy.api;
 
 import java.util.Map;
+import java.util.List;
 
 public class ProcurementHudResponse {
   private final Long tripId;
@@ -12,6 +13,7 @@ public class ProcurementHudResponse {
   private final double currentWeight;
   private final double currentVolume;
   private final Map<String, Double> categoryCompletionPercent;
+  private final List<PartnerProfitShareResponse> partnerShares;
 
   public ProcurementHudResponse(Long tripId,
                                 double totalEstimatedProfit,
@@ -21,7 +23,8 @@ public class ProcurementHudResponse {
                                 double totalTripExpenses,
                                 double currentWeight,
                                 double currentVolume,
-                                Map<String, Double> categoryCompletionPercent) {
+                                Map<String, Double> categoryCompletionPercent,
+                                List<PartnerProfitShareResponse> partnerShares) {
     this.tripId = tripId;
     this.totalEstimatedProfit = totalEstimatedProfit;
     this.currentPurchasedAmount = currentPurchasedAmount;
@@ -31,6 +34,7 @@ public class ProcurementHudResponse {
     this.currentWeight = currentWeight;
     this.currentVolume = currentVolume;
     this.categoryCompletionPercent = categoryCompletionPercent;
+    this.partnerShares = partnerShares;
   }
 
   public Long getTripId() {
@@ -67,5 +71,9 @@ public class ProcurementHudResponse {
 
   public Map<String, Double> getCategoryCompletionPercent() {
     return categoryCompletionPercent;
+  }
+
+  public List<PartnerProfitShareResponse> getPartnerShares() {
+    return partnerShares;
   }
 }

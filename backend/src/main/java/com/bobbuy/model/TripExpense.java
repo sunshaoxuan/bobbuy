@@ -18,15 +18,27 @@ public class TripExpense {
   private Long tripId;
   private double cost;
   private String category;
+  private String receiptObjectKey;
+  private String receiptThumbnailUrl;
+  private String ocrStatus;
   private LocalDateTime createdAt;
 
   public TripExpense() {
   }
 
-  public TripExpense(Long tripId, double cost, String category, LocalDateTime createdAt) {
+  public TripExpense(Long tripId,
+                     double cost,
+                     String category,
+                     String receiptObjectKey,
+                     String receiptThumbnailUrl,
+                     String ocrStatus,
+                     LocalDateTime createdAt) {
     this.tripId = tripId;
     this.cost = Math.max(cost, 0D);
     this.category = category;
+    this.receiptObjectKey = receiptObjectKey;
+    this.receiptThumbnailUrl = receiptThumbnailUrl;
+    this.ocrStatus = ocrStatus;
     this.createdAt = createdAt;
   }
 
@@ -60,6 +72,30 @@ public class TripExpense {
 
   public void setCategory(String category) {
     this.category = category;
+  }
+
+  public String getReceiptObjectKey() {
+    return receiptObjectKey;
+  }
+
+  public void setReceiptObjectKey(String receiptObjectKey) {
+    this.receiptObjectKey = receiptObjectKey;
+  }
+
+  public String getReceiptThumbnailUrl() {
+    return receiptThumbnailUrl;
+  }
+
+  public void setReceiptThumbnailUrl(String receiptThumbnailUrl) {
+    this.receiptThumbnailUrl = receiptThumbnailUrl;
+  }
+
+  public String getOcrStatus() {
+    return ocrStatus;
+  }
+
+  public void setOcrStatus(String ocrStatus) {
+    this.ocrStatus = ocrStatus;
   }
 
   public LocalDateTime getCreatedAt() {

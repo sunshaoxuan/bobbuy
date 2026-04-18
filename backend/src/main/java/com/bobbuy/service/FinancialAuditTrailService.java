@@ -34,6 +34,16 @@ public class FinancialAuditTrailService {
     append(tripId, "EXPENSE_CREATE", originalValue, modifiedValue);
   }
 
+  @Transactional
+  public void logProfitShareRatioUpdate(Long tripId, String originalValue, String modifiedValue) {
+    append(tripId, "PROFIT_SHARE_RATIO_UPDATE", originalValue, modifiedValue);
+  }
+
+  @Transactional
+  public void logSettlementReminderTriggered(Long tripId, String originalValue, String modifiedValue) {
+    append(tripId, "SETTLEMENT_REMINDER_TRIGGERED", originalValue, modifiedValue);
+  }
+
   @Transactional(readOnly = true)
   public List<FinancialAuditLogResponse> listByTripId(Long tripId) {
     return financialAuditLogRepository.findByTripIdOrderByCreatedAtDescIdDesc(tripId).stream()

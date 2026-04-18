@@ -5,16 +5,20 @@ import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
 import com.bobbuy.service.BobbuyStore;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -30,6 +34,8 @@ class ProcurementControllerIntegrationTest {
 
   @Autowired
   private BobbuyStore store;
+  @Autowired
+  private ObjectMapper objectMapper;
 
   @BeforeEach
   void setUp() {
@@ -79,20 +85,27 @@ class ProcurementControllerIntegrationTest {
   void expensesEndpointCreatesAndListsTripExpense() throws Exception {
     Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
 
-    mockMvc.perform(post("/api/procurement/{tripId}/expenses", trip.getId())
+    MvcResult createResult = mockMvc.perform(post("/api/procurement/{tripId}/expenses", trip.getId())
             .contentType("application/json")
             .content("""
                 {"category":"停车费","cost":12.5}
                 """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.category").value("停车费"))
-        .andExpect(jsonPath("$.data.cost").value(12.5));
+        .andExpect(jsonPath("$.data.cost").value(12.5))
+        .andReturn();
+    JsonNode createdPayload = objectMapper.readTree(createResult.getResponse().getContentAsString());
+    long expenseId = createdPayload.path("data").path("id").asLong();
 
     mockMvc.perform(get("/api/procurement/{tripId}/expenses", trip.getId()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.meta.total").value(1))
         .andExpect(jsonPath("$.data[0].category").value("停车费"))
-        .andExpect(jsonPath("$.data[0].cost").value(12.5));
+        .andExpect(jsonPath("$.data[0].cost").value(12.5))
+        .andExpect(jsonPath("$.data[0].ocrStatus").value("NOT_UPLOADED"));
+
+    mockMvc.perform(get("/api/procurement/{tripId}/expenses/{expenseId}/receipt-preview", trip.getId(), expenseId))
+        .andExpect(status().isNotFound());
   }
 
   @Test
@@ -162,5 +175,58 @@ class ProcurementControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("application/pdf")))
         .andExpect(result -> assertThat(result.getResponse().getContentAsByteArray().length).isGreaterThan(0));
+  }
+
+  @Test
+  void profitSharingEndpointsSupportReadAndUpdateWithAuditLog() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader order = new OrderHeader("PS-1", 1001L, trip.getId());
+    order.addLine(new OrderLine("prd-1000", "Matcha", null, 2, 10.0));
+    store.upsertOrder(order);
+
+    mockMvc.perform(get("/api/procurement/{tripId}/profit-sharing", trip.getId()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.purchaserRatioPercent").value(70.0))
+        .andExpect(jsonPath("$.data.promoterRatioPercent").value(30.0))
+        .andExpect(jsonPath("$.data.shares[0].partnerRole").value("PURCHASER"));
+
+    mockMvc.perform(patch("/api/procurement/{tripId}/profit-sharing", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"purchaserRatioPercent":60,"promoterRatioPercent":40}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.purchaserRatioPercent").value(60.0))
+        .andExpect(jsonPath("$.data.promoterRatioPercent").value(40.0));
+
+    mockMvc.perform(get("/api/procurement/{tripId}/audit-logs", trip.getId()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].actionType").value("PROFIT_SHARE_RATIO_UPDATE"));
+  }
+
+  @Test
+  void logisticsEndpointsSupportTrackingAndSettlementReminderTrigger() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+
+    MvcResult createResult = mockMvc.perform(post("/api/procurement/{tripId}/logistics", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"trackingNumber":"MOCK-DELIVERED","channel":"INTERNATIONAL","provider":"MOCK"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.trackingNumber").value("MOCK-DELIVERED"))
+        .andReturn();
+    JsonNode createdPayload = objectMapper.readTree(createResult.getResponse().getContentAsString());
+    long trackingId = createdPayload.path("data").path("id").asLong();
+
+    mockMvc.perform(post("/api/procurement/{tripId}/logistics/{trackingId}/refresh", trip.getId(), trackingId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("DELIVERED"))
+        .andExpect(jsonPath("$.data.settlementReminderTriggered").value(true));
+
+    mockMvc.perform(get("/api/procurement/{tripId}/logistics", trip.getId()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(1))
+        .andExpect(jsonPath("$.data[0].settlementReminderTriggered").value(true));
   }
 }

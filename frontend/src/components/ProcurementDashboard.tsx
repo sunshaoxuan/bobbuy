@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import {
   Breadcrumb,
   Button,
@@ -24,7 +24,9 @@ import {
   api,
   type CustomerBalanceLedgerEntry,
   type FinancialAuditLog,
+  type LogisticsTracking,
   type Order,
+  type ProfitSharingConfig,
   type ProcurementHudStats,
   type Trip,
   type TripExpense
@@ -48,8 +50,16 @@ export default function ProcurementDashboard() {
   const [hudStats, setHudStats] = useState<ProcurementHudStats>();
   const [orders, setOrders] = useState<Order[]>([]);
   const [expenses, setExpenses] = useState<TripExpense[]>([]);
+  const [expenseReceiptBase64, setExpenseReceiptBase64] = useState<string>();
   const [auditLogs, setAuditLogs] = useState<FinancialAuditLog[]>([]);
   const [ledgerEntries, setLedgerEntries] = useState<CustomerBalanceLedgerEntry[]>([]);
+  const [profitSharing, setProfitSharing] = useState<ProfitSharingConfig>();
+  const [purchaserRatio, setPurchaserRatio] = useState<number>(70);
+  const [promoterRatio, setPromoterRatio] = useState<number>(30);
+  const [logisticsTrackings, setLogisticsTrackings] = useState<LogisticsTracking[]>([]);
+  const [logisticsTrackingNumber, setLogisticsTrackingNumber] = useState<string>('');
+  const [logisticsChannel, setLogisticsChannel] = useState<string>('DOMESTIC');
+  const [logisticsProvider, setLogisticsProvider] = useState<string>('MOCK');
   const [reconcileRows, setReconcileRows] = useState<ReconcileDetailRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -64,12 +74,14 @@ export default function ProcurementDashboard() {
     refreshRequestRef.current = requestId;
     setLoading(true);
     try {
-      const [hud, orderList, expenseList, tripAuditLogs, customerLedger] = await Promise.all([
+      const [hud, orderList, expenseList, tripAuditLogs, customerLedger, profitShareConfig, logistics] = await Promise.all([
         api.procurementHud(tripId),
         api.orders(tripId),
         api.procurementExpenses(tripId),
         api.procurementAuditLogs(tripId),
-        api.customerBalanceLedger(tripId)
+        api.customerBalanceLedger(tripId),
+        api.procurementProfitSharing(tripId),
+        api.procurementLogistics(tripId)
       ]);
       if (refreshRequestRef.current !== requestId) {
         return;
@@ -79,6 +91,10 @@ export default function ProcurementDashboard() {
       setExpenses(expenseList);
       setAuditLogs(tripAuditLogs);
       setLedgerEntries(customerLedger);
+      setProfitSharing(profitShareConfig);
+      setPurchaserRatio(profitShareConfig.purchaserRatioPercent);
+      setPromoterRatio(profitShareConfig.promoterRatioPercent);
+      setLogisticsTrackings(logistics);
       setReconcileRows(buildReconcileRows(orderList));
     } finally {
       if (refreshRequestRef.current === requestId) {
@@ -185,9 +201,68 @@ export default function ProcurementDashboard() {
       return;
     }
     const values = await expenseForm.validateFields();
-    await api.createProcurementExpense(selectedTripId, { category: values.category, cost: values.cost });
+    await api.createProcurementExpense(selectedTripId, {
+      category: values.category,
+      cost: values.cost,
+      receiptImageBase64: expenseReceiptBase64
+    });
     expenseForm.resetFields();
+    setExpenseReceiptBase64(undefined);
     await refreshTripData(selectedTripId);
+  };
+
+  const updateProfitSharing = async () => {
+    if (!selectedTripId) {
+      return;
+    }
+    const config = await api.updateProcurementProfitSharing(selectedTripId, {
+      purchaserRatioPercent: purchaserRatio,
+      promoterRatioPercent: promoterRatio
+    });
+    setProfitSharing(config);
+    message.success(t('procurement.profit_share_updated'));
+    await refreshTripData(selectedTripId);
+  };
+
+  const createLogisticsTracking = async () => {
+    if (!selectedTripId || !logisticsTrackingNumber.trim()) {
+      return;
+    }
+    await api.createProcurementLogistics(selectedTripId, {
+      trackingNumber: logisticsTrackingNumber.trim(),
+      channel: logisticsChannel,
+      provider: logisticsProvider
+    });
+    setLogisticsTrackingNumber('');
+    await refreshTripData(selectedTripId);
+  };
+
+  const refreshLogisticsTracking = async (trackingId: number) => {
+    if (!selectedTripId) {
+      return;
+    }
+    await api.refreshProcurementLogistics(selectedTripId, trackingId);
+    await refreshTripData(selectedTripId);
+  };
+
+  const previewReceipt = async (expense: TripExpense) => {
+    if (!selectedTripId || !expense.id) {
+      return;
+    }
+    const preview = await api.expenseReceiptPreview(selectedTripId, expense.id);
+    if (preview.previewUrl) {
+      window.open(preview.previewUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const onSelectExpenseReceipt = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setExpenseReceiptBase64(undefined);
+      return;
+    }
+    const base64 = await toBase64(file);
+    setExpenseReceiptBase64(base64);
   };
 
   const exportSettlement = async (format: 'csv' | 'pdf') => {
@@ -272,6 +347,41 @@ export default function ProcurementDashboard() {
         </Col>
       </Row>
 
+      <Card title={t('procurement.profit_share')} loading={loading} className="procurement-glass-card">
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Space wrap>
+            <InputNumber
+              min={0}
+              max={100}
+              precision={2}
+              value={purchaserRatio}
+              onChange={(value) => setPurchaserRatio(value ?? 0)}
+              placeholder={t('procurement.purchaser_ratio')}
+            />
+            <InputNumber
+              min={0}
+              max={100}
+              precision={2}
+              value={promoterRatio}
+              onChange={(value) => setPromoterRatio(value ?? 0)}
+              placeholder={t('procurement.promoter_ratio')}
+            />
+            <Button type="primary" onClick={updateProfitSharing}>{t('procurement.update_ratio')}</Button>
+          </Space>
+          <Table
+            rowKey="partnerRole"
+            size="small"
+            pagination={false}
+            dataSource={profitSharing?.shares ?? hudStats?.partnerShares ?? []}
+            columns={[
+              { title: t('procurement.partner_role'), dataIndex: 'partnerRole', key: 'partnerRole' },
+              { title: t('procurement.ratio_percent'), dataIndex: 'ratioPercent', key: 'ratioPercent' },
+              { title: t('procurement.share_amount'), dataIndex: 'amount', key: 'amount' }
+            ]}
+          />
+        </Space>
+      </Card>
+
       <Card title={t('procurement.extra_expenses')} loading={loading} className="procurement-glass-card">
         <Space direction="vertical" style={{ width: '100%' }}>
           <Form form={expenseForm} layout="inline">
@@ -293,6 +403,14 @@ export default function ProcurementDashboard() {
               {t('procurement.add_expense')}
             </Button>
           </Form>
+          <Text>{t('procurement.upload_receipt')}</Text>
+          <Input
+            type="file"
+            accept="image/*"
+            aria-label={t('procurement.upload_receipt')}
+            onChange={onSelectExpenseReceipt}
+          />
+          {expenseReceiptBase64 ? <Text type="secondary">{t('procurement.receipt_selected')}</Text> : null}
           <Text strong>
             {t('procurement.total_expenses')}: {(hudStats?.totalTripExpenses ?? 0).toFixed(2)}
           </Text>
@@ -307,10 +425,76 @@ export default function ProcurementDashboard() {
               columns={[
                 { title: t('procurement.expense_category'), dataIndex: 'category', key: 'category' },
                 { title: t('procurement.expense_cost'), dataIndex: 'cost', key: 'cost' },
-                { title: t('procurement.expense_created_at'), dataIndex: 'createdAt', key: 'createdAt' }
+                { title: t('procurement.expense_created_at'), dataIndex: 'createdAt', key: 'createdAt' },
+                {
+                  title: t('procurement.receipt'),
+                  key: 'receipt',
+                  render: (_, row) => row.receiptThumbnailUrl ? (
+                    <Button type="link" onClick={() => previewReceipt(row)}>{t('procurement.preview_receipt')}</Button>
+                  ) : '-'
+                },
+                { title: t('procurement.ocr_status'), dataIndex: 'ocrStatus', key: 'ocrStatus' }
               ]}
             />
           )}
+        </Space>
+      </Card>
+
+      <Card title={t('procurement.logistics_tracking')} loading={loading} className="procurement-glass-card">
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Space wrap>
+            <Input
+              value={logisticsTrackingNumber}
+              onChange={(event) => setLogisticsTrackingNumber(event.target.value)}
+              placeholder={t('procurement.logistics_number_placeholder')}
+            />
+            <Select
+              value={logisticsChannel}
+              options={[
+                { label: t('procurement.channel_domestic'), value: 'DOMESTIC' },
+                { label: t('procurement.channel_international'), value: 'INTERNATIONAL' }
+              ]}
+              onChange={setLogisticsChannel}
+              style={{ minWidth: 140 }}
+            />
+            <Select
+              value={logisticsProvider}
+              options={[
+                { label: 'MOCK', value: 'MOCK' },
+                { label: '17TRACK', value: 'TRACK17' }
+              ]}
+              onChange={setLogisticsProvider}
+              style={{ minWidth: 120 }}
+            />
+            <Button type="primary" onClick={createLogisticsTracking}>{t('procurement.add_logistics')}</Button>
+          </Space>
+          <Table<LogisticsTracking>
+            rowKey="id"
+            size="small"
+            pagination={false}
+            dataSource={logisticsTrackings}
+            columns={[
+              { title: t('procurement.logistics_number'), dataIndex: 'trackingNumber', key: 'trackingNumber' },
+              { title: t('procurement.logistics_channel'), dataIndex: 'channel', key: 'channel' },
+              { title: t('procurement.logistics_provider'), dataIndex: 'provider', key: 'provider' },
+              { title: t('procurement.logistics_status'), dataIndex: 'status', key: 'status' },
+              { title: t('procurement.logistics_message'), dataIndex: 'lastMessage', key: 'lastMessage' },
+              {
+                title: t('procurement.settlement_reminder'),
+                key: 'settlementReminderTriggered',
+                render: (_, row) => row.settlementReminderTriggered ? <Tag color="success">{t('procurement.triggered')}</Tag> : '-'
+              },
+              {
+                title: t('procurement.reconcile_action'),
+                key: 'action',
+                render: (_, row) => (
+                  <Button size="small" onClick={() => refreshLogisticsTracking(row.id)}>
+                    {t('procurement.refresh_logistics')}
+                  </Button>
+                )
+              }
+            ]}
+          />
         </Space>
       </Card>
 
@@ -434,4 +618,13 @@ function formatAuditPayload(raw: string): string {
   } catch {
     return raw;
   }
+}
+
+function toBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
 }

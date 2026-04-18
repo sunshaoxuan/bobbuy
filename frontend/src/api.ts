@@ -128,6 +128,7 @@ export type ProcurementHudStats = {
     currentWeight: number;
     currentVolume: number;
     categoryCompletionPercent: Record<string, number>;
+    partnerShares: PartnerProfitShare[];
 };
 
 export type TripExpense = {
@@ -135,7 +136,34 @@ export type TripExpense = {
     tripId: number;
     cost: number;
     category: string;
+    receiptThumbnailUrl?: string;
+    ocrStatus?: string;
     createdAt: string;
+};
+
+export type PartnerProfitShare = {
+    partnerRole: string;
+    ratioPercent: number;
+    amount: number;
+};
+
+export type ProfitSharingConfig = {
+    tripId: number;
+    purchaserRatioPercent: number;
+    promoterRatioPercent: number;
+    shares: PartnerProfitShare[];
+};
+
+export type LogisticsTracking = {
+    id: number;
+    tripId: number;
+    trackingNumber: string;
+    channel: string;
+    provider: string;
+    status: string;
+    lastMessage: string;
+    settlementReminderTriggered: boolean;
+    lastCheckedAt: string;
 };
 
 export type ManualReconcileResponse = {
@@ -424,11 +452,53 @@ export const api = {
             totalTripExpenses: 0,
             currentWeight: 0,
             currentVolume: 0,
-            categoryCompletionPercent: {}
+            categoryCompletionPercent: {},
+            partnerShares: []
         }),
     procurementExpenses: (tripId: number) => fetchJson<TripExpense[]>(`/api/procurement/${tripId}/expenses`, []),
-    createProcurementExpense: (tripId: number, payload: { cost: number; category: string }) =>
-        postJson<TripExpense, { cost: number; category: string }>(`/api/procurement/${tripId}/expenses`, payload),
+    createProcurementExpense: (
+        tripId: number,
+        payload: { cost: number; category: string; receiptImageBase64?: string }
+    ) =>
+        postJson<TripExpense, { cost: number; category: string; receiptImageBase64?: string }>(
+            `/api/procurement/${tripId}/expenses`,
+            payload
+        ),
+    expenseReceiptPreview: (tripId: number, expenseId: number) =>
+        fetchJson<{ expenseId: number; previewUrl: string }>(
+            `/api/procurement/${tripId}/expenses/${expenseId}/receipt-preview`,
+            { expenseId, previewUrl: '' }
+        ),
+    procurementProfitSharing: (tripId: number) =>
+        fetchJson<ProfitSharingConfig>(`/api/procurement/${tripId}/profit-sharing`, {
+            tripId,
+            purchaserRatioPercent: 70,
+            promoterRatioPercent: 30,
+            shares: []
+        }),
+    updateProcurementProfitSharing: (
+        tripId: number,
+        payload: { purchaserRatioPercent: number; promoterRatioPercent: number }
+    ) =>
+        patchJson<ProfitSharingConfig, { purchaserRatioPercent: number; promoterRatioPercent: number }>(
+            `/api/procurement/${tripId}/profit-sharing`,
+            payload
+        ),
+    procurementLogistics: (tripId: number) =>
+        fetchJson<LogisticsTracking[]>(`/api/procurement/${tripId}/logistics`, []),
+    createProcurementLogistics: (
+        tripId: number,
+        payload: { trackingNumber: string; channel: string; provider: string }
+    ) =>
+        postJson<LogisticsTracking, { trackingNumber: string; channel: string; provider: string }>(
+            `/api/procurement/${tripId}/logistics`,
+            payload
+        ),
+    refreshProcurementLogistics: (tripId: number, trackingId: number) =>
+        postJson<LogisticsTracking, Record<string, never>>(
+            `/api/procurement/${tripId}/logistics/${trackingId}/refresh`,
+            {}
+        ),
     procurementAuditLogs: (tripId: number) =>
         fetchJson<FinancialAuditLog[]>(`/api/procurement/${tripId}/audit-logs`, []),
     customerBalanceLedger: (tripId: number) =>

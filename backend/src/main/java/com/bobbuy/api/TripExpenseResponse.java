@@ -7,13 +7,23 @@ public class TripExpenseResponse {
   private final Long tripId;
   private final double cost;
   private final String category;
+  private final String receiptThumbnailUrl;
+  private final String ocrStatus;
   private final LocalDateTime createdAt;
 
-  public TripExpenseResponse(Long id, Long tripId, double cost, String category, LocalDateTime createdAt) {
+  public TripExpenseResponse(Long id,
+                             Long tripId,
+                             double cost,
+                             String category,
+                             String receiptThumbnailUrl,
+                             String ocrStatus,
+                             LocalDateTime createdAt) {
     this.id = id;
     this.tripId = tripId;
     this.cost = cost;
     this.category = category;
+    this.receiptThumbnailUrl = receiptThumbnailUrl;
+    this.ocrStatus = ocrStatus;
     this.createdAt = createdAt;
   }
 
@@ -31,6 +41,14 @@ public class TripExpenseResponse {
 
   public String getCategory() {
     return category;
+  }
+
+  public String getReceiptThumbnailUrl() {
+    return receiptThumbnailUrl;
+  }
+
+  public String getOcrStatus() {
+    return ocrStatus;
   }
 
   public LocalDateTime getCreatedAt() {
