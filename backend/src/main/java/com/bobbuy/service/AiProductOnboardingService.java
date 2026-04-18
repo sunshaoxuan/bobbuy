@@ -44,7 +44,13 @@ public class AiProductOnboardingService {
     }
 
     public Optional<AiOnboardingSuggestion> onboardFromPhoto(String base64Image) {
+        log.info("Starting AI onboarding from photo. Base64 length: {}", base64Image != null ? base64Image.length() : 0);
+        if (base64Image == null || base64Image.isBlank()) {
+            log.warn("Onboarding failed: Empty image data provided.");
+            return Optional.empty();
+        }
         // 1. Vision Extract (Edge Node - Llava)
+        log.info("Phase 1: Dispatching to Vision Model (Llava)...");
         String prompt = """
             请分析这张商品实拍图（货架图），提取商品信息并以JSON格式输出。
             特别注意提取"会员价"、"优惠价"以及价格下方的"货号/Item Number"。
@@ -60,8 +66,10 @@ public class AiProductOnboardingService {
 
         Optional<String> visionResponse = llmGateway.generate(prompt, "llava", List.of(base64Image));
         if (visionResponse.isEmpty()) {
+            log.error("Phase 1 Failed: Vision model returned empty response.");
             return Optional.empty();
         }
+        log.info("Phase 1 Success: Vision extraction complete. Raw JSON length: {}", visionResponse.get().length());
 
         try {
             Map<String, Object> extracted = objectMapper.readValue(visionResponse.get(), new TypeReference<>() {});
@@ -79,13 +87,19 @@ public class AiProductOnboardingService {
                 if (matched.isPresent()) {
                     existingFound = true;
                     existingId = matched.get().getId();
-                    log.info("Matching existing product found for itemNumber: {}", itemNumber);
+                    log.info("Phase 2: MATCH FOUND. Existing Product ID: {}, ItemNumber: {}", existingId, itemNumber);
+                } else {
+                    log.info("Phase 2: No existing product found for itemNumber: {}", itemNumber);
                 }
+            } else {
+                log.info("Phase 2: Skipping incremental match (no itemNumber detected).");
             }
 
             // 3. Deep Research (Brave via WebSearchService)
             String searchQuery = brand != null ? brand + " " + name : name;
+            log.info("Phase 3: Deep Researching for query: '{}'...", searchQuery);
             List<WebSearchService.SearchResult> searchResults = webSearchService.search(searchQuery);
+            log.info("Phase 3 Success: Found {} search results.", searchResults.size());
 
             // Build media gallery from search results
             List<MediaGalleryItem> gallery = new ArrayList<>();
@@ -114,6 +128,11 @@ public class AiProductOnboardingService {
                         ));
                     }
                 }
+            }
+
+            log.info("Final Synthesis: Suggestion generated successfully for product: '{}'", name);
+            if (detectedTiers.size() > 0) {
+                log.info("Price Tiers Extracted: {} tiers found.", detectedTiers.size());
             }
 
             return Optional.of(new AiOnboardingSuggestion(

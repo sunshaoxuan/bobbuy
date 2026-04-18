@@ -56,6 +56,7 @@ interface StockItem {
   merchantSkus?: Record<string, string>;
   storageCondition?: 'AMBIENT' | 'CHILLED';
   orderMethod?: 'PRE_ORDER' | 'DIRECT_BUY';
+  priceTiers?: { tierName: string; price: number; currency: string; agentOnly: boolean }[];
   isNew?: boolean;
 }
 
@@ -357,6 +358,7 @@ export default function StockMaster() {
       price: suggestion.price || 0,
       stock: 0,
       unit: 'pc',
+      sku: suggestion.itemNumber, // Map itemNumber to SKU for list visibility
       brand: suggestion.brand,
       description: suggestion.description,
        descriptionL10n: { 'zh-CN': suggestion.description || '', 'ja-JP': suggestion.description || '', 'en-US': suggestion.description || '' },
@@ -366,11 +368,12 @@ export default function StockMaster() {
         type: (m.type as 'image' | 'video') || 'image',
          title: { 'zh-CN': m.title || '', 'ja-JP': m.title || '', 'en-US': m.title || '' }
       })) || [],
+      priceTiers: suggestion.detectedPriceTiers || [],
       isNew: true
     };
     
-    // Add to datasource so it can be 'saved' in the drawer
-    setDataSource(prev => [...prev, newItem]);
+    // Prepend to datasource so it appears at the very top immediately
+    setDataSource(prev => [newItem, ...prev]);
 
     // Default to priceTiers tab when existing product matched (for Agent confirmation)
     const defaultTab = suggestion.existingProductFound ? 'priceTiers' : 'basic';
@@ -411,6 +414,7 @@ export default function StockMaster() {
         name: getLocalizedFallback(nextNameL10n, currentItem.name),
         description: getLocalizedFallback(nextDescriptionL10n, currentItem.description),
         mediaGallery: values.mediaGallery ?? currentItem.mediaGallery ?? [],
+        priceTiers: values.priceTiers ?? currentItem.priceTiers ?? [],
         dynamicAttributes: values.dynamicAttributes ?? currentItem.dynamicAttributes ?? {},
         merchantSkus
       };
@@ -463,6 +467,14 @@ export default function StockMaster() {
       dataIndex: 'name',
       render: (text: string, record: StockItem) => (
         <Input value={text} placeholder={t('stock.item.name_input_placeholder')} onChange={(e) => handleFieldChange(record.key, 'name', e.target.value)} />
+      )
+    },
+    {
+      title: t('stock.item.sku'),
+      dataIndex: 'sku',
+      width: '8rem',
+      render: (text: string, record: StockItem) => (
+        <Input value={text} placeholder={t('stock.item.sku_placeholder')} onChange={(e) => handleFieldChange(record.key, 'sku', e.target.value)} />
       )
     },
     {

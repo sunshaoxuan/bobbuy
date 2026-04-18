@@ -201,7 +201,8 @@ async function fetchJson<T>(url: string, fallbackValue: T): Promise<T> {
             return (payload.data ?? fallbackValue) as T;
         }
         return payload as T;
-    } catch {
+    } catch (error) {
+        console.error(`[API ERROR] FETCH failure at ${url}:`, error);
         message.error(genericErrorMessage());
         return fallbackValue;
     }
@@ -217,6 +218,7 @@ async function postJson<TResponse, TBody>(url: string, body: TBody): Promise<TRe
         body: JSON.stringify(body)
     });
     if (!response.ok) {
+        console.error(`[API ERROR] POST failure at ${url} (Status: ${response.status})`);
         const errorMessage = await parseErrorMessage(response);
         message.error(errorMessage);
         throw new Error(errorMessage);
