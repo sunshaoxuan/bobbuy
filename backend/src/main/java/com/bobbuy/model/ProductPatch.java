@@ -8,6 +8,8 @@ public class ProductPatch {
     private Map<String, String> description;
     private String brand;
     private Double basePrice;
+    private Double weight;
+    private Double volume;
     private List<MediaGalleryItem> mediaGallery;
     private StorageCondition storageCondition;
     private OrderMethod orderMethod;
@@ -45,6 +47,22 @@ public class ProductPatch {
 
     public void setBasePrice(Double basePrice) {
         this.basePrice = basePrice;
+    }
+
+    public Double getWeight() {
+        return weight;
+    }
+
+    public void setWeight(Double weight) {
+        this.weight = weight;
+    }
+
+    public Double getVolume() {
+        return volume;
+    }
+
+    public void setVolume(Double volume) {
+        this.volume = volume;
     }
 
     public List<MediaGalleryItem> getMediaGallery() {

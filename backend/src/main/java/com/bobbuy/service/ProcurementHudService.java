@@ -23,14 +23,17 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class ProcurementHudService {
   private static final String UNCATEGORIZED = "UNCATEGORIZED";
+  private static final double DEFAULT_FX_RATE = 1D;
   private static final Logger log = LoggerFactory.getLogger(ProcurementHudService.class);
 
   private final TripRepository tripRepository;
@@ -38,23 +41,22 @@ public class ProcurementHudService {
   private final ProductRepository productRepository;
   private final double referenceFxRate;
   private final double currentFxRate;
-  private final double unitWeight;
-  private final double unitVolume;
 
   public ProcurementHudService(TripRepository tripRepository,
                                OrderHeaderRepository orderHeaderRepository,
                                ProductRepository productRepository,
                                @Value("${bobbuy.fx.reference-rate:1.0}") double referenceFxRate,
-                               @Value("${bobbuy.fx.current-rate:${bobbuy.fx.reference-rate:1.0}}") double currentFxRate,
-                               @Value("${bobbuy.trip.unit-weight:1.0}") double unitWeight,
-                               @Value("${bobbuy.trip.unit-volume:1.0}") double unitVolume) {
+                               @Value("${bobbuy.fx.current-rate:#{null}}") Double configuredCurrentFxRate) {
     this.tripRepository = tripRepository;
     this.orderHeaderRepository = orderHeaderRepository;
     this.productRepository = productRepository;
     this.referenceFxRate = referenceFxRate;
-    this.currentFxRate = currentFxRate;
-    this.unitWeight = unitWeight;
-    this.unitVolume = unitVolume;
+    if (configuredCurrentFxRate == null) {
+      log.warn("FX rate property 'bobbuy.fx.current-rate' is missing or null, fallback to {}", DEFAULT_FX_RATE);
+      this.currentFxRate = DEFAULT_FX_RATE;
+    } else {
+      this.currentFxRate = configuredCurrentFxRate;
+    }
   }
 
   @Transactional(readOnly = true)
@@ -65,7 +67,8 @@ public class ProcurementHudService {
 
     double purchasedAmount = 0D;
     double expectedRevenue = 0D;
-    int totalPurchasedUnits = 0;
+    double totalWeight = 0D;
+    double totalVolume = 0D;
 
     Map<String, Integer> categoryExpected = new LinkedHashMap<>();
     Map<String, Integer> categoryPurchased = new LinkedHashMap<>();
@@ -77,15 +80,22 @@ public class ProcurementHudService {
 
         expectedRevenue += required * line.getUnitPrice() * safeRate(referenceFxRate, "bobbuy.fx.reference-rate");
         purchasedAmount += purchased * line.getUnitPrice() * safeRate(currentFxRate, "bobbuy.fx.current-rate");
-        totalPurchasedUnits += purchased;
 
-        String categoryId = resolveCategory(line.getSkuId());
+        Optional<Product> product = resolveProduct(line.getSkuId());
+        totalWeight += purchased * sanitizePhysicalMetric(product.map(Product::getWeight).orElse(null));
+        totalVolume += purchased * sanitizePhysicalMetric(product.map(Product::getVolume).orElse(null));
+
+        String categoryId = product
+            .map(Product::getCategoryId)
+            .filter(value -> value != null && !value.isBlank())
+            .orElse(UNCATEGORIZED);
         categoryExpected.merge(categoryId, required, Integer::sum);
         categoryPurchased.merge(categoryId, purchased, Integer::sum);
       }
     }
 
-    trip.recalculateCurrentLoad(totalPurchasedUnits, unitWeight, unitVolume);
+    trip.setCurrentWeight(totalWeight);
+    trip.setCurrentVolume(totalVolume);
     double estimatedProfit = expectedRevenue - purchasedAmount;
 
     return new ProcurementHudResponse(
@@ -140,8 +150,13 @@ public class ProcurementHudService {
 
   @Transactional(isolation = Isolation.SERIALIZABLE)
   public int reconcileInventory(String productId, int quantity) {
+    return reconcileInventoryWithDetails(productId, quantity).reconciledQuantity();
+  }
+
+  @Transactional(isolation = Isolation.SERIALIZABLE)
+  public ReconcileInventoryResult reconcileInventoryWithDetails(String productId, int quantity) {
     if (productId == null || productId.isBlank() || quantity <= 0) {
-      return 0;
+      return ReconcileInventoryResult.empty();
     }
 
     List<OrderHeader> draftOrders = orderHeaderRepository.findByStatusForUpdate(OrderStatus.NEW);
@@ -153,13 +168,14 @@ public class ProcurementHudService {
         .toList();
 
     if (candidateOrders.isEmpty()) {
-      return 0;
+      return ReconcileInventoryResult.empty();
     }
 
     Long targetTripId = candidateOrders.get(0).getTripId();
     int remaining = quantity;
     int reconciled = 0;
     List<OrderHeader> changedOrders = new ArrayList<>();
+    LinkedHashSet<String> allocatedBusinessIds = new LinkedHashSet<>();
 
     for (OrderHeader order : candidateOrders) {
       if (!Objects.equals(order.getTripId(), targetTripId)) {
@@ -180,6 +196,9 @@ public class ProcurementHudService {
         line.setPurchasedQuantity(purchased + fill);
         remaining -= fill;
         reconciled += fill;
+        if (fill > 0 && order.getBusinessId() != null && !order.getBusinessId().isBlank()) {
+          allocatedBusinessIds.add(order.getBusinessId());
+        }
         changed = true;
         if (remaining == 0) {
           break;
@@ -196,18 +215,18 @@ public class ProcurementHudService {
     if (!changedOrders.isEmpty()) {
       orderHeaderRepository.saveAll(changedOrders);
     }
-    return reconciled;
+    return new ReconcileInventoryResult(reconciled, targetTripId, new ArrayList<>(allocatedBusinessIds));
   }
 
   private List<OrderLine> safeLines(OrderHeader order) {
     return order.getLines() == null ? List.of() : order.getLines();
   }
 
-  private String resolveCategory(String skuId) {
-    return productRepository.findById(skuId)
-        .map(Product::getCategoryId)
-        .filter(value -> value != null && !value.isBlank())
-        .orElse(UNCATEGORIZED);
+  private Optional<Product> resolveProduct(String skuId) {
+    if (skuId == null || skuId.isBlank()) {
+      return Optional.empty();
+    }
+    return productRepository.findById(skuId);
   }
 
   private Map<String, Double> calculateCategoryCompletion(Map<String, Integer> categoryExpected,
@@ -227,7 +246,14 @@ public class ProcurementHudService {
       return rate;
     }
     log.warn("Invalid FX rate '{}' configured as {}, fallback to 1.0", rateName, rate);
-    return 1D;
+    return DEFAULT_FX_RATE;
+  }
+
+  private double sanitizePhysicalMetric(Double metric) {
+    if (metric == null || metric < 0D) {
+      return 0D;
+    }
+    return metric;
   }
 
   private double round2(double value) {
@@ -272,6 +298,12 @@ public class ProcurementHudService {
         case "MEDIUM" -> 1;
         default -> 2;
       };
+    }
+  }
+
+  public record ReconcileInventoryResult(int reconciledQuantity, Long tripId, List<String> allocatedBusinessIds) {
+    public static ReconcileInventoryResult empty() {
+      return new ReconcileInventoryResult(0, null, List.of());
     }
   }
 }

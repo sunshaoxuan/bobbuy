@@ -1,8 +1,10 @@
 package com.bobbuy.service;
 
 import com.bobbuy.api.BobbuyApplication;
+import com.bobbuy.api.ProcurementHudResponse;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
+import com.bobbuy.model.ProductPatch;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,5 +67,39 @@ class ProcurementHudServiceTest {
     assertThat(reconciled).isEqualTo(1);
     assertThat(store.getOrder(createdTrip1.getId()).orElseThrow().getLines().get(0).getPurchasedQuantity()).isEqualTo(1);
     assertThat(store.getOrder(createdTrip2.getId()).orElseThrow().getLines().get(0).getPurchasedQuantity()).isEqualTo(0);
+  }
+
+  @Test
+  void getHudStatsUsesProductPhysicalMetricsInsteadOfStaticUnitWeight() {
+    ProductPatch patch = new ProductPatch();
+    patch.setWeight(2.5);
+    patch.setVolume(1.2);
+    store.patchProduct("prd-1000", patch);
+
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader order = new OrderHeader("HUD-PHYSICAL", 1001L, trip.getId());
+    OrderLine line = new OrderLine("prd-1000", "Matcha", null, 2, 10.0);
+    line.setPurchasedQuantity(2);
+    order.addLine(line);
+    store.upsertOrder(order);
+
+    ProcurementHudResponse updatedHud = procurementHudService.getHudStats(trip.getId());
+
+    assertThat(updatedHud.getCurrentWeight()).isEqualTo(5.0);
+    assertThat(updatedHud.getCurrentVolume()).isEqualTo(2.4);
+  }
+
+  @Test
+  void reconcileInventoryWithDetailsReturnsAllocatedBusinessIds() {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader order = new OrderHeader("RECON-DETAIL", 1001L, trip.getId());
+    order.addLine(new OrderLine("prd-1000", "Matcha", null, 2, 10.0));
+    store.upsertOrder(order);
+
+    ProcurementHudService.ReconcileInventoryResult result = procurementHudService.reconcileInventoryWithDetails("prd-1000", 1);
+
+    assertThat(result.reconciledQuantity()).isEqualTo(1);
+    assertThat(result.tripId()).isEqualTo(trip.getId());
+    assertThat(result.allocatedBusinessIds()).containsExactly("RECON-DETAIL");
   }
 }

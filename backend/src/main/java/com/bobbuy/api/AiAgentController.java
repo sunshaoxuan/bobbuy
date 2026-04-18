@@ -149,10 +149,17 @@ public class AiAgentController {
       result = store.createProduct(newProduct);
     }
 
-    procurementHudService.reconcileInventory(result.getId(), defaultReconcileQuantity);
+    ProcurementHudService.ReconcileInventoryResult reconcileResult =
+        procurementHudService.reconcileInventoryWithDetails(result.getId(), defaultReconcileQuantity);
 
     // Return a simple response with the product
     return ResponseEntity.ok(ApiResponse.success(
-        new MobileProductResponse(result, suggestion.name(), suggestion.description())));
+        new MobileProductResponse(
+            result,
+            suggestion.name(),
+            suggestion.description(),
+            reconcileResult.reconciledQuantity(),
+            reconcileResult.tripId(),
+            reconcileResult.allocatedBusinessIds())));
   }
 }

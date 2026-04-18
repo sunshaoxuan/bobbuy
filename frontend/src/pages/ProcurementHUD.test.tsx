@@ -1,8 +1,56 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import ProcurementHUD from '../pages/ProcurementHUD';
 import { BrowserRouter } from 'react-router-dom';
 import { I18nProvider } from '../i18n';
+
+vi.mock('antd', async () => {
+    const antd = await vi.importActual<typeof import('antd')>('antd');
+    return {
+        ...antd,
+        Table: ({ dataSource = [] }: any) => <div>{dataSource.map((item: any) => item.businessId).join(' ')}</div>,
+        Select: ({ options = [], onChange, value }: any) => (
+            <select
+                data-testid="trip-select"
+                value={value}
+                onChange={(event) => onChange?.(Number(event.target.value))}
+            >
+                {options.map((option: any) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </select>
+        )
+    };
+});
+
+vi.mock('../api', () => ({
+    api: {
+        trips: () => Promise.resolve([
+            { id: 2000, agentId: 1, origin: 'Tokyo', destination: 'Shanghai', departDate: '2026-01-01', capacity: 10, reservedCapacity: 1, status: 'PUBLISHED' }
+        ]),
+        procurementHud: () => Promise.resolve({
+            tripId: 2000,
+            totalEstimatedProfit: 20,
+            currentPurchasedAmount: 80,
+            currentWeight: 6,
+            currentVolume: 2,
+            categoryCompletionPercent: {}
+        }),
+        orders: () => Promise.resolve([
+            {
+                id: 3000,
+                businessId: '20260117001',
+                customerId: 1001,
+                tripId: 2000,
+                status: 'NEW',
+                totalAmount: 100,
+                lines: [{ skuId: 'prd-1000', itemName: 'Matcha Kit', quantity: 2, purchasedQuantity: 1, unitPrice: 50 }]
+            }
+        ])
+    }
+}));
 
 describe('ProcurementHUD Component', () => {
     beforeEach(() => {
@@ -13,7 +61,7 @@ describe('ProcurementHUD Component', () => {
         window.localStorage.removeItem('bobbuy_locale');
     });
 
-    it('renders HUD metrics and customer panels', () => {
+    it('renders profit/load/reconcile sections', async () => {
         render(
             <I18nProvider>
                 <BrowserRouter>
@@ -22,34 +70,9 @@ describe('ProcurementHUD Component', () => {
             </I18nProvider>
         );
 
-        // Check metrics
-        expect(screen.getByText(/Items/i)).toBeInTheDocument();
-        expect(screen.getByText(/Progress/i)).toBeInTheDocument();
-        
-        // Check customer names
-        expect(screen.getByText(/Alice Wang/i)).toBeInTheDocument();
-        expect(screen.getByText(/Benjamin Tsui/i)).toBeInTheDocument();
-    });
-
-    it('updates progress metric when an item is toggled', async () => {
-        render(
-            <I18nProvider>
-                <BrowserRouter>
-                    <ProcurementHUD />
-                </BrowserRouter>
-            </I18nProvider>
-        );
-
-        // Initial progress (based on mock data 1/3 items done = ~33%)
-        expect(screen.getByText('33%')).toBeInTheDocument();
-
-        // Find a pending item and toggle it
-        const checkButtons = screen.getAllByRole('button').filter(btn => btn.querySelector('.anticon-check-circle'));
-        // Find the one that isn't already active (the mock has 1/3 done)
-        // Click the second button (for Fresh Spinach)
-        fireEvent.click(checkButtons[1]);
-
-        // Progress should update (2/3 items done = ~67%)
-        expect(await screen.findByText('67%')).toBeInTheDocument();
+        expect(await screen.findByText(/Profit Insight|利润透视/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Capacity Redline|容积红线/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Reconcile Detail|对账详情/i)).toBeInTheDocument();
+        expect(await screen.findByText('20260117001')).toBeInTheDocument();
     });
 });

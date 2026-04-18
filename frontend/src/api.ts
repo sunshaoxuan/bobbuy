@@ -31,6 +31,7 @@ export type OrderLine = {
     itemName: string;
     spec?: string;
     quantity: number;
+    purchasedQuantity?: number;
     unitPrice: number;
 };
 
@@ -101,6 +102,8 @@ export type MobileProductResponse = {
         description?: Record<string, string>;
         brand?: string;
         basePrice: number;
+        weight?: number;
+        volume?: number;
         categoryId?: string;
         itemNumber?: string;
         storageCondition?: string;
@@ -110,6 +113,18 @@ export type MobileProductResponse = {
     };
     displayName: string;
     displayDescription: string;
+    reconciledQuantity?: number;
+    reconciledTripId?: number;
+    allocatedBusinessIds?: string[];
+};
+
+export type ProcurementHudStats = {
+    tripId: number;
+    totalEstimatedProfit: number;
+    currentPurchasedAmount: number;
+    currentWeight: number;
+    currentVolume: number;
+    categoryCompletionPercent: Record<string, number>;
 };
 
 const fallbackStockCategories: MobileCategory[] = [
@@ -175,7 +190,37 @@ const fallback = {
         { id: 1000, name: 'Aiko Tan', role: 'AGENT', rating: 4.8 },
         { id: 1001, name: 'Chen Li', role: 'CUSTOMER', rating: 4.6 }
     ],
-    stockCategories: fallbackStockCategories
+    stockCategories: fallbackStockCategories,
+    products: [
+        {
+            product: {
+                id: 'prd-1000',
+                name: { 'zh-CN': 'Organic Milk', 'ja-JP': 'Organic Milk', 'en-US': 'Organic Milk' },
+                description: { 'zh-CN': 'Fresh milk', 'ja-JP': 'Fresh milk', 'en-US': 'Fresh milk' },
+                brand: 'BOBBuy Select',
+                basePrice: 12.99,
+                categoryId: 'cat-1000',
+                itemNumber: 'SKU-20934',
+                mediaGallery: []
+            },
+            displayName: 'Organic Milk',
+            displayDescription: 'Fresh milk'
+        },
+        {
+            product: {
+                id: 'prd-1001',
+                name: { 'zh-CN': 'Fresh Spinach', 'ja-JP': 'Fresh Spinach', 'en-US': 'Fresh Spinach' },
+                description: { 'zh-CN': 'Leafy greens', 'ja-JP': 'Leafy greens', 'en-US': 'Leafy greens' },
+                brand: 'BOBBuy Select',
+                basePrice: 4.49,
+                categoryId: 'cat-1000',
+                itemNumber: 'SKU-88210',
+                mediaGallery: []
+            },
+            displayName: 'Fresh Spinach',
+            displayDescription: 'Leafy greens'
+        }
+    ] as MobileProductResponse[]
 };
 
 type ApiResponse<T> = {
@@ -329,6 +374,15 @@ export const api = {
     onboardScan: (base64Image: string) =>
         postJson<AiOnboardingSuggestion, { base64Image: string }>('/api/ai/onboard/scan', { base64Image }),
     onboardConfirm: (suggestion: AiOnboardingSuggestion) =>
-        postJson<unknown, AiOnboardingSuggestion>('/api/ai/onboard/confirm', suggestion),
-    products: () => fetchJson<MobileProductResponse[]>('/api/mobile/products', [])
+        postJson<MobileProductResponse, AiOnboardingSuggestion>('/api/ai/onboard/confirm', suggestion),
+    products: () => fetchJson<MobileProductResponse[]>('/api/mobile/products', fallback.products),
+    procurementHud: (tripId: number) =>
+        fetchJson<ProcurementHudStats>(`/api/procurement/${tripId}/hud`, {
+            tripId,
+            totalEstimatedProfit: 0,
+            currentPurchasedAmount: 0,
+            currentWeight: 0,
+            currentVolume: 0,
+            categoryCompletionPercent: {}
+        })
 };

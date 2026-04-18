@@ -8,6 +8,7 @@ import {
   Typography,
   Tag,
   message,
+  notification,
   Breadcrumb,
   Card,
   Drawer,
@@ -64,6 +65,12 @@ interface StockItem {
 type MerchantSkuEntry = {
   merchant?: string;
   sku?: string;
+};
+
+type ReconcileResponse = {
+  reconciledQuantity?: number;
+  reconciledTripId?: number;
+  allocatedBusinessIds?: string[];
 };
 
 const AUTOSAVE_DELAY_MS = 500;
@@ -329,6 +336,7 @@ export default function StockMaster() {
     try {
       const response = await api.onboardConfirm(suggestion) as any;
       const product = response.product;
+      handleReconcileFeedback(response);
 
       // 2. Map the response (now with real DB ID) back to the UI
       const newItem: StockItem = {
@@ -415,6 +423,7 @@ export default function StockMaster() {
     try {
       if (item.isNew) { 
         const response = await api.onboardConfirm(suggestion) as any;
+        handleReconcileFeedback(response);
         // Update item key and status in background
         setDataSource(prev => prev.map(it => it.key === item.key ? { ...it, key: response.product?.id || item.key, isNew: false } : it));
         setSyncStatus('saved');
@@ -428,6 +437,20 @@ export default function StockMaster() {
       setSyncStatus('idle');
       // message.error('Background sync failed');
     }
+  };
+
+  const hasReconciliationToNotify = (response: ReconcileResponse, ids: string[]) =>
+    (response?.reconciledQuantity ?? 0) > 0 && ids.length > 0;
+
+  const handleReconcileFeedback = (response: ReconcileResponse) => {
+    const ids = response?.allocatedBusinessIds ?? [];
+    if (!hasReconciliationToNotify(response, ids)) {
+      return;
+    }
+    notification.success({
+      message: `${t('procurement.reconcile_notice_prefix')} [${ids.join(', ')}]`
+    });
+    window.dispatchEvent(new CustomEvent('procurement:reconciled', { detail: { tripId: response.reconciledTripId } }));
   };
 
   const openDrawer = (record: StockItem, defaultTab?: string) => {

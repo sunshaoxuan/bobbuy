@@ -19,6 +19,8 @@
 | `description` | JSONB | 详细描述 (Rich Text/MT) | **是** |
 | `brand` | String | 品牌名称 | 否 |
 | `base_price` | Decimal | 平台建议起步价 | 否 |
+| `weight` | Double | 单件重量（KG） | 否 |
+| `volume` | Double | 单件体积（CBM） | 否 |
 | `media_gallery` | JSONB | 媒体数组，见 2.2 | **部分 (标题)** |
 | `storage_condition` | Enum | [AMBIENT, FRESH, CHILLED, FROZEN] | 否 |
 | `order_method` | Enum | [PRE_ORDER, DIRECT_BUY] | 否 |

@@ -34,6 +34,8 @@ public class Product {
 
     private String brand;
     private double basePrice;
+    private Double weight;
+    private Double volume;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
@@ -64,16 +66,20 @@ public class Product {
                    Map<String, String> description,
                    String brand,
                    double basePrice,
-                    List<MediaGalleryItem> mediaGallery,
-                    StorageCondition storageCondition,
-                    OrderMethod orderMethod,
-                    String categoryId,
-                    Map<String, String> merchantSkus) {
+                   Double weight,
+                   Double volume,
+                   List<MediaGalleryItem> mediaGallery,
+                   StorageCondition storageCondition,
+                   OrderMethod orderMethod,
+                   String categoryId,
+                   Map<String, String> merchantSkus) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.brand = brand;
         this.basePrice = basePrice;
+        this.weight = weight;
+        this.volume = volume;
         this.mediaGallery = mediaGallery;
         this.storageCondition = storageCondition;
         this.orderMethod = orderMethod;
@@ -119,6 +125,22 @@ public class Product {
 
     public void setBasePrice(double basePrice) {
         this.basePrice = basePrice;
+    }
+
+    public Double getWeight() {
+        return weight;
+    }
+
+    public void setWeight(Double weight) {
+        this.weight = weight;
+    }
+
+    public Double getVolume() {
+        return volume;
+    }
+
+    public void setVolume(Double volume) {
+        this.volume = volume;
     }
 
     public List<MediaGalleryItem> getMediaGallery() {

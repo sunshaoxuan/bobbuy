@@ -1,8 +1,65 @@
 import { cleanup, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import StockMaster from './StockMaster';
 import { I18nProvider } from '../i18n';
 import React from 'react';
+
+vi.mock('../api', () => ({
+  api: {
+    stockCategories: () => Promise.resolve([
+      {
+        id: 'cat-1000',
+        name: { 'zh-CN': '食品', 'ja-JP': '食品', 'en-US': 'Food' },
+        description: {},
+        attributeTemplate: []
+      },
+      {
+        id: 'cat-1001',
+        name: { 'zh-CN': '服装', 'ja-JP': '衣料品', 'en-US': 'Clothing' },
+        description: {},
+        attributeTemplate: [
+          { key: 'size', labelKey: 'stock.dynamic.size', type: 'select', options: ['S', 'M'] },
+          { key: 'material', labelKey: 'stock.dynamic.material', type: 'text' }
+        ]
+      }
+    ]),
+    suppliers: () => Promise.resolve([]),
+    products: () => Promise.resolve([
+      {
+        product: {
+          id: 'prd-1000',
+          name: { 'zh-CN': 'Organic Milk', 'ja-JP': 'Organic Milk', 'en-US': 'Organic Milk' },
+          categoryId: 'cat-1000',
+          basePrice: 12.99,
+          itemNumber: 'SKU-20934',
+          mediaGallery: []
+        },
+        displayName: 'Organic Milk',
+        displayDescription: 'Fresh milk'
+      },
+      {
+        product: {
+          id: 'prd-1001',
+          name: { 'zh-CN': 'Fresh Spinach', 'ja-JP': 'Fresh Spinach', 'en-US': 'Fresh Spinach' },
+          categoryId: 'cat-1000',
+          basePrice: 4.49,
+          itemNumber: 'SKU-88210',
+          mediaGallery: []
+        },
+        displayName: 'Fresh Spinach',
+        displayDescription: 'Leafy greens'
+      }
+    ]),
+    translate: () => Promise.resolve({ translatedText: '' }),
+    onboardConfirm: () => Promise.resolve({
+      product: { id: 'prd-new', name: { 'zh-CN': 'X' }, basePrice: 1 },
+      displayName: 'X',
+      displayDescription: 'X',
+      allocatedBusinessIds: []
+    })
+  }
+}));
+
+import StockMaster from './StockMaster';
 
 const MOBILE_VIEWPORT_WIDTH = 375;
 const DESKTOP_VIEWPORT_WIDTH = 1280;
@@ -52,11 +109,11 @@ describe('StockMaster Component', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
-  it('renders the stock master page with title and initial data', () => {
+  it('renders the stock master page with title and initial data', async () => {
     renderWithI18n(<StockMaster />);
     expect(screen.getByText(/库存大师 - 批量上架/i)).toBeInTheDocument();
-    expect(screen.getByDisplayValue(/Organic Milk/i)).toBeInTheDocument();
-    expect(screen.getByDisplayValue(/Fresh Spinach/i)).toBeInTheDocument();
+    expect(await screen.findByDisplayValue(/Organic Milk/i)).toBeInTheDocument();
+    expect(await screen.findByDisplayValue(/Fresh Spinach/i)).toBeInTheDocument();
   });
 
   it('adds a new row when clicking "新增商品"', () => {
@@ -69,24 +126,25 @@ describe('StockMaster Component', () => {
     expect(pendingTags.length).toBeGreaterThan(0);
   });
 
-  it('updates field value when input changes', () => {
+  it('updates field value when input changes', async () => {
     renderWithI18n(<StockMaster />);
-    const firstInput = screen.getByDisplayValue(/Organic Milk/i);
+    const firstInput = await screen.findByDisplayValue(/Organic Milk/i);
     fireEvent.change(firstInput, { target: { value: 'Updated Milk' } });
     expect(firstInput.getAttribute('value')).toBe('Updated Milk');
   });
 
-  it('filters table rows based on search input', () => {
+  it('filters table rows based on search input', async () => {
     renderWithI18n(<StockMaster />);
     const searchInput = screen.getByPlaceholderText(/搜索商品名称 or SKU.../i);
     fireEvent.change(searchInput, { target: { value: 'Milk' } });
     
-    expect(screen.getByDisplayValue(/Organic Milk/i)).toBeInTheDocument();
+    expect(await screen.findByDisplayValue(/Organic Milk/i)).toBeInTheDocument();
     expect(screen.queryByDisplayValue(/Fresh Spinach/i)).not.toBeInTheDocument();
   });
 
   it('opens editing drawer and updates values', async () => {
     renderWithI18n(<StockMaster />);
+    await screen.findByDisplayValue(/Organic Milk/i);
     const editButtons = screen.getAllByRole('button').filter(btn => btn.querySelector('.anticon-edit'));
     fireEvent.click(editButtons[0]);
     
@@ -104,8 +162,9 @@ describe('StockMaster Component', () => {
     });
   });
 
-  it('deletes a row when clicking the delete button', () => {
+  it('deletes a row when clicking the delete button', async () => {
     renderWithI18n(<StockMaster />);
+    await screen.findByDisplayValue(/Organic Milk/i);
     const initialRows = screen.getAllByRole('row');
     const deleteButtons = screen.getAllByRole('button').filter(btn => btn.querySelector('.anticon-delete'));
     
@@ -117,7 +176,8 @@ describe('StockMaster Component', () => {
 
   it('displays success message on publish', async () => {
     renderWithI18n(<StockMaster />);
-    const publishButton = screen.getByText(/同步至市场/i);
+    await screen.findByDisplayValue(/Organic Milk/i);
+    const publishButton = screen.getByRole('button', { name: /AI 拍照上架|AI Quick Snap/i });
     fireEvent.click(publishButton);
     
     expect(publishButton).toBeInTheDocument();
@@ -125,6 +185,7 @@ describe('StockMaster Component', () => {
 
   it('renders category-specific dynamic attributes in drawer', async () => {
     renderWithI18n(<StockMaster />);
+    await screen.findByDisplayValue(/Organic Milk/i);
     const editButtons = screen.getAllByRole('button').filter(btn => btn.querySelector('.anticon-edit'));
     fireEvent.click(editButtons[0]);
 
