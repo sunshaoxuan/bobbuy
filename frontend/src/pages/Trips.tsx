@@ -6,7 +6,7 @@ import { getStoredLocale, useI18n } from '../i18n';
 
 const { Text } = Typography;
 
-const statusOptions = ['DRAFT', 'PUBLISHED', 'IN_PROGRESS', 'COMPLETED'];
+const statusOptions = ['DRAFT', 'PUBLISHED', 'IN_PROGRESS', 'COMPLETED'] as const;
 
 export default function Trips() {
   const { t } = useI18n();
@@ -51,7 +51,7 @@ export default function Trips() {
     {
       title: t('trips.table.status'),
       dataIndex: 'status',
-      render: (status: Trip['status']) => <Tag color="blue">{status}</Tag>
+      render: (status: Trip['status']) => <Tag color="blue">{t(`enum.trip_status.${status}`)}</Tag>
     },
     {
       title: t('trips.table.actions'),
@@ -59,7 +59,7 @@ export default function Trips() {
         <Select
           value={record.status}
           onChange={(newStatus) => handleStatusChange(record.id, newStatus, record.status)}
-          options={statusOptions.map((status) => ({ value: status, label: status }))}
+          options={statusOptions.map((status) => ({ value: status, label: t(`enum.trip_status.${status}`) }))}
           disabled={record.status === 'COMPLETED'}
           style={{ width: 160 }}
         />
@@ -144,7 +144,10 @@ export default function Trips() {
             name="status"
             rules={[{ required: true, message: t('trips.form.status.required') }]}
           >
-            <Select options={statusOptions.map((status) => ({ value: status }))} placeholder={t('trips.form.status.placeholder')} />
+            <Select
+              options={statusOptions.map((status) => ({ value: status, label: t(`enum.trip_status.${status}`) }))}
+              placeholder={t('trips.form.status.placeholder')}
+            />
           </Form.Item>
           <Button type="primary" htmlType="submit" loading={submitting} disabled={submitting}>
             {t('trips.form.submit')}

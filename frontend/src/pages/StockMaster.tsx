@@ -35,7 +35,7 @@ import { useI18n } from '../i18n';
 import L10nInput, { type L10nValues } from '../components/L10nInput';
 import MediaGallery, { type MediaItem } from '../components/MediaGallery';
 import AiQuickAddModal from '../components/AiQuickAddModal';
-import { api, type CategoryAttributeTemplateField, type MobileCategory, type AiOnboardingSuggestion } from '../api';
+import { api, type CategoryAttributeTemplateField, type MobileCategory, type MobileSupplier, type AiOnboardingSuggestion } from '../api';
 
 const { Title, Text } = Typography;
 
@@ -72,6 +72,7 @@ const DESKTOP_DYNAMIC_GUTTER = 8;
 const DEFAULT_STOCK_THUMBNAIL = '/assets/products/milk.png';
 const CURRENCY_BY_LOCALE: Record<string, string> = {
   'zh-CN': 'CNY',
+  'ja-JP': 'JPY',
   'en-US': 'USD'
 };
 const PRICE_FRACTION_DIGITS = 2;
@@ -162,7 +163,7 @@ const normalizeCategories = (categories: MobileCategory[]): MobileCategory[] =>
 export default function StockMaster() {
   const { t, locale } = useI18n();
   const [categories, setCategories] = useState<MobileCategory[]>([]);
-  const [suppliers, setSuppliers] = useState<api.MobileSupplier[]>([]);
+  const [suppliers, setSuppliers] = useState<MobileSupplier[]>([]);
   const [searchText, setSearchText] = useState('');
   const [toolbarCompact, setToolbarCompact] = useState(false);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
@@ -226,7 +227,7 @@ export default function StockMaster() {
     {
       key: '1',
       name: 'Organic Milk',
-      nameL10n: { 'zh-CN': '有机牛奶', 'en-US': 'Organic Milk' },
+       nameL10n: { 'zh-CN': '有机牛奶', 'ja-JP': 'オーガニックミルク', 'en-US': 'Organic Milk' },
       category: 'Dairy',
       price: 12.99,
       stock: 50,
@@ -234,20 +235,20 @@ export default function StockMaster() {
       brand: 'Organic Valley',
       sku: 'OM-001',
       description: 'Fresh organic milk from local farms.',
-      descriptionL10n: { 'zh-CN': '来自本地农场的新鲜有机牛奶。', 'en-US': 'Fresh organic milk from local farms.' },
+       descriptionL10n: { 'zh-CN': '来自本地农场的新鲜有机牛奶。', 'ja-JP': '地元農場の新鮮なオーガニックミルク。', 'en-US': 'Fresh organic milk from local farms.' },
       mediaGallery: [
         {
           id: 'milk-image-1',
           url: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
           type: 'image',
-          title: { 'zh-CN': '牛奶正面图', 'en-US': 'Milk front view' }
+           title: { 'zh-CN': '牛奶正面图', 'ja-JP': 'ミルク正面', 'en-US': 'Milk front view' }
         }
       ]
     },
     {
       key: '2',
       name: 'Fresh Spinach',
-      nameL10n: { 'zh-CN': '新鲜菠菜', 'en-US': 'Fresh Spinach' },
+       nameL10n: { 'zh-CN': '新鲜菠菜', 'ja-JP': '新鮮ほうれん草', 'en-US': 'Fresh Spinach' },
       category: 'Produce',
       price: 4.5,
       stock: 100,
@@ -255,13 +256,13 @@ export default function StockMaster() {
       brand: 'Green Garden',
       sku: 'FS-002',
       description: 'Pre-washed baby spinach leaves.',
-      descriptionL10n: { 'zh-CN': '免洗嫩菠菜叶。', 'en-US': 'Pre-washed baby spinach leaves.' },
+       descriptionL10n: { 'zh-CN': '免洗嫩菠菜叶。', 'ja-JP': '洗浄済みベビーほうれん草。', 'en-US': 'Pre-washed baby spinach leaves.' },
       mediaGallery: [
         {
           id: 'spinach-video-1',
           url: 'https://www.w3schools.com/html/mov_bbb.mp4',
           type: 'video',
-          title: { 'zh-CN': '菠菜展示视频', 'en-US': 'Spinach showcase video' }
+           title: { 'zh-CN': '菠菜展示视频', 'ja-JP': 'ほうれん草紹介動画', 'en-US': 'Spinach showcase video' }
         }
       ]
     }
@@ -271,7 +272,7 @@ export default function StockMaster() {
     if (!values) {
       return fallback ?? '';
     }
-    return values[locale] || values['zh-CN'] || values['en-US'] || Object.values(values).find(Boolean) || fallback || '';
+    return values[locale] || values['zh-CN'] || values['ja-JP'] || values['en-US'] || Object.values(values).find(Boolean) || fallback || '';
   };
 
   const formatPrice = useMemo(
@@ -295,7 +296,7 @@ export default function StockMaster() {
       const result = await api.translate(sourceText, targetLocale);
       return result.translatedText;
     } catch {
-      return `[Fallback] ${sourceText}`;
+      return sourceText;
     }
   };
 
@@ -334,8 +335,8 @@ export default function StockMaster() {
     setEditingItem(record);
     form.setFieldsValue({
       ...record,
-      nameL10n: record.nameL10n ?? { 'zh-CN': record.name, 'en-US': record.name },
-      descriptionL10n: record.descriptionL10n ?? { 'zh-CN': record.description ?? '', 'en-US': record.description ?? '' },
+      nameL10n: record.nameL10n ?? { 'zh-CN': record.name, 'ja-JP': record.name, 'en-US': record.name },
+      descriptionL10n: record.descriptionL10n ?? { 'zh-CN': record.description ?? '', 'ja-JP': record.description ?? '', 'en-US': record.description ?? '' },
       mediaGallery: record.mediaGallery ?? [],
       dynamicAttributes: record.dynamicAttributes ?? {},
       merchantSkuEntries: mapMerchantSkusToEntries(record.merchantSkus)
@@ -351,19 +352,19 @@ export default function StockMaster() {
     const newItem: StockItem = {
       key: newKey,
       name: suggestion.name,
-      nameL10n: { 'zh-CN': suggestion.name, 'en-US': suggestion.name },
+       nameL10n: { 'zh-CN': suggestion.name, 'ja-JP': suggestion.name, 'en-US': suggestion.name },
       category: suggestion.categoryId || '',
       price: suggestion.price || 0,
       stock: 0,
       unit: 'pc',
       brand: suggestion.brand,
       description: suggestion.description,
-      descriptionL10n: { 'zh-CN': suggestion.description || '', 'en-US': suggestion.description || '' },
+       descriptionL10n: { 'zh-CN': suggestion.description || '', 'ja-JP': suggestion.description || '', 'en-US': suggestion.description || '' },
       mediaGallery: suggestion.mediaGallery?.map((m, i) => ({
         id: `ai-${Date.now()}-${i}`,
         url: m.url,
         type: (m.type as 'image' | 'video') || 'image',
-        title: { 'zh-CN': m.title || '', 'en-US': m.title || '' }
+         title: { 'zh-CN': m.title || '', 'ja-JP': m.title || '', 'en-US': m.title || '' }
       })) || [],
       isNew: true
     };
@@ -461,14 +462,14 @@ export default function StockMaster() {
       title: t('stock.item.name'),
       dataIndex: 'name',
       render: (text: string, record: StockItem) => (
-        <Input value={text} placeholder="e.g. Fuji Apple" onChange={(e) => handleFieldChange(record.key, 'name', e.target.value)} />
+        <Input value={text} placeholder={t('stock.item.name_input_placeholder')} onChange={(e) => handleFieldChange(record.key, 'name', e.target.value)} />
       )
     },
     {
       title: t('stock.item.category'),
       dataIndex: 'category',
       render: (text: string, record: StockItem) => (
-        <Input value={text} placeholder="e.g. Fruits" onChange={(e) => handleFieldChange(record.key, 'category', e.target.value)} />
+        <Input value={text} placeholder={t('stock.item.category_input_placeholder')} onChange={(e) => handleFieldChange(record.key, 'category', e.target.value)} />
       )
     },
     {
@@ -488,14 +489,14 @@ export default function StockMaster() {
       )
     },
     {
-      title: 'Status',
+      title: t('stock.table.status'),
       key: 'status',
       width: '7rem',
       render: (_: any, record: StockItem) =>
         record.isNew ? <Tag color="orange">{t('stock.status.new')}</Tag> : <Tag color="blue">{t('stock.status.modified')}</Tag>
     },
     {
-      title: 'Action',
+      title: t('stock.table.action'),
       key: 'action',
       width: '8rem',
       render: (_: any, record: StockItem) => (
@@ -522,7 +523,7 @@ export default function StockMaster() {
                 </Text>
                 <Space size={8} wrap>
                   <Tag color={item.isNew ? 'orange' : 'blue'}>{item.isNew ? t('stock.status.new') : t('stock.status.modified')}</Tag>
-                  {item.sku ? <Text type="secondary">SKU: {item.sku}</Text> : null}
+                  {item.sku ? <Text type="secondary">{t('stock.item.sku')}: {item.sku}</Text> : null}
                 </Space>
               </div>
               <div className="stock-mobile-side">
@@ -650,7 +651,7 @@ export default function StockMaster() {
         extra={
           isMobile ? null : (
             <Space>
-              <Button onClick={closeDrawer}>Cancel</Button>
+               <Button onClick={closeDrawer}>{t('common.cancel')}</Button>
               <Button onClick={handleDrawerSave} type="primary">
                 {t('stock.drawer.save')}
               </Button>
@@ -675,7 +676,7 @@ export default function StockMaster() {
                   <>
                     <Form.Item name="nameL10n" label={`${t('stock.item.name')} (L10n)`} rules={[{ required: true }]}>
                       <L10nInput
-                        locales={['zh-CN', 'en-US']}
+                         locales={['zh-CN', 'ja-JP', 'en-US']}
                         requestTranslation={requestTranslationSuggestion}
                         placeholder={t('stock.l10n.name_placeholder')}
                         loadingSuggestionText={t('stock.l10n.ai_loading')}
@@ -684,10 +685,10 @@ export default function StockMaster() {
                       />
                     </Form.Item>
                     <Form.Item name="sku" label={t('stock.item.sku')}>
-                      <Input placeholder="Unique SKU ID" />
+                       <Input placeholder={t('stock.item.sku_placeholder')} />
                     </Form.Item>
                     <Form.Item name="brand" label={t('stock.item.brand')}>
-                      <Input placeholder="Brand Name" />
+                       <Input placeholder={t('stock.item.brand_placeholder')} />
                     </Form.Item>
                     <Form.Item name="category" label={t('stock.item.category')}>
                       <Input />
@@ -740,7 +741,7 @@ export default function StockMaster() {
                     </Form.Item>
                     <Form.Item name="descriptionL10n" label={`${t('stock.item.description')} (L10n)`}>
                       <L10nInput
-                        locales={['zh-CN', 'en-US']}
+                         locales={['zh-CN', 'ja-JP', 'en-US']}
                         requestTranslation={requestTranslationSuggestion}
                         placeholder={t('stock.l10n.description_placeholder')}
                         loadingSuggestionText={t('stock.l10n.ai_loading')}
@@ -750,7 +751,7 @@ export default function StockMaster() {
                     </Form.Item>
                     <Form.Item name="mediaGallery" label={t('stock.media.label')}>
                       <MediaGallery
-                        locales={['zh-CN', 'en-US']}
+                         locales={['zh-CN', 'ja-JP', 'en-US']}
                         requestTranslation={requestTranslationSuggestion}
                         emptyDescriptionText={t('stock.media.empty')}
                         mediaTitlePrefixText={t('stock.media.item_prefix')}

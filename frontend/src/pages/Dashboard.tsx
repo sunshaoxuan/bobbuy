@@ -21,7 +21,7 @@ export default function Dashboard() {
     {
       title: t('dashboard.trips.status'),
       dataIndex: 'status',
-      render: (status: Trip['status']) => <Tag color="blue">{status}</Tag>
+      render: (status: Trip['status']) => <Tag color="blue">{t(`enum.trip_status.${status}`)}</Tag>
     }
   ];
 
@@ -42,7 +42,7 @@ export default function Dashboard() {
     {
       title: t('dashboard.orders.status'),
       dataIndex: 'status',
-      render: (status: Order['status']) => <Tag color="gold">{status}</Tag>
+      render: (status: Order['status']) => <Tag color="gold">{t(`enum.order_status.${status}`)}</Tag>
     }
   ];
 
@@ -111,8 +111,8 @@ export default function Dashboard() {
         <div className="section-title">{t('dashboard.status_distribution.title')}</div>
         <Text className="helper-text">
           {metrics?.orderStatusCounts
-            ? Object.entries(metrics.orderStatusCounts)
-              .map(([status, count]) => `${status}: ${count}`)
+              ? Object.entries(metrics.orderStatusCounts)
+              .map(([status, count]) => `${t(`enum.order_status.${status}`)}: ${count}`)
               .join(' · ')
             : '--'}
         </Text>

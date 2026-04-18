@@ -80,25 +80,25 @@ export default function ProcurementHUD() {
         <Row gutter={[16, 16]}>
           <Col span={12}>
             <div style={{ background: 'rgba(255,255,255,0.1)', padding: 12, borderRadius: 12, color: 'white' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7em', textTransform: 'uppercase' }}>Items</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7em', textTransform: 'uppercase' }}>{t('procurement.items')}</Text>
               <div style={{ fontSize: '1.5em', fontWeight: 'black', lineHeight: 1 }}>{totalItems}</div>
             </div>
           </Col>
           <Col span={12}>
             <div style={{ background: 'rgba(255,255,255,0.1)', padding: 12, borderRadius: 12, color: 'white' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7em', textTransform: 'uppercase' }}>Done</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7em', textTransform: 'uppercase' }}>{t('procurement.done')}</Text>
               <div style={{ fontSize: '1.5em', fontWeight: 'black', lineHeight: 1 }}>{pickedItems}</div>
             </div>
           </Col>
           <Col span={12}>
             <div style={{ background: 'rgba(255,255,255,0.1)', padding: 12, borderRadius: 12, color: 'white' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7em', textTransform: 'uppercase' }}>Customers</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7em', textTransform: 'uppercase' }}>{t('procurement.customers')}</Text>
               <div style={{ fontSize: '1.5em', fontWeight: 'black', lineHeight: 1 }}>{orders.length}</div>
             </div>
           </Col>
           <Col span={12}>
             <div style={{ background: 'rgba(255,255,255,0.1)', padding: 12, borderRadius: 12, color: 'white' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7em', textTransform: 'uppercase' }}>Progress</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7em', textTransform: 'uppercase' }}>{t('procurement.progress')}</Text>
               <div style={{ fontSize: '1.5em', fontWeight: 'black', lineHeight: 1 }}>{progressPercent}%</div>
             </div>
           </Col>
@@ -121,7 +121,7 @@ export default function ProcurementHUD() {
               <div style={{ flex: 1 }}>
                 <Title level={5} style={{ margin: 0 }}>{order.name}</Title>
                 <Text type="secondary" style={{ fontSize: '0.8em' }}>
-                  {order.items.filter(i => i.status === 'picked').length} / {order.items.length} Picked
+                  {order.items.filter(i => i.status === 'picked').length} / {order.items.length} {t('procurement.picked')}
                 </Text>
               </div>
               <Button type="text" icon={<MessageOutlined />} onClick={() => window.location.href='/order-desk'} />
@@ -142,11 +142,11 @@ export default function ProcurementHUD() {
                       <div style={{ fontSize: '0.7em', color: '#8c8c8c' }}>{item.sku} | ${item.price}</div>
                     </div>
                     <div style={{ textAlign: 'center', minWidth: 40 }}>
-                      <div style={{ fontSize: '0.7em', fontWeight: 'bold', color: '#8c8c8c' }}>QTY</div>
+                       <div style={{ fontSize: '0.7em', fontWeight: 'bold', color: '#8c8c8c' }}>{t('procurement.qty')}</div>
                       <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{item.quantity}</div>
                     </div>
                     {item.status === 'out_of_stock' ? (
-                      <Tag color="error">OOS</Tag>
+                       <Tag color="error">{t('procurement.oos')}</Tag>
                     ) : (
                       <Button 
                         shape="circle" 
@@ -171,7 +171,7 @@ export default function ProcurementHUD() {
         display: 'flex', gap: 16, zIndex: 100 
       }}>
         <Button size="large" type="primary" shape="round" icon={<CameraOutlined />} style={{ height: 60, padding: '0 32px', fontSize: '1.2em', fontWeight: 'bold', boxShadow: '0 8px 24px rgba(24, 144, 255, 0.4)' }}>
-          AI PHOTO IDENTIFY
+          {t('procurement.ai_photo_identify')}
         </Button>
       </div>
     </div>

@@ -23,9 +23,11 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ApiException.class)
   public ResponseEntity<ApiError> handleApiException(ApiException ex) {
     log.warn("API error: {}", ex.getMessage());
-    String rawMessage = messageSource.getMessage(ex.getMessageKey(), ex.getMessageArgs(), "Error",
+    String rawMessage = messageSource.getMessage(ex.getMessageKey(), ex.getMessageArgs(), null,
         LocaleContextHolder.getLocale());
-    String message = (rawMessage != null) ? rawMessage : "Unknown Error";
+    String message = (rawMessage != null)
+        ? rawMessage
+        : messageSource.getMessage("error.common.unknown", null, LocaleContextHolder.getLocale());
     return ResponseEntity.status(resolveStatus(ex.getErrorCode()))
         .body(new ApiError(ex.getErrorCode().name(), message));
   }
@@ -35,7 +37,7 @@ public class GlobalExceptionHandler {
     String message = ex.getBindingResult().getFieldErrors().stream()
         .map(error -> {
           String m = messageSource.getMessage(error, LocaleContextHolder.getLocale());
-          return m != null ? m : "Validation error";
+          return m != null ? m : messageSource.getMessage("error.validation.failed", null, LocaleContextHolder.getLocale());
         })
         .collect(Collectors.joining("; "));
     return ResponseEntity.badRequest().body(new ApiError(ErrorCode.INVALID_REQUEST.name(), message));

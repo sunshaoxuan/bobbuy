@@ -42,6 +42,7 @@
 - [ARCH-08: 智能路径规划与配送导航详细设计](docs/design/ARCH-08-智能路径规划与配送导航详细设计.md)
 - [ARCH-09: 多语言与AI翻译引擎详细设计](docs/design/ARCH-09-多语言与AI翻译引擎详细设计.md)
 - [ARCH-10: UI交互与画面布局详细设计](docs/design/ARCH-10-UI交互与画面布局详细设计.md)
+- [GUIDE-08: i18n国际化规范](docs/guides/GUIDE-08-i18n规范.md)
 - [系统方案设计 (原始)](docs/BOBBuy%20平台系统方案设计.docx)
 
 ## 🧩 MVP v1 本地运行

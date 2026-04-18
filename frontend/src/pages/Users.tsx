@@ -6,7 +6,7 @@ import { useI18n } from '../i18n';
 
 const { Text } = Typography;
 
-const roleOptions = ['CUSTOMER', 'AGENT', 'MERCHANT'];
+const roleOptions = ['CUSTOMER', 'AGENT', 'MERCHANT'] as const;
 
 export default function Users() {
   const { t } = useI18n();
@@ -17,7 +17,7 @@ export default function Users() {
     {
       title: t('users.table.role'),
       dataIndex: 'role',
-      render: (role: User['role']) => <Tag color="purple">{role}</Tag>
+      render: (role: User['role']) => <Tag color="purple">{t(`enum.role.${role}`)}</Tag>
     },
     {
       title: t('users.table.rating'),
@@ -42,7 +42,7 @@ export default function Users() {
           </Form.Item>
           <Form.Item label={t('users.form.role.label')}>
             <Select
-              options={roleOptions.map((role) => ({ value: role }))}
+              options={roleOptions.map((role) => ({ value: role, label: t(`enum.role.${role}`) }))}
               placeholder={t('users.form.role.placeholder')}
             />
           </Form.Item>

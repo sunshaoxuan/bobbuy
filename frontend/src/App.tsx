@@ -111,7 +111,12 @@ export default function App() {
                 onChange={(value) => setLocale(value as Locale)}
                 options={supportedLocales.map((value) => ({
                   value,
-                  label: value === 'zh-CN' ? t('language.zh') : t('language.en')
+                  label:
+                    value === 'zh-CN'
+                      ? t('language.zh')
+                      : value === 'ja-JP'
+                      ? t('language.ja')
+                      : t('language.en')
                 }))}
               />
             </Space>
