@@ -402,6 +402,10 @@ const messages: Dictionary = {
     'zen.buy_success': '購入が完了しました',
     'zen.wallet_balance': 'ウォレット残高',
     'zen.quick_buy': 'クイック注文',
+    'zen_audit.verified': '検証済みの帳簿',
+    'zen_audit.broken': '異常な帳簿チェーン',
+    'zen_audit.scroll_title': 'デジタル帳簿',
+    'zen_audit.integrity_verified': '照合の結果、帳簿の論理的一貫性が確認されました',
 };
 
 export default messages;

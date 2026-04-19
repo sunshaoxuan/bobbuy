@@ -572,5 +572,9 @@ export const api = {
     getWalletTransactions: (partnerId: string) =>
         fetchJson<WalletTransaction[]>(`/api/procurement/wallets/${partnerId}/transactions`, fallback.walletTransactions),
     quickOrder: (tripId: number, payload: { skuId: string; quantity: number; businessId: string }) =>
-        postJson<Order, { skuId: string; quantity: number; businessId: string }>(`/api/orders/${tripId}/quick-order`, payload)
+        postJson<Order, { skuId: string; quantity: number; businessId: string }>(`/api/orders/${tripId}/quick-order`, payload),
+    getFinancialAuditLogs: (tripId: number) =>
+        fetchJson<FinancialAuditLog[]>(`/api/financial/audit/${tripId}`, []),
+    checkFinancialAuditIntegrity: (tripId: number) =>
+        fetchJson<{ isValid: boolean }>(`/api/financial/audit/${tripId}/check-integrity`, { isValid: false })
 };

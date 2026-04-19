@@ -11,6 +11,7 @@ import ProcurementHUD from './pages/ProcurementHUD';
 import PickingMaster from './pages/PickingMaster';
 import StockMaster from './pages/StockMaster';
 import ClientHomeV2 from './pages/ClientHomeV2';
+import ZenAuditView from './pages/ZenAuditView';
 import type { Locale } from './i18n';
 import { supportedLocales, useI18n } from './i18n';
 
@@ -136,6 +137,7 @@ export default function App() {
               <Route path="/picking" element={<PickingMaster />} />
               <Route path="/stock-master" element={<StockMaster />} />
               <Route path="/users" element={<Users />} />
+              <Route path="/audit/:tripId" element={<ZenAuditView />} />
             </Routes>
           </div>
         </Content>

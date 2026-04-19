@@ -402,6 +402,10 @@ const messages: Dictionary = {
     'zen.buy_success': '购买成功',
     'zen.wallet_balance': '钱包余额',
     'zen.quick_buy': '快捷下单',
+    'zen_audit.verified': '已验证账条',
+    'zen_audit.broken': '账链异常',
+    'zen_audit.scroll_title': '数字账目表',
+    'zen_audit.integrity_verified': '经核对，账目逻辑自洽',
 };
 
 export default messages;

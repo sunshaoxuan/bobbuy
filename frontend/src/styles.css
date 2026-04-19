@@ -528,3 +528,65 @@ body {
   color: var(--zen-ink) !important;
   background: rgba(0, 0, 0, 0.02) !important;
 }
+
+/* V9.0 Zen Audit & Multi-Trip Styles */
+.zen-audit-link {
+  font-family: inherit;
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  color: var(--zen-muted) !important;
+  border-left: 1px solid var(--zen-border);
+  padding-left: 0.75rem !important;
+  margin-left: 0.75rem;
+  height: auto !important;
+}
+
+.zen-trip-pulse {
+  padding: 0 1.25rem;
+  margin-bottom: 2.5rem;
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.zen-trip-pulse::-webkit-scrollbar {
+  display: none;
+}
+
+.zen-pulse-item {
+  min-width: 90px;
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.5s ease;
+}
+
+.zen-pulse-item.is-urgent {
+  opacity: 1;
+}
+
+.zen-pulse-bar {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.04);
+  margin-top: 6px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.zen-pulse-fill {
+  height: 100%;
+  background: var(--zen-ink);
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.zen-pulse-item.is-urgent .zen-pulse-fill {
+  background: #a67c52; /* Muted Gold for urgency */
+}
+
+.zen-pulse-item .serif-font {
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  display: block;
+}

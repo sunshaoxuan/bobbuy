@@ -2,6 +2,7 @@ import { Button, Empty, Grid, Select, Space, Typography, message } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, type CustomerBalanceLedgerEntry, type MobileProductResponse, type Order, type Trip } from '../api';
 import { useI18n } from '../i18n';
+import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 
@@ -22,6 +23,7 @@ const ZEN_PLACEHOLDER_IMAGE =
 
 export default function ClientHomeV2() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const screens = Grid.useBreakpoint();
   const isMobile = screens.md === false;
   const [scrolled, setScrolled] = useState(false);
@@ -243,12 +245,37 @@ export default function ClientHomeV2() {
           <Text className="zen-hero-subtitle">{t('zen.hero_subtitle')}</Text>
           {partnerWallet && (
             <div className="zen-wallet-pill">
-              <Text className="zen-wallet-label">{t('zen.wallet_balance')}</Text>
-              <Text className="zen-wallet-amount">
-                {partnerWallet.currency} {partnerWallet.balance.toFixed(2)}
-              </Text>
+              <Space direction="vertical" size={0}>
+                <Text className="zen-wallet-label">{t('zen.wallet_balance')}</Text>
+                <Text className="zen-wallet-amount">
+                  {partnerWallet.currency} {partnerWallet.balance.toFixed(2)}
+                </Text>
+              </Space>
+              <Button 
+                type="link" 
+                size="small" 
+                onClick={() => navigate(`/audit/${selectedTripId}`)}
+                className="zen-audit-link"
+              >
+                {t('zen_audit.verified')}
+              </Button>
             </div>
           )}
+        </section>
+
+        <section className="zen-trip-pulse">
+           {trips.filter(t => t.status === 'PUBLISHED').map(trip => {
+             const capacityFill = trip.reservedCapacity / trip.capacity;
+             const isUrgent = capacityFill > 0.8;
+             return (
+               <div key={trip.id} className={`zen-pulse-item ${isUrgent ? 'is-urgent' : ''}`}>
+                 <Text className="serif-font">{trip.destination}</Text>
+                 <div className="zen-pulse-bar">
+                   <div className="zen-pulse-fill" style={{ width: `${capacityFill * 100}%` }} />
+                 </div>
+               </div>
+             );
+           })}
         </section>
 
         <section className="zen-product-rail" aria-label={t('zen.product_rail_aria_label')}>

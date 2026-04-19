@@ -401,6 +401,10 @@ const messages: Dictionary = {
     'zen.buy_success': 'Purchase Successful',
     'zen.wallet_balance': 'Wallet Balance',
     'zen.quick_buy': 'Quick Buy',
+    'zen_audit.verified': 'Verified Entry',
+    'zen_audit.broken': 'Audit Breach Detected',
+    'zen_audit.scroll_title': 'Digital Scroll',
+    'zen_audit.integrity_verified': 'Verified: Financial logic is self-consistent',
 };
 
 export default messages;

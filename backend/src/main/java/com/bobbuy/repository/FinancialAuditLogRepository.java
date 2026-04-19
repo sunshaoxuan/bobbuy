@@ -9,5 +9,7 @@ import java.util.Optional;
 public interface FinancialAuditLogRepository extends JpaRepository<FinancialAuditLog, Long> {
   List<FinancialAuditLog> findByTripIdOrderByCreatedAtDescIdDesc(Long tripId);
 
+  List<FinancialAuditLog> findByTripIdOrderByCreatedAtAscIdAsc(Long tripId);
+
   Optional<FinancialAuditLog> findTopByTripIdOrderByCreatedAtDescIdDesc(Long tripId);
 }

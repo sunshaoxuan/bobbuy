@@ -46,7 +46,8 @@ public class FinancialAuditTrailService {
 
   @Transactional(readOnly = true)
   public List<FinancialAuditLogResponse> listByTripId(Long tripId) {
-    return financialAuditLogRepository.findByTripIdOrderByCreatedAtDescIdDesc(tripId).stream()
+    List<FinancialAuditLog> logs = financialAuditLogRepository.findByTripIdOrderByCreatedAtDescIdDesc(tripId);
+    return logs.stream()
         .map(item -> new FinancialAuditLogResponse(
             item.getId(),
             item.getTripId(),
@@ -58,6 +59,37 @@ public class FinancialAuditTrailService {
             item.getCurrentHash(),
             item.getCreatedAt()))
         .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public boolean checkChainIntegrity(Long tripId) {
+    List<FinancialAuditLog> logs = financialAuditLogRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId);
+    String expectedPreviousHash = GENESIS_HASH;
+
+    for (FinancialAuditLog log : logs) {
+      // 1. Check if previousHash matches the expected one
+      if (!expectedPreviousHash.equals(log.getPreviousHash())) {
+        return false;
+      }
+
+      // 2. Re-calculate currentHash and compare
+      String payload = String.join("|",
+          String.valueOf(log.getTripId()),
+          log.getActionType(),
+          log.getOperatorName(),
+          nullSafe(log.getOriginalValue()),
+          nullSafe(log.getModifiedValue()),
+          log.getPreviousHash(),
+          log.getCreatedAt().toString());
+      
+      String calculatedHash = sha256Hex(payload);
+      if (!calculatedHash.equals(log.getCurrentHash())) {
+        return false;
+      }
+
+      expectedPreviousHash = log.getCurrentHash();
+    }
+    return true;
   }
 
   private void append(Long tripId, String actionType, String originalValue, String modifiedValue) {
