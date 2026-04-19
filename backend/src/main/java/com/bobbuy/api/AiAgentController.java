@@ -142,6 +142,7 @@ public class AiAgentController {
       newProduct.setCategoryId(suggestion.categoryId());
       newProduct.setItemNumber(suggestion.itemNumber());
       newProduct.setTemporary(true);
+      newProduct.setVisibilityStatus(com.bobbuy.model.ProductVisibility.DRAFTER_ONLY);
       newProduct.setRecommended(false);
       newProduct.setMerchantSkus(new HashMap<>());
       if (suggestion.detectedPriceTiers() != null) {

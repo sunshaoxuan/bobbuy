@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, type CustomerBalanceLedgerEntry, type MobileProductResponse, type Order, type Trip } from '../api';
 import { useI18n } from '../i18n';
 import { useNavigate } from 'react-router-dom';
+import ChatWidget from '../components/ChatWidget';
 
 const { Title, Text } = Typography;
 
@@ -382,6 +383,8 @@ export default function ClientHomeV2() {
           </div>
         </section>
       </main>
+      {/* Chat Widget */}
+      <ChatWidget senderId="DEMO-CUST" recipientId="PURCHASER" />
     </div>
   );
 }

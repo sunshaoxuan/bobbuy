@@ -62,6 +62,10 @@ public class Product {
 
     private boolean isRecommended;
     private boolean isTemporary;
+
+    @Enumerated(EnumType.STRING)
+    private ProductVisibility visibilityStatus = ProductVisibility.PUBLIC;
+
     private LocalDateTime updatedAt;
 
     public Product() {
@@ -228,6 +232,14 @@ public class Product {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public ProductVisibility getVisibilityStatus() {
+        return visibilityStatus;
+    }
+
+    public void setVisibilityStatus(ProductVisibility visibilityStatus) {
+        this.visibilityStatus = visibilityStatus;
     }
 
     @PrePersist

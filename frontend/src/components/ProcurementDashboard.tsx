@@ -66,6 +66,7 @@ export default function ProcurementDashboard() {
   const [promoterWallet, setPromoterWallet] = useState<WalletSummary>();
   const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
   const [reconcileRows, setReconcileRows] = useState<ReconcileDetailRow[]>([]);
+  const [deficitItems, setDeficitItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<ReconcileDetailRow>();
@@ -86,7 +87,8 @@ export default function ProcurementDashboard() {
         api.procurementAuditLogs(tripId),
         api.customerBalanceLedger(tripId),
         api.procurementProfitSharing(tripId),
-        api.procurementLogistics(tripId)
+        api.procurementLogistics(tripId),
+        api.procurementDeficitItems(tripId)
       ]);
       if (refreshRequestRef.current !== requestId) {
         return;
@@ -100,6 +102,7 @@ export default function ProcurementDashboard() {
       setPurchaserRatio(profitShareConfig.purchaserRatioPercent);
       setPromoterRatio(profitShareConfig.promoterRatioPercent);
       setLogisticsTrackings(logistics);
+      setDeficitItems(deficits);
       setReconcileRows(buildReconcileRows(orderList));
       const [wPurchaser, wPromoter, txList] = await Promise.all([
         api.getWallet('PURCHASER'),
@@ -310,6 +313,16 @@ export default function ProcurementDashboard() {
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
+  };
+
+  const publishToMall = async (skuId: string) => {
+    try {
+      await api.patchProduct(skuId, { visibilityStatus: 'PUBLIC' as any });
+      message.success(t('procurement.publish_success') || 'Published to Mall');
+      if (selectedTripId) refreshTripData(selectedTripId);
+    } catch {
+      message.error(t('errors.request_failed'));
+    }
   };
 
   const exportCustomerStatement = async (businessId: string) => {
@@ -608,6 +621,34 @@ export default function ProcurementDashboard() {
             ]}
           />
         )}
+      </Card>
+
+      <Card title={t('procurement.procurement_deficit') || 'Procurement Deficit'} loading={loading} className="procurement-glass-card">
+        <Table
+          rowKey="skuId"
+          size="small"
+          pagination={false}
+          dataSource={deficitItems}
+          columns={[
+            { title: t('orders.lines.sku_id'), dataIndex: 'skuId', key: 'skuId' },
+            { title: t('orders.lines.item_name'), dataIndex: 'itemName', key: 'itemName' },
+            { title: t('procurement.deficit_quantity') || 'Deficit Qty', dataIndex: 'deficitQuantity', key: 'deficitQuantity' },
+            { title: t('procurement.priority') || 'Priority', dataIndex: 'priority', key: 'priority', render: (val) => <Tag color={val === 'CRITICAL' ? 'red' : 'orange'}>{val}</Tag> },
+            { 
+              title: t('common.actions') || 'Actions', 
+              key: 'actions', 
+              render: (_, row) => (
+                <Space>
+                  {row.isTemporary && row.visibilityStatus === 'DRAFTER_ONLY' && (
+                    <Button size="small" type="primary" ghost onClick={() => publishToMall(row.skuId)}>
+                      {t('procurement.publish_to_mall') || 'Publish to Mall'}
+                    </Button>
+                  )}
+                </Space>
+              )
+            }
+          ]}
+        />
       </Card>
 
       <Card title={t('procurement.operation_history')} loading={loading} className="procurement-glass-card">

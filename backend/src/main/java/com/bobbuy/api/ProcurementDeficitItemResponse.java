@@ -6,13 +6,17 @@ public class ProcurementDeficitItemResponse {
   private final int deficitQuantity;
   private final double completionPercent;
   private final String priority;
+  private final boolean isTemporary;
+  private final String visibilityStatus;
 
-  public ProcurementDeficitItemResponse(String skuId, String itemName, int deficitQuantity, double completionPercent, String priority) {
+  public ProcurementDeficitItemResponse(String skuId, String itemName, int deficitQuantity, double completionPercent, String priority, boolean isTemporary, String visibilityStatus) {
     this.skuId = skuId;
     this.itemName = itemName;
     this.deficitQuantity = deficitQuantity;
     this.completionPercent = completionPercent;
     this.priority = priority;
+    this.isTemporary = isTemporary;
+    this.visibilityStatus = visibilityStatus;
   }
 
   public String getSkuId() {
@@ -33,5 +37,13 @@ public class ProcurementDeficitItemResponse {
 
   public String getPriority() {
     return priority;
+  }
+
+  public boolean isTemporary() {
+    return isTemporary;
+  }
+
+  public String getVisibilityStatus() {
+    return visibilityStatus;
   }
 }

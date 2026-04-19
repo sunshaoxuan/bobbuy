@@ -18,6 +18,7 @@ public class ProductPatch {
     private List<PriceTier> priceTiers;
     private Boolean isRecommended;
     private Boolean isTemporary;
+    private ProductVisibility visibilityStatus;
 
     public Map<String, String> getName() {
         return name;
@@ -129,5 +130,13 @@ public class ProductPatch {
 
     public void setIsTemporary(Boolean isTemporary) {
         this.isTemporary = isTemporary;
+    }
+
+    public ProductVisibility getVisibilityStatus() {
+        return visibilityStatus;
+    }
+
+    public void setVisibilityStatus(ProductVisibility visibilityStatus) {
+        this.visibilityStatus = visibilityStatus;
     }
 }

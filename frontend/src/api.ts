@@ -185,6 +185,36 @@ export type CustomerBalanceLedgerEntry = {
     outstandingBalance: number;
 };
 
+export type ProcurementItemResponse = {
+    skuId: string;
+    itemName: string;
+    totalQuantity: number;
+    purchasedQuantity: number;
+    unitPrice: number;
+    customerIdList: number[];
+};
+
+export type ProcurementDeficitItemResponse = {
+    skuId: string;
+    itemName: string;
+    deficitQuantity: number;
+    completionPercent: number;
+    priority: string;
+    isTemporary: boolean;
+    visibilityStatus: string;
+};
+
+export type ChatMessage = {
+    id?: number;
+    orderId?: number | null;
+    senderId: string;
+    recipientId: string;
+    content: string;
+    type: 'TEXT' | 'IMAGE' | 'SYSTEM';
+    metadata?: Record<string, any>;
+    createdAt?: string;
+};
+
 export type WalletSummary = {
     partnerId: string;
     balance: number;
@@ -478,6 +508,8 @@ export const api = {
     onboardConfirm: (suggestion: AiOnboardingSuggestion) =>
         postJson<MobileProductResponse, AiOnboardingSuggestion>('/api/ai/onboard/confirm', suggestion),
     products: () => fetchJson<MobileProductResponse[]>('/api/mobile/products', fallback.products),
+    patchProduct: (id: string, patch: Partial<Product>) =>
+        fetchJson<MobileProductResponse>(`/api/mobile/products/${id}`, {}, { method: 'PATCH', body: JSON.stringify(patch) }),
     procurementHud: (tripId: number) =>
         fetchJson<ProcurementHudStats>(`/api/procurement/${tripId}/hud`, {
             tripId,
@@ -580,5 +612,15 @@ export const api = {
     getFinancialAuditLogs: (tripId: number) =>
         fetchJson<FinancialAuditLog[]>(`/api/financial/audit/${tripId}`, []),
     checkFinancialAuditIntegrity: (tripId: number) =>
-        fetchJson<{ isValid: boolean }>(`/api/financial/audit/${tripId}/check-integrity`, { isValid: false })
+        fetchJson<{ isValid: boolean }>(`/api/financial/audit/${tripId}/check-integrity`, { isValid: false }),
+    procurementDeficitItems: (tripId: number) =>
+        fetchJson<ProcurementDeficitItemResponse[]>(`/api/procurement/${tripId}/deficit`, []),
+    procurementList: (tripId: number) =>
+        fetchJson<ProcurementItemResponse[]>(`/api/trips/${tripId}/procurement-list`, []),
+    sendChatMessage: (message: ChatMessage) =>
+        postJson<ChatMessage, ChatMessage>('/api/chat/send', message),
+    getOrderChat: (orderId: number) =>
+        fetchJson<ChatMessage[]>(`/api/chat/orders/${orderId}`, []),
+    getPrivateChat: (userA: string, userB: string) =>
+        fetchJson<ChatMessage[]>(`/api/chat/private?userA=${userA}&userB=${userB}`, [])
 };

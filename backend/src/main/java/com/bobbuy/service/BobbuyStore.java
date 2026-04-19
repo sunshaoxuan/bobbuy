@@ -348,6 +348,15 @@ public class BobbuyStore {
         if (patch.getOrderMethod() != null) {
             existing.setOrderMethod(patch.getOrderMethod());
         }
+        if (patch.getIsRecommended() != null) {
+            existing.setRecommended(patch.getIsRecommended());
+        }
+        if (patch.getIsTemporary() != null) {
+            existing.setTemporary(patch.getIsTemporary());
+        }
+        if (patch.getVisibilityStatus() != null) {
+            existing.setVisibilityStatus(patch.getVisibilityStatus());
+        }
         if (patch.getCategoryId() != null) {
             existing.setCategoryId(patch.getCategoryId());
         }

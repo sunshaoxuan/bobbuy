@@ -249,18 +249,24 @@ public class ProcurementHudService {
       }
     }
 
-    return deficitBySku.values().stream()
-        .sorted(Comparator
-            .comparingInt(DeficitAggregate::priorityRank)
-            .thenComparing((DeficitAggregate item) -> item.deficit, Comparator.reverseOrder())
-            .thenComparing(item -> item.firstSeenAt, Comparator.nullsLast(Comparator.naturalOrder())))
-        .map(item -> new ProcurementDeficitItemResponse(
-            item.skuId,
-            item.itemName,
-            item.deficit,
-            round2(item.completionPercent()),
-            item.priority()))
-        .collect(Collectors.toList());
+        return deficitBySku.values().stream()
+                .sorted(Comparator
+                        .comparingInt(DeficitAggregate::priorityRank)
+                        .thenComparing((DeficitAggregate item) -> item.deficit, Comparator.reverseOrder())
+                        .thenComparing(item -> item.firstSeenAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(item -> {
+                    Optional<Product> product = resolveProduct(item.skuId);
+                    return new ProcurementDeficitItemResponse(
+                            item.skuId,
+                            item.itemName,
+                            item.deficit,
+                            round2(item.completionPercent()),
+                            item.priority(),
+                            product.map(Product::isTemporary).orElse(false),
+                            product.map(p -> p.getVisibilityStatus() != null ? p.getVisibilityStatus().name() : "PUBLIC").orElse("PUBLIC")
+                    );
+                })
+                .collect(Collectors.toList());
   }
 
   @Transactional(isolation = Isolation.SERIALIZABLE)
