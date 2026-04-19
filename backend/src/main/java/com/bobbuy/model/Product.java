@@ -9,6 +9,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -17,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bb_product")
@@ -56,6 +59,10 @@ public class Product {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "price_tiers", columnDefinition = "jsonb")
     private List<PriceTier> priceTiers = new ArrayList<>();
+
+    private boolean isRecommended;
+    private boolean isTemporary;
+    private LocalDateTime updatedAt;
 
     public Product() {
         this.merchantSkus = new HashMap<>();
@@ -197,5 +204,35 @@ public class Product {
 
     public void setPriceTiers(List<PriceTier> priceTiers) {
         this.priceTiers = priceTiers;
+    }
+
+    public boolean isRecommended() {
+        return isRecommended;
+    }
+
+    public void setRecommended(boolean recommended) {
+        isRecommended = recommended;
+    }
+
+    public boolean isTemporary() {
+        return isTemporary;
+    }
+
+    public void setTemporary(boolean temporary) {
+        isTemporary = temporary;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void touchUpdatedAt() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

@@ -31,6 +31,7 @@ public class OrderHeader {
     private String businessId; // 业务幂等标识 (Event ID)
     private Long customerId; // 客户 ID
     private Long tripId; // 行程 ID
+    private String desiredDeliveryWindow; // 预订单期望收货窗口
     private LocalDateTime createdAt;
     @Enumerated(EnumType.STRING)
     private OrderStatus status; // 订单状态
@@ -88,6 +89,14 @@ public class OrderHeader {
 
     public void setTripId(Long tripId) {
         this.tripId = tripId;
+    }
+
+    public String getDesiredDeliveryWindow() {
+        return desiredDeliveryWindow;
+    }
+
+    public void setDesiredDeliveryWindow(String desiredDeliveryWindow) {
+        this.desiredDeliveryWindow = desiredDeliveryWindow;
     }
 
     public OrderStatus getStatus() {

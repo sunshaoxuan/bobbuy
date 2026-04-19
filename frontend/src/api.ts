@@ -39,7 +39,8 @@ export type Order = {
     id: number;
     businessId: string;
     customerId: number;
-    tripId: number;
+    tripId?: number | null;
+    desiredDeliveryWindow?: string;
     status: string;
     statusUpdatedAt?: string;
     paymentMethod?: string;
@@ -96,17 +97,20 @@ export type MobileSupplier = {
 };
 
 export type MobileProductResponse = {
-    product: {
-        id: string;
-        name: Record<string, string>;
+        product: {
+            id: string;
+            name: Record<string, string>;
         description?: Record<string, string>;
         brand?: string;
         basePrice: number;
         weight?: number;
         volume?: number;
         categoryId?: string;
-        itemNumber?: string;
-        storageCondition?: string;
+            itemNumber?: string;
+            isRecommended?: boolean;
+            isTemporary?: boolean;
+            updatedAt?: string;
+            storageCondition?: string;
         orderMethod?: string;
         mediaGallery?: { url: string; title?: Record<string, string>; type: string }[];
         priceTiers?: PriceTier[];

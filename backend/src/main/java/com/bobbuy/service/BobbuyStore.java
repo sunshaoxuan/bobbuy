@@ -179,6 +179,8 @@ public class BobbuyStore {
                 OrderMethod.DIRECT_BUY,
                 foodCategory.getId(),
                 new LinkedHashMap<>(Map.of(supplier.getId(), "TOKYO-MATCHA-001")));
+        product.setRecommended(true);
+        product.setTemporary(false);
         productRepository.save(product);
 
         MerchantSku merchantSku = new MerchantSku(
@@ -278,7 +280,12 @@ public class BobbuyStore {
     }
 
     public List<Product> listProducts() {
-        return productRepository.findAll();
+        return productRepository.findAll().stream()
+                .sorted(Comparator
+                        .comparing(Product::isRecommended).reversed()
+                        .thenComparing(Product::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Product::getId, Comparator.nullsLast(String::compareTo)))
+                .toList();
     }
 
     public Optional<Product> getProduct(String id) {
@@ -350,6 +357,12 @@ public class BobbuyStore {
         if (patch.getPriceTiers() != null) {
             existing.setPriceTiers(patch.getPriceTiers());
         }
+        if (patch.getIsRecommended() != null) {
+            existing.setRecommended(patch.getIsRecommended());
+        }
+        if (patch.getIsTemporary() != null) {
+            existing.setTemporary(patch.getIsTemporary());
+        }
         return Optional.of(productRepository.save(existing));
     }
 
@@ -411,7 +424,8 @@ public class BobbuyStore {
         Optional<OrderHeader> existingOptional = orderHeaderRepository.findByBusinessIdForUpdate(headerInput.getBusinessId());
 
         if (existingOptional.isEmpty()) {
-            if (isAtLeastConfirmed(headerInput.getStatus())) {
+            ensureOrderLinesMutable(headerInput.getTripId());
+            if (isAtLeastConfirmed(headerInput.getStatus()) && headerInput.getTripId() != null) {
                 reserveTripCapacity(headerInput.getTripId(), calculateTotalQuantity(headerInput));
             }
             headerInput.setId(nextOrderIdentity());
@@ -425,11 +439,12 @@ public class BobbuyStore {
         }
 
         OrderHeader existing = existingOptional.orElseThrow();
+        ensureOrderLinesMutable(existing.getTripId());
         if (existing.getLines() == null) {
             existing.setLines(new ArrayList<>());
         }
         int additionalQuantity = calculateTotalQuantity(headerInput);
-        if (additionalQuantity > 0 && isAtLeastConfirmed(existing.getStatus())) {
+        if (additionalQuantity > 0 && isAtLeastConfirmed(existing.getStatus()) && existing.getTripId() != null) {
             reserveTripCapacity(existing.getTripId(), additionalQuantity);
         }
         for (OrderLine newLine : headerInput.getLines()) {
@@ -455,6 +470,7 @@ public class BobbuyStore {
     public OrderHeader quickOrder(Long tripId, OrderPlacementRequest request) {
         Trip trip = tripRepository.findById(tripId)
             .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+        ensureOrderLinesMutable(trip.getId());
         Product product = productRepository.findById(request.getSkuId())
             .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.product.not_found"));
 
@@ -502,16 +518,18 @@ public class BobbuyStore {
 
     @Transactional
     public Optional<OrderHeader> updateOrder(Long id, OrderHeader order) {
-        if (!orderHeaderRepository.existsById(id)) {
+        Optional<OrderHeader> existingOptional = orderHeaderRepository.findById(id);
+        if (existingOptional.isEmpty()) {
             return Optional.empty();
         }
+        OrderHeader existing = existingOptional.orElseThrow();
+        ensureOrderLinesMutable(existing.getTripId());
+        ensureOrderLinesMutable(order.getTripId());
         if (order.getPaymentStatus() == null) {
             order.setPaymentStatus(PaymentStatus.UNPAID);
         }
         if (order.getCreatedAt() == null) {
-            order.setCreatedAt(orderHeaderRepository.findById(id)
-                    .map(OrderHeader::getCreatedAt)
-                    .orElse(LocalDateTime.now()));
+            order.setCreatedAt(existing.getCreatedAt() != null ? existing.getCreatedAt() : LocalDateTime.now());
         }
         if (order.getLines() == null) {
             order.setLines(new ArrayList<>());
@@ -541,6 +559,7 @@ public class BobbuyStore {
         if (removed.isEmpty()) {
             return false;
         }
+        ensureOrderLinesMutable(removed.orElseThrow().getTripId());
         orderHeaderRepository.deleteById(id);
         return true;
     }
@@ -650,10 +669,10 @@ public class BobbuyStore {
         if (!isValidStatusTransition(order.getStatus(), nextStatus)) {
             throw new ApiException(ErrorCode.INVALID_STATUS, "error.order.invalid_status");
         }
-        if (applyCapacity && shouldReserveCapacity(order.getStatus(), nextStatus)) {
+        if (applyCapacity && order.getTripId() != null && shouldReserveCapacity(order.getStatus(), nextStatus)) {
             reserveTripCapacity(order.getTripId(), calculateTotalQuantity(order));
         }
-        if (applyCapacity && shouldReleaseCapacity(order.getStatus(), nextStatus)) {
+        if (applyCapacity && order.getTripId() != null && shouldReleaseCapacity(order.getStatus(), nextStatus)) {
             releaseTripCapacity(order.getTripId(), calculateTotalQuantity(order));
         }
         String previousStatus = order.getStatus().name();
@@ -677,6 +696,20 @@ public class BobbuyStore {
 
     private boolean shouldReleaseCapacity(OrderStatus current, OrderStatus nextStatus) {
         return nextStatus == OrderStatus.CANCELLED && isAtLeastConfirmed(current);
+    }
+
+    private void ensureOrderLinesMutable(Long tripId) {
+        if (tripId == null) {
+            return;
+        }
+        Optional<Trip> tripOptional = tripRepository.findById(tripId);
+        if (tripOptional.isEmpty()) {
+            return;
+        }
+        Trip trip = tripOptional.orElseThrow();
+        if (trip.getStatus() == TripStatus.COMPLETED || trip.getStatus() == TripStatus.SETTLED) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "error.order.locked_after_trip_completed");
+        }
     }
 
     private int calculateTotalQuantity(OrderHeader header) {

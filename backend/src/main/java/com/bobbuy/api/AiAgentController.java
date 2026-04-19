@@ -141,6 +141,8 @@ public class AiAgentController {
       newProduct.setOrderMethod(suggestion.orderMethod());
       newProduct.setCategoryId(suggestion.categoryId());
       newProduct.setItemNumber(suggestion.itemNumber());
+      newProduct.setTemporary(true);
+      newProduct.setRecommended(false);
       newProduct.setMerchantSkus(new HashMap<>());
       if (suggestion.detectedPriceTiers() != null) {
         newProduct.setPriceTiers(suggestion.detectedPriceTiers());
