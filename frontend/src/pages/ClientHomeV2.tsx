@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, type CustomerBalanceLedgerEntry, type MobileProductResponse, type Order, type Trip } from '../api';
 import { useI18n } from '../i18n';
 import { useNavigate } from 'react-router-dom';
+import { useUserRole } from '../context/UserRoleContext';
 import ChatWidget from '../components/ChatWidget';
 
 const { Title, Text } = Typography;
@@ -35,7 +36,7 @@ export default function ClientHomeV2() {
   const [ledgerEntries, setLedgerEntries] = useState<CustomerBalanceLedgerEntry[]>([]);
   const [activeBusinessId, setActiveBusinessId] = useState<string>();
   const [liveFeed, setLiveFeed] = useState<LiveFeedItem[]>([]);
-  const [partnerWallet, setPartnerWallet] = useState<{ balance: number; currency: string }>();
+  const { isCustomer } = useUserRole();
   const previousPurchasedRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
@@ -252,14 +253,16 @@ export default function ClientHomeV2() {
                   {partnerWallet.currency} {partnerWallet.balance.toFixed(2)}
                 </Text>
               </Space>
-              <Button 
-                type="link" 
-                size="small" 
-                onClick={() => navigate(`/audit/${selectedTripId}`)}
-                className="zen-audit-link"
-              >
-                {t('zen_audit.verified')}
-              </Button>
+              {!isCustomer && (
+                <Button 
+                  type="link" 
+                  size="small" 
+                  onClick={() => navigate(`/audit/${selectedTripId}`)}
+                  className="zen-audit-link"
+                >
+                  {t('zen_audit.verified')}
+                </Button>
+              )}
             </div>
           )}
         </section>

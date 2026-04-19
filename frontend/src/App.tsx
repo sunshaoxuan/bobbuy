@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Button, Drawer, Grid, Layout, Menu, Select, Space, Typography } from 'antd';
 import { AppstoreOutlined, BarsOutlined, OrderedListOutlined, QrcodeOutlined, ShoppingOutlined } from '@ant-design/icons';
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { NavLink, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Trips from './pages/Trips';
 import Orders from './pages/Orders';
@@ -14,6 +14,8 @@ import ClientHomeV2 from './pages/ClientHomeV2';
 import ZenAuditView from './pages/ZenAuditView';
 import type { Locale } from './i18n';
 import { supportedLocales, useI18n } from './i18n';
+import { useUserRole, type UserRole } from './context/UserRoleContext';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
@@ -22,6 +24,7 @@ const DESKTOP_SIDER_EXPANDED_WIDTH = '14.5rem';
 export default function App() {
   const location = useLocation();
   const { locale, setLocale, t } = useI18n();
+  const { role, setRole, isPurchaser, isCustomer } = useUserRole();
   const screens = Grid.useBreakpoint();
   const isMobile = screens.md === false;
   const isTablet = screens.md && !screens.lg;
@@ -29,26 +32,39 @@ export default function App() {
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const contentPadding = isMobile ? '0.5rem' : isTablet ? '1rem' : '1.5rem';
 
-  const menuItems = [
-    { key: '/', label: <NavLink to="/">{t('nav.dashboard')}</NavLink> },
-    { key: '/trips', label: <NavLink to="/trips">{t('nav.trips')}</NavLink> },
-    { key: '/orders', label: <NavLink to="/orders">{t('nav.orders')}</NavLink> },
-    { key: '/order-desk', label: <NavLink to="/order-desk">{t('nav.order_desk')}</NavLink> },
-    { key: '/procurement', label: <NavLink to="/procurement">{t('nav.procurement')}</NavLink> },
-    { key: '/picking', label: <NavLink to="/picking">{t('nav.picking')}</NavLink> },
-    { key: '/stock-master', label: <NavLink to="/stock-master">{t('nav.stock_master')}</NavLink> },
-    { key: '/users', label: <NavLink to="/users">{t('nav.users')}</NavLink> }
-  ];
+  const menuItems = useMemo(() => {
+    if (isPurchaser) {
+      return [
+        { key: '/dashboard', label: <NavLink to="/dashboard">{t('nav.dashboard')}</NavLink> },
+        { key: '/trips', label: <NavLink to="/trips">{t('nav.trips')}</NavLink> },
+        { key: '/orders', label: <NavLink to="/orders">{t('nav.orders')}</NavLink> },
+        { key: '/procurement', label: <NavLink to="/procurement">{t('nav.procurement')}</NavLink> },
+        { key: '/picking', label: <NavLink to="/picking">{t('nav.picking')}</NavLink> },
+        { key: '/stock-master', label: <NavLink to="/stock-master">{t('nav.stock_master')}</NavLink> },
+        { key: '/users', label: <NavLink to="/users">{t('nav.users')}</NavLink> }
+      ];
+    }
+    // Customer Menu
+    return [
+      { key: '/', label: <NavLink to="/">{t('nav.dashboard')}</NavLink> },
+      { key: '/orders', label: <NavLink to="/orders">{t('nav.orders')}</NavLink> },
+      { key: '/stock-master', label: <NavLink to="/stock-master">{t('nav.stock_master')}</NavLink> } // Mocked as Catalog
+    ];
+  }, [isPurchaser, t]);
 
-  const mobileQuickNavItems = useMemo(
-    () => [
-      { key: '/trips', icon: <ShoppingOutlined />, label: t('nav.trips') },
-      { key: '/orders', icon: <OrderedListOutlined />, label: t('nav.orders') },
-      { key: '/procurement', icon: <QrcodeOutlined />, label: t('nav.scan') },
-      { key: '/stock-master', icon: <AppstoreOutlined />, label: t('nav.stock_master') }
-    ],
-    [t]
-  );
+  const mobileQuickNavItems = useMemo(() => {
+    if (isPurchaser) {
+      return [
+        { key: '/dashboard', icon: <AppstoreOutlined />, label: t('nav.dashboard') },
+        { key: '/procurement', icon: <QrcodeOutlined />, label: t('nav.scan') },
+        { key: '/picking', icon: <BarsOutlined />, label: t('nav.picking') }
+      ];
+    }
+    return [
+      { key: '/', icon: <ShoppingOutlined />, label: t('nav.trips') },
+      { key: '/orders', icon: <OrderedListOutlined />, label: t('nav.orders') }
+    ];
+  }, [isPurchaser, t]);
 
   const pageTitles: Record<string, string> = useMemo(
     () => ({
@@ -106,6 +122,17 @@ export default function App() {
               </Title>
             </Space>
             <Space size="small">
+              <Select
+                size="small"
+                value={role}
+                onChange={(val) => setRole(val as UserRole)}
+                options={[
+                  { value: 'CUSTOMER', label: t('enum.role.CUSTOMER') },
+                  { value: 'AGENT', label: t('enum.role.AGENT') }
+                ]}
+                style={{ width: 100 }}
+                className="role-switcher"
+              />
               {!isMobile ? <Text type="secondary">{t('language.label')}</Text> : null}
               <Select
                 popupMatchSelectWidth={false}
@@ -128,15 +155,72 @@ export default function App() {
         <Content style={{ padding: contentPadding }} className="app-content">
           <div className="app-page-transition">
             <Routes>
-              <Route path="/" element={<ClientHomeV2 />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/trips" element={<Trips />} />
+              {/* Specialized Landing Logic */}
+              <Route 
+                path="/" 
+                element={
+                  isPurchaser ? (
+                    <Navigate to="/dashboard" replace />
+                  ) : (
+                    <ClientHomeV2 />
+                  )
+                } 
+              />
               <Route path="/orders" element={<Orders />} />
-              <Route path="/order-desk" element={<OrderDesk />} />
-              <Route path="/procurement" element={<ProcurementHUD />} />
-              <Route path="/picking" element={<PickingMaster />} />
-              <Route path="/stock-master" element={<StockMaster />} />
-              <Route path="/users" element={<Users />} />
+              
+              {/* Purchaser Reality */}
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute allowedRoles={['AGENT']}>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/trips" 
+                element={
+                  <ProtectedRoute allowedRoles={['AGENT']}>
+                    <Trips />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/order-desk" 
+                element={
+                  <ProtectedRoute allowedRoles={['AGENT']}>
+                    <OrderDesk />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/procurement" 
+                element={
+                  <ProtectedRoute allowedRoles={['AGENT']}>
+                    <ProcurementHUD />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/picking" 
+                element={
+                  <ProtectedRoute allowedRoles={['AGENT']}>
+                    <PickingMaster />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/stock-master" 
+                element={<StockMaster />} 
+              />
+              <Route 
+                path="/users" 
+                element={
+                  <ProtectedRoute allowedRoles={['AGENT']}>
+                    <Users />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="/audit/:tripId" element={<ZenAuditView />} />
             </Routes>
           </div>
