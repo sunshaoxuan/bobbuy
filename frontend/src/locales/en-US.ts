@@ -398,6 +398,9 @@ const messages: Dictionary = {
     'zen.receipt_amount': 'Amount',
     'zen.price_aria_prefix': 'Price',
     'zen.price_aria_suffix': 'yuan',
+    'zen.buy_success': 'Purchase Successful',
+    'zen.wallet_balance': 'Wallet Balance',
+    'zen.quick_buy': 'Quick Buy',
 };
 
 export default messages;

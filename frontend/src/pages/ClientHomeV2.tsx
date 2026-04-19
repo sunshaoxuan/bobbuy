@@ -32,6 +32,7 @@ export default function ClientHomeV2() {
   const [ledgerEntries, setLedgerEntries] = useState<CustomerBalanceLedgerEntry[]>([]);
   const [activeBusinessId, setActiveBusinessId] = useState<string>();
   const [liveFeed, setLiveFeed] = useState<LiveFeedItem[]>([]);
+  const [partnerWallet, setPartnerWallet] = useState<{ balance: number; currency: string }>();
   const previousPurchasedRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
@@ -136,7 +137,8 @@ export default function ClientHomeV2() {
       refreshTripData(selectedTripId, true);
     };
     window.addEventListener('procurement:reconciled', onReconciled);
-    const timer = window.setInterval(() => refreshTripData(selectedTripId, true), 15000);
+    const timer = window.setInterval(() => refreshTripData(selectedTripId, true), 30000); // Slower refresh for Zen
+    api.getWallet('PURCHASER').then(setPartnerWallet);
     return () => {
       window.removeEventListener('procurement:reconciled', onReconciled);
       window.clearInterval(timer);
@@ -199,6 +201,18 @@ export default function ClientHomeV2() {
     await refreshTripData(tripId, false);
   };
 
+  const onQuickBuy = async (skuId: string) => {
+    if (!selectedTripId) return;
+    try {
+      // For Zen 1-click buy, we use a generic or customer-mapped businessId
+      await api.quickOrder(selectedTripId, { skuId, quantity: 1, businessId: 'ZEN-1-CLICK' });
+      message.success(t('zen.buy_success'), 1.5);
+      await refreshTripData(selectedTripId, true);
+    } catch {
+      message.error(t('errors.request_failed'));
+    }
+  };
+
   return (
     <div className="zen-page">
       <header className={`zen-home-nav${scrolled ? ' is-scrolled' : ''}`}>
@@ -227,6 +241,14 @@ export default function ClientHomeV2() {
           <Text className="zen-kicker">PROJECT ZEN</Text>
           <Title className="zen-hero-title">{t('zen.hero_title')}</Title>
           <Text className="zen-hero-subtitle">{t('zen.hero_subtitle')}</Text>
+          {partnerWallet && (
+            <div className="zen-wallet-pill">
+              <Text className="zen-wallet-label">{t('zen.wallet_balance')}</Text>
+              <Text className="zen-wallet-amount">
+                {partnerWallet.currency} {partnerWallet.balance.toFixed(2)}
+              </Text>
+            </div>
+          )}
         </section>
 
         <section className="zen-product-rail" aria-label={t('zen.product_rail_aria_label')}>
@@ -250,6 +272,9 @@ export default function ClientHomeV2() {
                     >
                       ¥ {item.product.basePrice.toFixed(2)}
                     </Text>
+                    <Button type="text" className="zen-quick-buy" onClick={() => onQuickBuy(item.product.id)}>
+                      {t('zen.quick_buy')}
+                    </Button>
                   </div>
                 </article>
               );

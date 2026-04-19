@@ -48,6 +48,12 @@ public class OrderController {
     return ResponseEntity.ok(ApiResponse.success(store.upsertOrder(order)));
   }
 
+  @PostMapping("/{tripId}/quick-order")
+  public ResponseEntity<ApiResponse<OrderHeader>> quickOrder(@PathVariable Long tripId,
+                                                           @Valid @RequestBody OrderPlacementRequest request) {
+    return ResponseEntity.ok(ApiResponse.success(store.quickOrder(tripId, request)));
+  }
+
   @PutMapping("/{id}")
   public ResponseEntity<ApiResponse<OrderHeader>> update(@PathVariable Long id, @Valid @RequestBody OrderHeader order) {
     return store.updateOrder(id, order)

@@ -570,5 +570,7 @@ export const api = {
     getWallet: (partnerId: string) =>
         fetchJson<WalletSummary>(`/api/procurement/wallets/${partnerId}`, fallback.walletSummary),
     getWalletTransactions: (partnerId: string) =>
-        fetchJson<WalletTransaction[]>(`/api/procurement/wallets/${partnerId}/transactions`, fallback.walletTransactions)
+        fetchJson<WalletTransaction[]>(`/api/procurement/wallets/${partnerId}/transactions`, fallback.walletTransactions),
+    quickOrder: (tripId: number, payload: { skuId: string; quantity: number; businessId: string }) =>
+        postJson<Order, { skuId: string; quantity: number; businessId: string }>(`/api/orders/${tripId}/quick-order`, payload)
 };

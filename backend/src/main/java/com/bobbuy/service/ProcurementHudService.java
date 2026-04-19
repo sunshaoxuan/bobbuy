@@ -564,7 +564,7 @@ public class ProcurementHudService {
     List<PartnerProfitShareResponse> shares = calculatePartnerShares(totalEstimatedProfit, config);
 
     for (PartnerProfitShareResponse share : shares) {
-      walletService.payout(share.getPartnerRole(), share.getShareAmount(), tripId);
+      walletService.payout(share.getPartnerRole(), share.getAmount(), tripId);
     }
 
     TripStatus oldStatus = trip.getStatus();

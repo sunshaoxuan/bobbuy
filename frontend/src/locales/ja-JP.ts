@@ -399,6 +399,9 @@ const messages: Dictionary = {
     'zen.receipt_amount': '金額',
     'zen.price_aria_prefix': '価格',
     'zen.price_aria_suffix': '元',
+    'zen.buy_success': '購入が完了しました',
+    'zen.wallet_balance': 'ウォレット残高',
+    'zen.quick_buy': 'クイック注文',
 };
 
 export default messages;

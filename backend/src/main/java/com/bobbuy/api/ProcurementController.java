@@ -138,7 +138,7 @@ public class ProcurementController {
     return ResponseEntity.ok(ApiResponse.success(logs, new ApiMeta(logs.size())));
   }
 
-  @PostMapping("/{tripId}/customers/{businessId}/statement")
+  @GetMapping("/{tripId}/customers/{businessId}/statement")
   public ResponseEntity<byte[]> exportCustomerStatement(@PathVariable Long tripId,
                                                         @PathVariable String businessId) {
     OrderHeader order = procurementHudService.getTripOrderByBusinessId(tripId, businessId);

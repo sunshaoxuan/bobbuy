@@ -1,5 +1,6 @@
 package com.bobbuy.service;
 
+import com.bobbuy.api.OrderPlacementRequest;
 import com.bobbuy.api.ProcurementItemResponse;
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
@@ -448,6 +449,48 @@ public class BobbuyStore {
         existing.setStatusUpdatedAt(LocalDateTime.now());
         recalculateTotal(existing);
         return orderHeaderRepository.save(existing);
+    }
+
+    @Transactional
+    public OrderHeader quickOrder(Long tripId, OrderPlacementRequest request) {
+        Trip trip = tripRepository.findById(tripId)
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+        Product product = productRepository.findById(request.getSkuId())
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.product.not_found"));
+
+        Optional<OrderHeader> existing = orderHeaderRepository.findByBusinessIdAndTripIdForUpdate(request.getBusinessId(), tripId);
+
+        String itemName = product.getName().getOrDefault("zh-CN", 
+            product.getName().isEmpty() ? "Unknown Item" : product.getName().values().iterator().next());
+
+        OrderLine newLine = new OrderLine(
+            product.getId(),
+            itemName,
+            null,
+            request.getQuantity(),
+            product.getBasePrice()
+        );
+
+        if (existing.isPresent()) {
+            OrderHeader header = existing.get();
+            header.addLine(newLine); // addLine handles IDs and merging
+            recalculateTotal(header);
+            if (isAtLeastConfirmed(header.getStatus())) {
+                reserveTripCapacity(tripId, request.getQuantity());
+            }
+            return orderHeaderRepository.save(header);
+        } else {
+            OrderHeader newHeader = new OrderHeader(request.getBusinessId(), null, tripId);
+            newHeader.setTripId(tripId);
+            newHeader.setStatus(OrderStatus.NEW);
+            newHeader.setPaymentStatus(PaymentStatus.UNPAID);
+            newHeader.addLine(newLine);
+            newHeader.setId(nextOrderIdentity());
+            newHeader.setCreatedAt(LocalDateTime.now());
+            newHeader.setStatusUpdatedAt(LocalDateTime.now());
+            recalculateTotal(newHeader);
+            return orderHeaderRepository.save(newHeader);
+        }
     }
 
     private void recalculateTotal(OrderHeader header) {

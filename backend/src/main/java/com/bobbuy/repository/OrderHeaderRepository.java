@@ -23,6 +23,12 @@ public interface OrderHeaderRepository extends JpaRepository<OrderHeader, Long> 
     Optional<OrderHeader> findTopByOrderByIdDesc();
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select o from OrderHeader o where o.businessId = :businessId and o.tripId = :tripId")
+    Optional<OrderHeader> findByBusinessIdAndTripIdForUpdate(@Param("businessId") String businessId, @Param("tripId") Long tripId);
+
+    Optional<OrderHeader> findByBusinessIdAndTripId(String businessId, Long tripId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from OrderHeader o where o.businessId = :businessId")
     Optional<OrderHeader> findByBusinessIdForUpdate(@Param("businessId") String businessId);
 

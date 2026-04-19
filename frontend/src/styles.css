@@ -113,7 +113,7 @@ body {
 }
 
 .app-page-transition {
-  animation: page-fade-in 180ms ease-out;
+  animation: page-fade-in 450ms ease-out;
 }
 
 .app-shadow-low,
@@ -346,6 +346,7 @@ body {
   font-family: "Noto Serif JP", serif !important;
   font-size: clamp(2rem, 8vw, 3.4rem) !important;
   line-height: 1.18 !important;
+  letter-spacing: -0.01em;
 }
 
 .zen-hero-subtitle {
@@ -467,10 +468,10 @@ body {
 }
 
 .zen-receipt-outstanding {
-  background: #101010;
+  background: #2d2926;
   color: #fff;
-  padding: 0.2rem 0.45rem;
-  font-style: italic;
+  padding: 0.2rem 0.6rem;
+  letter-spacing: 0.05em;
 }
 
 @media (max-width: 767px) {
@@ -486,4 +487,44 @@ body {
   .zen-receipt-row span:nth-child(2):empty {
     display: none;
   }
+}
+
+.zen-wallet-pill {
+  margin-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: rgba(45, 41, 38, 0.04);
+  border-radius: 2rem;
+  border: var(--zen-line);
+}
+
+.zen-wallet-label {
+  font-size: 0.75rem;
+  color: var(--zen-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.zen-wallet-amount {
+  font-family: "Noto Serif JP", serif;
+  font-weight: 600;
+  color: var(--zen-ink);
+}
+
+.zen-quick-buy {
+  margin-top: 0.5rem;
+  width: 100%;
+  border-radius: 0;
+  border-top: var(--zen-line) !important;
+  color: var(--zen-muted) !important;
+  font-size: 0.8125rem !important;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+}
+
+.zen-quick-buy:hover {
+  color: var(--zen-ink) !important;
+  background: rgba(0, 0, 0, 0.02) !important;
 }
