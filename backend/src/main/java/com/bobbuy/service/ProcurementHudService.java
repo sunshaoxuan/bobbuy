@@ -24,6 +24,7 @@ import com.bobbuy.model.Product;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripExpense;
 import com.bobbuy.model.TripLogisticsTracking;
+import com.bobbuy.model.TripStatus;
 import com.bobbuy.model.TripProfitShareConfig;
 import com.bobbuy.model.LogisticsChannel;
 import com.bobbuy.model.LogisticsProvider;
@@ -34,6 +35,8 @@ import com.bobbuy.repository.TripRepository;
 import com.bobbuy.repository.TripExpenseRepository;
 import com.bobbuy.repository.TripLogisticsTrackingRepository;
 import com.bobbuy.repository.TripProfitShareConfigRepository;
+import com.bobbuy.api.WalletSummaryResponse;
+import com.bobbuy.api.WalletTransactionResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,6 +76,7 @@ public class ProcurementHudService {
   private final FxRateService fxRateService;
   private final ImageStorageService imageStorageService;
   private final ObjectMapper objectMapper;
+  private final WalletService walletService;
   private final double referenceFxRate;
 
   public ProcurementHudService(TripRepository tripRepository,
@@ -85,6 +89,7 @@ public class ProcurementHudService {
                                FxRateService fxRateService,
                                ImageStorageService imageStorageService,
                                ObjectMapper objectMapper,
+                               WalletService walletService,
                                @Value("${bobbuy.fx.reference-rate:1.0}") double referenceFxRate) {
     this.tripRepository = tripRepository;
     this.orderHeaderRepository = orderHeaderRepository;
@@ -96,6 +101,7 @@ public class ProcurementHudService {
     this.fxRateService = fxRateService;
     this.imageStorageService = imageStorageService;
     this.objectMapper = objectMapper;
+    this.walletService = walletService;
     this.referenceFxRate = referenceFxRate;
   }
 
@@ -541,6 +547,63 @@ public class ProcurementHudService {
               round2(paidDeposit),
               round2(Math.max(totalReceivable - paidDeposit, 0D)));
         })
+        .toList();
+  }
+
+  @Transactional
+  public void finalizeTripSettlement(Long tripId) {
+    Trip trip = tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    if (trip.getStatus() == TripStatus.SETTLED) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.settlement.already_settled");
+    }
+
+    ProcurementHudResponse stats = getHudStats(tripId);
+    double totalEstimatedProfit = stats.getTotalEstimatedProfit();
+    TripProfitShareConfig config = getOrCreateProfitShareConfig(tripId);
+    List<PartnerProfitShareResponse> shares = calculatePartnerShares(totalEstimatedProfit, config);
+
+    for (PartnerProfitShareResponse share : shares) {
+      walletService.payout(share.getPartnerRole(), share.getShareAmount(), tripId);
+    }
+
+    TripStatus oldStatus = trip.getStatus();
+    trip.setStatus(TripStatus.SETTLED);
+    tripRepository.save(trip);
+
+    Map<String, Object> audit = new HashMap<>();
+    audit.put("tripId", tripId);
+    audit.put("totalProfit", totalEstimatedProfit);
+    audit.put("payouts", shares);
+    audit.put("oldStatus", oldStatus);
+    audit.put("newStatus", TripStatus.SETTLED);
+
+    financialAuditTrailService.logSettlementReminderTriggered(
+        tripId,
+        "PROFIT_FINALIZED",
+        serializeAuditPayload(audit));
+  }
+
+  @Transactional(readOnly = true)
+  public WalletSummaryResponse getWalletSummary(String partnerId) {
+    var wallet = walletService.getWallet(partnerId);
+    return new WalletSummaryResponse(
+        wallet.getPartnerId(),
+        round2(wallet.getBalance()),
+        wallet.getCurrency(),
+        wallet.getUpdatedAt());
+  }
+
+  @Transactional(readOnly = true)
+  public List<WalletTransactionResponse> getWalletTransactions(String partnerId) {
+    return walletService.getTransactions(partnerId).stream()
+        .map(tx -> new WalletTransactionResponse(
+            tx.getId(),
+            tx.getPartnerId(),
+            round2(tx.getAmount()),
+            tx.getType(),
+            tx.getTripId(),
+            tx.getCreatedAt()))
         .toList();
   }
 

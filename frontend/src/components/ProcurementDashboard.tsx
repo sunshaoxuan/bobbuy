@@ -29,7 +29,9 @@ import {
   type ProfitSharingConfig,
   type ProcurementHudStats,
   type Trip,
-  type TripExpense
+  type TripExpense,
+  type WalletSummary,
+  type WalletTransaction
 } from '../api';
 import { useI18n } from '../i18n';
 
@@ -60,6 +62,9 @@ export default function ProcurementDashboard() {
   const [logisticsTrackingNumber, setLogisticsTrackingNumber] = useState<string>('');
   const [logisticsChannel, setLogisticsChannel] = useState<string>('DOMESTIC');
   const [logisticsProvider, setLogisticsProvider] = useState<string>('MOCK');
+  const [purchaserWallet, setPurchaserWallet] = useState<WalletSummary>();
+  const [promoterWallet, setPromoterWallet] = useState<WalletSummary>();
+  const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
   const [reconcileRows, setReconcileRows] = useState<ReconcileDetailRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,6 +101,14 @@ export default function ProcurementDashboard() {
       setPromoterRatio(profitShareConfig.promoterRatioPercent);
       setLogisticsTrackings(logistics);
       setReconcileRows(buildReconcileRows(orderList));
+      const [wPurchaser, wPromoter, txList] = await Promise.all([
+        api.getWallet('PURCHASER'),
+        api.getWallet('PROMOTER'),
+        api.getWalletTransactions('PURCHASER')
+      ]);
+      setPurchaserWallet(wPurchaser);
+      setPromoterWallet(wPromoter);
+      setWalletTransactions(txList);
     } finally {
       if (refreshRequestRef.current === requestId) {
         setLoading(false);
@@ -245,6 +258,25 @@ export default function ProcurementDashboard() {
     await refreshTripData(selectedTripId);
   };
 
+  const finalizeSettlement = async () => {
+    if (!selectedTripId) {
+      return;
+    }
+    Modal.confirm({
+      title: t('procurement.finalize_confirm_title'),
+      content: t('procurement.finalize_confirm_content'),
+      onOk: async () => {
+        try {
+          await api.finalizeProcurementSettlement(selectedTripId);
+          message.success(t('procurement.finalize_success'));
+          await refreshTripData(selectedTripId);
+        } catch {
+          message.error(t('errors.request_failed'));
+        }
+      }
+    });
+  };
+
   const previewReceipt = async (expense: TripExpense) => {
     if (!selectedTripId || !expense.id) {
       return;
@@ -316,6 +348,11 @@ export default function ProcurementDashboard() {
           <Space wrap>
             <Button onClick={() => exportSettlement('csv')}>{t('procurement.export_csv')}</Button>
             <Button onClick={() => exportSettlement('pdf')}>{t('procurement.export_pdf')}</Button>
+            {selectedTrip?.status !== 'SETTLED' ? (
+              <Button type="primary" danger onClick={finalizeSettlement}>{t('procurement.finalize_settlement')}</Button>
+            ) : (
+              <Tag color="gold" style={{ padding: '4px 12px', fontSize: '14px' }}>{t('procurement.status_settled')}</Tag>
+            )}
           </Space>
         </Space>
       </Card>
@@ -380,6 +417,52 @@ export default function ProcurementDashboard() {
             ]}
           />
         </Space>
+      </Card>
+
+      <Card title={t('procurement.wallet_center')} loading={loading} className="procurement-glass-card">
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12}>
+            <Card size="small" title={t('procurement.purchaser_wallet')}>
+              <Statistic 
+                title={t('procurement.current_balance')} 
+                value={purchaserWallet?.balance ?? 0} 
+                suffix="CNY" 
+                precision={2} 
+              />
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                {t('procurement.last_updated')}: {purchaserWallet?.updatedAt}
+              </Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Card size="small" title={t('procurement.promoter_wallet')}>
+              <Statistic 
+                title={t('procurement.current_balance')} 
+                value={promoterWallet?.balance ?? 0} 
+                suffix="CNY" 
+                precision={2} 
+              />
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                {t('procurement.last_updated')}: {promoterWallet?.updatedAt}
+              </Text>
+            </Card>
+          </Col>
+        </Row>
+        <div style={{ marginTop: '16px' }}>
+          <Text strong>{t('procurement.transaction_history')}</Text>
+          <Table<WalletTransaction>
+            dataSource={walletTransactions}
+            rowKey="id"
+            size="small"
+            pagination={{ pageSize: 5 }}
+            columns={[
+              { title: t('common.date'), dataIndex: 'createdAt', key: 'createdAt' },
+              { title: t('procurement.trip_id'), dataIndex: 'tripId', key: 'tripId' },
+              { title: t('procurement.amount'), dataIndex: 'amount', key: 'amount' },
+              { title: t('procurement.type'), dataIndex: 'type', key: 'type' }
+            ]}
+          />
+        </div>
       </Card>
 
       <Card title={t('procurement.extra_expenses')} loading={loading} className="procurement-glass-card">

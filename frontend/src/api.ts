@@ -181,6 +181,22 @@ export type CustomerBalanceLedgerEntry = {
     outstandingBalance: number;
 };
 
+export type WalletSummary = {
+    partnerId: string;
+    balance: number;
+    currency: string;
+    updatedAt: string;
+};
+
+export type WalletTransaction = {
+    id: number;
+    partnerId: string;
+    amount: number;
+    type: string;
+    tripId: number;
+    createdAt: string;
+};
+
 export type FinancialAuditLog = {
     id: number;
     tripId: number;
@@ -286,7 +302,23 @@ const fallback = {
             displayName: 'Fresh Spinach',
             displayDescription: 'Leafy greens'
         }
-    ] as MobileProductResponse[]
+    ] as MobileProductResponse[],
+    walletSummary: {
+        partnerId: 'PURCHASER',
+        balance: 1250.5,
+        currency: 'CNY',
+        updatedAt: new Date().toISOString()
+    } as WalletSummary,
+    walletTransactions: [
+        {
+            id: 9000,
+            partnerId: 'PURCHASER',
+            amount: 45.2,
+            type: 'TRIP_PAYOUT',
+            tripId: 2000,
+            createdAt: new Date().toISOString()
+        }
+    ] as WalletTransaction[]
 };
 
 type ApiResponse<T> = {
@@ -532,5 +564,11 @@ export const api = {
             throw new Error(errorMessage);
         }
         return response.blob();
-    }
+    },
+    finalizeProcurementSettlement: (tripId: number) =>
+        postJson<void, Record<string, never>>(`/api/procurement/${tripId}/finalize-settlement`, {}),
+    getWallet: (partnerId: string) =>
+        fetchJson<WalletSummary>(`/api/procurement/wallets/${partnerId}`, fallback.walletSummary),
+    getWalletTransactions: (partnerId: string) =>
+        fetchJson<WalletTransaction[]>(`/api/procurement/wallets/${partnerId}/transactions`, fallback.walletTransactions)
 };

@@ -4,5 +4,6 @@ public enum TripStatus {
   DRAFT,
   PUBLISHED,
   IN_PROGRESS,
-  COMPLETED
+  COMPLETED,
+  SETTLED
 }

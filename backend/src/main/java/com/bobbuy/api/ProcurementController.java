@@ -138,7 +138,7 @@ public class ProcurementController {
     return ResponseEntity.ok(ApiResponse.success(logs, new ApiMeta(logs.size())));
   }
 
-  @GetMapping("/{tripId}/customers/{businessId}/statement")
+  @PostMapping("/{tripId}/customers/{businessId}/statement")
   public ResponseEntity<byte[]> exportCustomerStatement(@PathVariable Long tripId,
                                                         @PathVariable String businessId) {
     OrderHeader order = procurementHudService.getTripOrderByBusinessId(tripId, businessId);
@@ -147,6 +147,23 @@ public class ProcurementController {
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=trip-" + tripId + "-customer-" + businessId + "-statement.pdf")
         .contentType(MediaType.APPLICATION_PDF)
         .body(pdfBytes);
+  }
+
+  @PostMapping("/{tripId}/finalize-settlement")
+  public ResponseEntity<ApiResponse<Void>> finalizeSettlement(@PathVariable Long tripId) {
+    procurementHudService.finalizeTripSettlement(tripId);
+    return ResponseEntity.ok(ApiResponse.success(null));
+  }
+
+  @GetMapping("/wallets/{partnerId}")
+  public ResponseEntity<ApiResponse<WalletSummaryResponse>> wallet(@PathVariable String partnerId) {
+    return ResponseEntity.ok(ApiResponse.success(procurementHudService.getWalletSummary(partnerId)));
+  }
+
+  @GetMapping("/wallets/{partnerId}/transactions")
+  public ResponseEntity<ApiResponse<List<WalletTransactionResponse>>> walletTransactions(@PathVariable String partnerId) {
+    List<WalletTransactionResponse> items = procurementHudService.getWalletTransactions(partnerId);
+    return ResponseEntity.ok(ApiResponse.success(items, new ApiMeta(items.size())));
   }
 
   private String buildSettlementCsv(ProcurementHudResponse hud, List<TripExpenseResponse> expenses) {
