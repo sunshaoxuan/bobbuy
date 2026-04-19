@@ -702,8 +702,11 @@ public class BobbuyStore {
         if (tripId == null) {
             return;
         }
-        Trip trip = tripRepository.findById(tripId)
-                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+        Optional<Trip> tripOptional = tripRepository.findById(tripId);
+        if (tripOptional.isEmpty()) {
+            return;
+        }
+        Trip trip = tripOptional.orElseThrow();
         if (trip.getStatus() == TripStatus.COMPLETED || trip.getStatus() == TripStatus.SETTLED) {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "error.order.locked_after_trip_completed");
         }

@@ -104,11 +104,14 @@ export default function Orders() {
   }, []);
 
   useEffect(() => {
+    if (selectedTripId === null && trips.length === 0) {
+      return;
+    }
     refreshOrders(selectedTripId);
     if (typeof selectedTripId === 'number') {
       form.setFieldsValue({ tripId: selectedTripId });
     }
-  }, [selectedTripId, form]);
+  }, [selectedTripId, trips, form]);
 
   const handleSubmit = async (values: any) => {
     if (submitting) {
