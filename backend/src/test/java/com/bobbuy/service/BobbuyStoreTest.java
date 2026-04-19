@@ -482,4 +482,55 @@ class BobbuyStoreTest {
     assertThat(patched.getBrand()).isEqualTo("Patched Brand");
     assertThat(patched.getMerchantSkus()).containsEntry("sup-1000", "TOKYO-MATCHA-002");
   }
+
+  @Test
+  void preOrderSupportsNullTripAndDesiredDeliveryWindow() {
+    OrderHeader preOrder = new OrderHeader("BIZ-PRE-1", 1001L, null);
+    preOrder.setDesiredDeliveryWindow("2026-05-01~2026-05-07");
+    preOrder.addLine(new OrderLine("SKU-PRE", "Pre Item", null, 1, 15.0));
+
+    OrderHeader created = store.upsertOrder(preOrder);
+    assertThat(created.getTripId()).isNull();
+    assertThat(created.getDesiredDeliveryWindow()).isEqualTo("2026-05-01~2026-05-07");
+  }
+
+  @Test
+  void completedTripLocksOrderLineMutations() {
+    OrderHeader order = new OrderHeader("BIZ-LOCK-1", 1001L, 2000L);
+    order.addLine(new OrderLine("SKU-L", "Lock Item", null, 1, 9.9));
+    OrderHeader created = store.upsertOrder(order);
+    store.updateTripStatus(2000L, TripStatus.COMPLETED);
+
+    OrderHeader updatePayload = new OrderHeader(created.getBusinessId(), 1001L, 2000L);
+    updatePayload.addLine(new OrderLine("SKU-L", "Lock Item", null, 2, 9.9));
+    assertThatThrownBy(() -> store.updateOrder(created.getId(), updatePayload))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.order.locked_after_trip_completed"));
+
+    assertThatThrownBy(() -> store.deleteOrder(created.getId()))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.order.locked_after_trip_completed"));
+  }
+
+  @Test
+  void listProductsPrioritizesRecommendedThenLatestUpdated() {
+    Product first = new Product();
+    first.setName(Map.of("en-US", "First"));
+    first.setRecommended(false);
+    Product createdFirst = store.createProduct(first);
+
+    Product second = new Product();
+    second.setName(Map.of("en-US", "Second"));
+    second.setRecommended(false);
+    Product createdSecond = store.createProduct(second);
+
+    ProductPatch patch = new ProductPatch();
+    patch.setIsRecommended(true);
+    store.patchProduct(createdSecond.getId(), patch);
+
+    List<Product> sorted = store.listProducts();
+    assertThat(sorted.get(0).isRecommended()).isTrue();
+    assertThat(sorted.get(0).getId()).isEqualTo(createdSecond.getId());
+    assertThat(sorted.stream().map(Product::getId)).contains(createdFirst.getId());
+  }
 }

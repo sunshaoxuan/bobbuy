@@ -16,6 +16,8 @@ public class ProductPatch {
     private String categoryId;
     private Map<String, String> merchantSkus;
     private List<PriceTier> priceTiers;
+    private Boolean isRecommended;
+    private Boolean isTemporary;
 
     public Map<String, String> getName() {
         return name;
@@ -111,5 +113,21 @@ public class ProductPatch {
 
     public void setPriceTiers(List<PriceTier> priceTiers) {
         this.priceTiers = priceTiers;
+    }
+
+    public Boolean getIsRecommended() {
+        return isRecommended;
+    }
+
+    public void setIsRecommended(Boolean isRecommended) {
+        this.isRecommended = isRecommended;
+    }
+
+    public Boolean getIsTemporary() {
+        return isTemporary;
+    }
+
+    public void setIsTemporary(Boolean isTemporary) {
+        this.isTemporary = isTemporary;
     }
 }

@@ -55,7 +55,15 @@ vi.mock('../api', () => ({
           outstandingBalance: 79.5
         }
       ]),
-    exportCustomerStatement: () => Promise.resolve(new Blob(['pdf']))
+    exportCustomerStatement: () => Promise.resolve(new Blob(['pdf'])),
+    getWallet: () =>
+      Promise.resolve({
+        partnerId: 'PURCHASER',
+        balance: 100,
+        currency: 'CNY',
+        updatedAt: '2026-04-20T00:00:00Z'
+      }),
+    quickOrder: () => Promise.resolve({})
   }
 }));
 

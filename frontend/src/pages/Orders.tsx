@@ -20,11 +20,7 @@ export default function Orders() {
   const [form] = Form.useForm<Omit<Order, 'id' | 'statusUpdatedAt'>>();
 
   const refreshOrders = async (tripId?: number | null) => {
-    if (typeof tripId !== 'number') {
-      setOrders([]);
-      return;
-    }
-    const refreshed = await api.orders(tripId);
+    const refreshed = await api.orders(typeof tripId === 'number' ? tripId : undefined);
     setOrders(refreshed);
   };
 
@@ -131,7 +127,8 @@ export default function Orders() {
       const payload = {
         businessId,
         customerId: values.customerId,
-        tripId: values.tripId,
+        tripId: typeof values.tripId === 'number' ? values.tripId : undefined,
+        desiredDeliveryWindow: values.desiredDeliveryWindow?.trim() || undefined,
         status: values.status,
         paymentMethod: values.paymentMethod,
         paymentStatus: 'UNPAID',
@@ -148,7 +145,9 @@ export default function Orders() {
       await api.createOrder(payload as any);
       message.success(t('orders.form.success'));
       form.resetFields();
-      setSelectedTripId(values.tripId);
+      if (typeof values.tripId === 'number') {
+        setSelectedTripId(values.tripId);
+      }
       await refreshOrders(values.tripId);
     } catch {
       // Errors are surfaced in the API layer.
@@ -307,9 +306,38 @@ export default function Orders() {
           <Form.Item
             label={t('orders.form.trip_id.label')}
             name="tripId"
-            rules={[{ required: true, message: t('orders.form.trip_id.required') }]}
+            dependencies={['desiredDeliveryWindow']}
+            rules={[
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const hasWindow = Boolean(getFieldValue('desiredDeliveryWindow'));
+                  if (value || hasWindow) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error(t('orders.form.trip_or_window.required')));
+                }
+              })
+            ]}
           >
             <InputNumber min={1} style={{ width: '100%' }} placeholder={t('orders.form.trip_id.placeholder')} />
+          </Form.Item>
+          <Form.Item
+            label={t('orders.form.desired_delivery_window.label')}
+            name="desiredDeliveryWindow"
+            dependencies={['tripId']}
+            rules={[
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const hasTrip = Boolean(getFieldValue('tripId'));
+                  if (hasTrip || (typeof value === 'string' && value.trim().length > 0)) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error(t('orders.form.trip_or_window.required')));
+                }
+              })
+            ]}
+          >
+            <Input placeholder={t('orders.form.desired_delivery_window.placeholder')} />
           </Form.Item>
           <Form.Item
             label={t('orders.form.item_name.label')}

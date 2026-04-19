@@ -117,7 +117,24 @@ vi.mock('../api', () => ({
                 totalAmount: 100,
                 lines: [{ skuId: 'prd-1000', itemName: 'Matcha Kit', quantity: 2, purchasedQuantity: 1, unitPrice: 50 }]
             }
-        ])
+        ]),
+        getWallet: (partnerId: string) => Promise.resolve({
+            partnerId,
+            balance: partnerId === 'PURCHASER' ? 120 : 80,
+            currency: 'CNY',
+            updatedAt: '2026-01-01T00:00:00'
+        }),
+        getWalletTransactions: (partnerId: string) => Promise.resolve([
+            {
+                id: 1,
+                partnerId,
+                amount: 20,
+                type: 'TRIP_PAYOUT',
+                tripId: 2000,
+                createdAt: '2026-01-01T00:00:00'
+            }
+        ]),
+        finalizeProcurementSettlement: () => Promise.resolve(undefined)
     }
 }));
 
