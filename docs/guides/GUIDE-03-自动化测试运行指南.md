@@ -51,21 +51,17 @@ mvn verify
 
 ## 4. E2E 测试（Playwright）
 
-### 4.1 安装浏览器依赖
-```bash
-cd frontend
-npx playwright install
-```
-
-### 4.2 执行脚本
+### 4.1 执行脚本
 ```bash
 cd frontend
 npm run e2e
 ```
 
 **说明**:
+- `npm run e2e` 会先补齐 Chromium 浏览器二进制，再执行 Playwright 用例。
 - 测试文件：`frontend/e2e/test_shopping_flow.spec.ts`
 - 该脚本模拟“发布行程 -> 确认订单 -> 状态流转 -> 审计校验”的关键链路。
+- `frontend/e2e/ai_onboarding.spec.ts` 继续保持手动门控，需要显式设置 `RUN_AI_VISION_E2E=1`。
 
 ---
 

@@ -109,6 +109,7 @@ export type MobileProductResponse = {
             itemNumber?: string;
             isRecommended?: boolean;
             isTemporary?: boolean;
+            visibilityStatus?: string;
             updatedAt?: string;
             storageCondition?: string;
         orderMethod?: string;
@@ -207,12 +208,20 @@ export type ProcurementDeficitItemResponse = {
 export type ChatMessage = {
     id?: number;
     orderId?: number | null;
+    tripId?: number | null;
     senderId: string;
     recipientId: string;
     content: string;
     type: 'TEXT' | 'IMAGE' | 'SYSTEM';
     metadata?: Record<string, any>;
     createdAt?: string;
+};
+
+export type AiProductCandidate = {
+    productId: string;
+    displayName: string;
+    itemNumber?: string;
+    matchReason: string;
 };
 
 export type WalletSummary = {
@@ -507,6 +516,8 @@ export type AiOnboardingSuggestion = {
     attributes?: Record<string, string>;
     existingProductFound?: boolean;
     existingProductId?: string;
+    similarProductCandidates?: AiProductCandidate[];
+    visibilityStatus?: string;
     detectedPriceTiers?: PriceTier[];
     originalPhotoBase64?: string;
 };
@@ -660,6 +671,8 @@ export const api = {
         postJson<ChatMessage, ChatMessage>('/api/chat/send', message),
     getOrderChat: (orderId: number) =>
         fetchJson<ChatMessage[]>(`/api/chat/orders/${orderId}`, []),
+    getTripChat: (tripId: number) =>
+        fetchJson<ChatMessage[]>(`/api/chat/trips/${tripId}`, []),
     getPrivateChat: (userA: string, userB: string) =>
         fetchJson<ChatMessage[]>(`/api/chat/private?userA=${userA}&userB=${userB}`, [])
 };

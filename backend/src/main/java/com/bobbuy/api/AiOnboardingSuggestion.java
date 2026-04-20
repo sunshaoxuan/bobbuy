@@ -3,6 +3,7 @@ package com.bobbuy.api;
 import com.bobbuy.model.MediaGalleryItem;
 import com.bobbuy.model.OrderMethod;
 import com.bobbuy.model.PriceTier;
+import com.bobbuy.model.ProductVisibility;
 import com.bobbuy.model.StorageCondition;
 
 import java.util.List;
@@ -21,6 +22,8 @@ public record AiOnboardingSuggestion(
     Map<String, String> attributes,
     boolean existingProductFound,
     String existingProductId,
+    List<AiProductCandidate> similarProductCandidates,
+    ProductVisibility visibilityStatus,
     List<PriceTier> detectedPriceTiers,
     String originalPhotoBase64
 ) {

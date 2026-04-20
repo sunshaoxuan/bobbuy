@@ -33,10 +33,17 @@ public class ImageStorageService {
     @Value("${bobbuy.minio.bucket}")
     private String bucket;
 
+    @Value("${bobbuy.minio.enabled:true}")
+    private boolean enabled;
+
     private MinioClient minioClient;
 
     @PostConstruct
     public void init() {
+        if (!enabled) {
+            log.info("MinIO bootstrap disabled for current profile.");
+            return;
+        }
         try {
             minioClient = MinioClient.builder()
                     .endpoint(endpoint)

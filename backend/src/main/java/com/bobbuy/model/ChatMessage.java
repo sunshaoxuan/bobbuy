@@ -20,6 +20,7 @@ public class ChatMessage {
     private Long id;
 
     private Long orderId;
+    private Long tripId;
     private String senderId;
     private String recipientId;
 
@@ -53,6 +54,8 @@ public class ChatMessage {
     public void setId(Long id) { this.id = id; }
     public Long getOrderId() { return orderId; }
     public void setOrderId(Long orderId) { this.orderId = orderId; }
+    public Long getTripId() { return tripId; }
+    public void setTripId(Long tripId) { this.tripId = tripId; }
     public String getSenderId() { return senderId; }
     public void setSenderId(String senderId) { this.senderId = senderId; }
     public String getRecipientId() { return recipientId; }

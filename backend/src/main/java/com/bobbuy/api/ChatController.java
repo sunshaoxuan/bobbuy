@@ -33,6 +33,11 @@ public class ChatController {
         return ResponseEntity.ok(ApiResponse.success(chatService.getOrderConversation(orderId)));
     }
 
+    @GetMapping("/trips/{tripId}")
+    public ResponseEntity<ApiResponse<List<ChatMessage>>> getTripChat(@PathVariable Long tripId) {
+        return ResponseEntity.ok(ApiResponse.success(chatService.getTripConversation(tripId)));
+    }
+
     @GetMapping("/private")
     public ResponseEntity<ApiResponse<List<ChatMessage>>> getPrivateChat(@RequestParam String userA, @RequestParam String userB) {
         return ResponseEntity.ok(ApiResponse.success(chatService.getPrivateConversation(userA, userB)));

@@ -9,6 +9,7 @@ import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
     List<ChatMessage> findByOrderIdOrderByCreatedAtAsc(Long orderId);
+    List<ChatMessage> findByTripIdOrderByCreatedAtAsc(Long tripId);
 
     @Query("SELECT c FROM ChatMessage c WHERE (c.senderId = :userA AND c.recipientId = :userB) OR (c.senderId = :userB AND c.recipientId = :userA) ORDER BY c.createdAt ASC")
     List<ChatMessage> findConversation(@Param("userA") String userA, @Param("userB") String userB);

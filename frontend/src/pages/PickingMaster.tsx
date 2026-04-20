@@ -136,10 +136,7 @@ export default function PickingMaster() {
 
   return (
     <div style={{ padding: '0 0 40px 0' }}>
-      <Breadcrumb style={{ marginBottom: 16 }}>
-        <Breadcrumb.Item>{t('nav.dashboard')}</Breadcrumb.Item>
-        <Breadcrumb.Item>{t('nav.picking')}</Breadcrumb.Item>
-      </Breadcrumb>
+      <Breadcrumb style={{ marginBottom: 16 }} items={[{ title: t('nav.dashboard') }, { title: t('nav.picking') }]} />
 
       <div
         style={{
@@ -195,7 +192,7 @@ export default function PickingMaster() {
 
           return (
             <Col key={item.skuId} xs={24} sm={12} md={8} lg={6}>
-              <Card hoverable bodyStyle={{ padding: 16 }} className="procurement-glass-card">
+              <Card hoverable styles={{ body: { padding: 16 } }} className="procurement-glass-card">
                 <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                   <div style={{ position: 'relative', flexShrink: 0 }}>
                     <Badge count={item.businessIds.length} overflowCount={9} offset={[-2, 2]}>
