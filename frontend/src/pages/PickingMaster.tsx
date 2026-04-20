@@ -257,7 +257,7 @@ export default function PickingMaster() {
                     </Text>
                   </Space>
                   <Button size="small" type="link" onClick={() => setDetailsItem(item)}>
-                    {t('picking.details') || 'Details'}
+                    {t('picking.details')}
                   </Button>
                 </div>
               </Card>
