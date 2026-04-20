@@ -489,9 +489,9 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                       ) : (
                         <Text style={{ color: 'inherit' }}>{msg.content}</Text>
                       )}
-                      <div style={{ fontSize: '10px', opacity: 0.6, textAlign: 'right', marginTop: 4 }}>
-                        {msg.createdAt?.split('T')[1]?.substring(0, 5) ?? '--:--'}
-                      </div>
+                        <div style={{ fontSize: '10px', opacity: 0.6, textAlign: 'right', marginTop: 4 }}>
+                          {formatChatTime(msg.createdAt)}
+                        </div>
                     </div>
                   </div>
                 );
@@ -502,7 +502,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
             {lastSuccessfulSyncAt ? (
               <div style={{ marginBottom: 8 }}>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  {t('chat.last_synced')}: {lastSuccessfulSyncAt.split('T')[1]?.substring(0, 8) ?? lastSuccessfulSyncAt}
+                  {t('chat.last_synced')}: {formatChatTime(lastSuccessfulSyncAt, { withSeconds: true })}
                 </Text>
               </div>
             ) : null}
@@ -623,4 +623,20 @@ function getImageFlowStatusLabel(msg: ChatMessage, t: (key: string) => string) {
     return undefined;
   }
   return t(`chat.image_status.${status}`);
+}
+
+function formatChatTime(value?: string, options?: { withSeconds?: boolean }) {
+  if (!value) {
+    return '--:--';
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: options?.withSeconds ? '2-digit' : undefined,
+    hour12: false
+  });
 }

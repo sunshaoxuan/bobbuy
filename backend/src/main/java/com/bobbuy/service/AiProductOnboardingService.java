@@ -33,7 +33,15 @@ public class AiProductOnboardingService {
     private static final Logger log = LoggerFactory.getLogger(AiProductOnboardingService.class);
     // Allow one-third token overlap so short bilingual names can still surface as manual-review candidates.
     private static final double CANDIDATE_OVERLAP_THRESHOLD = 0.34d;
+    // Below this score, name-level matches are too weak to justify manual-review noise in the UI.
     private static final double CANDIDATE_MIN_SCORE = 2.4d;
+    private static final double SHARED_TOKEN_WEIGHT = 1.2d;
+    private static final double OVERLAP_WEIGHT = 2.5d;
+    private static final double BRAND_EXACT_BONUS = 2.2d;
+    private static final double ITEM_NUMBER_FRAGMENT_BONUS = 1.8d;
+    private static final double CATEGORY_MATCH_BONUS = 0.8d;
+    private static final double STRONG_NAME_OVERLAP_BONUS = 0.8d;
+    private static final double MEDIUM_NAME_OVERLAP_BONUS = 0.4d;
     private static final Map<String, List<String>> TOKEN_ALIASES = Map.of(
         "milk", List.of("牛乳", "ミルク"),
         "matcha", List.of("抹茶"),
@@ -223,10 +231,11 @@ public class AiProductOnboardingService {
     }
 
     private AiProductCandidate toCandidate(Product product, Set<String> queryTokens, String itemNumber, String categoryHint) {
+        Map<String, String> localizedNames = product.getName() == null ? Map.of() : product.getName();
         String displayName = firstNonBlank(
-            product.getName() == null ? null : product.getName().get("zh-CN"),
-            product.getName() == null ? null : product.getName().get("ja-JP"),
-            product.getName() == null ? null : product.getName().get("en-US"),
+            localizedNames.get("zh-CN"),
+            localizedNames.get("ja-JP"),
+            localizedNames.get("en-US"),
             product.getId()
         );
         Set<String> productTokens = normalizeTokens(
@@ -251,25 +260,28 @@ public class AiProductOnboardingService {
             return null;
         }
         List<String> signals = new ArrayList<>();
-        double score = sharedCount * 1.2d + overlap * 2.5d;
+        double score = sharedCount * SHARED_TOKEN_WEIGHT + overlap * OVERLAP_WEIGHT;
         if (brandExact(queryTokens, product.getBrand())) {
             signals.add("BRAND_EXACT");
-            score += 2.2d;
+            score += BRAND_EXACT_BONUS;
         }
         if (itemNumberFragmentMatch(itemNumber, product.getItemNumber())) {
             signals.add("ITEM_NUMBER_FRAGMENT");
-            score += 1.8d;
+            score += ITEM_NUMBER_FRAGMENT_BONUS;
         }
-        if (categoryHint != null && !categoryHint.isBlank() && categoryHint.equalsIgnoreCase(String.valueOf(product.getCategoryId()))) {
+        if (categoryHint != null
+            && !categoryHint.isBlank()
+            && product.getCategoryId() != null
+            && categoryHint.equalsIgnoreCase(product.getCategoryId())) {
             signals.add("CATEGORY_MATCH");
-            score += 0.8d;
+            score += CATEGORY_MATCH_BONUS;
         }
         if (sharedCount >= 3) {
             signals.add("NAME_STRONG_OVERLAP");
-            score += 0.8d;
+            score += STRONG_NAME_OVERLAP_BONUS;
         } else if (sharedCount >= 2) {
             signals.add("NAME_TOKEN_OVERLAP");
-            score += 0.4d;
+            score += MEDIUM_NAME_OVERLAP_BONUS;
         } else {
             signals.add("NAME_PARTIAL_OVERLAP");
         }

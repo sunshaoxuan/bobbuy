@@ -33,7 +33,7 @@ export function usePollingTask(task: () => Promise<void> | void, options: UsePol
     if (!enabled) {
       return;
     }
-    let timer: number | undefined;
+    let timer: ReturnType<typeof window.setTimeout> | undefined;
     let disposed = false;
 
     const schedule = () => {
