@@ -36,6 +36,7 @@ import {
 } from '../api';
 import { useI18n } from '../i18n';
 import ChatWidget from './ChatWidget';
+import { usePollingTask } from '../hooks/usePollingTask';
 
 const { Text } = Typography;
 
@@ -115,15 +116,7 @@ export default function ProcurementDashboard() {
       setPromoterWallet(wPromoter);
       setWalletTransactions(txList);
     } catch {
-      setHudStats(undefined);
-      setOrders([]);
-      setExpenses([]);
-      setAuditLogs([]);
-      setLedgerEntries([]);
-      setProfitSharing(undefined);
-      setLogisticsTrackings([]);
-      setDeficitItems([]);
-      setReconcileRows([]);
+      // Keep the last successful snapshot on transient polling failures.
     } finally {
       if (refreshRequestRef.current === requestId) {
         setLoading(false);
@@ -161,13 +154,18 @@ export default function ProcurementDashboard() {
     return () => window.removeEventListener('procurement:reconciled', handler);
   }, [refreshTripData, selectedTripId]);
 
-  useEffect(() => {
-    if (!selectedTripId) {
-      return;
+  usePollingTask(
+    async () => {
+      if (!selectedTripId) {
+        return;
+      }
+      await refreshTripData(selectedTripId);
+    },
+    {
+      enabled: Boolean(selectedTripId),
+      intervalMs: 15000
     }
-    const timer = window.setInterval(() => refreshTripData(selectedTripId), 15000);
-    return () => window.clearInterval(timer);
-  }, [refreshTripData, selectedTripId]);
+  );
 
   const selectedTrip = useMemo(() => trips.find((trip) => trip.id === selectedTripId), [selectedTripId, trips]);
 

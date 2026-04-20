@@ -25,6 +25,7 @@ import {
 } from '@ant-design/icons';
 import { api, type AiOnboardingSuggestion, type ChatMessage } from '../api';
 import { useI18n } from '../i18n';
+import { usePollingTask } from '../hooks/usePollingTask';
 
 const { Text, Paragraph } = Typography;
 
@@ -36,6 +37,10 @@ interface ChatWidgetProps {
 }
 
 type ConversationType = 'PRIVATE' | 'ORDER' | 'TRIP';
+type RetryableImageDraft = {
+  base64: string;
+  fileName: string;
+};
 
 const messageKey = (chatMessage: ChatMessage) =>
   String(
@@ -54,9 +59,13 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingSuggestion, setPendingSuggestion] = useState<AiOnboardingSuggestion | null>(null);
   const [pendingImagePreview, setPendingImagePreview] = useState<string>();
+  const [pendingAttachmentName, setPendingAttachmentName] = useState<string>();
   const [confirmingImage, setConfirmingImage] = useState(false);
   const [publishOnConfirm, setPublishOnConfirm] = useState(false);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>();
+  const [retryableImageDraft, setRetryableImageDraft] = useState<RetryableImageDraft | null>(null);
+  const [publishingMessageId, setPublishingMessageId] = useState<string>();
+  const [lastSuccessfulSyncAt, setLastSuccessfulSyncAt] = useState<string>();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const knownMessageKeysRef = useRef<Set<string>>(new Set());
@@ -111,12 +120,13 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
         knownMessageKeysRef.current = new Set(nextKeys);
         setMessages(nextMessages);
         setLoadError(undefined);
+        setLastSuccessfulSyncAt(new Date().toISOString());
         if (showFeedback) {
           message.success(t('chat.refresh_success'));
         }
       } catch {
         if (!silent || open) {
-          setLoadError(t('chat.load_failed'));
+          setLoadError(messages.length > 0 ? t('chat.load_failed_keep_last') : t('chat.load_failed'));
         }
         if (showFeedback) {
           message.error(t('chat.load_failed'));
@@ -127,16 +137,19 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
         }
       }
     },
-    [fetchConversation, open, t]
+    [fetchConversation, messages.length, open, t]
   );
 
   useEffect(() => {
-    void loadMessages({ silent: !open });
-    const timer = window.setInterval(() => {
-      void loadMessages({ silent: true });
-    }, 15000);
-    return () => window.clearInterval(timer);
+    if (open) {
+      void loadMessages();
+    }
   }, [loadMessages, open]);
+
+  usePollingTask(() => loadMessages({ silent: true }), {
+    enabled: Boolean(senderId && recipientId),
+    intervalMs: 15000
+  });
 
   useEffect(() => {
     if (!open) {
@@ -180,23 +193,40 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     fileInputRef.current?.click();
   };
 
+  const scanImageDraft = useCallback(
+    async (base64: string, fileName: string) => {
+      setRetryableImageDraft({ base64, fileName });
+      setConfirmingImage(true);
+      try {
+        const suggestion = await api.onboardScan(base64);
+        setPendingSuggestion(suggestion);
+        setPendingImagePreview(base64);
+        setPendingAttachmentName(fileName);
+        setPublishOnConfirm(false);
+        setSelectedCandidateId(undefined);
+        setRetryableImageDraft(null);
+      } catch {
+        message.error(t('chat.image_scan_failed'));
+      } finally {
+        setConfirmingImage(false);
+      }
+    },
+    [t]
+  );
+
   const handleImagePicked = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
       return;
     }
+    const fileName = file.name;
     setConfirmingImage(true);
     try {
       const base64 = await readFileAsBase64(file);
-      const suggestion = await api.onboardScan(base64);
-      setPendingSuggestion(suggestion);
-      setPendingImagePreview(base64);
-      setPublishOnConfirm(false);
-      setSelectedCandidateId(undefined);
+      await scanImageDraft(base64, fileName);
     } catch {
       message.error(t('chat.image_scan_failed'));
     } finally {
-      setConfirmingImage(false);
       event.target.value = '';
     }
   };
@@ -223,6 +253,24 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
       const productName = response.displayName || pendingSuggestion.name;
       const draftOnly = response.product.visibilityStatus === 'DRAFTER_ONLY' || (!payload.existingProductFound && !publishOnConfirm);
       const visibilityStatus = draftOnly ? 'DRAFTER_ONLY' : response.product.visibilityStatus ?? 'PUBLIC';
+      const candidate = pendingSuggestion.similarProductCandidates?.find((entry) => entry.productId === selectedCandidateId);
+      const candidateDecision = payload.existingProductFound
+        ? pendingSuggestion.existingProductFound
+          ? 'EXACT_MATCH'
+          : 'SELECTED_CANDIDATE'
+        : 'CREATED_TEMP_PRODUCT';
+      const imageFlowStatus = draftOnly
+        ? payload.existingProductFound
+          ? pendingSuggestion.existingProductFound
+            ? 'MATCHED_EXISTING_PRODUCT'
+            : 'CANDIDATE_SELECTED'
+          : 'TEMP_PRODUCT_CREATED'
+        : 'PUBLISHED_TO_MARKET';
+      const matchedBy = payload.existingProductFound
+        ? pendingSuggestion.existingProductFound
+          ? 'ITEM_NUMBER'
+          : 'NAME_CANDIDATE'
+        : 'NEW_TEMP_PRODUCT';
 
       await api.sendChatMessage({
         orderId,
@@ -233,25 +281,41 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
         type: 'IMAGE',
         metadata: {
           conversationType,
+          source: 'CHAT_WIDGET',
+          orderId,
+          tripId,
+          relatedOrderId: orderId,
+          relatedTripId: tripId,
           url: previewUrl,
+          attachmentUrl: previewUrl,
+          attachmentName: pendingAttachmentName,
           productId: response.product.id,
           productName,
           itemNumber: response.product.itemNumber,
           visibilityStatus,
           isTemporary: response.product.isTemporary ?? true,
           existingProductFound: payload.existingProductFound ?? false,
-          matchedBy: payload.existingProductFound
-            ? pendingSuggestion.existingProductFound
-              ? 'ITEM_NUMBER'
-              : 'NAME_CANDIDATE'
-            : 'NEW_TEMP_PRODUCT'
+          matchedBy,
+          imageFlowStatus,
+          candidateSelectionResult: candidateDecision,
+          candidateReason: candidate?.matchReason,
+          candidateReasons: candidate?.matchSignals ?? [],
+          candidateAudit: {
+            decision: candidateDecision,
+            selectedProductId: response.product.id,
+            recommendedProductIds: pendingSuggestion.similarProductCandidates?.map((entry) => entry.productId) ?? [],
+            selectedReason: candidate?.matchReason ?? matchedBy,
+            confirmedAt: new Date().toISOString()
+          }
         }
       });
 
       setPendingSuggestion(null);
       setPendingImagePreview(undefined);
+      setPendingAttachmentName(undefined);
       setSelectedCandidateId(undefined);
       setPublishOnConfirm(false);
+      setRetryableImageDraft(null);
       await loadMessages();
       message.success(t('chat.image_sent_success'));
     } catch {
@@ -266,18 +330,22 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     if (!productId) {
       return;
     }
+    const targetMessageId = messageKey(target);
+    setPublishingMessageId(targetMessageId);
     try {
       await api.patchProduct(productId, { visibilityStatus: 'PUBLIC' });
       setMessages((current) =>
         current.map((entry) =>
-          messageKey(entry) === messageKey(target)
-            ? { ...entry, metadata: { ...entry.metadata, visibilityStatus: 'PUBLIC' } }
+          messageKey(entry) === targetMessageId
+            ? { ...entry, metadata: { ...entry.metadata, visibilityStatus: 'PUBLIC', imageFlowStatus: 'PUBLISHED_TO_MARKET' } }
             : entry
         )
       );
       message.success(t('chat.publish_success'));
     } catch {
       message.error(t('errors.request_failed'));
+    } finally {
+      setPublishingMessageId(undefined);
     }
   };
 
@@ -336,6 +404,20 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
               style={{ margin: 12 }}
             />
           ) : null}
+          {retryableImageDraft ? (
+            <Alert
+              type="info"
+              showIcon
+              message={t('chat.pending_upload')}
+              description={retryableImageDraft.fileName}
+              action={
+                <Button size="small" loading={confirmingImage} onClick={() => void scanImageDraft(retryableImageDraft.base64, retryableImageDraft.fileName)}>
+                  {t('chat.retry_image_upload')}
+                </Button>
+              }
+              style={{ margin: '0 12px 12px' }}
+            />
+          ) : null}
           <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', background: '#fafafa' }}>
             <List
               locale={{ emptyText: refreshing ? t('chat.loading') : t('chat.empty') }}
@@ -343,6 +425,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
               split={false}
               renderItem={(msg) => {
                 const canPublish = msg.metadata?.isTemporary && msg.metadata?.visibilityStatus === 'DRAFTER_ONLY';
+                const statusLabel = getImageFlowStatusLabel(msg, t);
                 return (
                   <div
                     style={{
@@ -381,10 +464,23 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                             <Space wrap size={4} style={{ marginTop: 6 }}>
                               {msg.metadata?.matchedBy ? <Tag>{String(msg.metadata.matchedBy)}</Tag> : null}
                               {msg.metadata?.visibilityStatus ? <Tag color={canPublish ? 'orange' : 'green'}>{String(msg.metadata.visibilityStatus)}</Tag> : null}
+                              {statusLabel ? <Tag color={msg.metadata?.imageFlowStatus === 'PUBLISHED_TO_MARKET' ? 'green' : 'blue'}>{statusLabel}</Tag> : null}
                             </Space>
+                            {msg.metadata?.candidateReasons?.length ? (
+                              <div style={{ marginTop: 6 }}>
+                                <Text style={{ color: 'inherit', opacity: 0.85 }}>
+                                  {t('chat.candidate_reason_title')}: {msg.metadata.candidateReasons.join(' · ')}
+                                </Text>
+                              </div>
+                            ) : null}
                           </div>
                           {canPublish ? (
-                            <Button size="small" icon={<ShopOutlined />} onClick={() => void handlePublishInChat(msg)}>
+                            <Button
+                              size="small"
+                              icon={<ShopOutlined />}
+                              loading={publishingMessageId === messageKey(msg)}
+                              onClick={() => void handlePublishInChat(msg)}
+                            >
                               {t('chat.publish_action')}
                             </Button>
                           ) : null}
@@ -402,6 +498,13 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
             />
           </div>
           <div style={{ padding: '12px', borderTop: 'var(--zen-line)', background: 'white' }}>
+            {lastSuccessfulSyncAt ? (
+              <div style={{ marginBottom: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {t('chat.last_synced')}: {lastSuccessfulSyncAt.split('T')[1]?.substring(0, 8) ?? lastSuccessfulSyncAt}
+                </Text>
+              </div>
+            ) : null}
             <Space.Compact style={{ width: '100%' }}>
               <Button icon={<ReloadOutlined />} loading={refreshing} onClick={() => void loadMessages({ showFeedback: true })} />
               <Button icon={<CameraOutlined />} loading={confirmingImage} onClick={handleSelectImage} />
@@ -424,6 +527,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
           if (!confirmingImage) {
             setPendingSuggestion(null);
             setPendingImagePreview(undefined);
+            setPendingAttachmentName(undefined);
             setSelectedCandidateId(undefined);
             setPublishOnConfirm(false);
           }
@@ -437,6 +541,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
           </div>
         ) : null}
         <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <Tag color="processing">{t('chat.image_status.PENDING_CONFIRMATION')}</Tag>
           <div>
             <Text strong>{pendingSuggestion?.name}</Text>
             {pendingSuggestion?.itemNumber ? (
@@ -473,6 +578,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                     <Radio key={candidate.productId} value={candidate.productId}>
                       {candidate.displayName}
                       {candidate.itemNumber ? ` · ${candidate.itemNumber}` : ''}
+                      {candidate.matchSignals?.length ? ` · ${candidate.matchSignals.join(' / ')}` : ''}
                     </Radio>
                   ))}
                 </Space>
@@ -505,4 +611,15 @@ function readFileAsBase64(file: File): Promise<string> {
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsDataURL(file);
   });
+}
+
+function getImageFlowStatusLabel(msg: ChatMessage, t: (key: string) => string) {
+  if (msg.type !== 'IMAGE') {
+    return undefined;
+  }
+  const status = msg.metadata?.imageFlowStatus;
+  if (!status) {
+    return undefined;
+  }
+  return t(`chat.image_status.${status}`);
 }
