@@ -358,6 +358,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
             shape="circle"
             icon={<MessageOutlined />}
             size="large"
+            aria-label="Open chat"
             style={{
               width: 56,
               height: 56,
@@ -506,15 +507,15 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
               </div>
             ) : null}
             <Space.Compact style={{ width: '100%' }}>
-              <Button icon={<ReloadOutlined />} loading={refreshing} onClick={() => void loadMessages({ showFeedback: true })} />
-              <Button icon={<CameraOutlined />} loading={confirmingImage} onClick={handleSelectImage} />
+              <Button aria-label="Refresh chat" icon={<ReloadOutlined />} loading={refreshing} onClick={() => void loadMessages({ showFeedback: true })} />
+              <Button aria-label="Upload image" icon={<CameraOutlined />} loading={confirmingImage} onClick={handleSelectImage} />
               <Input
                 placeholder={t('chat.placeholder')}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onPressEnter={handleSend}
               />
-              <Button type="primary" icon={<SendOutlined />} onClick={handleSend} loading={loading} />
+              <Button aria-label="Send message" type="primary" icon={<SendOutlined />} onClick={handleSend} loading={loading} />
             </Space.Compact>
           </div>
         </div>

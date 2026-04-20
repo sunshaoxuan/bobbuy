@@ -139,7 +139,7 @@ test('chat image confirmation can create a draft item and publish it to mall', a
 
   await page.goto('/');
 
-  await page.locator('button.ant-btn.ant-btn-primary.ant-btn-circle.ant-btn-lg').click();
+  await page.getByRole('button', { name: 'Open chat' }).click();
   await page.locator('input[type="file"]').setInputFiles({
     name: 'matcha.png',
     mimeType: 'image/png',
@@ -155,5 +155,5 @@ test('chat image confirmation can create a draft item and publish it to mall', a
   await expect(page.getByText('BRAND_EXACT · ITEM_NUMBER_FRAGMENT')).toBeVisible();
   await page.getByRole('button', { name: 'Publish to Mall' }).click();
 
-  await expect(page.getByText('Published to mall')).toBeVisible();
+  await expect(page.locator('.ant-tag').filter({ hasText: 'Published to mall' }).first()).toBeVisible();
 });

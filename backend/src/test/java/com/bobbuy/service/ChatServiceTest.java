@@ -1,5 +1,6 @@
 package com.bobbuy.service;
 
+import com.bobbuy.api.BobbuyApplication;
 import com.bobbuy.model.ChatMessage;
 import com.bobbuy.repository.ChatMessageRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,7 +13,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SpringBootTest
+@SpringBootTest(classes = BobbuyApplication.class)
 @ActiveProfiles("test")
 class ChatServiceTest {
 

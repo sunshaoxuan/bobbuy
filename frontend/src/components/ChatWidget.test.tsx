@@ -3,21 +3,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '../i18n';
 import ChatWidget from './ChatWidget';
 
-const getTripChat = vi.fn();
-const onboardScan = vi.fn();
-const onboardConfirm = vi.fn();
-const sendChatMessage = vi.fn();
-const patchProduct = vi.fn();
+const apiMocks = vi.hoisted(() => ({
+  getTripChat: vi.fn(),
+  onboardScan: vi.fn(),
+  onboardConfirm: vi.fn(),
+  sendChatMessage: vi.fn(),
+  patchProduct: vi.fn()
+}));
 
 vi.mock('../api', () => ({
   api: {
-    getTripChat,
+    getTripChat: apiMocks.getTripChat,
     getOrderChat: vi.fn(),
     getPrivateChat: vi.fn(),
-    onboardScan,
-    onboardConfirm,
-    sendChatMessage,
-    patchProduct
+    onboardScan: apiMocks.onboardScan,
+    onboardConfirm: apiMocks.onboardConfirm,
+    sendChatMessage: apiMocks.sendChatMessage,
+    patchProduct: apiMocks.patchProduct
   }
 }));
 
@@ -32,12 +34,14 @@ describe('ChatWidget', () => {
   let messages: any[] = [];
 
   beforeEach(() => {
+    window.localStorage.setItem('bobbuy_locale', 'en-US');
     messages = [];
-    getTripChat.mockImplementation(() => Promise.resolve([...messages]));
-    onboardScan.mockReset();
-    onboardConfirm.mockReset();
-    sendChatMessage.mockReset();
-    patchProduct.mockReset();
+    apiMocks.getTripChat.mockReset();
+    apiMocks.getTripChat.mockImplementation(() => Promise.resolve([...messages]));
+    apiMocks.onboardScan.mockReset();
+    apiMocks.onboardConfirm.mockReset();
+    apiMocks.sendChatMessage.mockReset();
+    apiMocks.patchProduct.mockReset();
 
     class MockFileReader {
       public result: string | ArrayBuffer | null = 'data:image/png;base64,abc';
@@ -54,11 +58,12 @@ describe('ChatWidget', () => {
 
   afterEach(() => {
     cleanup();
+    window.localStorage.clear();
     vi.unstubAllGlobals();
   });
 
   it('retries failed image scans and completes candidate-confirmation publish flow', async () => {
-    onboardScan
+    apiMocks.onboardScan
       .mockRejectedValueOnce(new Error('scan failed'))
       .mockResolvedValueOnce({
         name: '抹茶礼盒',
@@ -86,7 +91,7 @@ describe('ChatWidget', () => {
         detectedPriceTiers: [],
         originalPhotoBase64: 'data:image/png;base64,abc'
       });
-    onboardConfirm.mockResolvedValue({
+    apiMocks.onboardConfirm.mockResolvedValue({
       product: {
         id: 'prd-existing',
         itemNumber: 'SKU-998',
@@ -97,7 +102,7 @@ describe('ChatWidget', () => {
       displayName: '抹茶礼盒大包装',
       displayDescription: ''
     });
-    sendChatMessage.mockImplementation(async (payload) => {
+    apiMocks.sendChatMessage.mockImplementation(async (payload) => {
       messages = [
         ...messages,
         {
@@ -108,7 +113,7 @@ describe('ChatWidget', () => {
       ];
       return payload;
     });
-    patchProduct.mockResolvedValue({
+    apiMocks.patchProduct.mockResolvedValue({
       product: {
         id: 'prd-existing',
         visibilityStatus: 'PUBLIC'
@@ -117,7 +122,7 @@ describe('ChatWidget', () => {
 
     renderWidget();
 
-    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByRole('button', { name: 'Open chat' }));
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(fileInput, { target: { files: [new File(['x'], 'matcha.png', { type: 'image/png' })] } });
 
@@ -130,7 +135,7 @@ describe('ChatWidget', () => {
     fireEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() => {
-      expect(sendChatMessage).toHaveBeenCalledWith(
+      expect(apiMocks.sendChatMessage).toHaveBeenCalledWith(
         expect.objectContaining({
           metadata: expect.objectContaining({
             imageFlowStatus: 'CANDIDATE_SELECTED',
@@ -142,12 +147,12 @@ describe('ChatWidget', () => {
     });
 
     expect(await screen.findByText('Candidate selected')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Publish to Mall' }));
+    fireEvent.click(screen.getByRole('button', { name: /Publish to Mall/ }));
 
     await waitFor(() => {
-      expect(patchProduct).toHaveBeenCalledWith('prd-existing', { visibilityStatus: 'PUBLIC' });
+      expect(apiMocks.patchProduct).toHaveBeenCalledWith('prd-existing', { visibilityStatus: 'PUBLIC' });
     });
-    expect(await screen.findByText('Published to mall')).toBeInTheDocument();
+    expect((await screen.findAllByText('Published to mall')).length).toBeGreaterThan(0);
   });
 
   it('keeps the last successful snapshot when refresh fails', async () => {
@@ -161,15 +166,12 @@ describe('ChatWidget', () => {
         createdAt: '2026-04-20T22:00:00'
       }
     ];
-    getTripChat
-      .mockResolvedValueOnce([...messages])
-      .mockRejectedValueOnce(new Error('refresh failed'));
-
     renderWidget();
-    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByRole('button', { name: 'Open chat' }));
 
     expect(await screen.findByText('hello')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '' }));
+    apiMocks.getTripChat.mockRejectedValue(new Error('refresh failed'));
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh chat' }));
 
     expect(await screen.findByText('Refresh failed. Showing the last successful message snapshot.')).toBeInTheDocument();
     expect(screen.getByText('hello')).toBeInTheDocument();
