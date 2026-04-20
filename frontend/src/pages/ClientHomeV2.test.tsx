@@ -2,7 +2,12 @@ import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '../i18n';
+import { UserRoleProvider } from '../context/UserRoleContext';
 import ClientHomeV2 from './ClientHomeV2';
+
+vi.mock('../components/ChatWidget', () => ({
+  default: () => <div data-testid="chat-widget" />
+}));
 
 vi.mock('../api', () => ({
   api: {
@@ -71,9 +76,11 @@ describe('ClientHomeV2', () => {
   it('renders zen home sections and live narrative', async () => {
     render(
       <I18nProvider>
-        <BrowserRouter>
-          <ClientHomeV2 />
-        </BrowserRouter>
+        <UserRoleProvider>
+          <BrowserRouter>
+            <ClientHomeV2 />
+          </BrowserRouter>
+        </UserRoleProvider>
       </I18nProvider>
     );
 

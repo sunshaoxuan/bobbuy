@@ -386,6 +386,7 @@ const messages: Dictionary = {
     'picking.filter.all': '全部',
     'picking.filter.todo': '待拣货',
     'picking.filter.done': '已拣货',
+    'picking.details': '详情',
     'picking.empty': '暂无拣货项',
     'zen.hero_title': '文雅、高级、干干净净',
     'zen.hero_subtitle': '回归商品本质，留下空气。',

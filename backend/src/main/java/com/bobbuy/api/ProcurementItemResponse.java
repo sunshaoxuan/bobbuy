@@ -9,12 +9,22 @@ public class ProcurementItemResponse {
   private String skuId;
   private String itemName;
   private int totalQuantity;
+  private int purchasedQuantity;
+  private double unitPrice;
   private List<String> businessIds;
 
-  public ProcurementItemResponse(String skuId, String itemName, int totalQuantity, List<String> businessIds) {
+  public ProcurementItemResponse(
+      String skuId,
+      String itemName,
+      int totalQuantity,
+      int purchasedQuantity,
+      double unitPrice,
+      List<String> businessIds) {
     this.skuId = skuId;
     this.itemName = itemName;
     this.totalQuantity = totalQuantity;
+    this.purchasedQuantity = purchasedQuantity;
+    this.unitPrice = unitPrice;
     this.businessIds = new ArrayList<>(businessIds);
   }
 
@@ -30,12 +40,24 @@ public class ProcurementItemResponse {
     return totalQuantity;
   }
 
+  public int getPurchasedQuantity() {
+    return purchasedQuantity;
+  }
+
+  public double getUnitPrice() {
+    return unitPrice;
+  }
+
   public List<String> getBusinessIds() {
     return businessIds;
   }
 
   public void addQuantity(int quantity) {
     this.totalQuantity += quantity;
+  }
+
+  public void addPurchasedQuantity(int quantity) {
+    this.purchasedQuantity += quantity;
   }
 
   public void addBusinessId(String businessId) {

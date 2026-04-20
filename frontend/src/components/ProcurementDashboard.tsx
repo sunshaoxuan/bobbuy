@@ -27,6 +27,7 @@ import {
   type LogisticsTracking,
   type Order,
   type ProfitSharingConfig,
+  type ProcurementDeficitItemResponse,
   type ProcurementHudStats,
   type Trip,
   type TripExpense,
@@ -66,7 +67,7 @@ export default function ProcurementDashboard() {
   const [promoterWallet, setPromoterWallet] = useState<WalletSummary>();
   const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
   const [reconcileRows, setReconcileRows] = useState<ReconcileDetailRow[]>([]);
-  const [deficitItems, setDeficitItems] = useState<any[]>([]);
+  const [deficitItems, setDeficitItems] = useState<ProcurementDeficitItemResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<ReconcileDetailRow>();
@@ -80,7 +81,7 @@ export default function ProcurementDashboard() {
     refreshRequestRef.current = requestId;
     setLoading(true);
     try {
-      const [hud, orderList, expenseList, tripAuditLogs, customerLedger, profitShareConfig, logistics] = await Promise.all([
+      const [hud, orderList, expenseList, tripAuditLogs, customerLedger, profitShareConfig, logistics, deficits] = await Promise.all([
         api.procurementHud(tripId),
         api.orders(tripId),
         api.procurementExpenses(tripId),
@@ -112,6 +113,16 @@ export default function ProcurementDashboard() {
       setPurchaserWallet(wPurchaser);
       setPromoterWallet(wPromoter);
       setWalletTransactions(txList);
+    } catch {
+      setHudStats(undefined);
+      setOrders([]);
+      setExpenses([]);
+      setAuditLogs([]);
+      setLedgerEntries([]);
+      setProfitSharing(undefined);
+      setLogisticsTrackings([]);
+      setDeficitItems([]);
+      setReconcileRows([]);
     } finally {
       if (refreshRequestRef.current === requestId) {
         setLoading(false);
@@ -319,7 +330,9 @@ export default function ProcurementDashboard() {
     try {
       await api.patchProduct(skuId, { visibilityStatus: 'PUBLIC' as any });
       message.success(t('procurement.publish_success') || 'Published to Mall');
-      if (selectedTripId) refreshTripData(selectedTripId);
+      if (selectedTripId) {
+        await refreshTripData(selectedTripId);
+      }
     } catch {
       message.error(t('errors.request_failed'));
     }
@@ -624,7 +637,7 @@ export default function ProcurementDashboard() {
       </Card>
 
       <Card title={t('procurement.procurement_deficit') || 'Procurement Deficit'} loading={loading} className="procurement-glass-card">
-        <Table
+        <Table<ProcurementDeficitItemResponse>
           rowKey="skuId"
           size="small"
           pagination={false}
@@ -633,17 +646,22 @@ export default function ProcurementDashboard() {
             { title: t('orders.lines.sku_id'), dataIndex: 'skuId', key: 'skuId' },
             { title: t('orders.lines.item_name'), dataIndex: 'itemName', key: 'itemName' },
             { title: t('procurement.deficit_quantity') || 'Deficit Qty', dataIndex: 'deficitQuantity', key: 'deficitQuantity' },
-            { title: t('procurement.priority') || 'Priority', dataIndex: 'priority', key: 'priority', render: (val) => <Tag color={val === 'CRITICAL' ? 'red' : 'orange'}>{val}</Tag> },
-            { 
-              title: t('common.actions') || 'Actions', 
-              key: 'actions', 
-              render: (_, row) => (
-                <Space>
-                  {row.isTemporary && row.visibilityStatus === 'DRAFTER_ONLY' && (
-                    <Button size="small" type="primary" ghost onClick={() => publishToMall(row.skuId)}>
-                      {t('procurement.publish_to_mall') || 'Publish to Mall'}
-                    </Button>
-                  )}
+             {
+               title: t('procurement.priority') || 'Priority',
+               dataIndex: 'priority',
+               key: 'priority',
+               render: (value: string) => <Tag color={value === 'CRITICAL' ? 'red' : 'orange'}>{value}</Tag>
+             },
+             { 
+               title: t('common.actions') || 'Actions', 
+               key: 'actions', 
+               render: (_, row) => (
+                 <Space>
+                   {row.isTemporary && row.visibilityStatus === 'DRAFTER_ONLY' && (
+                     <Button size="small" type="primary" ghost onClick={() => void publishToMall(row.skuId)}>
+                       {t('procurement.publish_to_mall') || 'Publish to Mall'}
+                     </Button>
+                   )}
                 </Space>
               )
             }

@@ -191,7 +191,7 @@ export type ProcurementItemResponse = {
     totalQuantity: number;
     purchasedQuantity: number;
     unitPrice: number;
-    customerIdList: number[];
+    businessIds: string[];
 };
 
 export type ProcurementDeficitItemResponse = {
@@ -230,6 +230,24 @@ export type WalletTransaction = {
     tripId: number;
     createdAt: string;
 };
+
+export type ProductPatch = Partial<{
+    name: Record<string, string | null>;
+    description: Record<string, string | null>;
+    brand: string;
+    basePrice: number;
+    weight: number;
+    volume: number;
+    mediaGallery: { url: string; title?: Record<string, string>; type: string }[];
+    storageCondition: string;
+    orderMethod: string;
+    categoryId: string;
+    merchantSkus: Record<string, string>;
+    priceTiers: PriceTier[];
+    isRecommended: boolean;
+    isTemporary: boolean;
+    visibilityStatus: string;
+}>;
 
 export type FinancialAuditLog = {
     id: number;
@@ -369,6 +387,9 @@ type ApiErrorResponse = {
 
 const genericErrorMessage = () => translate(getStoredLocale(), 'errors.request_failed');
 
+const isMockApiEnabled = () =>
+    typeof window !== 'undefined' && window.localStorage.getItem('bobbuy_enable_mock_api') === 'true';
+
 async function parseErrorMessage(response: Response): Promise<string> {
     try {
         const payload = (await response.json()) as ApiErrorResponse;
@@ -381,25 +402,43 @@ async function parseErrorMessage(response: Response): Promise<string> {
     return response.statusText || genericErrorMessage();
 }
 
-async function fetchJson<T>(url: string, fallbackValue: T): Promise<T> {
+async function fetchJson<T>(url: string, fallbackValue: T, init?: RequestInit): Promise<T> {
     try {
         const response = await fetch(url, {
-            headers: { 'Accept-Language': getStoredLocale() }
+            ...init,
+            headers: {
+                'Accept-Language': getStoredLocale(),
+                ...(init?.headers ?? {})
+            }
         });
         if (!response.ok) {
             const errorMessage = await parseErrorMessage(response);
             message.error(errorMessage);
-            return fallbackValue;
+            if (isMockApiEnabled()) {
+                return fallbackValue;
+            }
+            throw new Error(errorMessage);
         }
         const payload = (await response.json()) as ApiResponse<T> | T;
         if (typeof payload === 'object' && payload !== null && 'status' in payload && 'data' in payload) {
-            return (payload.data ?? fallbackValue) as T;
+            if (payload.data !== undefined) {
+                return payload.data as T;
+            }
+            if (isMockApiEnabled()) {
+                return fallbackValue;
+            }
+            throw new Error(genericErrorMessage());
         }
         return payload as T;
     } catch (error) {
         console.error(`[API ERROR] FETCH failure at ${url}:`, error);
-        message.error(genericErrorMessage());
-        return fallbackValue;
+        if (isMockApiEnabled()) {
+            message.warning('[Mock API] Falling back to local sample data.');
+            return fallbackValue;
+        }
+        const errorMessage = error instanceof Error ? error.message : genericErrorMessage();
+        message.error(errorMessage);
+        throw error instanceof Error ? error : new Error(errorMessage);
     }
 }
 
@@ -508,8 +547,8 @@ export const api = {
     onboardConfirm: (suggestion: AiOnboardingSuggestion) =>
         postJson<MobileProductResponse, AiOnboardingSuggestion>('/api/ai/onboard/confirm', suggestion),
     products: () => fetchJson<MobileProductResponse[]>('/api/mobile/products', fallback.products),
-    patchProduct: (id: string, patch: Partial<Product>) =>
-        fetchJson<MobileProductResponse>(`/api/mobile/products/${id}`, {}, { method: 'PATCH', body: JSON.stringify(patch) }),
+    patchProduct: (id: string, patch: ProductPatch) =>
+        patchJson<MobileProductResponse, ProductPatch>(`/api/mobile/products/${id}`, patch),
     procurementHud: (tripId: number) =>
         fetchJson<ProcurementHudStats>(`/api/procurement/${tripId}/hud`, {
             tripId,

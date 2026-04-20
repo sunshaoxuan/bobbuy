@@ -73,6 +73,9 @@ public class BobbuyStore {
     private final double unitVolume;
     private final AtomicLong orderIdentity = new AtomicLong(3000L);
 
+    @Value("${bobbuy.seed.enabled:false}")
+    private boolean seedEnabled;
+
     public BobbuyStore(
             UserRepository userRepository,
             TripRepository tripRepository,
@@ -104,7 +107,6 @@ public class BobbuyStore {
         this.unitVolume = unitVolume;
     }
 
-    @PostConstruct
     @Transactional
     public void seed() {
         merchantSkuRepository.deleteAll();
@@ -192,6 +194,14 @@ public class BobbuyStore {
                 StockStatus.IN_STOCK);
         merchantSkuRepository.save(merchantSku);
         orderIdentity.set(3000L);
+    }
+
+    @PostConstruct
+    @Transactional
+    public void initializeSeedIfEnabled() {
+        if (seedEnabled) {
+            seed();
+        }
     }
 
     public List<User> listUsers() {
@@ -643,14 +653,20 @@ public class BobbuyStore {
                             line.getSkuId(),
                             line.getItemName(),
                             line.getQuantity(),
+                            line.getPurchasedQuantity(),
+                            line.getUnitPrice(),
                             List.of(order.getBusinessId()));
                 }
                 existing.addQuantity(line.getQuantity());
+                existing.addPurchasedQuantity(line.getPurchasedQuantity());
                 existing.addBusinessId(order.getBusinessId());
                 return existing;
             });
         }));
-        return new ArrayList<>(aggregated.values());
+        return aggregated.values().stream()
+                .sorted(Comparator.comparing(ProcurementItemResponse::getItemName)
+                        .thenComparing(ProcurementItemResponse::getSkuId))
+                .toList();
     }
 
     public double calculateGmv() {

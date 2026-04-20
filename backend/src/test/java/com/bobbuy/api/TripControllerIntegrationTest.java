@@ -84,6 +84,10 @@ class TripControllerIntegrationTest {
             "/api/trips/{tripId}/procurement-list", trip.getId()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].skuId").value("SKU-1"))
-        .andExpect(jsonPath("$.data[0].totalQuantity").value(5));
+        .andExpect(jsonPath("$.data[0].totalQuantity").value(5))
+        .andExpect(jsonPath("$.data[0].purchasedQuantity").value(0))
+        .andExpect(jsonPath("$.data[0].unitPrice").value(10.0))
+        .andExpect(jsonPath("$.data[0].businessIds[0]").value("PROC-1"))
+        .andExpect(jsonPath("$.data[0].businessIds[1]").value("PROC-2"));
   }
 }
