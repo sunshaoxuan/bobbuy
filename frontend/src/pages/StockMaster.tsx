@@ -661,10 +661,7 @@ export default function StockMaster() {
 
   return (
     <div style={{ padding: isMobile ? `0 0 ${MOBILE_BOTTOM_PADDING} 0` : `0 0 ${DESKTOP_BOTTOM_PADDING} 0` }}>
-      <Breadcrumb style={{ marginBottom: '1rem' }}>
-        <Breadcrumb.Item>{t('nav.dashboard')}</Breadcrumb.Item>
-        <Breadcrumb.Item>{t('nav.stock_master')}</Breadcrumb.Item>
-      </Breadcrumb>
+      <Breadcrumb style={{ marginBottom: '1rem' }} items={[{ title: t('nav.dashboard') }, { title: t('nav.stock_master') }]} />
 
       <div className={`stock-toolbar ${isMobile ? 'stock-toolbar-mobile' : ''} ${toolbarCompact ? 'stock-toolbar-compact' : ''}`}>
         <div style={{ minWidth: 0 }}>
@@ -721,7 +718,7 @@ export default function StockMaster() {
       {isMobile ? (
         renderMobileCards()
       ) : (
-        <Card bodyStyle={{ padding: 0 }} style={{ overflow: 'hidden', borderRadius: '0.75rem' }} className="app-shadow-medium">
+        <Card styles={{ body: { padding: 0 } }} style={{ overflow: 'hidden', borderRadius: '0.75rem' }} className="app-shadow-medium">
           <Table
             dataSource={filteredData}
             columns={columns}

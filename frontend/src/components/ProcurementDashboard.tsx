@@ -35,6 +35,7 @@ import {
   type WalletTransaction
 } from '../api';
 import { useI18n } from '../i18n';
+import ChatWidget from './ChatWidget';
 
 const { Text } = Typography;
 
@@ -354,7 +355,8 @@ export default function ProcurementDashboard() {
   };
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <>
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <Breadcrumb items={[{ title: t('nav.dashboard') }, { title: t('nav.procurement') }]} />
       <Card className="procurement-glass-card">
         <Space direction="vertical" style={{ width: '100%' }} size={12}>
@@ -734,6 +736,8 @@ export default function ProcurementDashboard() {
         </Space>
       </Modal>
     </Space>
+      {selectedTripId ? <ChatWidget tripId={selectedTripId} senderId="PURCHASER" recipientId="DEMO-CUST" /> : null}
+    </>
   );
 }
 

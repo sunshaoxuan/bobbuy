@@ -1,11 +1,13 @@
 package com.bobbuy.service;
 
 import com.bobbuy.api.AiOnboardingSuggestion;
+import com.bobbuy.api.AiProductCandidate;
 import com.bobbuy.model.MediaGalleryItem;
 import com.bobbuy.model.MediaType;
 import com.bobbuy.model.OrderMethod;
 import com.bobbuy.model.PriceTier;
 import com.bobbuy.model.Product;
+import com.bobbuy.model.ProductVisibility;
 import com.bobbuy.model.StorageCondition;
 import com.bobbuy.repository.ProductRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -19,11 +21,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class AiProductOnboardingService {
     private static final Logger log = LoggerFactory.getLogger(AiProductOnboardingService.class);
+    // Allow one-third token overlap so short bilingual names can still surface as manual-review candidates.
+    private static final double CANDIDATE_OVERLAP_THRESHOLD = 0.34d;
 
     private final LlmGateway llmGateway;
     private final AiSearchService aiSearchService;
@@ -82,6 +89,7 @@ public class AiProductOnboardingService {
             // 2. Incremental Matching (itemNumber is the unique key)
             boolean existingFound = false;
             String existingId = null;
+            List<AiProductCandidate> similarCandidates = List.of();
             if (itemNumber != null && !itemNumber.isBlank()) {
                 Optional<Product> matched = productRepository.findByItemNumber(itemNumber);
                 if (matched.isPresent()) {
@@ -93,6 +101,12 @@ public class AiProductOnboardingService {
                 }
             } else {
                 log.info("Phase 2: Skipping incremental match (no itemNumber detected).");
+            }
+            if (!existingFound) {
+                similarCandidates = findSimilarCandidates(name, brand);
+                if (!similarCandidates.isEmpty()) {
+                    log.info("Phase 2: Found {} similar name-level product candidates for '{}'.", similarCandidates.size(), name);
+                }
             }
 
             // 3. Deep Research (Brave via WebSearchService)
@@ -148,6 +162,8 @@ public class AiProductOnboardingService {
                 new HashMap<>(),
                 existingFound,
                 existingId,
+                similarCandidates,
+                ProductVisibility.DRAFTER_ONLY,
                 detectedTiers,
                 base64Image
             ));
@@ -176,5 +192,64 @@ public class AiProductOnboardingService {
 
         return llmGateway.generate(synthesisPrompt, null, null)
                 .orElse(searchSnippet);
+    }
+
+    private List<AiProductCandidate> findSimilarCandidates(String name, String brand) {
+        Set<String> queryTokens = normalizeTokens(brand + " " + name);
+        if (queryTokens.isEmpty()) {
+            return List.of();
+        }
+        return productRepository.findAll().stream()
+            .map(product -> toCandidate(product, queryTokens))
+            .filter(Objects::nonNull)
+            .limit(3)
+            .toList();
+    }
+
+    private AiProductCandidate toCandidate(Product product, Set<String> queryTokens) {
+        String displayName = firstNonBlank(
+            product.getName().get("zh-CN"),
+            product.getName().get("ja-JP"),
+            product.getName().get("en-US"),
+            product.getId()
+        );
+        Set<String> productTokens = normalizeTokens(product.getBrand() + " " + displayName);
+        if (productTokens.isEmpty()) {
+            return null;
+        }
+        long sharedCount = queryTokens.stream().filter(productTokens::contains).count();
+        if (sharedCount <= 0) {
+            return null;
+        }
+        long unionCount = queryTokens.size() + productTokens.size() - sharedCount;
+        double overlap = unionCount <= 0 ? 0d : (double) sharedCount / (double) unionCount;
+        if (overlap < CANDIDATE_OVERLAP_THRESHOLD && sharedCount < 2) {
+            return null;
+        }
+        return new AiProductCandidate(
+            product.getId(),
+            displayName,
+            product.getItemNumber(),
+            sharedCount >= 2 ? "NAME_TOKEN_OVERLAP" : "NAME_PARTIAL_OVERLAP"
+        );
+    }
+
+    private Set<String> normalizeTokens(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return Set.of();
+        }
+        return java.util.Arrays.stream(raw.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+"))
+            .map(String::trim)
+            .filter(token -> token.length() >= 2)
+            .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
     }
 }

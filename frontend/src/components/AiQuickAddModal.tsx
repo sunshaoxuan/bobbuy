@@ -137,6 +137,15 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
                 style={{ marginBottom: 24 }}
               />
             )}
+            {!suggestion?.existingProductFound && suggestion?.similarProductCandidates?.length ? (
+              <Alert
+                message={t('stock.ai_quick_add.candidate_found')}
+                description={t('stock.ai_quick_add.candidate_hint')}
+                type="warning"
+                showIcon
+                style={{ marginBottom: 24 }}
+              />
+            ) : null}
             <Result
               status="success"
               title={t('stock.ai_quick_add.success_title')}

@@ -413,7 +413,7 @@ export default function ClientHomeV2() {
         </section>
       </main>
       {/* Chat Widget */}
-      <ChatWidget senderId="DEMO-CUST" recipientId="PURCHASER" />
+      <ChatWidget tripId={selectedTripId} senderId="DEMO-CUST" recipientId="PURCHASER" />
     </div>
   );
 }

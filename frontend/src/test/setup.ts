@@ -21,7 +21,12 @@ if (!window.matchMedia) {
   });
 }
 
-const suppressedWarnings = [/not wrapped in act/i, /uncontrolled input/i];
+const originalGetComputedStyle = window.getComputedStyle.bind(window);
+window.getComputedStyle = ((element: Element, _pseudoElt?: string | null) => {
+  return originalGetComputedStyle(element);
+}) as typeof window.getComputedStyle;
+
+const suppressedWarnings = [/not wrapped in act/i, /uncontrolled input/i, /not match any format/i];
 const originalError = console.error;
 const originalWarn = console.warn;
 

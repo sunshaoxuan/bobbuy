@@ -24,6 +24,10 @@ public class ChatService {
         return chatMessageRepository.findByOrderIdOrderByCreatedAtAsc(orderId);
     }
 
+    public List<ChatMessage> getTripConversation(Long tripId) {
+        return chatMessageRepository.findByTripIdOrderByCreatedAtAsc(tripId);
+    }
+
     public List<ChatMessage> getPrivateConversation(String userA, String userB) {
         return chatMessageRepository.findConversation(userA, userB);
     }

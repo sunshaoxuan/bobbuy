@@ -97,10 +97,7 @@ export default function OrderDesk() {
 
   return (
     <div style={{ height: 'calc(100vh - 150px)', display: 'flex', flexDirection: 'column' }}>
-      <Breadcrumb style={{ marginBottom: 16 }}>
-        <Breadcrumb.Item>{t('nav.dashboard')}</Breadcrumb.Item>
-        <Breadcrumb.Item>{t('nav.order_desk')}</Breadcrumb.Item>
-      </Breadcrumb>
+      <Breadcrumb style={{ marginBottom: 16 }} items={[{ title: t('nav.dashboard') }, { title: t('nav.order_desk') }]} />
       
       <div style={{ display: 'flex', flex: 1, gap: 24, overflow: 'hidden' }}>
         {/* Chat Area */}
@@ -110,7 +107,7 @@ export default function OrderDesk() {
             <span>{t('order_desk.customer_label')}: Alice Wang</span>
             <Badge status="processing" text={t('common.online')} />
           </Space>
-        } style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }} bodyStyle={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
+        } style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }} styles={{ body: { flex: 1, overflowY: 'auto', padding: '16px 24px' } }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {messages.map((msg) => (
               <div key={msg.id} style={{ alignSelf: msg.sender === 'merchant' ? 'flex-end' : 'flex-start', maxWidth: '70%', textAlign: msg.sender === 'merchant' ? 'right' : 'left' }}>
@@ -153,7 +150,7 @@ export default function OrderDesk() {
         <Card 
           title={<Space><RobotOutlined /> <Title level={5} style={{ margin: 0 }}>{t('order_desk.extraction_title')}</Title></Space>}
           style={{ width: 320, height: '100%' }}
-          bodyStyle={{ padding: 16 }}
+          styles={{ body: { padding: 16 } }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <Text type="secondary">{extractedItems.length} {t('order_desk.items_detected')}</Text>

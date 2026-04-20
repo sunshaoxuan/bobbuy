@@ -6,6 +6,7 @@ import com.bobbuy.api.response.ErrorCode;
 import com.bobbuy.model.PriceTier;
 import com.bobbuy.model.Product;
 import com.bobbuy.model.ProductPatch;
+import com.bobbuy.model.ProductVisibility;
 import com.bobbuy.service.AiAgentService;
 import com.bobbuy.service.AiProductOnboardingService;
 import com.bobbuy.service.BobbuyStore;
@@ -89,6 +90,7 @@ public class AiAgentController {
     Product result;
 
     String evidenceImageUrl = imageStorageService.saveBase64(suggestion.originalPhotoBase64());
+    ProductVisibility targetVisibility = suggestion.visibilityStatus();
     
     if (suggestion.existingProductFound() && suggestion.existingProductId() != null) {
       // Incremental update: patch existing product with detected price tiers
@@ -98,6 +100,9 @@ public class AiAgentController {
       }
       if (suggestion.detectedPriceTiers() != null && !suggestion.detectedPriceTiers().isEmpty()) {
         patch.setPriceTiers(suggestion.detectedPriceTiers());
+      }
+      if (targetVisibility != null) {
+        patch.setVisibilityStatus(targetVisibility);
       }
       
       List<com.bobbuy.model.MediaGalleryItem> gallery = new java.util.ArrayList<>(suggestion.mediaGallery() != null ? suggestion.mediaGallery() : List.of());
@@ -142,7 +147,7 @@ public class AiAgentController {
       newProduct.setCategoryId(suggestion.categoryId());
       newProduct.setItemNumber(suggestion.itemNumber());
       newProduct.setTemporary(true);
-      newProduct.setVisibilityStatus(com.bobbuy.model.ProductVisibility.DRAFTER_ONLY);
+      newProduct.setVisibilityStatus(targetVisibility != null ? targetVisibility : ProductVisibility.DRAFTER_ONLY);
       newProduct.setRecommended(false);
       newProduct.setMerchantSkus(new HashMap<>());
       if (suggestion.detectedPriceTiers() != null) {
