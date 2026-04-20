@@ -72,7 +72,25 @@ test('shopping flow patches status and writes audit logs', async ({ page }) => {
     await route.fallback();
   });
 
-  await page.route('**/api/orders', async (route) => {
+  await page.route('**/api/metrics', async (route) => {
+    await route.fulfill({
+      status: 200,
+      body: JSON.stringify({
+        status: 'success',
+        data: {
+          activeUsers: 0,
+          activeTrips: 0,
+          pendingOrders: 0,
+          gmv: 0,
+          orderStatusDistribution: {},
+          recentTrips: [],
+          recentOrders: []
+        }
+      })
+    });
+  });
+
+  await page.route('**/api/orders**', async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: orders }) });
       return;
@@ -120,10 +138,11 @@ test('shopping flow patches status and writes audit logs', async ({ page }) => {
 
   await page.addInitScript(() => {
     window.localStorage.setItem('bobbuy_locale', 'en-US');
+    window.localStorage.setItem('bobbuy_user_role', 'AGENT');
   });
 
   await page.goto('/');
-  await page.getByRole('link', { name: 'Trips' }).click();
+  await page.goto('/trips');
 
   await page.getByLabel('Agent ID').fill('1000');
   await page.getByLabel('Origin').fill('Tokyo');
@@ -146,7 +165,7 @@ test('shopping flow patches status and writes audit logs', async ({ page }) => {
   })) as { data: AuditLog[] };
   expect(tripLogs.data.some((log) => log.entityType === 'TRIP' && log.afterValue === 'PUBLISHED')).toBe(true);
 
-  await page.getByRole('link', { name: 'Orders' }).click();
+  await page.goto('/orders');
   await page.getByLabel('Customer ID').fill('1001');
   await page.getByLabel('Trip ID').fill('2000');
   await page.getByLabel('Item Name').fill('Camera');

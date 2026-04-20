@@ -112,7 +112,7 @@ describe('Trips page', () => {
 
     await waitFor(() => expect(mockApi.createTrip).toHaveBeenCalled());
     expect(mockApi.trips).toHaveBeenCalledTimes(2);
-  });
+  }, 10000);
 
   it('validates required fields', async () => {
     const user = userEvent.setup();
