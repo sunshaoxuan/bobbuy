@@ -22,10 +22,7 @@ if (!window.matchMedia) {
 }
 
 const originalGetComputedStyle = window.getComputedStyle.bind(window);
-window.getComputedStyle = ((element: Element, pseudoElt?: string | null) => {
-  if (pseudoElt) {
-    return originalGetComputedStyle(element);
-  }
+window.getComputedStyle = ((element: Element, _pseudoElt?: string | null) => {
   return originalGetComputedStyle(element);
 }) as typeof window.getComputedStyle;
 

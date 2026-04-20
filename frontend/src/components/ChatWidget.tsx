@@ -38,7 +38,10 @@ interface ChatWidgetProps {
 type ConversationType = 'PRIVATE' | 'ORDER' | 'TRIP';
 
 const messageKey = (chatMessage: ChatMessage) =>
-  String(chatMessage.id ?? `${chatMessage.tripId ?? ''}-${chatMessage.orderId ?? ''}-${chatMessage.createdAt ?? ''}-${chatMessage.senderId}-${chatMessage.content}`);
+  String(
+    chatMessage.id ??
+      `${chatMessage.tripId ?? ''}-${chatMessage.orderId ?? ''}-${chatMessage.createdAt ?? ''}-${chatMessage.senderId}-${chatMessage.type}-${String(chatMessage.metadata?.url ?? '').slice(-32)}`
+  );
 
 export default function ChatWidget({ orderId, tripId, senderId, recipientId }: ChatWidgetProps) {
   const { t } = useI18n();

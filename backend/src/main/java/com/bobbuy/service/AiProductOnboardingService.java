@@ -219,7 +219,8 @@ public class AiProductOnboardingService {
         if (sharedCount <= 0) {
             return null;
         }
-        double overlap = (double) sharedCount / (double) Math.max(queryTokens.size(), productTokens.size());
+        long unionCount = queryTokens.size() + productTokens.size() - sharedCount;
+        double overlap = unionCount <= 0 ? 0d : (double) sharedCount / (double) unionCount;
         if (overlap < 0.34d && sharedCount < 2) {
             return null;
         }
@@ -235,7 +236,7 @@ public class AiProductOnboardingService {
         if (raw == null || raw.isBlank()) {
             return Set.of();
         }
-        return java.util.Arrays.stream(raw.toLowerCase(Locale.ROOT).split("[^\\p{IsAlphabetic}\\p{IsDigit}]+"))
+        return java.util.Arrays.stream(raw.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+"))
             .map(String::trim)
             .filter(token -> token.length() >= 2)
             .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
