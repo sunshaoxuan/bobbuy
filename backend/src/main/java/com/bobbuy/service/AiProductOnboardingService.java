@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 @Service
 public class AiProductOnboardingService {
     private static final Logger log = LoggerFactory.getLogger(AiProductOnboardingService.class);
+    // Allow one-third token overlap so short bilingual names can still surface as manual-review candidates.
+    private static final double CANDIDATE_OVERLAP_THRESHOLD = 0.34d;
 
     private final LlmGateway llmGateway;
     private final AiSearchService aiSearchService;
@@ -221,7 +223,7 @@ public class AiProductOnboardingService {
         }
         long unionCount = queryTokens.size() + productTokens.size() - sharedCount;
         double overlap = unionCount <= 0 ? 0d : (double) sharedCount / (double) unionCount;
-        if (overlap < 0.34d && sharedCount < 2) {
+        if (overlap < CANDIDATE_OVERLAP_THRESHOLD && sharedCount < 2) {
             return null;
         }
         return new AiProductCandidate(

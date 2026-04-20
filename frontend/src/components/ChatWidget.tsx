@@ -40,7 +40,7 @@ type ConversationType = 'PRIVATE' | 'ORDER' | 'TRIP';
 const messageKey = (chatMessage: ChatMessage) =>
   String(
     chatMessage.id ??
-      `${chatMessage.tripId ?? ''}-${chatMessage.orderId ?? ''}-${chatMessage.createdAt ?? ''}-${chatMessage.senderId}-${chatMessage.type}-${String(chatMessage.metadata?.url ?? '').slice(-32)}`
+      `${chatMessage.tripId ?? ''}-${chatMessage.orderId ?? ''}-${chatMessage.createdAt ?? ''}-${chatMessage.senderId}-${chatMessage.recipientId}-${chatMessage.type}-${String(chatMessage.metadata?.url ?? '').slice(-32)}`
   );
 
 export default function ChatWidget({ orderId, tripId, senderId, recipientId }: ChatWidgetProps) {
@@ -222,6 +222,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
       const previewUrl = response.product.mediaGallery?.[0]?.url ?? pendingImagePreview ?? pendingSuggestion.mediaGallery?.[0]?.url ?? '';
       const productName = response.displayName || pendingSuggestion.name;
       const draftOnly = response.product.visibilityStatus === 'DRAFTER_ONLY' || (!payload.existingProductFound && !publishOnConfirm);
+      const visibilityStatus = draftOnly ? 'DRAFTER_ONLY' : response.product.visibilityStatus ?? 'PUBLIC';
 
       await api.sendChatMessage({
         orderId,
@@ -236,7 +237,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
           productId: response.product.id,
           productName,
           itemNumber: response.product.itemNumber,
-          visibilityStatus: draftOnly ? 'DRAFTER_ONLY' : response.product.visibilityStatus ?? 'PUBLIC',
+          visibilityStatus,
           isTemporary: response.product.isTemporary ?? true,
           existingProductFound: payload.existingProductFound ?? false,
           matchedBy: payload.existingProductFound
