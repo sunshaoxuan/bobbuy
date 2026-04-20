@@ -1,74 +1,152 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import PickingMaster from '../pages/PickingMaster';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import PickingMaster from './PickingMaster';
 import { I18nProvider } from '../i18n';
 
-describe('PickingMaster Component', () => {
-    beforeEach(() => {
-        window.localStorage.setItem('bobbuy_locale', 'en-US');
-    });
+vi.mock('antd', async () => {
+  const antd = await vi.importActual<typeof import('antd')>('antd');
+  return {
+    ...antd,
+    Select: ({ options = [], onChange, value }: any) => (
+      <select
+        aria-label="trip-select"
+        data-testid="trip-select"
+        value={value}
+        onChange={(event) => onChange?.(Number(event.target.value))}
+      >
+        {options.map((option: any) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    )
+  };
+});
 
-    afterEach(() => {
-        window.localStorage.removeItem('bobbuy_locale');
-    });
-
-    it('renders picking gallery with filter controls', () => {
-        render(
-            <I18nProvider>
-                <BrowserRouter>
-                    <PickingMaster />
-                </BrowserRouter>
-            </I18nProvider>
-        );
-
-        expect(screen.getAllByText(/Picking Master/i).length).toBeGreaterThan(0);
-        // Use getAllByText for labels that appear in multiple places (Radio and Tags)
-        expect(screen.getAllByText(/To Pick/i).length).toBeGreaterThan(0);
-    });
-
-    it('filters items correctly', async () => {
-        render(
-            <I18nProvider>
-                <BrowserRouter>
-                    <PickingMaster />
-                </BrowserRouter>
-            </I18nProvider>
-        );
-
-        // All items (initial 4)
-        // Use queryAllByRole('img') and filter for actual <img> tags to avoid matching SVG icons
-        const imgs = screen.getAllByRole('img').filter(el => el.tagName === 'IMG');
-        expect(imgs.length).toBe(4);
-
-        // Click 'To Pick' (initial 2)
-        const todoFilter = screen.getByLabelText(/To Pick/i);
-        fireEvent.click(todoFilter);
-        
-        // Wait for list update
-        expect(screen.getAllByRole('img').length).toBe(2);
-    });
-
-    it('toggles picking state when item is clicked', async () => {
-        render(
-            <I18nProvider>
-                <BrowserRouter>
-                    <PickingMaster />
-                </BrowserRouter>
-            </I18nProvider>
-        );
-
-        // Find an unpicked item (Fresh Spinach)
-        const spinachItem = screen.getByText(/Fresh Spinach/i).closest('.ant-card');
-        const img = spinachItem?.querySelector('img');
-        
-        if (img) {
-            fireEvent.click(img);
+vi.mock('../api', () => ({
+  api: {
+    trips: () =>
+      Promise.resolve([
+        {
+          id: 2000,
+          agentId: 1000,
+          origin: 'Tokyo',
+          destination: 'Shanghai',
+          departDate: '2026-04-20',
+          capacity: 10,
+          reservedCapacity: 2,
+          remainingCapacity: 8,
+          status: 'PUBLISHED'
         }
+      ]),
+    procurementList: () =>
+      Promise.resolve([
+        {
+          skuId: 'prd-1000',
+          itemName: 'Matcha Kit',
+          totalQuantity: 3,
+          purchasedQuantity: 1,
+          unitPrice: 32.5,
+          businessIds: ['BIZ-001', 'BIZ-002']
+        },
+        {
+          skuId: 'prd-1001',
+          itemName: 'Tokyo Banana',
+          totalQuantity: 1,
+          purchasedQuantity: 1,
+          unitPrice: 18,
+          businessIds: ['BIZ-003']
+        }
+      ]),
+    orders: () =>
+      Promise.resolve([
+        {
+          id: 3000,
+          businessId: 'BIZ-001',
+          customerId: 1001,
+          tripId: 2000,
+          status: 'CONFIRMED',
+          totalAmount: 65,
+          lines: [{ skuId: 'prd-1000', itemName: 'Matcha Kit', quantity: 2, purchasedQuantity: 1, unitPrice: 32.5 }]
+        },
+        {
+          id: 3001,
+          businessId: 'BIZ-002',
+          customerId: 1002,
+          tripId: 2000,
+          status: 'CONFIRMED',
+          totalAmount: 32.5,
+          lines: [{ skuId: 'prd-1000', itemName: 'Matcha Kit', quantity: 1, purchasedQuantity: 0, unitPrice: 32.5 }]
+        },
+        {
+          id: 3002,
+          businessId: 'BIZ-003',
+          customerId: 1003,
+          tripId: 2000,
+          status: 'CONFIRMED',
+          totalAmount: 18,
+          lines: [{ skuId: 'prd-1001', itemName: 'Tokyo Banana', quantity: 1, purchasedQuantity: 1, unitPrice: 18 }]
+        }
+      ])
+  }
+}));
 
-        // It should now show 'Picked' tag
-        const pickedTags = screen.getAllByText(/Picked/i);
-        // Initial has 2 Picked + 1 more now = 3 (plus the filter button)
-        // We'll just check if the tag exists for that item
-    });
+describe('PickingMaster', () => {
+  beforeEach(() => {
+    window.localStorage.setItem('bobbuy_locale', 'en-US');
+  });
+
+  afterEach(() => {
+    window.localStorage.removeItem('bobbuy_locale');
+  });
+
+  it('renders procurement items from the real procurement contract', async () => {
+    render(
+      <I18nProvider>
+        <BrowserRouter>
+          <PickingMaster />
+        </BrowserRouter>
+      </I18nProvider>
+    );
+
+    expect((await screen.findAllByText(/Picking Master/i)).length).toBeGreaterThan(0);
+    expect(await screen.findByText('Matcha Kit')).toBeInTheDocument();
+    expect(await screen.findByText('Tokyo Banana')).toBeInTheDocument();
+    expect(await screen.findByText('￥32.5')).toBeInTheDocument();
+  });
+
+  it('filters incomplete procurement rows', async () => {
+    render(
+      <I18nProvider>
+        <BrowserRouter>
+          <PickingMaster />
+        </BrowserRouter>
+      </I18nProvider>
+    );
+
+    expect(await screen.findByText('Matcha Kit')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: /To Pick/i }));
+
+    expect(screen.getByText('Matcha Kit')).toBeInTheDocument();
+    expect(screen.queryByText('Tokyo Banana')).not.toBeInTheDocument();
+  });
+
+  it('shows business drill-down in the details modal', async () => {
+    render(
+      <I18nProvider>
+        <BrowserRouter>
+          <PickingMaster />
+        </BrowserRouter>
+      </I18nProvider>
+    );
+
+    expect(await screen.findByText('Matcha Kit')).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: /Details/i })[0]);
+
+    expect(await screen.findByText(/Business ID: BIZ-001/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Business ID: BIZ-002/i)).toBeInTheDocument();
+    expect(screen.getByText('1/2')).toBeInTheDocument();
+  });
 });

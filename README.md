@@ -1,12 +1,12 @@
 # BOBBuy
 
-**BOBBuy** 是一款先进的全球委托任务与代购服务平台（Global Errand & Personal Shopper Platform）。通过集成前沿的 AI 技术与实时通讯能力，平台致力于构建一个高效、信任且透明的跨境委托生态系统。
+**BOBBuy** 是一款先进的全球委托任务与代购服务平台（Global Errand & Personal Shopper Platform）。通过集成 AI 能力、可审计的采购协作链路与跨端订单闭环，平台致力于构建一个高效、信任且透明的跨境委托生态系统。
 
 ## 🌐 平台愿景
 旨在链接全球范围内具有特定代购或代办需求的委托人（Customer）与能够提供专业服务的代理人（Agent/Merchant），打破地域限制，实现全球资源的无缝获取。
 
 ## ✨ 核心特性
-- **💬 智能化即时通讯 (Intelligent IM)**：集成 AI 助手的实时通讯系统，支持多端消息同步与自动意图解析。
+- **💬 采购沟通留痕 (Procurement Chat)**：当前提供 REST 持久化消息、历史查询与轮询刷新；WebSocket 实时推送集群仍在下一里程碑。
 - **🤖 AI 流程自动化 (AI Automation)**：
   - **AI 现场采集 (AI Sourcing)**：拍摄一张卖场货架照片，AI 自动识别品类、名称、货号、含税/免税价格，并自动上架。
   - **智能深度研究 (Deep Research)**：基于采集到的片段信息，自动进行全网搜索，补全商品详细介绍、规格参数并采集官方高清原图。
@@ -22,7 +22,7 @@
 - **数据与存储 (Storage)**：
   - **PostgreSQL 15**：依托 JSONB 特性和关系型约束，处理复杂元数据。
   - **MinIO**：兼容 S3 协议的大规模对象存储。
-- **中间件 (Middleware)**：**Redis** (分布式状态管理) + **RabbitMQ** (异步任务队列)。
+- **中间件 (Middleware)**：**Redis** 与 **RabbitMQ** 已纳入部署方案；当前核心业务闭环仍以 Spring Boot + PostgreSQL/MinIO + REST 接口为主。
 
 ## 🚀 发展路线
 1. **Phase 1: 核心链路构建 (Core MVP)**：聚焦核心代购流程的数字化与 AI 辅助分析能力的落地。 [DONE]
@@ -54,6 +54,10 @@ docker-compose -p bobbuy up -d
 
 ### 3. 数据持久化
 所有数据库和存储数据默认挂载在项目根目录下的 `data/` 卷中。
+
+### 4. 初始化数据说明
+- 默认启动 **不会** 自动清空业务数据或重灌 Seed。
+- 如需本地演示数据，请显式启用 `dev` profile 或设置 `bobbuy.seed.enabled=true`。
 
 ---
 © 2026 BOBBuy 团队. 保留所有权利。

@@ -1,6 +1,13 @@
 import { Button, Empty, Grid, Select, Space, Typography, message } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api, type CustomerBalanceLedgerEntry, type MobileProductResponse, type Order, type Trip } from '../api';
+import {
+  api,
+  type CustomerBalanceLedgerEntry,
+  type MobileProductResponse,
+  type Order,
+  type Trip,
+  type WalletSummary
+} from '../api';
 import { useI18n } from '../i18n';
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '../context/UserRoleContext';
@@ -36,6 +43,7 @@ export default function ClientHomeV2() {
   const [ledgerEntries, setLedgerEntries] = useState<CustomerBalanceLedgerEntry[]>([]);
   const [activeBusinessId, setActiveBusinessId] = useState<string>();
   const [liveFeed, setLiveFeed] = useState<LiveFeedItem[]>([]);
+  const [partnerWallet, setPartnerWallet] = useState<WalletSummary>();
   const { isCustomer } = useUserRole();
   const previousPurchasedRef = useRef<Record<string, number>>({});
 
@@ -82,47 +90,62 @@ export default function ClientHomeV2() {
 
   const refreshTripData = useCallback(
     async (tripId: number, appendStories = false) => {
-      const [orderList, ledger] = await Promise.all([api.orders(tripId), api.customerBalanceLedger(tripId)]);
-      const nextSnapshot = buildPurchasedSnapshot(orderList);
+      try {
+        const [orderList, ledger] = await Promise.all([api.orders(tripId), api.customerBalanceLedger(tripId)]);
+        const nextSnapshot = buildPurchasedSnapshot(orderList);
 
-      if (appendStories) {
-        for (const order of orderList) {
-          for (const line of order.lines ?? []) {
-            const key = `${order.businessId}-${line.skuId}`;
-            const previous = previousPurchasedRef.current[key] ?? 0;
-            const current = line.purchasedQuantity ?? line.quantity ?? 0;
-            if (current > previous) {
-              pushLiveStory(buildLiveStory(order.businessId, line.itemName));
+        if (appendStories) {
+          for (const order of orderList) {
+            for (const line of order.lines ?? []) {
+              const key = `${order.businessId}-${line.skuId}`;
+              const previous = previousPurchasedRef.current[key] ?? 0;
+              const current = line.purchasedQuantity ?? line.quantity ?? 0;
+              if (current > previous) {
+                pushLiveStory(buildLiveStory(order.businessId, line.itemName));
+              }
             }
           }
+        } else {
+          hydrateLiveFeed(orderList);
         }
-      } else {
-        hydrateLiveFeed(orderList);
+
+        previousPurchasedRef.current = nextSnapshot;
+        setOrders(orderList);
+        setLedgerEntries(ledger);
+
+        const nextBusinessId = ledger[0]?.businessId ?? orderList[0]?.businessId;
+        setActiveBusinessId((prev) => prev ?? nextBusinessId);
+      } catch {
+        setOrders([]);
+        setLedgerEntries([]);
       }
-
-      previousPurchasedRef.current = nextSnapshot;
-      setOrders(orderList);
-      setLedgerEntries(ledger);
-
-      const nextBusinessId = ledger[0]?.businessId ?? orderList[0]?.businessId;
-      setActiveBusinessId((prev) => prev ?? nextBusinessId);
     },
     [buildLiveStory, hydrateLiveFeed, pushLiveStory]
   );
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.trips(), api.products()]).then(async ([tripList, productList]) => {
-      if (cancelled) {
-        return;
-      }
-      setTrips(tripList);
-      setProducts(productList.slice(0, 6));
-      if (tripList.length > 0) {
-        setSelectedTripId(tripList[0].id);
-        await refreshTripData(tripList[0].id, false);
-      }
-    });
+    Promise.all([api.trips(), api.products(), api.getWallet('PURCHASER')])
+      .then(async ([tripList, productList, wallet]) => {
+        if (cancelled) {
+          return;
+        }
+        setTrips(tripList);
+        setProducts(productList.slice(0, 6));
+        setPartnerWallet(wallet);
+        if (tripList.length > 0) {
+          setSelectedTripId(tripList[0].id);
+          await refreshTripData(tripList[0].id, false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTrips([]);
+          setProducts([]);
+          setOrders([]);
+          setLedgerEntries([]);
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -142,7 +165,7 @@ export default function ClientHomeV2() {
     };
     window.addEventListener('procurement:reconciled', onReconciled);
     const timer = window.setInterval(() => refreshTripData(selectedTripId, true), 30000); // Slower refresh for Zen
-    api.getWallet('PURCHASER').then(setPartnerWallet);
+    api.getWallet('PURCHASER').then(setPartnerWallet).catch(() => undefined);
     return () => {
       window.removeEventListener('procurement:reconciled', onReconciled);
       window.clearInterval(timer);
@@ -211,7 +234,10 @@ export default function ClientHomeV2() {
       // For Zen 1-click buy, we use a generic or customer-mapped businessId
       await api.quickOrder(selectedTripId, { skuId, quantity: 1, businessId: 'ZEN-1-CLICK' });
       message.success(t('zen.buy_success'), 1.5);
-      await refreshTripData(selectedTripId, true);
+      await Promise.all([
+        refreshTripData(selectedTripId, true),
+        api.getWallet('PURCHASER').then(setPartnerWallet)
+      ]);
     } catch {
       message.error(t('errors.request_failed'));
     }

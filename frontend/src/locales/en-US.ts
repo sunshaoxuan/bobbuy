@@ -385,6 +385,7 @@ const messages: Dictionary = {
     'picking.filter.all': 'All',
     'picking.filter.todo': 'To Pick',
     'picking.filter.done': 'Picked',
+    'picking.details': 'Details',
     'picking.empty': 'No items to pick',
     'zen.hero_title': 'Elegant. Refined. Clean.',
     'zen.hero_subtitle': 'Return to the essence of products, leave room for air.',

@@ -134,6 +134,27 @@ vi.mock('../api', () => ({
                 createdAt: '2026-01-01T00:00:00'
             }
         ]),
+        procurementDeficitItems: () => Promise.resolve([
+            {
+                skuId: 'prd-1000',
+                itemName: 'Matcha Kit',
+                deficitQuantity: 1,
+                completionPercent: 50,
+                priority: 'CRITICAL',
+                isTemporary: true,
+                visibilityStatus: 'DRAFTER_ONLY'
+            }
+        ]),
+        patchProduct: () => Promise.resolve({
+            product: {
+                id: 'prd-1000',
+                name: { 'en-US': 'Matcha Kit' },
+                basePrice: 50,
+                mediaGallery: []
+            },
+            displayName: 'Matcha Kit',
+            displayDescription: 'Updated'
+        }),
         finalizeProcurementSettlement: () => Promise.resolve(undefined)
     }
 }));

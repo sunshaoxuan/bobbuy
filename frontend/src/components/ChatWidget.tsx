@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Input, List, Modal, Avatar, Space, Typography, Badge, message } from 'antd';
-import { MessageOutlined, SendOutlined, UserOutlined, PictureOutlined } from '@ant-design/icons';
-import { api, ChatMessage } from '../api';
+import { MessageOutlined, ReloadOutlined, SendOutlined, UserOutlined } from '@ant-design/icons';
+import { api, type ChatMessage } from '../api';
 import { useI18n } from '../i18n';
 
 const { Text } = Typography;
@@ -20,23 +20,25 @@ export default function ChatWidget({ orderId, senderId, recipientId }: ChatWidge
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const loadMessages = useCallback(async () => {
+    let data: ChatMessage[];
+    if (orderId) {
+      data = await api.getOrderChat(orderId);
+    } else {
+      data = await api.getPrivateChat(senderId, recipientId);
+    }
+    setMessages(data);
+  }, [orderId, recipientId, senderId]);
+
   useEffect(() => {
     if (!open) return;
 
-    const fetchMessages = async () => {
-      let data: ChatMessage[];
-      if (orderId) {
-        data = await api.getOrderChat(orderId);
-      } else {
-        data = await api.getPrivateChat(senderId, recipientId);
-      }
-      setMessages(data);
-    };
-
-    fetchMessages();
-    const timer = setInterval(fetchMessages, 3000);
-    return () => clearInterval(timer);
-  }, [open, orderId, senderId, recipientId]);
+    void loadMessages();
+    const timer = window.setInterval(() => {
+      void loadMessages();
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [loadMessages, open]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -56,24 +58,12 @@ export default function ChatWidget({ orderId, senderId, recipientId }: ChatWidge
         type: 'TEXT'
       });
       setInputValue('');
+      await loadMessages();
     } catch {
       message.error(t('errors.request_failed'));
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSendImage = () => {
-    // Simulated image upload
-    api.sendChatMessage({
-        orderId,
-        senderId,
-        recipientId,
-        content: '[Image Simulation]',
-        type: 'IMAGE',
-        metadata: { url: 'https://via.placeholder.com/300' }
-    });
-    message.info('Image sent (mock)');
   };
 
   return (
@@ -151,7 +141,7 @@ export default function ChatWidget({ orderId, senderId, recipientId }: ChatWidge
           </div>
           <div style={{ padding: '12px', borderTop: 'var(--zen-line)', background: 'white' }}>
             <Space.Compact style={{ width: '100%' }}>
-              <Button icon={<PictureOutlined />} onClick={handleSendImage} />
+              <Button icon={<ReloadOutlined />} onClick={() => void loadMessages()} />
               <Input 
                 placeholder={t('chat.placeholder') || 'Type a message...'} 
                 value={inputValue}
