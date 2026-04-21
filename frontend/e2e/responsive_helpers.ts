@@ -24,7 +24,7 @@ const MOCK_ORDERS = [
     paymentMethod: 'ALIPAY',
     paymentStatus: 'UNPAID',
     totalAmount: 65,
-    lines: [{ skuId: 'SKU-001', itemName: 'Matcha', quantity: 2, unitPrice: 32.5, purchasedQuantity: 1 }]
+    lines: [{ skuId: 'SKU-001', itemName: 'Matcha', quantity: 2, unitPrice: 32.5 }]
   }
 ];
 
@@ -70,6 +70,8 @@ export async function assertNoHorizontalOverflow(page: Page) {
 }
 
 export async function setupCommonMocks(page: Page) {
+  // Fallback mock to absorb any non-essential API request and prevent Vite proxy ECONNREFUSED noise.
+  // Specific routes are registered afterwards and take precedence in Playwright.
   await page.route('**/api/**', (route) =>
     route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: {} }) })
   );
