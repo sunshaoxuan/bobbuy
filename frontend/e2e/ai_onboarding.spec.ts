@@ -22,7 +22,7 @@ test.describe('AI Vision Onboarding E2E', () => {
 
         // 3. Monitor Progress Steps
         // Controlled acceptance marker: stable stage tag instead of relying only on UI copy.
-        await expect(page.locator('[data-testid="ai-onboarding-stage"][data-stage="SCANNING"]')).toBeAttached({ timeout: 10000 });
+        await expect(page.locator('[data-testid="ai-onboarding-steps"]')).toHaveAttribute('data-stage', 'SCANNING', { timeout: 10000 });
         
         // Wait for final success state (this drives the REAL backend AI flow)
         await expect(page.locator('[data-testid="ai-onboarding-result-subtitle"][data-ai-status="SUCCESS"]')).toBeVisible({ timeout: 30000 });

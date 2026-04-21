@@ -83,13 +83,13 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
       destroyOnClose
     >
       <div style={{ padding: '24px 0' }}>
-        <div data-testid="ai-onboarding-stage" data-stage={stageByStep[currentStep]} style={{ display: 'none' }} />
         <Steps
           current={currentStep}
           items={steps.map(s => ({ title: s.title, icon: s.icon }))}
           size="small"
           style={{ marginBottom: 32 }}
           data-testid="ai-onboarding-steps"
+          data-stage={stageByStep[currentStep]}
         />
 
         {currentStep === 0 && (
