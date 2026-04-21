@@ -429,21 +429,18 @@ public class BobbuyStore {
         } else {
             orders = orderHeaderRepository.findByTripId(tripId);
         }
-        if (customerIdentityResolver.isCustomer(authentication)) {
-            Long customerId = customerIdentityResolver.resolveCustomerId(authentication).orElse(null);
-            if (customerId == null) {
-                return List.of();
-            }
-            final Long cid = customerId;
-            orders = orders.stream()
-                    .filter(o -> cid.equals(o.getCustomerId()))
-                    .collect(Collectors.toList());
-        }
-        return orders;
+        return orders.stream()
+                .filter(order -> isOrderVisibleToAuthentication(order, authentication))
+                .collect(Collectors.toList());
     }
 
     public Optional<OrderHeader> getOrder(Long id) {
         return orderHeaderRepository.findById(id);
+    }
+
+    public Optional<OrderHeader> getOrder(Long id, Authentication authentication) {
+        return orderHeaderRepository.findById(id)
+                .filter(order -> isOrderVisibleToAuthentication(order, authentication));
     }
 
     public Optional<OrderHeader> getOrderByBusinessId(String businessId) {
@@ -776,6 +773,15 @@ public class BobbuyStore {
             int cappedPurchased = Math.min(Math.max(line.getPurchasedQuantity(), 0), Math.max(line.getQuantity(), 0));
             line.setPurchasedQuantity(cappedPurchased);
         }
+    }
+
+    private boolean isOrderVisibleToAuthentication(OrderHeader order, Authentication authentication) {
+        if (!customerIdentityResolver.isCustomer(authentication)) {
+            return true;
+        }
+        return customerIdentityResolver.resolveCustomerId(authentication)
+                .map(customerId -> customerId.equals(order.getCustomerId()))
+                .orElse(false);
     }
 
     private void refreshTripDynamicLoad(Trip trip) {

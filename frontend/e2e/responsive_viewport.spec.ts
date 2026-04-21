@@ -49,7 +49,7 @@ const MOCK_LEDGER = [
 const MOCK_METRICS = { users: 2, trips: 1, orders: 1, gmV: 65, orderStatusCounts: { CONFIRMED: 1 } };
 
 async function setupCommonMocks(page: Page) {
-  await page.route('**/api/trips', (route) =>
+  await page.route('**/api/trips**', (route) =>
     route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: MOCK_TRIPS }) })
   );
   await page.route('**/api/orders**', (route) =>
@@ -112,6 +112,20 @@ async function setupCommonMocks(page: Page) {
   await page.route('**/api/procurement/*/audit-logs', (route) =>
     route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: [] }) })
   );
+  await page.route('**/api/procurement/wallets/*', (route) =>
+    route.fulfill({
+      status: 200,
+      body: JSON.stringify({
+        status: 'success',
+        data: {
+          partnerId: 'PURCHASER',
+          balance: 1250.5,
+          currency: 'CNY',
+          updatedAt: '2026-01-01T00:00:00Z'
+        }
+      })
+    })
+  );
 }
 
 /**
@@ -156,9 +170,8 @@ test.describe('Responsive: ClientHomeV2', () => {
         window.localStorage.setItem('bobbuy_user_role', 'CUSTOMER');
         window.localStorage.setItem('bobbuy_test_user', '1001');
       });
-      await page.goto('/client/home');
-      // Heading visible
-      await expect(page.getByRole('heading', { level: 4 }).first()).toBeVisible();
+      await page.goto('/');
+      await expect(page.getByRole('heading', { name: 'Elegant. Refined. Clean.' })).toBeVisible();
       await assertNoHorizontalOverflow(page);
     });
   }
@@ -175,8 +188,7 @@ test.describe('Responsive: ClientOrders', () => {
         window.localStorage.setItem('bobbuy_test_user', '1001');
       });
       await page.goto('/client/orders');
-      // Heading visible
-      await expect(page.getByText('My Orders')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'My Orders' })).toBeVisible();
       // Order summary line visible in the first screen
       await expect(page.locator('[data-testid="orders-summary"]')).toBeVisible();
       await assertNoHorizontalOverflow(page);
@@ -195,7 +207,7 @@ test.describe('Responsive: ClientBilling', () => {
         window.localStorage.setItem('bobbuy_test_user', '1001');
       });
       await page.goto('/client/billing');
-      await expect(page.getByText('Billing')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Billing' })).toBeVisible();
       await expect(page.getByText('BIZ-1001')).toBeVisible();
       await assertNoHorizontalOverflow(page);
     });
@@ -213,7 +225,7 @@ test.describe('Responsive: ClientChat', () => {
         window.localStorage.setItem('bobbuy_test_user', '1001');
       });
       await page.goto('/client/chat');
-      await expect(page.getByText('Chat')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Chat' })).toBeVisible();
       await assertNoHorizontalOverflow(page);
     });
   }
@@ -251,7 +263,7 @@ test.describe('Responsive: StockMaster', () => {
         window.localStorage.setItem('bobbuy_test_user', '1000');
       });
       await page.goto('/stock-master');
-      await expect(page.getByRole('heading').first()).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Stock Master - Bulk Onboarding' })).toBeVisible();
       await assertNoHorizontalOverflow(page);
     });
   }
@@ -267,9 +279,8 @@ test.describe('Responsive: ZenAuditView', () => {
         window.localStorage.setItem('bobbuy_user_role', 'AGENT');
         window.localStorage.setItem('bobbuy_test_user', '1000');
       });
-      await page.goto('/zen-audit/2000');
-      // The page should render (heading or loading state visible)
-      await expect(page.getByRole('heading').first()).toBeVisible();
+      await page.goto('/audit/2000');
+      await expect(page.getByRole('heading', { name: 'Digital Scroll' })).toBeVisible();
       await assertNoHorizontalOverflow(page);
     });
   }

@@ -39,7 +39,7 @@ class OrderControllerTest {
     OrderHeader created = controller.create(payload).getBody().getData();
     assertThat(created.getId()).isNotNull();
 
-    ResponseEntity<ApiResponse<OrderHeader>> fetched = controller.get(created.getId());
+    ResponseEntity<ApiResponse<OrderHeader>> fetched = controller.get(created.getId(), null);
     assertThat(fetched.getBody().getData().getBusinessId()).isEqualTo("ORD-TEST");
 
     OrderHeader updatePayload = new OrderHeader("ORD-TEST", 1001L, 2000L);
@@ -58,7 +58,7 @@ class OrderControllerTest {
 
   @Test
   void orderCrudRejectsMissing() {
-    assertThatThrownBy(() -> controller.get(9999L))
+    assertThatThrownBy(() -> controller.get(9999L, null))
         .isInstanceOf(ApiException.class);
     assertThatThrownBy(() -> controller.update(9999L, new OrderHeader("MISS", 1001L, 2000L)))
         .isInstanceOf(ApiException.class);

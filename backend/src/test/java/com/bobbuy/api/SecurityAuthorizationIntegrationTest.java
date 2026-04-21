@@ -33,6 +33,8 @@ class SecurityAuthorizationIntegrationTest {
   private BobbuyStore store;
 
   private Long tripId;
+  private Long ownOrderId;
+  private Long otherOrderId;
 
   @BeforeEach
   void setUp() {
@@ -42,11 +44,11 @@ class SecurityAuthorizationIntegrationTest {
 
     OrderHeader ownOrder = new OrderHeader("LEDGER-CUST-OWN", 9001L, tripId);
     ownOrder.addLine(new OrderLine("SKU-OWN", "Own Item", null, 2, 10.0));
-    store.upsertOrder(ownOrder);
+    ownOrderId = store.upsertOrder(ownOrder).getId();
 
     OrderHeader otherOrder = new OrderHeader("LEDGER-CUST-OTHER", 9002L, tripId);
     otherOrder.addLine(new OrderLine("SKU-OTHER", "Other Item", null, 1, 20.0));
-    store.upsertOrder(otherOrder);
+    otherOrderId = store.upsertOrder(otherOrder).getId();
   }
 
   @Test
@@ -66,6 +68,29 @@ class SecurityAuthorizationIntegrationTest {
         .andExpect(jsonPath("$.meta.total").value(1))
         .andExpect(jsonPath("$.data[0].customerId").value(9001))
         .andExpect(jsonPath("$.data[0].businessId").value("LEDGER-CUST-OWN"));
+  }
+
+  @Test
+  void customerCanReadOwnOrderDetail() throws Exception {
+    mockMvc.perform(asCustomer(get("/api/orders/{id}", ownOrderId), "9001"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value(ownOrderId))
+        .andExpect(jsonPath("$.data.customerId").value(9001));
+  }
+
+  @Test
+  void customerCannotReadOtherCustomerOrderDetail() throws Exception {
+    mockMvc.perform(asCustomer(get("/api/orders/{id}", otherOrderId), "9001"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.errorCode").value("RESOURCE_NOT_FOUND"));
+  }
+
+  @Test
+  void agentCanReadAnyOrderDetail() throws Exception {
+    mockMvc.perform(asAgent(get("/api/orders/{id}", otherOrderId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value(otherOrderId))
+        .andExpect(jsonPath("$.data.customerId").value(9002));
   }
 
   @Test

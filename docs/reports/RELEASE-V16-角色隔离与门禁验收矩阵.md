@@ -28,8 +28,11 @@
 
 | 页面 | Phone 390px | Tablet 768px | PC 1280px |
 | :-- | :-- | :-- | :-- |
-| Dashboard / Trips / Users / Orders / OrderDesk / ProcurementDashboard / PickingMaster / StockMaster / ZenAuditView | 未纳入本轮自动化矩阵，需人工复核 | 未纳入本轮自动化矩阵，需人工复核 | 未纳入本轮自动化矩阵，需人工复核 |
-| ClientHomeV2 / ClientOrders / ClientBilling / ClientChat | 门禁与首屏关键路径已自动化覆盖，响应式细节仍需人工复核 | 门禁与首屏关键路径已自动化覆盖，响应式细节仍需人工复核 | 门禁与首屏关键路径已自动化覆盖，响应式细节仍需人工复核 |
+| ClientHomeV2 (`/`) / ClientOrders / ClientBilling / ClientChat | ✅ 已纳入 `responsive_viewport.spec.ts`，通过 | ✅ 已纳入 `responsive_viewport.spec.ts`，通过 | ✅ 已纳入 `responsive_viewport.spec.ts`，通过 |
+| Orders(back-office) / StockMaster / ZenAuditView | ✅ 已纳入 `responsive_viewport.spec.ts`，通过 | ✅ 已纳入 `responsive_viewport.spec.ts`，通过 | ✅ 已纳入 `responsive_viewport.spec.ts`，通过 |
+| Dashboard / Trips / Users / OrderDesk / ProcurementDashboard / PickingMaster | 未纳入自动化矩阵（待补充） | 未纳入自动化矩阵（待补充） | 未纳入自动化矩阵（待补充） |
+
+> 本轮响应式失败根因结论：原失败为测试脚本问题（标题定位器 strict mode 冲突 + 首页路由不一致 + 局部 mock 缺失），修复后 390/768/1280 断言通过，未复现真实横向溢出。
 
 ## 4. AI 调用链完备性矩阵
 
@@ -46,9 +49,9 @@
 1. 本轮自动化实测：
    - `frontend npm run build` ✅
    - `frontend npm test` ✅
-   - `frontend npm run e2e` ✅（4 passed / 2 skipped）
+   - `frontend npm run e2e` ✅（25 passed / 2 skipped）
    - `backend ./mvnw test` ✅
 2. 客户账单链路已打通：`/client/billing` + `GET /api/procurement/{tripId}/ledger`，并在 CUSTOMER 下做数据收敛。
-3. 后端显式角色门禁已自动化覆盖：CUSTOMER 对 `/api/procurement/**`（非白名单）、`/api/financial/audit/**`、`/api/users/**`、`/api/orders/**` 的允许/拒绝矩阵可回归。
+3. 后端显式角色门禁已自动化覆盖：CUSTOMER 对 `/api/procurement/**`（非白名单）、`/api/financial/audit/**`、`/api/users/**`、`/api/orders/**` 的允许/拒绝矩阵可回归；其中 `GET /api/orders/{id}` 已与列表统一隔离策略（CUSTOMER 仅可读本人，越权返回 404）。
 4. `ai_onboarding.spec.ts` 仍为条件化跳过（依赖专用 AI/文件环境），当前不计入常规本地门禁。
-5. 发布前剩余风险：390/768/1280 全量响应式尚无自动化矩阵，需要补充半自动检查清单并固化结果。
+5. 发布前剩余风险：仍有部分后台页面（Dashboard/Trips/Users/OrderDesk/ProcurementDashboard/PickingMaster）未纳入 390/768/1280 自动化矩阵。
