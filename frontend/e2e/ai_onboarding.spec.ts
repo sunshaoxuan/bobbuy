@@ -21,7 +21,7 @@ test.describe('AI Vision Onboarding E2E', () => {
         await fileChooser.setFiles(path.resolve('..', 'sample', 'IMG_1484.jpg'));
 
         // 3. Monitor Progress Steps
-        // Controlled acceptance marker: stable stage tag instead of relying only on UI copy.
+        // Use stable stage marker for acceptance, not only UI copy.
         await expect(page.locator('[data-testid="ai-onboarding-steps"]')).toHaveAttribute('data-stage', 'SCANNING', { timeout: 10000 });
         
         // Wait for final success state (this drives the REAL backend AI flow)

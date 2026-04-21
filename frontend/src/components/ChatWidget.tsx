@@ -363,7 +363,9 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     if (!productId || publishingMessageId === targetMessageId) {
       return;
     }
-    if (target.metadata?.visibilityStatus === 'PUBLIC' || target.metadata?.imageFlowStatus === 'PUBLISHED_TO_MARKET') {
+    const alreadyPublished =
+      target.metadata?.imageFlowStatus === 'PUBLISHED_TO_MARKET' || target.metadata?.visibilityStatus === 'PUBLIC';
+    if (alreadyPublished) {
       message.info(t('chat.image_status.PUBLISHED_TO_MARKET'));
       return;
     }

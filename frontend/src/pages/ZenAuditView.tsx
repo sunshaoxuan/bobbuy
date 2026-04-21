@@ -18,6 +18,7 @@ export default function ZenAuditView() {
     const [operatorFilter, setOperatorFilter] = useState('');
     const [publishStatusFilter, setPublishStatusFilter] = useState('ALL');
     const [candidateDecisionFilter, setCandidateDecisionFilter] = useState('ALL');
+    const [recordLimit, setRecordLimit] = useState(20);
 
     useEffect(() => {
         if (tripId) {
@@ -88,7 +89,7 @@ export default function ZenAuditView() {
                         <Text strong>聊天商品闭环检索（Trip: {tripId}）</Text>
                         <Space wrap>
                             <Input
-                                placeholder="Filter by Operator ID"
+                                placeholder="按操作人筛选"
                                 value={operatorFilter}
                                 onChange={(event) => setOperatorFilter(event.target.value)}
                                 style={{ width: 160 }}
@@ -118,11 +119,21 @@ export default function ZenAuditView() {
                                     { label: 'CREATED_TEMP_PRODUCT', value: 'CREATED_TEMP_PRODUCT' }
                                 ]}
                             />
+                            <Select
+                                value={recordLimit}
+                                onChange={setRecordLimit}
+                                style={{ width: 140 }}
+                                options={[
+                                    { label: '显示 20 条', value: 20 },
+                                    { label: '显示 50 条', value: 50 },
+                                    { label: '显示 100 条', value: 100 }
+                                ]}
+                            />
                         </Space>
                         <Text type="secondary">
                             命中 {filteredChatClosureRecords.length} / {chatClosureRecords.length}
                         </Text>
-                        {filteredChatClosureRecords.slice(0, 20).map((record, index) => (
+                        {filteredChatClosureRecords.slice(0, recordLimit).map((record, index) => (
                             <div key={record.id ?? `chat-closure-${index}`} className="zen-val-block">
                                 <Space wrap>
                                     <Tag>{record.metadata?.imageFlowStatus ?? 'UNKNOWN'}</Tag>

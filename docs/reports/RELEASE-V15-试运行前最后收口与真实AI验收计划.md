@@ -31,6 +31,7 @@
 - 执行命令：
   - `cd frontend`
   - `RUN_AI_VISION_E2E=1 npm run e2e -- ai_onboarding.spec.ts`
+  - Windows CMD：`set RUN_AI_VISION_E2E=1 && npm run e2e -- ai_onboarding.spec.ts`
 
 ### 样例与预期
 1. `IMG_1484.jpg`
