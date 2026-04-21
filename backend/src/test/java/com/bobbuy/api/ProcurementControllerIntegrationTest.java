@@ -4,6 +4,7 @@ import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
+import com.bobbuy.security.RoleInjectionFilter;
 import com.bobbuy.service.BobbuyStore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -29,6 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @AutoConfigureMockMvc
 class ProcurementControllerIntegrationTest {
+  private static final String AGENT_ROLE = "AGENT";
+  private static final String AGENT_USER = "1000";
+
   @Autowired
   private MockMvc mockMvc;
 
@@ -51,7 +56,7 @@ class ProcurementControllerIntegrationTest {
     order.addLine(line);
     store.upsertOrder(order);
 
-    mockMvc.perform(get("/api/procurement/{tripId}/hud", trip.getId()))
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/hud", trip.getId())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.totalEstimatedProfit").value(97.5))
         .andExpect(jsonPath("$.data.currentPurchasedAmount").value(32.5))
@@ -72,7 +77,7 @@ class ProcurementControllerIntegrationTest {
     order.addLine(line);
     store.upsertOrder(order);
 
-    mockMvc.perform(get("/api/procurement/{tripId}/deficit", trip.getId()))
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/deficit", trip.getId())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.meta.total").value(1))
         .andExpect(jsonPath("$.data[0].skuId").value("prd-1000"))
@@ -85,11 +90,11 @@ class ProcurementControllerIntegrationTest {
   void expensesEndpointCreatesAndListsTripExpense() throws Exception {
     Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
 
-    MvcResult createResult = mockMvc.perform(post("/api/procurement/{tripId}/expenses", trip.getId())
+    MvcResult createResult = mockMvc.perform(asAgent(post("/api/procurement/{tripId}/expenses", trip.getId())
             .contentType("application/json")
             .content("""
                 {"category":"停车费","cost":12.5}
-                """))
+                """)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.category").value("停车费"))
         .andExpect(jsonPath("$.data.cost").value(12.5))
@@ -97,14 +102,14 @@ class ProcurementControllerIntegrationTest {
     JsonNode createdPayload = objectMapper.readTree(createResult.getResponse().getContentAsString());
     long expenseId = createdPayload.path("data").path("id").asLong();
 
-    mockMvc.perform(get("/api/procurement/{tripId}/expenses", trip.getId()))
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/expenses", trip.getId())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.meta.total").value(1))
         .andExpect(jsonPath("$.data[0].category").value("停车费"))
         .andExpect(jsonPath("$.data[0].cost").value(12.5))
         .andExpect(jsonPath("$.data[0].ocrStatus").value("NOT_UPLOADED"));
 
-    mockMvc.perform(get("/api/procurement/{tripId}/expenses/{expenseId}/receipt-preview", trip.getId(), expenseId))
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/expenses/{expenseId}/receipt-preview", trip.getId(), expenseId)))
         .andExpect(status().isNotFound());
   }
 
@@ -112,12 +117,12 @@ class ProcurementControllerIntegrationTest {
   void exportEndpointReturnsCsvAndPdf() throws Exception {
     Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
 
-    mockMvc.perform(get("/api/procurement/{tripId}/export?format=csv", trip.getId()))
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/export?format=csv", trip.getId())))
         .andExpect(status().isOk())
         .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
         .andExpect(content().string(org.hamcrest.Matchers.containsString("tripId,currentFxRate")));
 
-    mockMvc.perform(get("/api/procurement/{tripId}/export?format=pdf", trip.getId()))
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/export?format=pdf", trip.getId())))
         .andExpect(status().isOk())
         .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("application/pdf")))
         .andExpect(result -> assertThat(result.getResponse().getContentAsByteArray().length).isGreaterThan(0));
@@ -136,28 +141,28 @@ class ProcurementControllerIntegrationTest {
     toOrder.addLine(new OrderLine("prd-1000", "抹茶セット", null, 3, 10.0));
     store.upsertOrder(toOrder);
 
-    mockMvc.perform(post("/api/procurement/{tripId}/expenses", trip.getId())
+    mockMvc.perform(asAgent(post("/api/procurement/{tripId}/expenses", trip.getId())
             .contentType("application/json")
             .content("""
                 {"category":"停车费","cost":12.5}
-                """))
+                """)))
         .andExpect(status().isOk());
 
-    mockMvc.perform(post("/api/procurement/{tripId}/manual-reconcile", trip.getId())
+    mockMvc.perform(asAgent(post("/api/procurement/{tripId}/manual-reconcile", trip.getId())
             .contentType("application/json")
             .content("""
                 {"skuId":"prd-1000","fromBusinessId":"LEDGER-FROM","toBusinessId":"LEDGER-TO","quantity":1}
-                """))
+                """)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.transferredQuantity").value(1));
 
-    mockMvc.perform(get("/api/procurement/{tripId}/ledger", trip.getId()))
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/ledger", trip.getId())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.meta.total").value(2))
         .andExpect(jsonPath("$.data[0].businessId").value("LEDGER-FROM"))
         .andExpect(jsonPath("$.data[0].totalReceivable").value(10.0));
 
-    mockMvc.perform(get("/api/procurement/{tripId}/audit-logs", trip.getId()))
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/audit-logs", trip.getId())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.meta.total").value(2))
         .andExpect(jsonPath("$.data[0].actionType").exists())
@@ -171,7 +176,7 @@ class ProcurementControllerIntegrationTest {
     order.addLine(new OrderLine("prd-1000", "抹茶セット", null, 2, 32.5));
     store.upsertOrder(order);
 
-    mockMvc.perform(get("/api/procurement/{tripId}/customers/{businessId}/statement", trip.getId(), "CUST-PDF-1"))
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/customers/{businessId}/statement", trip.getId(), "CUST-PDF-1")))
         .andExpect(status().isOk())
         .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("application/pdf")))
         .andExpect(result -> assertThat(result.getResponse().getContentAsByteArray().length).isGreaterThan(0));
@@ -184,22 +189,22 @@ class ProcurementControllerIntegrationTest {
     order.addLine(new OrderLine("prd-1000", "Matcha", null, 2, 10.0));
     store.upsertOrder(order);
 
-    mockMvc.perform(get("/api/procurement/{tripId}/profit-sharing", trip.getId()))
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/profit-sharing", trip.getId())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.purchaserRatioPercent").value(70.0))
         .andExpect(jsonPath("$.data.promoterRatioPercent").value(30.0))
         .andExpect(jsonPath("$.data.shares[0].partnerRole").value("PURCHASER"));
 
-    mockMvc.perform(patch("/api/procurement/{tripId}/profit-sharing", trip.getId())
+    mockMvc.perform(asAgent(patch("/api/procurement/{tripId}/profit-sharing", trip.getId())
             .contentType("application/json")
             .content("""
                 {"purchaserRatioPercent":60,"promoterRatioPercent":40}
-                """))
+                """)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.purchaserRatioPercent").value(60.0))
         .andExpect(jsonPath("$.data.promoterRatioPercent").value(40.0));
 
-    mockMvc.perform(get("/api/procurement/{tripId}/audit-logs", trip.getId()))
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/audit-logs", trip.getId())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].actionType").value("PROFIT_SHARE_RATIO_UPDATE"));
   }
@@ -208,25 +213,31 @@ class ProcurementControllerIntegrationTest {
   void logisticsEndpointsSupportTrackingAndSettlementReminderTrigger() throws Exception {
     Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
 
-    MvcResult createResult = mockMvc.perform(post("/api/procurement/{tripId}/logistics", trip.getId())
+    MvcResult createResult = mockMvc.perform(asAgent(post("/api/procurement/{tripId}/logistics", trip.getId())
             .contentType("application/json")
             .content("""
                 {"trackingNumber":"MOCK-DELIVERED","channel":"INTERNATIONAL","provider":"MOCK"}
-                """))
+                """)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.trackingNumber").value("MOCK-DELIVERED"))
         .andReturn();
     JsonNode createdPayload = objectMapper.readTree(createResult.getResponse().getContentAsString());
     long trackingId = createdPayload.path("data").path("id").asLong();
 
-    mockMvc.perform(post("/api/procurement/{tripId}/logistics/{trackingId}/refresh", trip.getId(), trackingId))
+    mockMvc.perform(asAgent(post("/api/procurement/{tripId}/logistics/{trackingId}/refresh", trip.getId(), trackingId)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.status").value("DELIVERED"))
         .andExpect(jsonPath("$.data.settlementReminderTriggered").value(true));
 
-    mockMvc.perform(get("/api/procurement/{tripId}/logistics", trip.getId()))
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/logistics", trip.getId())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.meta.total").value(1))
         .andExpect(jsonPath("$.data[0].settlementReminderTriggered").value(true));
+  }
+
+  private MockHttpServletRequestBuilder asAgent(MockHttpServletRequestBuilder request) {
+    return request
+        .header(RoleInjectionFilter.ROLE_HEADER, AGENT_ROLE)
+        .header(RoleInjectionFilter.USER_HEADER, AGENT_USER);
   }
 }

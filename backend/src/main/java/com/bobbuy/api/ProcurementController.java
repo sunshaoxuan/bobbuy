@@ -8,6 +8,7 @@ import com.bobbuy.service.ProcurementHudService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -127,8 +128,11 @@ public class ProcurementController {
   }
 
   @GetMapping("/{tripId}/ledger")
-  public ResponseEntity<ApiResponse<List<CustomerBalanceLedgerResponse>>> customerLedger(@PathVariable Long tripId) {
-    List<CustomerBalanceLedgerResponse> entries = procurementHudService.getCustomerBalanceLedger(tripId);
+  public ResponseEntity<ApiResponse<List<CustomerBalanceLedgerResponse>>> customerLedger(@PathVariable Long tripId,
+                                                                                         Authentication authentication) {
+    List<CustomerBalanceLedgerResponse> entries = procurementHudService.getCustomerBalanceLedger(
+        tripId,
+        authentication);
     return ResponseEntity.ok(ApiResponse.success(entries, new ApiMeta(entries.size())));
   }
 

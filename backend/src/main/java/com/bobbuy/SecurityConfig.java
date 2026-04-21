@@ -31,9 +31,10 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .addFilterBefore(roleInjectionFilter, AnonymousAuthenticationFilter.class)
-            .authorizeHttpRequests(auth -> auth
+                .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/health/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/procurement/*/ledger").hasAnyRole("CUSTOMER", "AGENT")
                 .requestMatchers("/api/procurement/**").hasRole("AGENT")
                 .requestMatchers("/api/users/**").hasRole("AGENT")
                 .requestMatchers("/api/audit-logs/**").hasRole("AGENT")
