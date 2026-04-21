@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { setAgentContext, setupCommonMocks } from './responsive_helpers';
 
 type Trip = {
   id: number;
@@ -55,6 +56,8 @@ test('shopping flow patches status and writes audit logs', async ({ page }) => {
     });
   };
 
+  await setupCommonMocks(page);
+
   await page.route('**/api/trips', async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: trips }) });
@@ -70,24 +73,6 @@ test('shopping flow patches status and writes audit logs', async ({ page }) => {
       return;
     }
     await route.fallback();
-  });
-
-  await page.route('**/api/metrics', async (route) => {
-    await route.fulfill({
-      status: 200,
-      body: JSON.stringify({
-        status: 'success',
-        data: {
-          activeUsers: 0,
-          activeTrips: 0,
-          pendingOrders: 0,
-          gmv: 0,
-          orderStatusDistribution: {},
-          recentTrips: [],
-          recentOrders: []
-        }
-      })
-    });
   });
 
   await page.route('**/api/orders**', async (route) => {
@@ -136,10 +121,7 @@ test('shopping flow patches status and writes audit logs', async ({ page }) => {
     await route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: auditLogs }) });
   });
 
-  await page.addInitScript(() => {
-    window.localStorage.setItem('bobbuy_locale', 'en-US');
-    window.localStorage.setItem('bobbuy_user_role', 'AGENT');
-  });
+  await setAgentContext(page);
 
   await page.goto('/');
   await page.goto('/trips');

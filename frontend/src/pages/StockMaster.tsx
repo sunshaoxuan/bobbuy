@@ -665,7 +665,7 @@ export default function StockMaster() {
 
       <div className={`stock-toolbar ${isMobile ? 'stock-toolbar-mobile' : ''} ${toolbarCompact ? 'stock-toolbar-compact' : ''}`}>
         <div style={{ minWidth: 0 }}>
-          <Title level={3} style={{ margin: 0 }} className="stock-page-title">
+          <Title level={3} style={{ margin: 0 }} className="stock-page-title" data-testid="stock-master-title">
             {t('stock.master.title')}
           </Title>
           <Text type="secondary">{t('stock.master.subtitle')}</Text>
@@ -681,7 +681,7 @@ export default function StockMaster() {
             />
             <Space style={{ width: '100%' }}>
               <Space style={{ width: '100%' }}>
-                <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow} block>
+                <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow} block data-testid="stock-master-add-row">
                   {t('stock.master.add_row')}
                 </Button>
                 <Button type="primary" icon={<CameraOutlined />} onClick={() => setIsQuickAddVisible(true)} block>
@@ -695,16 +695,16 @@ export default function StockMaster() {
             <Input
               placeholder={t('stock.master.search_placeholder')}
               prefix={<SearchOutlined />}
-              style={{ width: '20rem' }}
+              style={{ width: 'min(20rem, 100%)' }}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
-              <Space>
+              <Space wrap>
                 <Text type="secondary" style={{ marginRight: 12 }}>
                   {syncStatus === 'saving' ? t('stock.drawer.sync.saving') : 
                    syncStatus === 'saved' ? t('stock.drawer.sync.saved') : ''}
                 </Text>
-                <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow}>
+                <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow} data-testid="stock-master-add-row">
                   {t('stock.master.add_row')}
                 </Button>
                 <Button type="primary" icon={<CameraOutlined />} onClick={() => setIsQuickAddVisible(true)}>

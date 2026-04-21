@@ -68,7 +68,7 @@ export default function ZenAuditView() {
                         onClick={() => navigate(-1)} 
                         className="zen-back-button"
                     />
-                    <Title level={2} className="zen-audit-title serif-font">
+                    <Title level={2} className="zen-audit-title serif-font" data-testid="zen-audit-title">
                         {t('zen_audit.scroll_title')}
                     </Title>
                     {integrity?.isValid ? (
@@ -93,6 +93,7 @@ export default function ZenAuditView() {
                                 value={operatorFilter}
                                 onChange={(event) => setOperatorFilter(event.target.value)}
                                 style={{ width: 160 }}
+                                data-testid="zen-audit-operator-filter"
                             />
                             <Select
                                 value={publishStatusFilter}
@@ -235,17 +236,22 @@ export default function ZenAuditView() {
                     display: flex;
                     justify-content: space-between;
                     align-items: flex-start;
+                    flex-wrap: wrap;
+                    gap: 0.5rem;
                 }
                 .zen-hash-tag {
                     font-family: monospace;
                     font-size: 10px;
                     background: #f1efe8;
                     border: none;
+                    max-width: 100%;
+                    word-break: break-all;
                 }
                 .zen-audit-values {
                     padding: 0.5rem 0;
                     border-top: 1px dotted #e0e0e0;
                     border-bottom: 1px dotted #e0e0e0;
+                    overflow-wrap: anywhere;
                 }
                 .zen-back-button {
                     position: absolute;

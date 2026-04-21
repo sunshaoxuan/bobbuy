@@ -28,6 +28,12 @@ const BACKOFFICE_CASES: BackofficeCase[] = [
     assertActionReachable: async (page) => expect(page.locator('[data-testid="users-submit"]')).toBeVisible()
   },
   {
+    name: 'Orders(back-office)',
+    path: '/orders',
+    assertPageReady: async (page) => expect(page.locator('[data-testid="orders-title"]')).toBeVisible(),
+    assertActionReachable: async (page) => expect(page.locator('[data-testid="orders-submit"]')).toBeVisible()
+  },
+  {
     name: 'OrderDesk',
     path: '/order-desk',
     assertPageReady: async (page) => expect(page.locator('[data-testid="orderdesk-root"]')).toBeVisible(),
@@ -40,10 +46,22 @@ const BACKOFFICE_CASES: BackofficeCase[] = [
     assertActionReachable: async (page) => expect(page.getByRole('button', { name: 'Export CSV' })).toBeVisible()
   },
   {
+    name: 'StockMaster',
+    path: '/stock-master',
+    assertPageReady: async (page) => expect(page.locator('[data-testid="stock-master-title"]')).toBeVisible(),
+    assertActionReachable: async (page) => expect(page.locator('[data-testid="stock-master-add-row"]')).first().toBeVisible()
+  },
+  {
     name: 'PickingMaster',
     path: '/picking',
     assertPageReady: async (page) => expect(page.getByRole('heading', { name: 'Picking Master' })).toBeVisible(),
     assertActionReachable: async (page) => expect(page.locator('[data-testid="picking-trip-select"]')).toBeVisible()
+  },
+  {
+    name: 'ZenAuditView',
+    path: '/audit/2000',
+    assertPageReady: async (page) => expect(page.locator('[data-testid="zen-audit-title"]')).toBeVisible(),
+    assertActionReachable: async (page) => expect(page.locator('[data-testid="zen-audit-operator-filter"]')).toBeVisible()
   }
 ];
 

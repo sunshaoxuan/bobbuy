@@ -1,43 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { setCustomerContext, setupCommonMocks } from './responsive_helpers';
 
 test('chat image confirmation can create a draft item and publish it to mall', async ({ page }) => {
   const messages: Array<Record<string, unknown>> = [];
 
-  await page.route('**/api/trips', async (route) => {
-    await route.fulfill({
-      status: 200,
-      body: JSON.stringify({
-        status: 'success',
-        data: [
-          {
-            id: 2000,
-            agentId: 1000,
-            origin: 'Tokyo',
-            destination: 'Shanghai',
-            departDate: '2026-04-20',
-            capacity: 10,
-            reservedCapacity: 2,
-            remainingCapacity: 8,
-            status: 'PUBLISHED'
-          }
-        ]
-      })
-    });
-  });
-
-  await page.route('**/api/mobile/products', async (route) => {
-    await route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: [] }) });
-  });
-
-  await page.route('**/api/procurement/wallets/PURCHASER', async (route) => {
-    await route.fulfill({
-      status: 200,
-      body: JSON.stringify({
-        status: 'success',
-        data: { partnerId: 'PURCHASER', balance: 100, currency: 'CNY', updatedAt: '2026-04-20T00:00:00Z' }
-      })
-    });
-  });
+  await setupCommonMocks(page);
 
   await page.route('**/api/orders?tripId=2000', async (route) => {
     await route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: [] }) });
@@ -136,10 +103,7 @@ test('chat image confirmation can create a draft item and publish it to mall', a
     });
   });
 
-  await page.addInitScript(() => {
-    window.localStorage.setItem('bobbuy_locale', 'en-US');
-    window.localStorage.setItem('bobbuy_user_role', 'CUSTOMER');
-  });
+  await setCustomerContext(page);
 
   await page.goto('/');
 
