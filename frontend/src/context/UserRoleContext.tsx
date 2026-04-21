@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 export type UserRole = 'CUSTOMER' | 'AGENT' | 'MERCHANT';
 
@@ -11,14 +11,31 @@ interface UserRoleContextValue {
 }
 
 const STORAGE_KEY = 'bobbuy_user_role';
+const TEST_INJECT_KEY = 'bobbuy_test_role';
 const DEFAULT_ROLE: UserRole = 'CUSTOMER';
 
 const UserRoleContext = createContext<UserRoleContextValue | undefined>(undefined);
 
 export function UserRoleProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRoleState] = useState<UserRole>(() => {
+  const resolveInitialRole = (): UserRole => {
+    const params = new URLSearchParams(window.location.search);
+    const queryRole = params.get('role');
+    if (queryRole === 'CUSTOMER' || queryRole === 'AGENT' || queryRole === 'MERCHANT') {
+      return queryRole;
+    }
+    const injected = localStorage.getItem(TEST_INJECT_KEY);
+    if (injected === 'CUSTOMER' || injected === 'AGENT' || injected === 'MERCHANT') {
+      return injected;
+    }
     const stored = localStorage.getItem(STORAGE_KEY);
-    return (stored as UserRole) || DEFAULT_ROLE;
+    if (stored === 'CUSTOMER' || stored === 'AGENT' || stored === 'MERCHANT') {
+      return stored;
+    }
+    return DEFAULT_ROLE;
+  };
+
+  const [role, setRoleState] = useState<UserRole>(() => {
+    return resolveInitialRole();
   });
 
   const setRole = (newRole: UserRole) => {
