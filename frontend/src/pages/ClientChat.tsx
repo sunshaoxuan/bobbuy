@@ -9,7 +9,7 @@ const { Title } = Typography;
 export default function ClientChat() {
   const { t } = useI18n();
   const screens = Grid.useBreakpoint();
-  const isMobile = screens.md === false;
+  const isMobile = screens.md !== true;
   const [trips, setTrips] = useState<Trip[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<number>();
   const senderId =

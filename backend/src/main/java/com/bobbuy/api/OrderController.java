@@ -8,6 +8,7 @@ import com.bobbuy.model.OrderHeader;
 import com.bobbuy.service.BobbuyStore;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,8 +32,9 @@ public class OrderController {
   }
 
   @GetMapping
-  public ApiResponse<List<OrderHeader>> list(@RequestParam(required = false) Long tripId) {
-    List<OrderHeader> orders = store.listOrders(tripId);
+  public ApiResponse<List<OrderHeader>> list(@RequestParam(required = false) Long tripId,
+                                             Authentication authentication) {
+    List<OrderHeader> orders = store.listOrders(tripId, authentication);
     return ApiResponse.success(orders, new ApiMeta(orders.size()));
   }
 

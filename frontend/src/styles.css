@@ -12,6 +12,11 @@
   font-display: swap;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 :root {
   --zen-bg: #faf9f6;
   --zen-ink: #2d2926;
@@ -64,6 +69,8 @@ body {
 .app-shell {
   min-height: 100vh;
   background: var(--zen-bg);
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .app-sider {
@@ -593,12 +600,14 @@ body {
 
 .client-page {
   max-width: 1100px;
+  width: 100%;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 
 .client-card-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 0.75rem;
 }
 

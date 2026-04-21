@@ -30,7 +30,7 @@ export default function App() {
   const { role, isPurchaser } = useUserRole();
   const isAgentRole = role === 'AGENT';
   const screens = Grid.useBreakpoint();
-  const isMobile = screens.md === false;
+  const isMobile = screens.md !== true;
   const isTablet = screens.md && !screens.lg;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
