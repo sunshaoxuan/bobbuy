@@ -84,7 +84,11 @@ describe('ChatWidget', () => {
             displayName: '抹茶礼盒大包装',
             itemNumber: 'SKU-998',
             matchReason: 'BRAND_AND_NAME',
-            matchSignals: ['BRAND_EXACT', 'ITEM_NUMBER_FRAGMENT']
+            matchSignals: ['BRAND_EXACT', 'ITEM_NUMBER_FRAGMENT'],
+            brand: 'BOBBuy',
+            categoryId: 'tea',
+            matchedFragments: ['bobbuy', '抹茶'],
+            aliasSources: ['matcha']
           }
         ],
         visibilityStatus: 'DRAFTER_ONLY',
@@ -140,13 +144,23 @@ describe('ChatWidget', () => {
           metadata: expect.objectContaining({
             imageFlowStatus: 'CANDIDATE_SELECTED',
             candidateReasons: ['BRAND_EXACT', 'ITEM_NUMBER_FRAGMENT'],
-            attachmentName: 'matcha.png'
+            attachmentName: 'matcha.png',
+            operatorId: 'PURCHASER',
+            candidateSummary: expect.objectContaining({
+              brand: 'BOBBuy',
+              rejectedCount: 0
+            }),
+            candidateAudit: expect.objectContaining({
+              reviewedBy: 'PURCHASER',
+              rejectedProductIds: []
+            })
           })
         })
       );
     });
 
     expect(await screen.findByText('Candidate selected')).toBeInTheDocument();
+    expect((await screen.findAllByText(/Brand: BOBBuy/i)).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /Publish to Mall/ }));
 
     await waitFor(() => {

@@ -40,6 +40,8 @@ public class ChatService {
             ? new HashMap<>()
             : new HashMap<>(message.getMetadata());
         metadata.putIfAbsent("source", "CHAT_WIDGET");
+        metadata.putIfAbsent("auditVersion", "V14");
+        metadata.putIfAbsent("operatorId", message.getSenderId());
         metadata.putIfAbsent("conversationType", resolveConversationType(message));
         metadata.putIfAbsent("orderId", message.getOrderId());
         metadata.putIfAbsent("tripId", message.getTripId());
@@ -51,6 +53,15 @@ public class ChatService {
                 metadata.put("attachmentUrl", metadata.get("url"));
             }
             metadata.putIfAbsent("imageFlowStatus", "PENDING_CONFIRMATION");
+            if (metadata.get("attachmentUrl") == null) {
+                metadata.putIfAbsent("recoveryAction", "REQUEST_ATTACHMENT_REUPLOAD");
+            }
+            if ("PUBLISH_FAILED".equals(metadata.get("imageFlowStatus"))) {
+                metadata.putIfAbsent("recoveryAction", "RETRY_PUBLISH");
+            }
+            if ("PUBLISHED_TO_MARKET".equals(metadata.get("imageFlowStatus"))) {
+                metadata.putIfAbsent("publishedAt", message.getCreatedAt().toString());
+            }
         }
         return metadata;
     }
