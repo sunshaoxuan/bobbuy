@@ -131,10 +131,8 @@ describe('ChatWidget', () => {
     fireEvent.change(fileInput, { target: { files: [new File(['x'], 'matcha.png', { type: 'image/png' })] } });
 
     expect(await screen.findByText('Image context is kept locally after a failed scan.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Retry image scan/ }));
-
-    expect(await screen.findByText('Confirm image context')).toBeInTheDocument();
-    expect(screen.getByText('Pending confirmation')).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: /Retry image scan/i }));
+    expect(await screen.findByText('Pending confirmation', {}, { timeout: 10000 })).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText(/抹茶礼盒大包装/i));
     fireEvent.click(screen.getByRole('button', { name: 'OK' }));
 

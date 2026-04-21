@@ -279,7 +279,7 @@ test.describe('Responsive: ZenAuditView', () => {
         window.localStorage.setItem('bobbuy_user_role', 'AGENT');
         window.localStorage.setItem('bobbuy_test_user', '1000');
       });
-      await page.goto('/zen-audit/2000');
+      await page.goto('/audit/2000');
       await expect(page.getByRole('heading', { name: 'Digital Scroll' })).toBeVisible();
       await assertNoHorizontalOverflow(page);
     });
