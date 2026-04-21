@@ -39,8 +39,8 @@ public class OrderController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<ApiResponse<OrderHeader>> get(@PathVariable Long id) {
-    OrderHeader order = store.getOrder(id)
+  public ResponseEntity<ApiResponse<OrderHeader>> get(@PathVariable Long id, Authentication authentication) {
+    OrderHeader order = store.getOrder(id, authentication)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
     return ResponseEntity.ok(ApiResponse.success(order));
   }
