@@ -213,7 +213,7 @@ export default function Orders() {
       <div className="section-title" data-testid="orders-title">{t('orders.title')}</div>
       <Text className="helper-text">{t('orders.helper')}</Text>
 
-       <Card style={{ marginTop: 16, marginBottom: 24 }} bordered={false} title={t('orders.trip.title')}>
+      <Card style={{ marginTop: 16, marginBottom: 24 }} bordered={false} title={t('orders.trip.title')}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center' }}>
           <div style={{ minWidth: 200 }}>
             <Text type="secondary">{t('orders.trip.select.label')}</Text>
@@ -230,8 +230,8 @@ export default function Orders() {
               />
             </div>
           </div>
-           {selectedTrip ? (
-             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center', minWidth: 0 }}>
+          {selectedTrip ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center', minWidth: 0 }}>
               <div>
                 <Text type="secondary">{t('orders.trip.route')}</Text>
                 <div>{selectedTrip.origin} → {selectedTrip.destination}</div>
