@@ -54,11 +54,13 @@ mvn verify
 ### 4.1 执行脚本
 ```bash
 cd frontend
+npm run e2e:prepare
 npm run e2e
 ```
 
 **说明**:
-- `npm run e2e` 会先补齐 Chromium 浏览器二进制，再执行 Playwright 用例。
+- `npm run e2e:prepare` 会先检测 Playwright Chromium 是否已存在，仅在缺失时安装。
+- `npm run e2e` 默认串联 `e2e:prepare` 与 `playwright test`，适合本地与 CI 统一执行。
 - 测试文件：`frontend/e2e/test_shopping_flow.spec.ts`
 - 该脚本模拟“发布行程 -> 确认订单 -> 状态流转 -> 审计校验”的关键链路。
 - `frontend/e2e/ai_onboarding.spec.ts` 继续保持手动门控，需要显式设置 `RUN_AI_VISION_E2E=1`。
@@ -71,3 +73,5 @@ npm run e2e
    优先补充关键业务路径与异常路径用例。
 2. **E2E 无法启动**  
    确认端口未被占用，必要时关闭已有前端服务或调整配置。
+3. **后端测试日志过多**  
+   测试 profile 默认已关闭启动横幅、请求访问日志与常见 AI/FX 噪音；如仍需排查，可临时提升对应 logger 级别。

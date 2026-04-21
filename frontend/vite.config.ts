@@ -15,11 +15,51 @@ export default defineConfig({
             if (id.includes('@ant-design/icons') || id.includes('@ant-design/icons-svg')) {
               return 'antd-icons';
             }
-            if (id.includes('/antd/')) {
+            if (
+              id.includes('/antd/es/form') ||
+              id.includes('/antd/es/input') ||
+              id.includes('/antd/es/input-number') ||
+              id.includes('/antd/es/select') ||
+              id.includes('/antd/es/date-picker') ||
+              id.includes('/antd/es/upload') ||
+              id.includes('/antd/es/checkbox') ||
+              id.includes('/antd/es/radio')
+            ) {
+              return 'antd-forms';
+            }
+            if (
+              id.includes('/antd/es/table') ||
+              id.includes('/antd/es/list') ||
+              id.includes('/antd/es/card') ||
+              id.includes('/antd/es/tabs') ||
+              id.includes('/antd/es/collapse') ||
+              id.includes('/antd/es/timeline') ||
+              id.includes('/antd/es/progress') ||
+              id.includes('/antd/es/result') ||
+              id.includes('/antd/es/statistic') ||
+              id.includes('/antd/es/badge') ||
+              id.includes('/antd/es/tag') ||
+              id.includes('/antd/es/breadcrumb') ||
+              id.includes('/antd/es/drawer') ||
+              id.includes('/antd/es/avatar') ||
+              id.includes('/antd/es/empty')
+            ) {
+              return 'antd-display';
+            }
+            if (
+              id.includes('/antd/es/modal') ||
+              id.includes('/antd/es/message') ||
+              id.includes('/antd/es/notification') ||
+              id.includes('/antd/es/spin') ||
+              id.includes('/antd/es/alert')
+            ) {
+              return 'antd-feedback';
+            }
+            if (id.includes('/antd/es/')) {
               return 'antd-core';
             }
             if (id.includes('/rc-') || id.includes('/@babel/runtime/') || id.includes('/@ctrl/')) {
-              return 'vendor';
+              return 'antd-ecosystem';
             }
           }
           if (id.includes('/src/components/ChatWidget')) {
