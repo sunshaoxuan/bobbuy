@@ -66,6 +66,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
     { title: t('stock.ai_quick_add.step_enrich'), icon: <PictureOutlined /> },
     { title: t('stock.ai_quick_add.step_done'), icon: <CheckCircleOutlined /> },
   ];
+  const stageByStep = ['UPLOAD', 'SCANNING', 'RESEARCHING', 'ENRICHING', 'SUCCESS'] as const;
 
   return (
     <Modal
@@ -82,11 +83,13 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
       destroyOnClose
     >
       <div style={{ padding: '24px 0' }}>
+        <div data-testid="ai-onboarding-stage" data-stage={stageByStep[currentStep]} style={{ display: 'none' }} />
         <Steps
           current={currentStep}
           items={steps.map(s => ({ title: s.title, icon: s.icon }))}
           size="small"
           style={{ marginBottom: 32 }}
+          data-testid="ai-onboarding-steps"
         />
 
         {currentStep === 0 && (
@@ -129,6 +132,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
           <>
             {suggestion?.existingProductFound && (
               <Alert
+                data-testid="ai-existing-product-alert"
                 message={`${t('stock.ai_quick_add.existing_found')}${suggestion.existingProductId ? `：${suggestion.existingProductId}` : ''}`}
                 description={t('stock.ai_quick_add.existing_update_hint')}
                 type="info"
@@ -147,9 +151,14 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
               />
             ) : null}
             <Result
+              data-testid="ai-onboarding-result"
+              subTitle={
+                <span data-testid="ai-onboarding-result-subtitle" data-ai-status="SUCCESS">
+                  {t('stock.ai_quick_add.success_subtitle')}
+                </span>
+              }
               status="success"
               title={t('stock.ai_quick_add.success_title')}
-              subTitle={t('stock.ai_quick_add.success_subtitle')}
             />
           </>
         )}

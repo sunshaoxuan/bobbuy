@@ -70,6 +70,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const knownMessageKeysRef = useRef<Set<string>>(new Set());
+  const loadingMessagesRef = useRef(false);
   const hasScopedConversation = Boolean(tripId || orderId);
 
   const conversationType: ConversationType = tripId ? 'TRIP' : orderId ? 'ORDER' : 'PRIVATE';
@@ -105,6 +106,10 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
 
   const loadMessages = useCallback(
     async ({ silent = false, showFeedback = false }: { silent?: boolean; showFeedback?: boolean } = {}) => {
+      if (loadingMessagesRef.current) {
+        return;
+      }
+      loadingMessagesRef.current = true;
       if (!silent) {
         setRefreshing(true);
       }
@@ -134,6 +139,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
           message.error(t('chat.load_failed'));
         }
       } finally {
+        loadingMessagesRef.current = false;
         if (!silent) {
           setRefreshing(false);
         }
@@ -168,7 +174,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   }, [messages]);
 
   const handleSend = async () => {
-    if (!inputValue.trim()) {
+    if (!inputValue.trim() || loading) {
       return;
     }
     setLoading(true);
@@ -235,7 +241,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   };
 
   const confirmImageFlow = async () => {
-    if (!pendingSuggestion) {
+    if (!pendingSuggestion || confirmingImage) {
       return;
     }
     setConfirmingImage(true);
@@ -353,10 +359,13 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
 
   const handlePublishInChat = async (target: ChatMessage) => {
     const productId = String(target.metadata?.productId ?? '');
-    if (!productId) {
+    const targetMessageId = messageKey(target);
+    if (!productId || publishingMessageId === targetMessageId) {
       return;
     }
-    const targetMessageId = messageKey(target);
+    if (target.metadata?.visibilityStatus === 'PUBLIC' || target.metadata?.imageFlowStatus === 'PUBLISHED_TO_MARKET') {
+      return;
+    }
     setPublishingMessageId(targetMessageId);
     try {
       await api.patchProduct(productId, { visibilityStatus: 'PUBLIC' });

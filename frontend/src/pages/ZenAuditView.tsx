@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Result, Space, Spin, Tag, Typography, Button } from 'antd';
+import { Card, Result, Space, Spin, Tag, Typography, Button, Input, Select } from 'antd';
 import { AuditOutlined, CheckCircleOutlined, WarningOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, FinancialAuditLog } from '../api';
+import { api, ChatMessage, FinancialAuditLog } from '../api';
 import { useI18n } from '../i18n';
 
 const { Title, Text } = Typography;
@@ -13,21 +13,41 @@ export default function ZenAuditView() {
     const { t } = useI18n();
     const [loading, setLoading] = useState(true);
     const [logs, setLogs] = useState<FinancialAuditLog[]>([]);
+    const [chatRecords, setChatRecords] = useState<ChatMessage[]>([]);
     const [integrity, setIntegrity] = useState<{ isValid: boolean } | null>(null);
+    const [operatorFilter, setOperatorFilter] = useState('');
+    const [publishStatusFilter, setPublishStatusFilter] = useState('ALL');
+    const [candidateDecisionFilter, setCandidateDecisionFilter] = useState('ALL');
 
     useEffect(() => {
         if (tripId) {
             const id = parseInt(tripId);
             Promise.all([
                 api.getFinancialAuditLogs(id),
-                api.checkFinancialAuditIntegrity(id)
-            ]).then(([l, i]) => {
+                api.checkFinancialAuditIntegrity(id),
+                api.getTripChat(id)
+            ]).then(([l, i, c]) => {
                 setLogs(l);
                 setIntegrity(i);
+                setChatRecords(c);
                 setLoading(false);
             }).catch(() => setLoading(false));
         }
     }, [tripId]);
+
+    const chatClosureRecords = chatRecords.filter((record) => record.type === 'IMAGE' && Boolean(record.metadata?.imageFlowStatus));
+    const filteredChatClosureRecords = chatClosureRecords.filter((record) => {
+        const operatorMatches = operatorFilter.trim()
+            ? String(record.metadata?.operatorId ?? record.senderId ?? '').toLowerCase().includes(operatorFilter.trim().toLowerCase())
+            : true;
+        const publishMatches = publishStatusFilter === 'ALL'
+            ? true
+            : String(record.metadata?.imageFlowStatus ?? '') === publishStatusFilter;
+        const decisionMatches = candidateDecisionFilter === 'ALL'
+            ? true
+            : String(record.metadata?.candidateSelectionResult ?? '') === candidateDecisionFilter;
+        return operatorMatches && publishMatches && decisionMatches;
+    });
 
     if (loading) {
         return (
@@ -63,6 +83,57 @@ export default function ZenAuditView() {
             </header>
 
             <main className="zen-audit-scroll">
+                <Card className="zen-audit-pill-card">
+                    <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                        <Text strong>聊天商品闭环检索（Trip: {tripId}）</Text>
+                        <Space wrap>
+                            <Input
+                                placeholder="operator"
+                                value={operatorFilter}
+                                onChange={(event) => setOperatorFilter(event.target.value)}
+                                style={{ width: 160 }}
+                            />
+                            <Select
+                                value={publishStatusFilter}
+                                onChange={setPublishStatusFilter}
+                                style={{ width: 220 }}
+                                options={[
+                                    { label: 'publishStatus: ALL', value: 'ALL' },
+                                    { label: 'PENDING_CONFIRMATION', value: 'PENDING_CONFIRMATION' },
+                                    { label: 'MATCHED_EXISTING_PRODUCT', value: 'MATCHED_EXISTING_PRODUCT' },
+                                    { label: 'CANDIDATE_SELECTED', value: 'CANDIDATE_SELECTED' },
+                                    { label: 'TEMP_PRODUCT_CREATED', value: 'TEMP_PRODUCT_CREATED' },
+                                    { label: 'PUBLISHED_TO_MARKET', value: 'PUBLISHED_TO_MARKET' },
+                                    { label: 'PUBLISH_FAILED', value: 'PUBLISH_FAILED' }
+                                ]}
+                            />
+                            <Select
+                                value={candidateDecisionFilter}
+                                onChange={setCandidateDecisionFilter}
+                                style={{ width: 220 }}
+                                options={[
+                                    { label: 'candidateDecision: ALL', value: 'ALL' },
+                                    { label: 'EXACT_MATCH', value: 'EXACT_MATCH' },
+                                    { label: 'SELECTED_CANDIDATE', value: 'SELECTED_CANDIDATE' },
+                                    { label: 'CREATED_TEMP_PRODUCT', value: 'CREATED_TEMP_PRODUCT' }
+                                ]}
+                            />
+                        </Space>
+                        <Text type="secondary">
+                            命中 {filteredChatClosureRecords.length} / {chatClosureRecords.length}
+                        </Text>
+                        {filteredChatClosureRecords.slice(0, 20).map((record) => (
+                            <div key={record.id ?? `${record.createdAt}-${record.senderId}-${record.content}`} className="zen-val-block">
+                                <Space wrap>
+                                    <Tag>{record.metadata?.imageFlowStatus ?? 'UNKNOWN'}</Tag>
+                                    <Tag>{record.metadata?.candidateSelectionResult ?? 'N/A'}</Tag>
+                                    <Tag>{record.metadata?.operatorId ?? record.senderId}</Tag>
+                                    <Tag>{record.metadata?.productId ?? 'NO_PRODUCT'}</Tag>
+                                </Space>
+                            </div>
+                        ))}
+                    </Space>
+                </Card>
                 {logs.length === 0 ? (
                     <Result title="No history found" />
                 ) : (
