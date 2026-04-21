@@ -13,6 +13,8 @@ export default function ClientOrders() {
   const [selectedTripId, setSelectedTripId] = useState<number>();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const formatAmount = (amount: number) =>
+    new Intl.NumberFormat(undefined, { style: 'currency', currency: 'JPY' }).format(amount);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,7 +76,7 @@ export default function ClientOrders() {
           />
         </Space>
         <Text type="secondary">
-          {summary.totalOrders} / ¥ {summary.totalAmount.toFixed(2)}
+          Orders: {summary.totalOrders} | Total: {formatAmount(summary.totalAmount)}
         </Text>
         {loading ? (
           <Spin />
@@ -94,7 +96,7 @@ export default function ClientOrders() {
                     {t('orders.table.items')}: {order.lines?.length ?? 0}
                   </Text>
                   <Text strong>
-                    {t('orders.table.total')}: ¥ {order.totalAmount.toFixed(2)}
+                    {t('orders.table.total')}: {formatAmount(order.totalAmount)}
                   </Text>
                 </Space>
               </Card>

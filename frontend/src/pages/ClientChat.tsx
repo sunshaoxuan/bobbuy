@@ -12,6 +12,8 @@ export default function ClientChat() {
   const isMobile = screens.md === false;
   const [trips, setTrips] = useState<Trip[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<number>();
+  const senderId =
+    typeof window !== 'undefined' ? window.localStorage.getItem('bobbuy_chat_sender_id') ?? 'DEMO-CUST' : 'DEMO-CUST';
 
   useEffect(() => {
     let cancelled = false;
@@ -45,7 +47,7 @@ export default function ClientChat() {
             }))}
           />
         </Space>
-        <ChatWidget tripId={selectedTripId} senderId="DEMO-CUST" recipientId="PURCHASER" />
+        <ChatWidget tripId={selectedTripId} senderId={senderId} recipientId="PURCHASER" />
       </Space>
     </div>
   );

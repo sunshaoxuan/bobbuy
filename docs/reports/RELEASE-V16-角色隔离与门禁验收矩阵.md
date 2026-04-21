@@ -24,6 +24,8 @@
 
 ## 3. 全量响应式验收矩阵（390 / 768 / 1280）
 
+> 口径说明：390/768/1280 为视口宽度验收目标；Phone 以 390x844 竖屏为基线，Tablet/PC 同时检查常见高度下首屏可操作性与滚动后可操作性。
+
 | 页面 | Phone 390px | Tablet 768px | PC 1280px |
 | :-- | :-- | :-- | :-- |
 | Dashboard / Trips / Users / Orders / OrderDesk / ProcurementDashboard / PickingMaster / StockMaster / ZenAuditView | 关键操作需无横向溢出，表格退化为可读块/卡片或可滚动分区 | 筛选区与操作区不遮挡主体，表格列宽可读 | 信息密度充足，不出现过窄内容柱 |

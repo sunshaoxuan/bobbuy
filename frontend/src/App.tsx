@@ -28,6 +28,7 @@ export default function App() {
   const location = useLocation();
   const { locale, setLocale, t } = useI18n();
   const { role, isPurchaser } = useUserRole();
+  const isAgentRole = role === 'AGENT';
   const screens = Grid.useBreakpoint();
   const isMobile = screens.md === false;
   const isTablet = screens.md && !screens.lg;
@@ -261,7 +262,7 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
-                <Route path="*" element={<Navigate to={isPurchaser ? '/dashboard' : '/'} replace />} />
+                <Route path="*" element={<Navigate to={isAgentRole ? '/dashboard' : '/'} replace />} />
               </Routes>
             </Suspense>
           </div>

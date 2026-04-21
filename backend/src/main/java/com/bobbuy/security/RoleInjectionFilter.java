@@ -18,6 +18,8 @@ import java.util.Locale;
 @Component
 public class RoleInjectionFilter extends OncePerRequestFilter {
     public static final String ROLE_HEADER = "X-BOBBUY-ROLE";
+    public static final String USER_HEADER = "X-BOBBUY-USER";
+    private static final List<String> VALID_ROLES = List.of("CUSTOMER", "AGENT", "MERCHANT");
     private final String defaultRole;
 
     public RoleInjectionFilter(@Value("${bobbuy.security.default-role:CUSTOMER}") String defaultRole) {
@@ -33,15 +35,23 @@ public class RoleInjectionFilter extends OncePerRequestFilter {
             role = defaultRole;
         }
         String normalizedRole = role.toUpperCase(Locale.ROOT);
-        if (!List.of("CUSTOMER", "AGENT", "MERCHANT").contains(normalizedRole)) {
+        if (!VALID_ROLES.contains(normalizedRole)) {
             normalizedRole = "CUSTOMER";
         }
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-            "test-role-injected-user",
+            resolvePrincipal(request, normalizedRole),
             null,
             List.of(new SimpleGrantedAuthority("ROLE_" + normalizedRole))
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
+    }
+
+    private String resolvePrincipal(HttpServletRequest request, String role) {
+        String user = request.getHeader(USER_HEADER);
+        if (user == null || user.isBlank()) {
+            return "role-injected-" + role.toLowerCase(Locale.ROOT);
+        }
+        return user.trim();
     }
 }

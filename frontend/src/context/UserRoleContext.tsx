@@ -18,6 +18,9 @@ const UserRoleContext = createContext<UserRoleContextValue | undefined>(undefine
 
 export function UserRoleProvider({ children }: { children: React.ReactNode }) {
   const resolveInitialRole = (): UserRole => {
+    if (typeof window === 'undefined') {
+      return DEFAULT_ROLE;
+    }
     const params = new URLSearchParams(window.location.search);
     const queryRole = params.get('role');
     if (queryRole === 'CUSTOMER' || queryRole === 'AGENT' || queryRole === 'MERCHANT') {

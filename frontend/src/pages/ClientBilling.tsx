@@ -13,6 +13,8 @@ export default function ClientBilling() {
   const [selectedTripId, setSelectedTripId] = useState<number>();
   const [entries, setEntries] = useState<CustomerBalanceLedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const formatAmount = (amount: number) =>
+    new Intl.NumberFormat(undefined, { style: 'currency', currency: 'JPY' }).format(amount);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,13 +78,13 @@ export default function ClientBilling() {
                 <Space direction="vertical" size={6} style={{ width: '100%' }}>
                   <Text strong>{entry.businessId}</Text>
                   <Text>
-                    {t('zen.statement_total_receivable')}: ¥ {entry.totalReceivable.toFixed(2)}
+                    {t('zen.statement_total_receivable')}: {formatAmount(entry.totalReceivable)}
                   </Text>
                   <Text>
-                    {t('zen.statement_paid_deposit')}: ¥ {entry.paidDeposit.toFixed(2)}
+                    {t('zen.statement_paid_deposit')}: {formatAmount(entry.paidDeposit)}
                   </Text>
                   <Text strong>
-                    {t('zen.statement_outstanding')}: ¥ {entry.outstandingBalance.toFixed(2)}
+                    {t('zen.statement_outstanding')}: {formatAmount(entry.outstandingBalance)}
                   </Text>
                 </Space>
               </Card>
