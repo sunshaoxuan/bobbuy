@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
     if (log.isDebugEnabled()) {
       log.debug("Unexpected error", ex);
     } else {
-      log.debug("Unexpected error: {}", ex.getMessage());
+      log.warn("Unexpected error: {}", ex.getMessage());
     }
     String message = messageSource.getMessage("error.internal", null, LocaleContextHolder.getLocale());
     return ResponseEntity.internalServerError()

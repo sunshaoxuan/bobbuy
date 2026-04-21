@@ -5,12 +5,14 @@ import com.bobbuy.repository.ChatMessageRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class ChatService {
+    private static final DateTimeFormatter ISO_TIMESTAMP = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private final ChatMessageRepository chatMessageRepository;
 
     public ChatService(ChatMessageRepository chatMessageRepository) {
@@ -60,7 +62,7 @@ public class ChatService {
                 metadata.putIfAbsent("recoveryAction", "RETRY_PUBLISH");
             }
             if ("PUBLISHED_TO_MARKET".equals(metadata.get("imageFlowStatus"))) {
-                metadata.putIfAbsent("publishedAt", message.getCreatedAt().toString());
+                metadata.putIfAbsent("publishedAt", ISO_TIMESTAMP.format(message.getCreatedAt()));
             }
         }
         return metadata;

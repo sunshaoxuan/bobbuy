@@ -254,7 +254,8 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
       };
       const response = await api.onboardConfirm(payload);
       const confirmedAt = new Date().toISOString();
-      const previewUrl = response.product.mediaGallery?.[0]?.url ?? pendingImagePreview ?? pendingSuggestion.mediaGallery?.[0]?.url;
+      const previewUrl: string | undefined =
+        response.product.mediaGallery?.[0]?.url ?? pendingImagePreview ?? pendingSuggestion.mediaGallery?.[0]?.url ?? undefined;
       const productName = response.displayName || pendingSuggestion.name;
       const draftOnly = response.product.visibilityStatus === 'DRAFTER_ONLY' || (!payload.existingProductFound && !publishOnConfirm);
       const visibilityStatus = draftOnly ? 'DRAFTER_ONLY' : response.product.visibilityStatus ?? 'PUBLIC';
