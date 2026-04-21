@@ -4,6 +4,7 @@ import com.bobbuy.api.OrderPlacementRequest;
 import com.bobbuy.api.ProcurementItemResponse;
 import com.bobbuy.api.response.ApiException;
 import com.bobbuy.api.response.ErrorCode;
+import com.bobbuy.security.CustomerIdentityResolver;
 import com.bobbuy.model.Category;
 import com.bobbuy.model.MediaGalleryItem;
 import com.bobbuy.model.MediaType;
@@ -52,6 +53,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import org.springframework.security.core.Authentication;
 
 @Service
 public class BobbuyStore {
@@ -69,6 +71,7 @@ public class BobbuyStore {
     private final TripProfitShareConfigRepository tripProfitShareConfigRepository;
     private final FinancialAuditLogRepository financialAuditLogRepository;
     private final AuditLogService auditLogService;
+    private final CustomerIdentityResolver customerIdentityResolver;
     private final double unitWeight;
     private final double unitVolume;
     private final AtomicLong orderIdentity = new AtomicLong(3000L);
@@ -89,6 +92,7 @@ public class BobbuyStore {
             TripProfitShareConfigRepository tripProfitShareConfigRepository,
             FinancialAuditLogRepository financialAuditLogRepository,
             AuditLogService auditLogService,
+            CustomerIdentityResolver customerIdentityResolver,
             @Value("${bobbuy.trip.unit-weight:1.0}") double unitWeight,
             @Value("${bobbuy.trip.unit-volume:1.0}") double unitVolume) {
         this.userRepository = userRepository;
@@ -103,6 +107,7 @@ public class BobbuyStore {
         this.tripProfitShareConfigRepository = tripProfitShareConfigRepository;
         this.financialAuditLogRepository = financialAuditLogRepository;
         this.auditLogService = auditLogService;
+        this.customerIdentityResolver = customerIdentityResolver;
         this.unitWeight = unitWeight;
         this.unitVolume = unitVolume;
     }
@@ -414,10 +419,27 @@ public class BobbuyStore {
     }
 
     public List<OrderHeader> listOrders(Long tripId) {
+        return listOrders(tripId, null);
+    }
+
+    public List<OrderHeader> listOrders(Long tripId, Authentication authentication) {
+        List<OrderHeader> orders;
         if (tripId == null) {
-            return orderHeaderRepository.findAll();
+            orders = orderHeaderRepository.findAll();
+        } else {
+            orders = orderHeaderRepository.findByTripId(tripId);
         }
-        return orderHeaderRepository.findByTripId(tripId);
+        if (customerIdentityResolver.isCustomer(authentication)) {
+            Long customerId = customerIdentityResolver.resolveCustomerId(authentication).orElse(null);
+            if (customerId == null) {
+                return List.of();
+            }
+            final Long cid = customerId;
+            orders = orders.stream()
+                    .filter(o -> cid.equals(o.getCustomerId()))
+                    .collect(Collectors.toList());
+        }
+        return orders;
     }
 
     public Optional<OrderHeader> getOrder(Long id) {

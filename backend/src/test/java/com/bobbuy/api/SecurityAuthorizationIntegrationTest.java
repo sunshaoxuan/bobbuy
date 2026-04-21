@@ -59,6 +59,42 @@ class SecurityAuthorizationIntegrationTest {
   }
 
   @Test
+  void customerCanReadOnlyOwnOrders() throws Exception {
+    // Customer 9001 should only see their own order, not 9002's order
+    mockMvc.perform(asCustomer(get("/api/orders").param("tripId", tripId.toString()), "9001"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(1))
+        .andExpect(jsonPath("$.data[0].customerId").value(9001))
+        .andExpect(jsonPath("$.data[0].businessId").value("LEDGER-CUST-OWN"));
+  }
+
+  @Test
+  void customerWithNoMatchingOrdersGetsEmptyList() throws Exception {
+    // Customer 9999 has no orders in this trip
+    mockMvc.perform(asCustomer(get("/api/orders").param("tripId", tripId.toString()), "9999"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(0));
+  }
+
+  @Test
+  void customerWithUnrecognizedIdentityGetsEmptyList() throws Exception {
+    // No X-BOBBUY-USER header → principal is "role-injected-customer" which is not a recognized format
+    mockMvc.perform(get("/api/orders")
+            .param("tripId", tripId.toString())
+            .header(RoleInjectionFilter.ROLE_HEADER, "CUSTOMER"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(0));
+  }
+
+  @Test
+  void agentCanReadAllOrdersWithoutFilter() throws Exception {
+    // Agent should see both customer orders
+    mockMvc.perform(asAgent(get("/api/orders").param("tripId", tripId.toString())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(2));
+  }
+
+  @Test
   void customerIsForbiddenFromBackofficeApisButCanReadOrders() throws Exception {
     mockMvc.perform(asCustomer(get("/api/procurement/{tripId}/hud", tripId), "9001"))
         .andExpect(status().isForbidden());

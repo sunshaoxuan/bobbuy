@@ -8,7 +8,7 @@ const { Title, Text } = Typography;
 export default function ClientBilling() {
   const { t } = useI18n();
   const screens = Grid.useBreakpoint();
-  const isMobile = screens.md === false;
+  const isMobile = screens.md !== true;
   const [trips, setTrips] = useState<Trip[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<number>();
   const [entries, setEntries] = useState<CustomerBalanceLedgerEntry[]>([]);

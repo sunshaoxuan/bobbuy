@@ -189,10 +189,13 @@ export default function ZenAuditView() {
             <style>{`
                 .zen-audit-container {
                     max-width: 600px;
+                    width: 100%;
                     margin: 0 auto;
                     background: var(--zen-bg);
                     min-height: 100vh;
                     padding: 2rem 1rem;
+                    overflow-x: hidden;
+                    box-sizing: border-box;
                 }
                 .zen-audit-header {
                     margin-bottom: 2.5rem;

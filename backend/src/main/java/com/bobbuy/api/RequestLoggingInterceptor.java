@@ -15,7 +15,7 @@ import java.util.UUID;
 public class RequestLoggingInterceptor implements HandlerInterceptor {
   private static final Logger log = LoggerFactory.getLogger(RequestLoggingInterceptor.class);
   private static final String TRACE_HEADER = "X-Trace-Id";
-  private static final String USER_HEADER = "X-User-Id";
+  private static final String USER_HEADER = "X-BOBBUY-USER";
   private static final String START_TIME = "requestStartTimeMs";
   private final RequestMetricsService requestMetricsService;
 

@@ -8,7 +8,7 @@ const { Title, Text } = Typography;
 export default function ClientOrders() {
   const { t } = useI18n();
   const screens = Grid.useBreakpoint();
-  const isMobile = screens.md === false;
+  const isMobile = screens.md !== true;
   const [trips, setTrips] = useState<Trip[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<number>();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -75,7 +75,7 @@ export default function ClientOrders() {
             }))}
           />
         </Space>
-        <Text type="secondary">
+        <Text type="secondary" data-testid="orders-summary">
           Orders: {summary.totalOrders} | Total: {formatAmount(summary.totalAmount)}
         </Text>
         {loading ? (

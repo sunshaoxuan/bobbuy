@@ -37,11 +37,11 @@ import com.bobbuy.repository.TripLogisticsTrackingRepository;
 import com.bobbuy.repository.TripProfitShareConfigRepository;
 import com.bobbuy.api.WalletSummaryResponse;
 import com.bobbuy.api.WalletTransactionResponse;
+import com.bobbuy.security.CustomerIdentityResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,8 +56,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.HashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -68,7 +66,6 @@ public class ProcurementHudService {
   private static final double DEFAULT_PURCHASER_RATIO = 70D;
   private static final double DEFAULT_PROMOTER_RATIO = 30D;
   private static final double DEFAULT_FX_RATE = 1D;
-  private static final Pattern NUMERIC_IDENTITY_PATTERN = Pattern.compile("(\\d+)");
   private static final Logger log = LoggerFactory.getLogger(ProcurementHudService.class);
 
   private final TripRepository tripRepository;
@@ -82,6 +79,7 @@ public class ProcurementHudService {
   private final ImageStorageService imageStorageService;
   private final ObjectMapper objectMapper;
   private final WalletService walletService;
+  private final CustomerIdentityResolver customerIdentityResolver;
   private final double referenceFxRate;
 
   public ProcurementHudService(TripRepository tripRepository,
@@ -95,6 +93,7 @@ public class ProcurementHudService {
                                ImageStorageService imageStorageService,
                                ObjectMapper objectMapper,
                                WalletService walletService,
+                               CustomerIdentityResolver customerIdentityResolver,
                                @Value("${bobbuy.fx.reference-rate:1.0}") double referenceFxRate) {
     this.tripRepository = tripRepository;
     this.orderHeaderRepository = orderHeaderRepository;
@@ -107,6 +106,7 @@ public class ProcurementHudService {
     this.imageStorageService = imageStorageService;
     this.objectMapper = objectMapper;
     this.walletService = walletService;
+    this.customerIdentityResolver = customerIdentityResolver;
     this.referenceFxRate = referenceFxRate;
   }
 
@@ -563,41 +563,21 @@ public class ProcurementHudService {
               round2(Math.max(totalReceivable - paidDeposit, 0D)));
         })
         .toList();
-    if (isCustomer(authentication)) {
-      return filterLedgerForCustomer(entries, authentication == null ? null : authentication.getName());
+    if (customerIdentityResolver.isCustomer(authentication)) {
+      return filterLedgerForCustomer(entries, authentication);
     }
     return entries;
   }
 
   private List<CustomerBalanceLedgerResponse> filterLedgerForCustomer(List<CustomerBalanceLedgerResponse> entries,
-                                                                      String principalName) {
-    if (principalName == null || principalName.isBlank()) {
+                                                                      Authentication authentication) {
+    Long customerId = customerIdentityResolver.resolveCustomerId(authentication).orElse(null);
+    if (customerId == null) {
       return List.of();
     }
-    // test-injected principal may be numeric customerId (e.g. "1001") or businessId (e.g. "BIZ-1001").
-    Long customerId = parseNumericCustomerId(principalName);
-    String businessId = principalName.trim();
     return entries.stream()
-        .filter(entry -> Objects.equals(entry.getCustomerId(), customerId)
-            || entry.getBusinessId().equalsIgnoreCase(businessId))
+        .filter(entry -> Objects.equals(entry.getCustomerId(), customerId))
         .toList();
-  }
-
-  private Long parseNumericCustomerId(String principalName) {
-    Matcher matcher = NUMERIC_IDENTITY_PATTERN.matcher(principalName);
-    if (matcher.find()) {
-      return Long.parseLong(matcher.group(1));
-    }
-    return null;
-  }
-
-  private boolean isCustomer(Authentication authentication) {
-    if (authentication == null) {
-      return false;
-    }
-    return authentication.getAuthorities().stream()
-        .map(GrantedAuthority::getAuthority)
-        .anyMatch("ROLE_CUSTOMER"::equals);
   }
 
   @Transactional
