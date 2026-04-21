@@ -53,7 +53,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string>();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -174,10 +174,10 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   }, [messages]);
 
   const handleSend = async () => {
-    if (!inputValue.trim() || loading) {
+    if (!inputValue.trim() || sendingMessage) {
       return;
     }
-    setLoading(true);
+    setSendingMessage(true);
     try {
       await api.sendChatMessage({
         orderId,
@@ -193,7 +193,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     } catch {
       message.error(t('errors.request_failed'));
     } finally {
-      setLoading(false);
+      setSendingMessage(false);
     }
   };
 
@@ -621,7 +621,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                 onChange={(e) => setInputValue(e.target.value)}
                 onPressEnter={handleSend}
               />
-              <Button aria-label="Send message" type="primary" icon={<SendOutlined />} onClick={handleSend} loading={loading} />
+              <Button aria-label="Send message" type="primary" icon={<SendOutlined />} onClick={handleSend} loading={sendingMessage} />
             </Space.Compact>
           </div>
         </div>

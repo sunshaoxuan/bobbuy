@@ -88,7 +88,7 @@ export default function ZenAuditView() {
                         <Text strong>聊天商品闭环检索（Trip: {tripId}）</Text>
                         <Space wrap>
                             <Input
-                                placeholder="operator"
+                                placeholder="Filter by Operator ID"
                                 value={operatorFilter}
                                 onChange={(event) => setOperatorFilter(event.target.value)}
                                 style={{ width: 160 }}

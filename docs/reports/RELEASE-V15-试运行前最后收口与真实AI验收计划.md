@@ -29,7 +29,7 @@
 - 后端可访问真实视觉模型与依赖服务
 - 样例图片存在：`sample/IMG_1484.jpg`、`sample/IMG_1638.jpg`
 - 执行命令：
-  - `cd /home/runner/work/bobbuy/bobbuy/frontend`
+  - `cd frontend`
   - `RUN_AI_VISION_E2E=1 npm run e2e -- ai_onboarding.spec.ts`
 
 ### 样例与预期

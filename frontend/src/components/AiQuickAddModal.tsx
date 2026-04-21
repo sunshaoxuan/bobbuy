@@ -67,7 +67,6 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
     { title: t('stock.ai_quick_add.step_done'), icon: <CheckCircleOutlined /> },
   ];
   const stageByStep = ['UPLOAD', 'SCANNING', 'RESEARCHING', 'ENRICHING', 'SUCCESS'] as const;
-  const onboardingResultStatus = currentStep === 4 ? 'SUCCESS' : stageByStep[currentStep];
 
   return (
     <Modal
@@ -154,7 +153,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
             <Result
               data-testid="ai-onboarding-result"
               subTitle={
-                <span data-testid="ai-onboarding-result-subtitle" data-ai-status={onboardingResultStatus}>
+                <span data-testid="ai-onboarding-result-subtitle" data-ai-status="SUCCESS">
                   {t('stock.ai_quick_add.success_subtitle')}
                 </span>
               }
