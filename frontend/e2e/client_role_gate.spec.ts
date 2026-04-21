@@ -24,7 +24,7 @@ test.describe('client route gates', () => {
       });
     });
 
-    await page.route('**/api/orders?tripId=2000', async (route) => {
+    await page.route('**/api/orders**', async (route) => {
       await route.fulfill({
         status: 200,
         body: JSON.stringify({

@@ -28,11 +28,11 @@
 
 | 页面 | Phone 390px | Tablet 768px | PC 1280px |
 | :-- | :-- | :-- | :-- |
-| ClientHomeV2 (`/`) / ClientOrders / ClientBilling / ClientChat | ✅ 已纳入 `responsive_viewport.spec.ts`，通过 | ✅ 已纳入 `responsive_viewport.spec.ts`，通过 | ✅ 已纳入 `responsive_viewport.spec.ts`，通过 |
-| Orders(back-office) / StockMaster / ZenAuditView | ✅ 已纳入 `responsive_viewport.spec.ts`，通过 | ✅ 已纳入 `responsive_viewport.spec.ts`，通过 | ✅ 已纳入 `responsive_viewport.spec.ts`，通过 |
-| Dashboard / Trips / Users / OrderDesk / ProcurementDashboard / PickingMaster | 未纳入自动化矩阵（待补充） | 未纳入自动化矩阵（待补充） | 未纳入自动化矩阵（待补充） |
+| ClientHomeV2 (`/`) / ClientOrders / ClientBilling / ClientChat | ✅ 已纳入 `responsive_client.spec.ts`，通过 | ✅ 已纳入 `responsive_client.spec.ts`，通过 | ✅ 已纳入 `responsive_client.spec.ts`，通过 |
+| Dashboard / Trips / Users / OrderDesk / ProcurementDashboard / PickingMaster | ✅ 已纳入 `responsive_backoffice.spec.ts`，通过 | ✅ 已纳入 `responsive_backoffice.spec.ts`，通过 | ✅ 已纳入 `responsive_backoffice.spec.ts`，通过 |
+| Orders(back-office) / StockMaster / ZenAuditView | 当前版本未纳入响应式自动化（本轮聚焦 V20 后台 6 页） | 当前版本未纳入响应式自动化（本轮聚焦 V20 后台 6 页） | 当前版本未纳入响应式自动化（本轮聚焦 V20 后台 6 页） |
 
-> 本轮响应式失败根因结论：原失败为测试脚本问题（标题定位器 strict mode 冲突 + 首页路由不一致 + 局部 mock 缺失），修复后 390/768/1280 断言通过，未复现真实横向溢出。
+> V20 本轮结论：后台 6 个关键页已补齐 390/768/1280 自动化验收；新增断言包含“主标题/核心区块可见 + 首屏关键操作可达 + 无整页横向滚动”；并补齐后台相关 API mock，`frontend npm run e2e` 不再出现 Vite proxy `ECONNREFUSED` 噪声。
 
 ## 4. AI 调用链完备性矩阵
 
@@ -49,9 +49,10 @@
 1. 本轮自动化实测：
    - `frontend npm run build` ✅
    - `frontend npm test` ✅
-   - `frontend npm run e2e` ✅（25 passed / 2 skipped）
+   - `frontend npm run e2e` ✅（34 passed / 2 skipped）
    - `backend ./mvnw test` ✅
 2. 客户账单链路已打通：`/client/billing` + `GET /api/procurement/{tripId}/ledger`，并在 CUSTOMER 下做数据收敛。
 3. 后端显式角色门禁已自动化覆盖：CUSTOMER 对 `/api/procurement/**`（非白名单）、`/api/financial/audit/**`、`/api/users/**`、`/api/orders/**` 的允许/拒绝矩阵可回归；其中 `GET /api/orders/{id}` 已与列表统一隔离策略（CUSTOMER 仅可读本人，越权返回 404）。
 4. `ai_onboarding.spec.ts` 仍为条件化跳过（依赖专用 AI/文件环境），当前不计入常规本地门禁。
-5. 发布前剩余风险：仍有部分后台页面（Dashboard/Trips/Users/OrderDesk/ProcurementDashboard/PickingMaster）未纳入 390/768/1280 自动化矩阵。
+5. 发布前剩余风险：
+   - 仍有后台页面 `Orders(back-office)`、`StockMaster`、`ZenAuditView` 未纳入当前拆分后的响应式自动化矩阵（本轮 V20 仅收口后台 6 个优先页面）。

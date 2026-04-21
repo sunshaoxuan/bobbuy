@@ -94,7 +94,7 @@ export default function Trips() {
 
   return (
     <div className="page-card">
-      <div className="section-title">{t('trips.title')}</div>
+      <div className="section-title" data-testid="trips-title">{t('trips.title')}</div>
       <Text className="helper-text">{t('trips.helper')}</Text>
 
       <Card style={{ marginTop: 16, marginBottom: 24 }} bordered={false}>
@@ -149,7 +149,7 @@ export default function Trips() {
               placeholder={t('trips.form.status.placeholder')}
             />
           </Form.Item>
-          <Button type="primary" htmlType="submit" loading={submitting} disabled={submitting}>
+          <Button type="primary" htmlType="submit" loading={submitting} disabled={submitting} data-testid="trips-submit">
             {t('trips.form.submit')}
           </Button>
         </Form>
@@ -161,6 +161,7 @@ export default function Trips() {
           rowKey="id"
           columns={columns}
           locale={{ emptyText: t('table.empty') }}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
     </div>

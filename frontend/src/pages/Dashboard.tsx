@@ -54,7 +54,7 @@ export default function Dashboard() {
 
   return (
     <div className="page-card">
-      <div className="section-title">{t('dashboard.title')}</div>
+      <div className="section-title" data-testid="dashboard-title">{t('dashboard.title')}</div>
       <div className="dashboard-grid">
         <StatCard
           label={t('dashboard.stats.active_users')}
@@ -80,8 +80,8 @@ export default function Dashboard() {
 
       <Divider />
 
-      <Row gutter={16}>
-        <Col span={12}>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
           <Card bordered={false} title={t('dashboard.trips.title')}>
             <Table<Trip>
               size="small"
@@ -89,10 +89,11 @@ export default function Dashboard() {
               dataSource={trips}
               rowKey="id"
               columns={tripColumns}
+              scroll={{ x: 'max-content' }}
             />
           </Card>
         </Col>
-        <Col span={12}>
+        <Col xs={24} lg={12}>
           <Card bordered={false} title={t('dashboard.orders.title')}>
             <Table<Order>
               size="small"
@@ -100,6 +101,7 @@ export default function Dashboard() {
               dataSource={orders}
               rowKey="id"
               columns={orderColumns}
+              scroll={{ x: 'max-content' }}
             />
           </Card>
         </Col>
