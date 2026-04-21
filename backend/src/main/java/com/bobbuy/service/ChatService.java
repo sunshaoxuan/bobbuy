@@ -12,7 +12,7 @@ import java.util.Map;
 
 @Service
 public class ChatService {
-    private static final DateTimeFormatter ISO_TIMESTAMP = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final DateTimeFormatter ISO_LOCAL_DATETIME = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private final ChatMessageRepository chatMessageRepository;
 
     public ChatService(ChatMessageRepository chatMessageRepository) {
@@ -62,7 +62,7 @@ public class ChatService {
                 metadata.putIfAbsent("recoveryAction", "RETRY_PUBLISH");
             }
             if ("PUBLISHED_TO_MARKET".equals(metadata.get("imageFlowStatus"))) {
-                metadata.putIfAbsent("publishedAt", ISO_TIMESTAMP.format(message.getCreatedAt()));
+                metadata.putIfAbsent("publishedAt", ISO_LOCAL_DATETIME.format(message.getCreatedAt()));
             }
         }
         return metadata;

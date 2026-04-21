@@ -42,6 +42,8 @@ public class AiProductOnboardingService {
     private static final double CATEGORY_MATCH_BONUS = 0.8d;
     private static final double STRONG_NAME_OVERLAP_BONUS = 0.8d;
     private static final double MEDIUM_NAME_OVERLAP_BONUS = 0.4d;
+    // Keep audit metadata concise so chat cards remain readable while still showing the strongest evidence.
+    private static final int MAX_MATCHED_AUDIT_FRAGMENTS = 4;
     private static final Map<String, List<String>> TOKEN_ALIASES = Map.of(
         "milk", List.of("牛乳", "ミルク"),
         "matcha", List.of("抹茶"),
@@ -262,7 +264,7 @@ public class AiProductOnboardingService {
         List<String> signals = new ArrayList<>();
         List<String> matchedFragments = queryTokens.stream()
             .filter(productTokens::contains)
-            .limit(4)
+            .limit(MAX_MATCHED_AUDIT_FRAGMENTS)
             .toList();
         double score = sharedCount * SHARED_TOKEN_WEIGHT + overlap * OVERLAP_WEIGHT;
         if (brandExact(queryTokens, product.getBrand())) {
