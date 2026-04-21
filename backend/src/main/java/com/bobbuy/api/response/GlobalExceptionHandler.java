@@ -23,7 +23,7 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(ApiException.class)
   public ResponseEntity<ApiError> handleApiException(ApiException ex) {
-    log.warn("API error: {}", ex.getMessage());
+    log.debug("API error: {}", ex.getMessage());
     String rawMessage = messageSource.getMessage(ex.getMessageKey(), ex.getMessageArgs(), null,
         LocaleContextHolder.getLocale());
     String message = (rawMessage != null)
@@ -52,7 +52,11 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiError> handleUnexpected(Exception ex) {
-    log.error("Unexpected error", ex);
+    if (log.isDebugEnabled()) {
+      log.debug("Unexpected error", ex);
+    } else {
+      log.warn("Unexpected error: {}", ex.getMessage());
+    }
     String message = messageSource.getMessage("error.internal", null, LocaleContextHolder.getLocale());
     return ResponseEntity.internalServerError()
         .body(new ApiError(ErrorCode.INTERNAL_ERROR.name(), message));

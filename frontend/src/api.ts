@@ -210,14 +210,33 @@ export type ChatImageFlowStatus =
     | 'MATCHED_EXISTING_PRODUCT'
     | 'CANDIDATE_SELECTED'
     | 'TEMP_PRODUCT_CREATED'
-    | 'PUBLISHED_TO_MARKET';
+    | 'PUBLISHED_TO_MARKET'
+    | 'PUBLISH_FAILED';
+
+export type ChatRecoveryAction =
+    | 'RETRY_PUBLISH'
+    | 'REQUEST_ATTACHMENT_REUPLOAD'
+    | 'RETRY_IMAGE_SCAN';
+
+export type ChatCandidateSummary = {
+    brand?: string;
+    categoryId?: string;
+    matchedFragments?: string[];
+    aliasSources?: string[];
+    presentedCount?: number;
+    rejectedCount?: number;
+};
 
 export type ChatCandidateAudit = {
     decision: 'EXACT_MATCH' | 'SELECTED_CANDIDATE' | 'CREATED_TEMP_PRODUCT';
     selectedProductId?: string;
     recommendedProductIds?: string[];
+    rejectedProductIds?: string[];
     selectedReason?: string;
     confirmedAt: string;
+    reviewedBy?: string;
+    triggerEntry?: string;
+    publishedAt?: string;
 };
 
 export type ChatMessageMetadata = {
@@ -238,8 +257,14 @@ export type ChatMessageMetadata = {
     existingProductFound?: boolean;
     matchedBy?: string;
     imageFlowStatus?: ChatImageFlowStatus;
+    recoveryAction?: ChatRecoveryAction;
+    decisionAt?: string;
+    publishedAt?: string;
+    operatorId?: string;
+    auditVersion?: string;
     candidateSelectionResult?: string;
     candidateAudit?: ChatCandidateAudit;
+    candidateSummary?: ChatCandidateSummary;
     candidateReason?: string;
     candidateReasons?: string[];
     [key: string]: any;
@@ -264,6 +289,10 @@ export type AiProductCandidate = {
     matchReason: string;
     matchSignals?: string[];
     score?: number;
+    brand?: string;
+    categoryId?: string;
+    matchedFragments?: string[];
+    aliasSources?: string[];
 };
 
 export type WalletSummary = {

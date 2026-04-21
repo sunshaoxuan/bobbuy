@@ -6,7 +6,7 @@
 旨在链接全球范围内具有特定代购或代办需求的委托人（Customer）与能够提供专业服务的代理人（Agent/Merchant），打破地域限制，实现全球资源的无缝获取。
 
 ## ✨ 核心特性
-- **💬 采购沟通留痕 (Procurement Chat)**：当前提供 REST 持久化消息、历史查询与轮询刷新；WebSocket 实时推送集群仍在下一里程碑。
+- **💬 采购沟通留痕 (Procurement Chat)**：当前提供 REST 持久化消息、历史查询、轮询刷新，以及图片确认/候选选择/发布动作的审计字段与失败恢复提示；WebSocket 实时推送集群仍在下一里程碑。
 - **🤖 AI 流程自动化 (AI Automation)**：
   - **AI 现场采集 (AI Sourcing)**：拍摄一张卖场货架照片，AI 自动识别品类、名称、货号、含税/免税价格，并自动上架。
   - **智能深度研究 (Deep Research)**：基于采集到的片段信息，自动进行全网搜索，补全商品详细介绍、规格参数并采集官方高清原图。
@@ -32,6 +32,7 @@
 ## 📂 文档索引
 - [MIGRATION-01: PostgreSQL 与 MinIO 迁移记录](docs/migrations/MIGRATION-01-PostgreSQL与MinIO容器化迁移.md)
 - [ARCH-13: 全栈容器化部署方案](docs/architecture/ARCH-13-全栈容器化部署方案.md)
+- [RELEASE-V14: 当前真实能力边界与发布风险](docs/reports/RELEASE-V14-当前真实能力边界.md)
 - [PROD-01: 原始需求清单](docs/design/PROD-01-原始需求清单.md)
 - [ARCH-01: 平台技术架构选型](docs/architecture/ARCH-01-平台技术架构选型.md)
 - [ARCH-11: 订单头行模型与业务幂等详细设计](docs/architecture/ARCH-11-订单头行模型与业务幂等详细设计说明书.md)

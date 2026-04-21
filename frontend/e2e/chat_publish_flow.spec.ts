@@ -76,7 +76,11 @@ test('chat image confirmation can create a draft item and publish it to mall', a
               itemNumber: 'SKU-998',
               matchReason: 'BRAND_AND_ITEM_NUMBER_FRAGMENT',
               matchSignals: ['BRAND_EXACT', 'ITEM_NUMBER_FRAGMENT'],
-              score: 8.4
+              score: 8.4,
+              brand: 'BOBBuy',
+              categoryId: 'tea',
+              matchedFragments: ['bobbuy', '抹茶'],
+              aliasSources: ['matcha']
             }
           ],
           visibilityStatus: 'DRAFTER_ONLY',
@@ -148,6 +152,7 @@ test('chat image confirmation can create a draft item and publish it to mall', a
 
   await expect(page.getByText('Confirm image context')).toBeVisible();
   await expect(page.getByText('Pending confirmation')).toBeVisible();
+  await expect(page.getByText('Brand: BOBBuy · Category: tea')).toBeVisible();
   await page.getByLabel('抹茶礼盒大包装 · SKU-998 · BRAND_EXACT / ITEM_NUMBER_FRAGMENT').check();
   await page.getByRole('button', { name: 'OK' }).click();
 

@@ -6,6 +6,10 @@ public record AiProductCandidate(
     String itemNumber,
     String matchReason,
     java.util.List<String> matchSignals,
-    double score
+    double score,
+    String brand,
+    String categoryId,
+    java.util.List<String> matchedFragments,
+    java.util.List<String> aliasSources
 ) {
 }

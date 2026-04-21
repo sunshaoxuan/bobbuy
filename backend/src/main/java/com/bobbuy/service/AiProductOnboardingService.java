@@ -42,6 +42,8 @@ public class AiProductOnboardingService {
     private static final double CATEGORY_MATCH_BONUS = 0.8d;
     private static final double STRONG_NAME_OVERLAP_BONUS = 0.8d;
     private static final double MEDIUM_NAME_OVERLAP_BONUS = 0.4d;
+    // Keep audit metadata concise so chat cards remain readable while still showing the strongest evidence.
+    private static final int MAX_MATCHED_AUDIT_FRAGMENTS = 4;
     private static final Map<String, List<String>> TOKEN_ALIASES = Map.of(
         "milk", List.of("牛乳", "ミルク"),
         "matcha", List.of("抹茶"),
@@ -260,6 +262,10 @@ public class AiProductOnboardingService {
             return null;
         }
         List<String> signals = new ArrayList<>();
+        List<String> matchedFragments = queryTokens.stream()
+            .filter(productTokens::contains)
+            .limit(MAX_MATCHED_AUDIT_FRAGMENTS)
+            .toList();
         double score = sharedCount * SHARED_TOKEN_WEIGHT + overlap * OVERLAP_WEIGHT;
         if (brandExact(queryTokens, product.getBrand())) {
             signals.add("BRAND_EXACT");
@@ -297,7 +303,11 @@ public class AiProductOnboardingService {
             product.getItemNumber(),
             primaryReason,
             signals,
-            score
+            score,
+            product.getBrand(),
+            product.getCategoryId(),
+            matchedFragments,
+            resolveAliasSources(matchedFragments)
         );
     }
 
@@ -352,5 +362,20 @@ public class AiProductOnboardingService {
             .filter(Objects::nonNull)
             .filter(value -> !value.isBlank())
             .collect(Collectors.joining(" "));
+    }
+
+    private List<String> resolveAliasSources(List<String> matchedFragments) {
+        if (matchedFragments == null || matchedFragments.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashSet<String> aliasSources = new LinkedHashSet<>();
+        for (String fragment : matchedFragments) {
+            for (Map.Entry<String, List<String>> entry : TOKEN_ALIASES.entrySet()) {
+                if (entry.getKey().equals(fragment) || entry.getValue().contains(fragment)) {
+                    aliasSources.add(entry.getKey());
+                }
+            }
+        }
+        return List.copyOf(aliasSources);
     }
 }

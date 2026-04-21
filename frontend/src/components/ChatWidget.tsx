@@ -66,9 +66,11 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   const [retryableImageDraft, setRetryableImageDraft] = useState<RetryableImageDraft | null>(null);
   const [publishingMessageId, setPublishingMessageId] = useState<string>();
   const [lastSuccessfulSyncAt, setLastSuccessfulSyncAt] = useState<string>();
+  const [confirmError, setConfirmError] = useState<string>();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const knownMessageKeysRef = useRef<Set<string>>(new Set());
+  const hasScopedConversation = Boolean(tripId || orderId);
 
   const conversationType: ConversationType = tripId ? 'TRIP' : orderId ? 'ORDER' : 'PRIVATE';
   const conversationTypeLabel = useMemo(() => {
@@ -147,7 +149,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   }, [loadMessages, open]);
 
   usePollingTask(() => loadMessages({ silent: true }), {
-    enabled: Boolean(senderId && recipientId),
+    enabled: Boolean(senderId && recipientId && (hasScopedConversation || open)),
     intervalMs: 15000
   });
 
@@ -197,6 +199,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     async (base64: string, fileName: string) => {
       setRetryableImageDraft({ base64, fileName });
       setConfirmingImage(true);
+      setConfirmError(undefined);
       try {
         const suggestion = await api.onboardScan(base64);
         setPendingSuggestion(suggestion);
@@ -236,6 +239,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
       return;
     }
     setConfirmingImage(true);
+    setConfirmError(undefined);
     try {
       const isManualCandidate = !pendingSuggestion.existingProductFound && Boolean(selectedCandidateId);
       const payload: AiOnboardingSuggestion = {
@@ -249,11 +253,15 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
             : 'DRAFTER_ONLY'
       };
       const response = await api.onboardConfirm(payload);
-      const previewUrl = response.product.mediaGallery?.[0]?.url ?? pendingImagePreview ?? pendingSuggestion.mediaGallery?.[0]?.url ?? '';
+      const confirmedAt = new Date().toISOString();
+      const previewUrl: string | undefined =
+        response.product.mediaGallery?.[0]?.url ?? pendingImagePreview ?? pendingSuggestion.mediaGallery?.[0]?.url;
       const productName = response.displayName || pendingSuggestion.name;
       const draftOnly = response.product.visibilityStatus === 'DRAFTER_ONLY' || (!payload.existingProductFound && !publishOnConfirm);
       const visibilityStatus = draftOnly ? 'DRAFTER_ONLY' : response.product.visibilityStatus ?? 'PUBLIC';
       const candidate = pendingSuggestion.similarProductCandidates?.find((entry) => entry.productId === selectedCandidateId);
+      const recommendedProductIds = pendingSuggestion.similarProductCandidates?.map((entry) => entry.productId) ?? [];
+      const rejectedProductIds = recommendedProductIds.filter((productId) => productId !== selectedCandidateId);
       const candidateDecision = payload.existingProductFound
         ? pendingSuggestion.existingProductFound
           ? 'EXACT_MATCH'
@@ -289,6 +297,9 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
           url: previewUrl,
           attachmentUrl: previewUrl,
           attachmentName: pendingAttachmentName,
+          auditVersion: 'V14',
+          operatorId: senderId,
+          decisionAt: confirmedAt,
           productId: response.product.id,
           productName,
           itemNumber: response.product.itemNumber,
@@ -297,15 +308,29 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
           existingProductFound: payload.existingProductFound ?? false,
           matchedBy,
           imageFlowStatus,
+          publishedAt: draftOnly ? undefined : confirmedAt,
+          recoveryAction: previewUrl ? undefined : 'REQUEST_ATTACHMENT_REUPLOAD',
           candidateSelectionResult: candidateDecision,
           candidateReason: candidate?.matchReason,
           candidateReasons: candidate?.matchSignals ?? [],
+          candidateSummary: {
+            brand: candidate?.brand,
+            categoryId: candidate?.categoryId,
+            matchedFragments: candidate?.matchedFragments ?? [],
+            aliasSources: candidate?.aliasSources ?? [],
+            presentedCount: recommendedProductIds.length,
+            rejectedCount: rejectedProductIds.length
+          },
           candidateAudit: {
             decision: candidateDecision,
             selectedProductId: response.product.id,
-            recommendedProductIds: pendingSuggestion.similarProductCandidates?.map((entry) => entry.productId) ?? [],
+            recommendedProductIds,
+            rejectedProductIds,
             selectedReason: candidate?.matchReason ?? matchedBy,
-            confirmedAt: new Date().toISOString()
+            reviewedBy: senderId,
+            triggerEntry: 'CHAT_IMAGE_CONFIRMATION',
+            confirmedAt,
+            publishedAt: draftOnly ? undefined : confirmedAt
           }
         }
       });
@@ -319,6 +344,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
       await loadMessages();
       message.success(t('chat.image_sent_success'));
     } catch {
+      setConfirmError(t('errors.request_failed'));
       message.error(t('errors.request_failed'));
     } finally {
       setConfirmingImage(false);
@@ -337,12 +363,35 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
       setMessages((current) =>
         current.map((entry) =>
           messageKey(entry) === targetMessageId
-            ? { ...entry, metadata: { ...entry.metadata, visibilityStatus: 'PUBLIC', imageFlowStatus: 'PUBLISHED_TO_MARKET' } }
+            ? {
+                ...entry,
+                metadata: {
+                  ...entry.metadata,
+                  visibilityStatus: 'PUBLIC',
+                  imageFlowStatus: 'PUBLISHED_TO_MARKET',
+                  publishedAt: new Date().toISOString(),
+                  recoveryAction: undefined
+                }
+              }
             : entry
         )
       );
       message.success(t('chat.publish_success'));
     } catch {
+      setMessages((current) =>
+        current.map((entry) =>
+          messageKey(entry) === targetMessageId
+            ? {
+                ...entry,
+                metadata: {
+                  ...entry.metadata,
+                  imageFlowStatus: 'PUBLISH_FAILED',
+                  recoveryAction: 'RETRY_PUBLISH'
+                }
+              }
+            : entry
+        )
+      );
       message.error(t('errors.request_failed'));
     } finally {
       setPublishingMessageId(undefined);
@@ -427,6 +476,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
               renderItem={(msg) => {
                 const canPublish = msg.metadata?.isTemporary && msg.metadata?.visibilityStatus === 'DRAFTER_ONLY';
                 const statusLabel = getImageFlowStatusLabel(msg, t);
+                const recoveryActionLabel = getRecoveryActionLabel(msg, t);
                 return (
                   <div
                     style={{
@@ -465,12 +515,59 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                             <Space wrap size={4} style={{ marginTop: 6 }}>
                               {msg.metadata?.matchedBy ? <Tag>{String(msg.metadata.matchedBy)}</Tag> : null}
                               {msg.metadata?.visibilityStatus ? <Tag color={canPublish ? 'orange' : 'green'}>{String(msg.metadata.visibilityStatus)}</Tag> : null}
-                              {statusLabel ? <Tag color={msg.metadata?.imageFlowStatus === 'PUBLISHED_TO_MARKET' ? 'green' : 'blue'}>{statusLabel}</Tag> : null}
+                              {statusLabel ? <Tag color={getImageFlowStatusColor(msg.metadata?.imageFlowStatus)}>{statusLabel}</Tag> : null}
                             </Space>
                             {msg.metadata?.candidateReasons?.length ? (
                               <div style={{ marginTop: 6 }}>
                                 <Text style={{ color: 'inherit', opacity: 0.85 }}>
                                   {t('chat.candidate_reason_title')}: {msg.metadata.candidateReasons.join(' · ')}
+                                </Text>
+                              </div>
+                            ) : null}
+                            {msg.metadata?.candidateSummary?.brand || msg.metadata?.candidateSummary?.categoryId ? (
+                              <div style={{ marginTop: 6 }}>
+                                <Text style={{ color: 'inherit', opacity: 0.85 }}>
+                                  {[
+                                    msg.metadata?.candidateSummary?.brand
+                                      ? `${t('chat.candidate_brand')}: ${msg.metadata.candidateSummary.brand}`
+                                      : null,
+                                    msg.metadata?.candidateSummary?.categoryId
+                                      ? `${t('chat.candidate_category')}: ${msg.metadata.candidateSummary.categoryId}`
+                                      : null
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                                </Text>
+                              </div>
+                            ) : null}
+                            {msg.metadata?.candidateSummary?.matchedFragments?.length ? (
+                              <div style={{ marginTop: 6 }}>
+                                <Text style={{ color: 'inherit', opacity: 0.85 }}>
+                                  {t('chat.candidate_fragments')}: {msg.metadata.candidateSummary.matchedFragments.join(' · ')}
+                                </Text>
+                              </div>
+                            ) : null}
+                            {msg.metadata?.candidateSummary?.aliasSources?.length ? (
+                              <div style={{ marginTop: 6 }}>
+                                <Text style={{ color: 'inherit', opacity: 0.85 }}>
+                                  {t('chat.candidate_alias_sources')}: {msg.metadata.candidateSummary.aliasSources.join(' · ')}
+                                </Text>
+                              </div>
+                            ) : null}
+                            {msg.metadata?.candidateAudit?.reviewedBy || msg.metadata?.candidateSummary?.rejectedCount ? (
+                              <div style={{ marginTop: 6 }}>
+                                <Text style={{ color: 'inherit', opacity: 0.85 }}>
+                                  {t('chat.audit_label')}: {msg.metadata?.candidateAudit?.reviewedBy ?? senderId}
+                                  {msg.metadata?.candidateSummary?.rejectedCount
+                                    ? ` · ${t('chat.audit_rejected')} ${msg.metadata.candidateSummary.rejectedCount}`
+                                    : ''}
+                                </Text>
+                              </div>
+                            ) : null}
+                            {recoveryActionLabel ? (
+                              <div style={{ marginTop: 6 }}>
+                                <Text style={{ color: 'inherit', opacity: 0.85 }}>
+                                  {t('chat.recovery_action_title')}: {recoveryActionLabel}
                                 </Text>
                               </div>
                             ) : null}
@@ -482,7 +579,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                               loading={publishingMessageId === messageKey(msg)}
                               onClick={() => void handlePublishInChat(msg)}
                             >
-                              {t('chat.publish_action')}
+                              {msg.metadata?.imageFlowStatus === 'PUBLISH_FAILED' ? t('chat.publish_retry_action') : t('chat.publish_action')}
                             </Button>
                           ) : null}
                         </Space>
@@ -531,6 +628,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
             setPendingAttachmentName(undefined);
             setSelectedCandidateId(undefined);
             setPublishOnConfirm(false);
+            setConfirmError(undefined);
           }
         }}
         onOk={() => void confirmImageFlow()}
@@ -543,6 +641,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
         ) : null}
         <Space direction="vertical" size={12} style={{ width: '100%' }}>
           <Tag color="processing">{t('chat.image_status.PENDING_CONFIRMATION')}</Tag>
+          {confirmError ? <Alert type="error" showIcon message={confirmError} /> : null}
           <div>
             <Text strong>{pendingSuggestion?.name}</Text>
             {pendingSuggestion?.itemNumber ? (
@@ -577,9 +676,33 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                 <Space direction="vertical" style={{ width: '100%' }}>
                   {pendingSuggestion.similarProductCandidates.map((candidate) => (
                     <Radio key={candidate.productId} value={candidate.productId}>
-                      {candidate.displayName}
-                      {candidate.itemNumber ? ` · ${candidate.itemNumber}` : ''}
-                      {candidate.matchSignals?.length ? ` · ${candidate.matchSignals.join(' / ')}` : ''}
+                      <Space direction="vertical" size={2}>
+                        <Text strong>
+                          {candidate.displayName}
+                          {candidate.itemNumber ? ` · ${candidate.itemNumber}` : ''}
+                          {candidate.matchSignals?.length ? ` · ${candidate.matchSignals.join(' / ')}` : ''}
+                        </Text>
+                        {candidate.brand || candidate.categoryId ? (
+                          <Text type="secondary">
+                            {[
+                              candidate.brand ? `${t('chat.candidate_brand')}: ${candidate.brand}` : null,
+                              candidate.categoryId ? `${t('chat.candidate_category')}: ${candidate.categoryId}` : null
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </Text>
+                        ) : null}
+                        {candidate.matchedFragments?.length ? (
+                          <Text type="secondary">
+                            {t('chat.candidate_fragments')}: {candidate.matchedFragments.join(' · ')}
+                          </Text>
+                        ) : null}
+                        {candidate.aliasSources?.length ? (
+                          <Text type="secondary">
+                            {t('chat.candidate_alias_sources')}: {candidate.aliasSources.join(' · ')}
+                          </Text>
+                        ) : null}
+                      </Space>
                     </Radio>
                   ))}
                 </Space>
@@ -623,6 +746,24 @@ function getImageFlowStatusLabel(msg: ChatMessage, t: (key: string) => string) {
     return undefined;
   }
   return t(`chat.image_status.${status}`);
+}
+
+function getImageFlowStatusColor(status?: string) {
+  if (status === 'PUBLISHED_TO_MARKET') {
+    return 'green';
+  }
+  if (status === 'PUBLISH_FAILED') {
+    return 'red';
+  }
+  return 'blue';
+}
+
+function getRecoveryActionLabel(msg: ChatMessage, t: (key: string) => string) {
+  const recoveryAction = msg.metadata?.recoveryAction;
+  if (!recoveryAction) {
+    return undefined;
+  }
+  return t(`chat.recovery.${recoveryAction}`);
 }
 
 function formatChatTime(value?: string, options?: { withSeconds?: boolean }) {

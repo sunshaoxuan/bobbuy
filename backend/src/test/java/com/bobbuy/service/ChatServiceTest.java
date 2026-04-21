@@ -42,6 +42,8 @@ class ChatServiceTest {
 
         assertEquals("TRIP", saved.getMetadata().get("conversationType"));
         assertEquals("CHAT_WIDGET", saved.getMetadata().get("source"));
+        assertEquals("V14", saved.getMetadata().get("auditVersion"));
+        assertEquals("PURCHASER", saved.getMetadata().get("operatorId"));
         assertEquals(2000L, saved.getMetadata().get("tripId"));
         assertEquals(2000L, saved.getMetadata().get("relatedTripId"));
         assertEquals("https://img.example/matcha.png", saved.getMetadata().get("attachmentUrl"));

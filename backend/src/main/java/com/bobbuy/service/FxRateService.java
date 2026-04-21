@@ -56,7 +56,7 @@ public class FxRateService {
   private Optional<Double> fetchRateFromBraveSearch() {
     String apiKey = System.getenv("BRAVE_SEARCH_API_KEY");
     if (apiKey == null || apiKey.isBlank()) {
-      log.warn("BRAVE_SEARCH_API_KEY is not configured, skip Brave Search rate lookup");
+      log.debug("BRAVE_SEARCH_API_KEY is not configured, skip Brave Search rate lookup");
       return Optional.empty();
     }
 
@@ -102,7 +102,7 @@ public class FxRateService {
         return parsed;
       }
     }
-    log.warn("Unable to parse FX rate from Brave Search payload");
+    log.debug("Unable to parse FX rate from Brave Search payload");
     return Optional.empty();
   }
 
@@ -115,9 +115,9 @@ public class FxRateService {
       if (parsed > 0D) {
         return Optional.of(parsed);
       }
-      log.warn("Invalid FX rate '{}' from {}, expected positive number", value, source);
+      log.debug("Invalid FX rate '{}' from {}, expected positive number", value, source);
     } catch (NumberFormatException ex) {
-      log.warn("Failed to parse FX rate '{}' from {}", value, source);
+      log.debug("Failed to parse FX rate '{}' from {}", value, source);
     }
     return Optional.empty();
   }

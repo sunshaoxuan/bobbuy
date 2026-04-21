@@ -5,12 +5,14 @@ import com.bobbuy.repository.ChatMessageRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class ChatService {
+    private static final DateTimeFormatter ISO_LOCAL_DATETIME = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private final ChatMessageRepository chatMessageRepository;
 
     public ChatService(ChatMessageRepository chatMessageRepository) {
@@ -40,6 +42,8 @@ public class ChatService {
             ? new HashMap<>()
             : new HashMap<>(message.getMetadata());
         metadata.putIfAbsent("source", "CHAT_WIDGET");
+        metadata.putIfAbsent("auditVersion", "V14");
+        metadata.putIfAbsent("operatorId", message.getSenderId());
         metadata.putIfAbsent("conversationType", resolveConversationType(message));
         metadata.putIfAbsent("orderId", message.getOrderId());
         metadata.putIfAbsent("tripId", message.getTripId());
@@ -51,6 +55,15 @@ public class ChatService {
                 metadata.put("attachmentUrl", metadata.get("url"));
             }
             metadata.putIfAbsent("imageFlowStatus", "PENDING_CONFIRMATION");
+            if (metadata.get("attachmentUrl") == null) {
+                metadata.putIfAbsent("recoveryAction", "REQUEST_ATTACHMENT_REUPLOAD");
+            }
+            if ("PUBLISH_FAILED".equals(metadata.get("imageFlowStatus"))) {
+                metadata.putIfAbsent("recoveryAction", "RETRY_PUBLISH");
+            }
+            if ("PUBLISHED_TO_MARKET".equals(metadata.get("imageFlowStatus"))) {
+                metadata.putIfAbsent("publishedAt", ISO_LOCAL_DATETIME.format(message.getCreatedAt()));
+            }
         }
         return metadata;
     }
