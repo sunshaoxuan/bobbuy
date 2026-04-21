@@ -32,7 +32,7 @@ export default function Users() {
 
   return (
     <div className="page-card">
-      <div className="section-title">{t('users.title')}</div>
+      <div className="section-title" data-testid="users-title">{t('users.title')}</div>
       <Text className="helper-text">{t('users.helper')}</Text>
 
       <Card style={{ marginTop: 16, marginBottom: 24 }} bordered={false}>
@@ -49,7 +49,7 @@ export default function Users() {
           <Form.Item label={t('users.form.rating.label')}>
             <Rate allowHalf defaultValue={4.5} />
           </Form.Item>
-          <Button type="primary">{t('users.form.submit')}</Button>
+          <Button type="primary" data-testid="users-submit">{t('users.form.submit')}</Button>
         </Form>
       </Card>
 
@@ -58,6 +58,7 @@ export default function Users() {
           dataSource={users}
           rowKey="id"
           columns={columns}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
     </div>

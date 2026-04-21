@@ -11,6 +11,7 @@ import {
   Progress,
   Radio,
   Row,
+  Grid,
   Select,
   Skeleton,
   Space,
@@ -31,6 +32,8 @@ type ProcurementBreakdownRow = {
 
 export default function PickingMaster() {
   const { t } = useI18n();
+  const screens = Grid.useBreakpoint();
+  const isMobile = screens.md !== true;
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -157,21 +160,27 @@ export default function PickingMaster() {
             {activeTripId ? ` (Trip #${activeTripId})` : ''}
           </Text>
         </div>
-        <Space wrap>
+        <Space wrap style={{ width: isMobile ? '100%' : undefined }}>
           <Select
+            data-testid="picking-trip-select"
             value={activeTripId}
             placeholder={t('procurement.trip_selector')}
             options={trips.map((trip) => ({
               value: trip.id,
               label: `${trip.id} · ${trip.origin} → ${trip.destination}`
             }))}
-            style={{ minWidth: 220 }}
+            style={{ minWidth: isMobile ? '100%' : 220, width: isMobile ? '100%' : undefined }}
             onChange={(tripId) => {
               setActiveTripId(tripId);
               void loadTripData(tripId);
             }}
           />
-          <Radio.Group value={filter} onChange={(event) => setFilter(event.target.value)} buttonStyle="solid">
+          <Radio.Group
+            className="picking-filter-group"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value)}
+            buttonStyle="solid"
+          >
             <Radio.Button value="all">{t('picking.filter.all')}</Radio.Button>
             <Radio.Button value="todo">
               {t('picking.filter.todo')} ({items.filter((item) => item.purchasedQuantity < item.totalQuantity).length})

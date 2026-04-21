@@ -6,6 +6,7 @@ import {
   Col,
   Empty,
   Form,
+  Grid,
   Input,
   InputNumber,
   Modal,
@@ -50,6 +51,8 @@ type ReconcileDetailRow = {
 
 export default function ProcurementDashboard() {
   const { t } = useI18n();
+  const screens = Grid.useBreakpoint();
+  const isMobile = screens.md !== true;
   const [trips, setTrips] = useState<Trip[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<number>();
   const [hudStats, setHudStats] = useState<ProcurementHudStats>();
@@ -352,6 +355,8 @@ export default function ProcurementDashboard() {
     URL.revokeObjectURL(url);
   };
 
+  const tableScroll = { x: 'max-content' as const };
+
   return (
     <>
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -360,12 +365,14 @@ export default function ProcurementDashboard() {
         <Space direction="vertical" style={{ width: '100%' }} size={12}>
           <Text strong>{t('procurement.trip_selector')}</Text>
           <Select
+            data-testid="procurement-trip-select"
             value={selectedTripId}
             placeholder={t('orders.trip.select.placeholder')}
             options={trips.map((trip) => ({
               value: trip.id,
               label: `${trip.id} · ${trip.origin} → ${trip.destination}`
             }))}
+            style={{ width: isMobile ? '100%' : undefined }}
             onChange={(tripId) => {
               setSelectedTripId(tripId);
               refreshTripData(tripId);
@@ -436,6 +443,7 @@ export default function ProcurementDashboard() {
             size="small"
             pagination={false}
             dataSource={profitSharing?.shares ?? hudStats?.partnerShares ?? []}
+            scroll={tableScroll}
             columns={[
               { title: t('procurement.partner_role'), dataIndex: 'partnerRole', key: 'partnerRole' },
               { title: t('procurement.ratio_percent'), dataIndex: 'ratioPercent', key: 'ratioPercent' },
@@ -481,6 +489,7 @@ export default function ProcurementDashboard() {
             rowKey="id"
             size="small"
             pagination={{ pageSize: 5 }}
+            scroll={tableScroll}
             columns={[
               { title: t('common.date'), dataIndex: 'createdAt', key: 'createdAt' },
               { title: t('procurement.trip_id'), dataIndex: 'tripId', key: 'tripId' },
@@ -493,7 +502,7 @@ export default function ProcurementDashboard() {
 
       <Card title={t('procurement.extra_expenses')} loading={loading} className="procurement-glass-card">
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Form form={expenseForm} layout="inline">
+          <Form form={expenseForm} layout={isMobile ? 'vertical' : 'inline'}>
             <Form.Item
               name="category"
               rules={[{ required: true, message: t('procurement.expense_category_required') }]}
@@ -531,6 +540,7 @@ export default function ProcurementDashboard() {
               size="small"
               pagination={false}
               dataSource={expenses}
+              scroll={tableScroll}
               columns={[
                 { title: t('procurement.expense_category'), dataIndex: 'category', key: 'category' },
                 { title: t('procurement.expense_cost'), dataIndex: 'cost', key: 'cost' },
@@ -582,6 +592,7 @@ export default function ProcurementDashboard() {
             size="small"
             pagination={false}
             dataSource={logisticsTrackings}
+            scroll={tableScroll}
             columns={[
               { title: t('procurement.logistics_number'), dataIndex: 'trackingNumber', key: 'trackingNumber' },
               { title: t('procurement.logistics_channel'), dataIndex: 'channel', key: 'channel' },
@@ -616,6 +627,7 @@ export default function ProcurementDashboard() {
             size="small"
             pagination={false}
             dataSource={ledgerEntries}
+            scroll={tableScroll}
             columns={[
               { title: t('procurement.business_id'), dataIndex: 'businessId', key: 'businessId' },
               { title: t('orders.header.customer_id'), dataIndex: 'customerId', key: 'customerId' },
@@ -642,6 +654,7 @@ export default function ProcurementDashboard() {
           size="small"
           pagination={false}
           dataSource={deficitItems}
+          scroll={tableScroll}
           columns={[
             { title: t('orders.lines.sku_id'), dataIndex: 'skuId', key: 'skuId' },
             { title: t('orders.lines.item_name'), dataIndex: 'itemName', key: 'itemName' },
@@ -690,6 +703,7 @@ export default function ProcurementDashboard() {
             size="small"
             pagination={false}
             dataSource={reconcileRows}
+            scroll={tableScroll}
             columns={[
               { title: t('orders.lines.sku_id'), dataIndex: 'skuId', key: 'skuId' },
               { title: t('orders.lines.item_name'), dataIndex: 'itemName', key: 'itemName' },
