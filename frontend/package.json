@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "e2e": "playwright install chromium && playwright test"
+    "e2e:prepare": "node -e \"const fs = require('node:fs'); const { execSync } = require('node:child_process'); const { chromium } = require('@playwright/test'); let executable = ''; try { executable = chromium.executablePath(); } catch (error) {} if (!executable || !fs.existsSync(executable)) { execSync('npx playwright install chromium', { stdio: 'inherit' }); }\"",
+    "e2e": "npm run e2e:prepare && playwright test"
   },
   "dependencies": {
     "antd": "5.15.3",

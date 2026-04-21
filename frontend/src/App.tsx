@@ -1,17 +1,8 @@
-import { useMemo, useState } from 'react';
+import { Suspense, lazy, useMemo, useState } from 'react';
 import { Button, Drawer, Grid, Layout, Menu, Select, Space, Typography } from 'antd';
 import { AppstoreOutlined, BarsOutlined, OrderedListOutlined, QrcodeOutlined, ShoppingOutlined } from '@ant-design/icons';
 import { NavLink, Route, Routes, useLocation, Navigate } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
-import Trips from './pages/Trips';
 import Orders from './pages/Orders';
-import Users from './pages/Users';
-import OrderDesk from './pages/OrderDesk';
-import ProcurementHUD from './pages/ProcurementHUD';
-import PickingMaster from './pages/PickingMaster';
-import StockMaster from './pages/StockMaster';
-import ClientHomeV2 from './pages/ClientHomeV2';
-import ZenAuditView from './pages/ZenAuditView';
 import type { Locale } from './i18n';
 import { supportedLocales, useI18n } from './i18n';
 import { useUserRole, type UserRole } from './context/UserRoleContext';
@@ -20,6 +11,15 @@ import ProtectedRoute from './components/ProtectedRoute';
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
 const DESKTOP_SIDER_EXPANDED_WIDTH = '14.5rem';
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Trips = lazy(() => import('./pages/Trips'));
+const Users = lazy(() => import('./pages/Users'));
+const OrderDesk = lazy(() => import('./pages/OrderDesk'));
+const ProcurementHUD = lazy(() => import('./pages/ProcurementHUD'));
+const PickingMaster = lazy(() => import('./pages/PickingMaster'));
+const StockMaster = lazy(() => import('./pages/StockMaster'));
+const ClientHomeV2 = lazy(() => import('./pages/ClientHomeV2'));
+const ZenAuditView = lazy(() => import('./pages/ZenAuditView'));
 
 export default function App() {
   const location = useLocation();
@@ -154,75 +154,71 @@ export default function App() {
         </Header>
         <Content style={{ padding: contentPadding }} className="app-content">
           <div className="app-page-transition">
-            <Routes>
-              {/* Specialized Landing Logic */}
-              <Route 
-                path="/" 
-                element={
-                  isPurchaser ? (
-                    <Navigate to="/dashboard" replace />
-                  ) : (
-                    <ClientHomeV2 />
-                  )
-                } 
-              />
-              <Route path="/orders" element={<Orders />} />
-              
-              {/* Purchaser Reality */}
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute allowedRoles={['AGENT']}>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/trips" 
-                element={
-                  <ProtectedRoute allowedRoles={['AGENT']}>
-                    <Trips />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/order-desk" 
-                element={
-                  <ProtectedRoute allowedRoles={['AGENT']}>
-                    <OrderDesk />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/procurement" 
-                element={
-                  <ProtectedRoute allowedRoles={['AGENT']}>
-                    <ProcurementHUD />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/picking" 
-                element={
-                  <ProtectedRoute allowedRoles={['AGENT']}>
-                    <PickingMaster />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/stock-master" 
-                element={<StockMaster />} 
-              />
-              <Route 
-                path="/users" 
-                element={
-                  <ProtectedRoute allowedRoles={['AGENT']}>
-                    <Users />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route path="/audit/:tripId" element={<ZenAuditView />} />
-            </Routes>
+            <Suspense fallback={<div style={{ padding: '2rem 1rem' }}>{t('chat.loading')}</div>}>
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    isPurchaser ? (
+                      <Navigate to="/dashboard" replace />
+                    ) : (
+                      <ClientHomeV2 />
+                    )
+                  }
+                />
+                <Route path="/orders" element={<Orders />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute allowedRoles={['AGENT']}>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/trips"
+                  element={
+                    <ProtectedRoute allowedRoles={['AGENT']}>
+                      <Trips />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/order-desk"
+                  element={
+                    <ProtectedRoute allowedRoles={['AGENT']}>
+                      <OrderDesk />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/procurement"
+                  element={
+                    <ProtectedRoute allowedRoles={['AGENT']}>
+                      <ProcurementHUD />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/picking"
+                  element={
+                    <ProtectedRoute allowedRoles={['AGENT']}>
+                      <PickingMaster />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/stock-master" element={<StockMaster />} />
+                <Route
+                  path="/users"
+                  element={
+                    <ProtectedRoute allowedRoles={['AGENT']}>
+                      <Users />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/audit/:tripId" element={<ZenAuditView />} />
+              </Routes>
+            </Suspense>
           </div>
         </Content>
       </Layout>

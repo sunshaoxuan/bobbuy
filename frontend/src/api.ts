@@ -205,6 +205,46 @@ export type ProcurementDeficitItemResponse = {
     visibilityStatus: string;
 };
 
+export type ChatImageFlowStatus =
+    | 'PENDING_CONFIRMATION'
+    | 'MATCHED_EXISTING_PRODUCT'
+    | 'CANDIDATE_SELECTED'
+    | 'TEMP_PRODUCT_CREATED'
+    | 'PUBLISHED_TO_MARKET';
+
+export type ChatCandidateAudit = {
+    decision: 'EXACT_MATCH' | 'SELECTED_CANDIDATE' | 'CREATED_TEMP_PRODUCT';
+    selectedProductId?: string;
+    recommendedProductIds?: string[];
+    selectedReason?: string;
+    confirmedAt: string;
+};
+
+export type ChatMessageMetadata = {
+    conversationType?: 'PRIVATE' | 'ORDER' | 'TRIP';
+    source?: 'CHAT_WIDGET' | 'SYSTEM';
+    orderId?: number | null;
+    tripId?: number | null;
+    relatedOrderId?: number | null;
+    relatedTripId?: number | null;
+    url?: string;
+    attachmentUrl?: string;
+    attachmentName?: string;
+    productId?: string;
+    productName?: string;
+    itemNumber?: string;
+    visibilityStatus?: string;
+    isTemporary?: boolean;
+    existingProductFound?: boolean;
+    matchedBy?: string;
+    imageFlowStatus?: ChatImageFlowStatus;
+    candidateSelectionResult?: string;
+    candidateAudit?: ChatCandidateAudit;
+    candidateReason?: string;
+    candidateReasons?: string[];
+    [key: string]: any;
+};
+
 export type ChatMessage = {
     id?: number;
     orderId?: number | null;
@@ -213,7 +253,7 @@ export type ChatMessage = {
     recipientId: string;
     content: string;
     type: 'TEXT' | 'IMAGE' | 'SYSTEM';
-    metadata?: Record<string, any>;
+    metadata?: ChatMessageMetadata;
     createdAt?: string;
 };
 
@@ -222,6 +262,8 @@ export type AiProductCandidate = {
     displayName: string;
     itemNumber?: string;
     matchReason: string;
+    matchSignals?: string[];
+    score?: number;
 };
 
 export type WalletSummary = {

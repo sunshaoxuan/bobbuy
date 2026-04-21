@@ -17,7 +17,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,6 +33,26 @@ public class AiProductOnboardingService {
     private static final Logger log = LoggerFactory.getLogger(AiProductOnboardingService.class);
     // Allow one-third token overlap so short bilingual names can still surface as manual-review candidates.
     private static final double CANDIDATE_OVERLAP_THRESHOLD = 0.34d;
+    // Below this score, name-level matches are too weak to justify manual-review noise in the UI.
+    private static final double CANDIDATE_MIN_SCORE = 2.4d;
+    private static final double SHARED_TOKEN_WEIGHT = 1.2d;
+    private static final double OVERLAP_WEIGHT = 2.5d;
+    private static final double BRAND_EXACT_BONUS = 2.2d;
+    private static final double ITEM_NUMBER_FRAGMENT_BONUS = 1.8d;
+    private static final double CATEGORY_MATCH_BONUS = 0.8d;
+    private static final double STRONG_NAME_OVERLAP_BONUS = 0.8d;
+    private static final double MEDIUM_NAME_OVERLAP_BONUS = 0.4d;
+    private static final Map<String, List<String>> TOKEN_ALIASES = Map.of(
+        "milk", List.of("牛乳", "ミルク"),
+        "matcha", List.of("抹茶"),
+        "tea", List.of("茶"),
+        "chocolate", List.of("巧克力", "チョコ"),
+        "pack", List.of("pkg", "pcs", "piece", "set"),
+        "kg", List.of("kilogram"),
+        "g", List.of("gram"),
+        "l", List.of("liter"),
+        "ml", List.of("milliliter")
+    );
 
     private final LlmGateway llmGateway;
     private final AiSearchService aiSearchService;
@@ -83,6 +105,7 @@ public class AiProductOnboardingService {
             String name = (String) extracted.getOrDefault("name", "Unknown Product");
             String brand = (String) extracted.get("brand");
             String itemNumber = (String) extracted.get("itemNumber");
+            String categoryHint = firstNonBlank((String) extracted.get("categoryId"), (String) extracted.get("category"));
             Double basePrice = extracted.get("basePrice") instanceof Number n ? n.doubleValue()
                     : extracted.get("price") instanceof Number n2 ? n2.doubleValue() : null;
 
@@ -103,7 +126,7 @@ public class AiProductOnboardingService {
                 log.info("Phase 2: Skipping incremental match (no itemNumber detected).");
             }
             if (!existingFound) {
-                similarCandidates = findSimilarCandidates(name, brand);
+                similarCandidates = findSimilarCandidates(name, brand, itemNumber, categoryHint);
                 if (!similarCandidates.isEmpty()) {
                     log.info("Phase 2: Found {} similar name-level product candidates for '{}'.", similarCandidates.size(), name);
                 }
@@ -154,7 +177,7 @@ public class AiProductOnboardingService {
                 brand,
                 description,
                 basePrice,
-                null,
+                categoryHint,
                 itemNumber,
                 StorageCondition.AMBIENT,
                 OrderMethod.DIRECT_BUY,
@@ -194,26 +217,36 @@ public class AiProductOnboardingService {
                 .orElse(searchSnippet);
     }
 
-    private List<AiProductCandidate> findSimilarCandidates(String name, String brand) {
-        Set<String> queryTokens = normalizeTokens(brand + " " + name);
+    private List<AiProductCandidate> findSimilarCandidates(String name, String brand, String itemNumber, String categoryHint) {
+        Set<String> queryTokens = normalizeTokens(joinNonBlank(brand, name, itemNumber, categoryHint));
         if (queryTokens.isEmpty()) {
             return List.of();
         }
         return productRepository.findAll().stream()
-            .map(product -> toCandidate(product, queryTokens))
+            .map(product -> toCandidate(product, queryTokens, itemNumber, categoryHint))
             .filter(Objects::nonNull)
+            .sorted(Comparator.comparingDouble(AiProductCandidate::score).reversed())
             .limit(3)
             .toList();
     }
 
-    private AiProductCandidate toCandidate(Product product, Set<String> queryTokens) {
+    private AiProductCandidate toCandidate(Product product, Set<String> queryTokens, String itemNumber, String categoryHint) {
+        Map<String, String> localizedNames = product.getName() == null ? Map.of() : product.getName();
         String displayName = firstNonBlank(
-            product.getName().get("zh-CN"),
-            product.getName().get("ja-JP"),
-            product.getName().get("en-US"),
+            localizedNames.get("zh-CN"),
+            localizedNames.get("ja-JP"),
+            localizedNames.get("en-US"),
             product.getId()
         );
-        Set<String> productTokens = normalizeTokens(product.getBrand() + " " + displayName);
+        Set<String> productTokens = normalizeTokens(
+            joinNonBlank(
+                product.getBrand(),
+                displayName,
+                product.getItemNumber(),
+                product.getCategoryId(),
+                product.getMerchantSkus() == null ? null : String.join(" ", product.getMerchantSkus().values())
+            )
+        );
         if (productTokens.isEmpty()) {
             return null;
         }
@@ -226,11 +259,45 @@ public class AiProductOnboardingService {
         if (overlap < CANDIDATE_OVERLAP_THRESHOLD && sharedCount < 2) {
             return null;
         }
+        List<String> signals = new ArrayList<>();
+        double score = sharedCount * SHARED_TOKEN_WEIGHT + overlap * OVERLAP_WEIGHT;
+        if (brandExact(queryTokens, product.getBrand())) {
+            signals.add("BRAND_EXACT");
+            score += BRAND_EXACT_BONUS;
+        }
+        if (itemNumberFragmentMatch(itemNumber, product.getItemNumber())) {
+            signals.add("ITEM_NUMBER_FRAGMENT");
+            score += ITEM_NUMBER_FRAGMENT_BONUS;
+        }
+        if (categoryHint != null
+            && !categoryHint.isBlank()
+            && product.getCategoryId() != null
+            && categoryHint.equalsIgnoreCase(product.getCategoryId())) {
+            signals.add("CATEGORY_MATCH");
+            score += CATEGORY_MATCH_BONUS;
+        }
+        if (sharedCount >= 3) {
+            signals.add("NAME_STRONG_OVERLAP");
+            score += STRONG_NAME_OVERLAP_BONUS;
+        } else if (sharedCount >= 2) {
+            signals.add("NAME_TOKEN_OVERLAP");
+            score += MEDIUM_NAME_OVERLAP_BONUS;
+        } else {
+            signals.add("NAME_PARTIAL_OVERLAP");
+        }
+        if (signals.isEmpty() || score < CANDIDATE_MIN_SCORE) {
+            return null;
+        }
+        String primaryReason = signals.contains("BRAND_EXACT") && signals.contains("ITEM_NUMBER_FRAGMENT")
+            ? "BRAND_AND_ITEM_NUMBER_FRAGMENT"
+            : signals.get(0);
         return new AiProductCandidate(
             product.getId(),
             displayName,
             product.getItemNumber(),
-            sharedCount >= 2 ? "NAME_TOKEN_OVERLAP" : "NAME_PARTIAL_OVERLAP"
+            primaryReason,
+            signals,
+            score
         );
     }
 
@@ -238,10 +305,20 @@ public class AiProductOnboardingService {
         if (raw == null || raw.isBlank()) {
             return Set.of();
         }
-        return java.util.Arrays.stream(raw.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+"))
+        LinkedHashSet<String> tokens = java.util.Arrays.stream(raw.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+"))
             .map(String::trim)
             .filter(token -> token.length() >= 2)
-            .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        LinkedHashSet<String> expanded = new LinkedHashSet<>(tokens);
+        for (String token : tokens) {
+            for (Map.Entry<String, List<String>> entry : TOKEN_ALIASES.entrySet()) {
+                if (entry.getKey().equals(token) || entry.getValue().contains(token)) {
+                    expanded.add(entry.getKey());
+                    expanded.addAll(entry.getValue());
+                }
+            }
+        }
+        return expanded;
     }
 
     private String firstNonBlank(String... values) {
@@ -251,5 +328,29 @@ public class AiProductOnboardingService {
             }
         }
         return "";
+    }
+
+    private boolean brandExact(Set<String> queryTokens, String brand) {
+        if (brand == null || brand.isBlank()) {
+            return false;
+        }
+        Set<String> brandTokens = normalizeTokens(brand);
+        return !brandTokens.isEmpty() && queryTokens.containsAll(brandTokens);
+    }
+
+    private boolean itemNumberFragmentMatch(String queryItemNumber, String productItemNumber) {
+        if (queryItemNumber == null || queryItemNumber.isBlank() || productItemNumber == null || productItemNumber.isBlank()) {
+            return false;
+        }
+        Set<String> queryFragments = normalizeTokens(queryItemNumber.replace('-', ' '));
+        Set<String> productFragments = normalizeTokens(productItemNumber.replace('-', ' '));
+        return !queryFragments.isEmpty() && queryFragments.stream().anyMatch(productFragments::contains);
+    }
+
+    private String joinNonBlank(String... values) {
+        return java.util.Arrays.stream(values)
+            .filter(Objects::nonNull)
+            .filter(value -> !value.isBlank())
+            .collect(Collectors.joining(" "));
     }
 }

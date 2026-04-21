@@ -12,6 +12,7 @@ import { useI18n } from '../i18n';
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '../context/UserRoleContext';
 import ChatWidget from '../components/ChatWidget';
+import { usePollingTask } from '../hooks/usePollingTask';
 
 const { Title, Text } = Typography;
 
@@ -116,8 +117,7 @@ export default function ClientHomeV2() {
         const nextBusinessId = ledger[0]?.businessId ?? orderList[0]?.businessId;
         setActiveBusinessId((prev) => prev ?? nextBusinessId);
       } catch {
-        setOrders([]);
-        setLedgerEntries([]);
+        // Keep the last successful snapshot on transient polling failures.
       }
     },
     [buildLiveStory, hydrateLiveFeed, pushLiveStory]
@@ -164,13 +164,24 @@ export default function ClientHomeV2() {
       refreshTripData(selectedTripId, true);
     };
     window.addEventListener('procurement:reconciled', onReconciled);
-    const timer = window.setInterval(() => refreshTripData(selectedTripId, true), 30000); // Slower refresh for Zen
     api.getWallet('PURCHASER').then(setPartnerWallet).catch(() => undefined);
     return () => {
       window.removeEventListener('procurement:reconciled', onReconciled);
-      window.clearInterval(timer);
     };
   }, [refreshTripData, selectedTripId]);
+
+  usePollingTask(
+    async () => {
+      if (!selectedTripId) {
+        return;
+      }
+      await refreshTripData(selectedTripId, true);
+    },
+    {
+      enabled: Boolean(selectedTripId),
+      intervalMs: 30000
+    }
+  );
 
   const statementBusinessIds = useMemo(
     () => Array.from(new Set([...ledgerEntries.map((entry) => entry.businessId), ...orders.map((order) => order.businessId)])),
