@@ -4,7 +4,7 @@ import { AppstoreOutlined, BarsOutlined, OrderedListOutlined, QrcodeOutlined, Sh
 import { NavLink, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import type { Locale } from './i18n';
 import { supportedLocales, useI18n } from './i18n';
-import { useUserRole, type UserRole } from './context/UserRoleContext';
+import { useUserRole } from './context/UserRoleContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const { Header, Content, Sider } = Layout;
@@ -20,11 +20,15 @@ const PickingMaster = lazy(() => import('./pages/PickingMaster'));
 const StockMaster = lazy(() => import('./pages/StockMaster'));
 const ClientHomeV2 = lazy(() => import('./pages/ClientHomeV2'));
 const ZenAuditView = lazy(() => import('./pages/ZenAuditView'));
+const ClientOrders = lazy(() => import('./pages/ClientOrders'));
+const ClientBilling = lazy(() => import('./pages/ClientBilling'));
+const ClientChat = lazy(() => import('./pages/ClientChat'));
 
 export default function App() {
   const location = useLocation();
   const { locale, setLocale, t } = useI18n();
-  const { role, setRole, isPurchaser, isCustomer } = useUserRole();
+  const { role, isPurchaser } = useUserRole();
+  const isAgentRole = role === 'AGENT';
   const screens = Grid.useBreakpoint();
   const isMobile = screens.md === false;
   const isTablet = screens.md && !screens.lg;
@@ -46,9 +50,10 @@ export default function App() {
     }
     // Customer Menu
     return [
-      { key: '/', label: <NavLink to="/">{t('nav.dashboard')}</NavLink> },
-      { key: '/orders', label: <NavLink to="/orders">{t('nav.orders')}</NavLink> },
-      { key: '/stock-master', label: <NavLink to="/stock-master">{t('nav.stock_master')}</NavLink> } // Mocked as Catalog
+      { key: '/', label: <NavLink to="/">{t('nav.discover')}</NavLink> },
+      { key: '/client/orders', label: <NavLink to="/client/orders">{t('nav.client_orders')}</NavLink> },
+      { key: '/client/billing', label: <NavLink to="/client/billing">{t('nav.client_billing')}</NavLink> },
+      { key: '/client/chat', label: <NavLink to="/client/chat">{t('nav.client_chat')}</NavLink> }
     ];
   }, [isPurchaser, t]);
 
@@ -61,8 +66,10 @@ export default function App() {
       ];
     }
     return [
-      { key: '/', icon: <ShoppingOutlined />, label: t('nav.trips') },
-      { key: '/orders', icon: <OrderedListOutlined />, label: t('nav.orders') }
+      { key: '/', icon: <ShoppingOutlined />, label: t('nav.discover') },
+      { key: '/client/orders', icon: <OrderedListOutlined />, label: t('nav.client_orders') },
+      { key: '/client/billing', icon: <AppstoreOutlined />, label: t('nav.client_billing') },
+      { key: '/client/chat', icon: <QrcodeOutlined />, label: t('nav.client_chat') }
     ];
   }, [isPurchaser, t]);
 
@@ -72,6 +79,9 @@ export default function App() {
       '/dashboard': t('nav.dashboard'),
       '/trips': t('nav.trips'),
       '/orders': t('nav.orders'),
+      '/client/orders': t('nav.client_orders'),
+      '/client/billing': t('nav.client_billing'),
+      '/client/chat': t('nav.client_chat'),
       '/order-desk': t('nav.order_desk'),
       '/procurement': t('nav.procurement'),
       '/picking': t('nav.picking'),
@@ -122,17 +132,7 @@ export default function App() {
               </Title>
             </Space>
             <Space size="small">
-              <Select
-                size="small"
-                value={role}
-                onChange={(val) => setRole(val as UserRole)}
-                options={[
-                  { value: 'CUSTOMER', label: t('enum.role.CUSTOMER') },
-                  { value: 'AGENT', label: t('enum.role.AGENT') }
-                ]}
-                style={{ width: 100 }}
-                className="role-switcher"
-              />
+              <Text type="secondary">{t(`enum.role.${role}`)}</Text>
               {!isMobile ? <Text type="secondary">{t('language.label')}</Text> : null}
               <Select
                 popupMatchSelectWidth={false}
@@ -166,7 +166,14 @@ export default function App() {
                     )
                   }
                 />
-                <Route path="/orders" element={<Orders />} />
+                <Route
+                  path="/orders"
+                  element={
+                    <ProtectedRoute allowedRoles={['AGENT']}>
+                      <Orders />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/dashboard"
                   element={
@@ -207,7 +214,14 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
-                <Route path="/stock-master" element={<StockMaster />} />
+                <Route
+                  path="/stock-master"
+                  element={
+                    <ProtectedRoute allowedRoles={['AGENT']}>
+                      <StockMaster />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/users"
                   element={
@@ -216,7 +230,39 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
-                <Route path="/audit/:tripId" element={<ZenAuditView />} />
+                <Route
+                  path="/audit/:tripId"
+                  element={
+                    <ProtectedRoute allowedRoles={['AGENT']}>
+                      <ZenAuditView />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/client/orders"
+                  element={
+                    <ProtectedRoute allowedRoles={['CUSTOMER']}>
+                      <ClientOrders />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/client/billing"
+                  element={
+                    <ProtectedRoute allowedRoles={['CUSTOMER']}>
+                      <ClientBilling />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/client/chat"
+                  element={
+                    <ProtectedRoute allowedRoles={['CUSTOMER']}>
+                      <ClientChat />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<Navigate to={isAgentRole ? '/dashboard' : '/'} replace />} />
               </Routes>
             </Suspense>
           </div>

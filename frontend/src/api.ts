@@ -470,6 +470,41 @@ const genericErrorMessage = () => translate(getStoredLocale(), 'errors.request_f
 const isMockApiEnabled = () =>
     typeof window !== 'undefined' && window.localStorage.getItem('bobbuy_enable_mock_api') === 'true';
 
+type ApiRole = 'CUSTOMER' | 'AGENT' | 'MERCHANT';
+const ROLE_STORAGE_KEY = 'bobbuy_user_role';
+const ROLE_TEST_INJECT_KEY = 'bobbuy_test_role';
+
+function getEffectiveRole(): ApiRole {
+    if (typeof window === 'undefined') {
+        return 'CUSTOMER';
+    }
+    const queryRole = new URLSearchParams(window.location.search).get('role');
+    if (queryRole === 'CUSTOMER' || queryRole === 'AGENT' || queryRole === 'MERCHANT') {
+        return queryRole;
+    }
+    const injectedRole = window.localStorage.getItem(ROLE_TEST_INJECT_KEY);
+    if (injectedRole === 'CUSTOMER' || injectedRole === 'AGENT' || injectedRole === 'MERCHANT') {
+        return injectedRole;
+    }
+    const storedRole = window.localStorage.getItem(ROLE_STORAGE_KEY);
+    if (storedRole === 'CUSTOMER' || storedRole === 'AGENT' || storedRole === 'MERCHANT') {
+        return storedRole;
+    }
+    return 'CUSTOMER';
+}
+
+function createRequestHeaders(initHeaders?: HeadersInit, withJsonContentType = false): Headers {
+    const headers = new Headers(initHeaders);
+    if (!headers.has('Accept-Language')) {
+        headers.set('Accept-Language', getStoredLocale());
+    }
+    headers.set('X-BOBBUY-ROLE', getEffectiveRole());
+    if (withJsonContentType && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+    }
+    return headers;
+}
+
 async function parseErrorMessage(response: Response): Promise<string> {
     try {
         const payload = (await response.json()) as ApiErrorResponse;
@@ -486,10 +521,7 @@ async function fetchJson<T>(url: string, fallbackValue: T, init?: RequestInit): 
     try {
         const response = await fetch(url, {
             ...init,
-            headers: {
-                'Accept-Language': getStoredLocale(),
-                ...(init?.headers ?? {})
-            }
+            headers: createRequestHeaders(init?.headers)
         });
         if (!response.ok) {
             const errorMessage = await parseErrorMessage(response);
@@ -525,10 +557,7 @@ async function fetchJson<T>(url: string, fallbackValue: T, init?: RequestInit): 
 async function postJson<TResponse, TBody>(url: string, body: TBody): Promise<TResponse> {
     const response = await fetch(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept-Language': getStoredLocale()
-        },
+        headers: createRequestHeaders(undefined, true),
         body: JSON.stringify(body)
     });
     if (!response.ok) {
@@ -547,10 +576,7 @@ async function postJson<TResponse, TBody>(url: string, body: TBody): Promise<TRe
 async function patchJson<TResponse, TBody>(url: string, body: TBody): Promise<TResponse> {
     const response = await fetch(url, {
         method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept-Language': getStoredLocale()
-        },
+        headers: createRequestHeaders(undefined, true),
         body: JSON.stringify(body)
     });
     if (!response.ok) {
@@ -702,7 +728,7 @@ export const api = {
         ),
     exportProcurementSettlement: async (tripId: number, format: 'csv' | 'pdf') => {
         const response = await fetch(`/api/procurement/${tripId}/export?format=${format}`, {
-            headers: { 'Accept-Language': getStoredLocale() }
+            headers: createRequestHeaders()
         });
         if (!response.ok) {
             const errorMessage = await parseErrorMessage(response);
@@ -713,7 +739,7 @@ export const api = {
     },
     exportCustomerStatement: async (tripId: number, businessId: string) => {
         const response = await fetch(`/api/procurement/${tripId}/customers/${encodeURIComponent(businessId)}/statement`, {
-            headers: { 'Accept-Language': getStoredLocale() }
+            headers: createRequestHeaders()
         });
         if (!response.ok) {
             const errorMessage = await parseErrorMessage(response);

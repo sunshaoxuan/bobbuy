@@ -590,3 +590,18 @@ body {
   letter-spacing: 0.05em;
   display: block;
 }
+
+.client-page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.client-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.client-list-card .ant-card-body {
+  padding: 0.85rem;
+}
