@@ -49,7 +49,7 @@ const BACKOFFICE_CASES: BackofficeCase[] = [
     name: 'StockMaster',
     path: '/stock-master',
     assertPageReady: async (page) => expect(page.locator('[data-testid="stock-master-title"]')).toBeVisible(),
-    assertActionReachable: async (page) => expect(page.locator('[data-testid="stock-master-add-row"]')).first().toBeVisible()
+    assertActionReachable: async (page) => expect(page.locator('[data-testid="stock-master-add-row"]').first()).toBeVisible()
   },
   {
     name: 'PickingMaster',
