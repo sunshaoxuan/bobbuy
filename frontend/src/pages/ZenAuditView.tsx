@@ -122,8 +122,8 @@ export default function ZenAuditView() {
                         <Text type="secondary">
                             命中 {filteredChatClosureRecords.length} / {chatClosureRecords.length}
                         </Text>
-                        {filteredChatClosureRecords.slice(0, 20).map((record) => (
-                            <div key={record.id ?? `${record.createdAt}-${record.senderId}-${record.content}`} className="zen-val-block">
+                        {filteredChatClosureRecords.slice(0, 20).map((record, index) => (
+                            <div key={record.id ?? `${record.createdAt ?? 'NA'}-${record.senderId ?? 'NA'}-${index}`} className="zen-val-block">
                                 <Space wrap>
                                     <Tag>{record.metadata?.imageFlowStatus ?? 'UNKNOWN'}</Tag>
                                     <Tag>{record.metadata?.candidateSelectionResult ?? 'N/A'}</Tag>
