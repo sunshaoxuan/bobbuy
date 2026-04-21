@@ -40,6 +40,8 @@ import com.bobbuy.api.WalletTransactionResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +56,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -64,6 +68,7 @@ public class ProcurementHudService {
   private static final double DEFAULT_PURCHASER_RATIO = 70D;
   private static final double DEFAULT_PROMOTER_RATIO = 30D;
   private static final double DEFAULT_FX_RATE = 1D;
+  private static final Pattern NUMERIC_IDENTITY_PATTERN = Pattern.compile("(\\d+)");
   private static final Logger log = LoggerFactory.getLogger(ProcurementHudService.class);
 
   private final TripRepository tripRepository;
@@ -534,10 +539,14 @@ public class ProcurementHudService {
   }
 
   @Transactional(readOnly = true)
-  public List<CustomerBalanceLedgerResponse> getCustomerBalanceLedger(Long tripId) {
+  /**
+   * Returns trip ledger entries.
+   * AGENT receives full trip ledger; CUSTOMER receives only entries scoped to its injected identity.
+   */
+  public List<CustomerBalanceLedgerResponse> getCustomerBalanceLedger(Long tripId, Authentication authentication) {
     tripRepository.findById(tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
-    return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
+    List<CustomerBalanceLedgerResponse> entries = orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
         .map(order -> {
           double totalReceivable = safeLines(order).stream()
               .mapToDouble(line -> {
@@ -554,6 +563,41 @@ public class ProcurementHudService {
               round2(Math.max(totalReceivable - paidDeposit, 0D)));
         })
         .toList();
+    if (isCustomer(authentication)) {
+      return filterLedgerForCustomer(entries, authentication == null ? null : authentication.getName());
+    }
+    return entries;
+  }
+
+  private List<CustomerBalanceLedgerResponse> filterLedgerForCustomer(List<CustomerBalanceLedgerResponse> entries,
+                                                                      String principalName) {
+    if (principalName == null || principalName.isBlank()) {
+      return List.of();
+    }
+    // test-injected principal may be numeric customerId (e.g. "1001") or businessId (e.g. "BIZ-1001").
+    Long customerId = parseNumericCustomerId(principalName);
+    String businessId = principalName.trim();
+    return entries.stream()
+        .filter(entry -> Objects.equals(entry.getCustomerId(), customerId)
+            || entry.getBusinessId().equalsIgnoreCase(businessId))
+        .toList();
+  }
+
+  private Long parseNumericCustomerId(String principalName) {
+    Matcher matcher = NUMERIC_IDENTITY_PATTERN.matcher(principalName);
+    if (matcher.find()) {
+      return Long.parseLong(matcher.group(1));
+    }
+    return null;
+  }
+
+  private boolean isCustomer(Authentication authentication) {
+    if (authentication == null) {
+      return false;
+    }
+    return authentication.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority)
+        .anyMatch("ROLE_CUSTOMER"::equals);
   }
 
   @Transactional

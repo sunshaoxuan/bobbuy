@@ -5,6 +5,7 @@ import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.OrderStatus;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
+import com.bobbuy.security.RoleInjectionFilter;
 import com.bobbuy.service.BobbuyStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class TripControllerIntegrationTest {
+  private static final String AGENT_ROLE = "AGENT";
+  private static final String AGENT_USER = "1000";
 
   @Autowired
   private MockMvc mockMvc;
@@ -54,6 +57,8 @@ class TripControllerIntegrationTest {
     String payload = objectMapper.writeValueAsString(Map.of("targetStatus", "CONFIRMED"));
 
     mockMvc.perform(patch("/api/trips/{tripId}/orders/bulk-status", trip.getId())
+            .header(RoleInjectionFilter.ROLE_HEADER, AGENT_ROLE)
+            .header(RoleInjectionFilter.USER_HEADER, AGENT_USER)
             .contentType(MediaType.APPLICATION_JSON)
             .content(payload))
         .andExpect(status().isOk())
@@ -76,6 +81,8 @@ class TripControllerIntegrationTest {
     store.upsertOrder(second);
 
     mockMvc.perform(patch("/api/trips/{tripId}/orders/bulk-status", trip.getId())
+            .header(RoleInjectionFilter.ROLE_HEADER, AGENT_ROLE)
+            .header(RoleInjectionFilter.USER_HEADER, AGENT_USER)
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(Map.of("targetStatus", "CONFIRMED"))))
         .andExpect(status().isOk());

@@ -473,6 +473,8 @@ const isMockApiEnabled = () =>
 type ApiRole = 'CUSTOMER' | 'AGENT' | 'MERCHANT';
 const ROLE_STORAGE_KEY = 'bobbuy_user_role';
 const ROLE_TEST_INJECT_KEY = 'bobbuy_test_role';
+const USER_STORAGE_KEY = 'bobbuy_user_id';
+const USER_TEST_INJECT_KEY = 'bobbuy_test_user';
 
 function getEffectiveRole(): ApiRole {
     if (typeof window === 'undefined') {
@@ -493,12 +495,35 @@ function getEffectiveRole(): ApiRole {
     return 'CUSTOMER';
 }
 
+function getEffectiveUser(): string | null {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+    const queryUser = new URLSearchParams(window.location.search).get('user');
+    if (queryUser && queryUser.trim()) {
+        return queryUser.trim();
+    }
+    const injectedUser = window.localStorage.getItem(USER_TEST_INJECT_KEY);
+    if (injectedUser && injectedUser.trim()) {
+        return injectedUser.trim();
+    }
+    const storedUser = window.localStorage.getItem(USER_STORAGE_KEY);
+    if (storedUser && storedUser.trim()) {
+        return storedUser.trim();
+    }
+    return null;
+}
+
 function createRequestHeaders(initHeaders?: HeadersInit, withJsonContentType = false): Headers {
     const headers = new Headers(initHeaders);
     if (!headers.has('Accept-Language')) {
         headers.set('Accept-Language', getStoredLocale());
     }
     headers.set('X-BOBBUY-ROLE', getEffectiveRole());
+    const user = getEffectiveUser();
+    if (user) {
+        headers.set('X-BOBBUY-USER', user);
+    }
     if (withJsonContentType && !headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json');
     }

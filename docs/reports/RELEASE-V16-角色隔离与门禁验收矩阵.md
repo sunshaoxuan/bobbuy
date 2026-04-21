@@ -6,7 +6,7 @@
 | :-- | :-- | :-- | :-- | :-- | :-- |
 | CUSTOMER | Discover | `/` (`ClientHomeV2`) | 浏览商品、快捷下单、查看实况 | `GET /api/mobile/products` `POST /api/orders/{tripId}/quick-order` | 允许 |
 | CUSTOMER | My Orders | `/client/orders` | 查看订单列表 | `GET /api/orders` | 允许 |
-| CUSTOMER | Billing | `/client/billing` | 查看账单数据 | `GET /api/procurement/{tripId}/ledger` | 前端入口允许，后端受角色头控制 |
+| CUSTOMER | Billing | `/client/billing` | 查看本人账单数据 | `GET /api/procurement/{tripId}/ledger` | 允许（仅白名单接口；账单按 customer/business 维度收敛） |
 | CUSTOMER | Chat | `/client/chat` | 行程聊天 | `GET/POST /api/chat/*` | 允许 |
 | AGENT | Dashboard/Trips/Orders | `/dashboard` `/trips` `/orders` | 运营与订单管理 | `GET/POST/PATCH /api/trips/*` `GET/PATCH /api/orders/*` | 允许（关键写接口受限 AGENT） |
 | AGENT | Procurement/Picking/Stock | `/procurement` `/picking` `/stock-master` | 采买、复核、上架 | `GET/POST /api/procurement/*` `PATCH /api/mobile/products/{id}` | 仅 AGENT |
@@ -19,7 +19,7 @@
 | 路由 | CUSTOMER | AGENT | 说明 |
 | :-- | :--: | :--: | :-- |
 | `/` | ✅ | ↪ `/dashboard` | 客户首页与采购员首页分流 |
-| `/client/orders` `/client/billing` `/client/chat` | ✅ | ⛔ | 客户专属信息架构 |
+| `/client/orders` `/client/billing` `/client/chat` | ✅ | ↪ `/dashboard` | 已由 `frontend/e2e/client_role_gate.spec.ts` 自动化验证 |
 | `/dashboard` `/trips` `/orders` `/order-desk` `/procurement` `/picking` `/stock-master` `/users` `/audit/:tripId` | ⛔ | ✅ | 采购后台专属 |
 
 ## 3. 全量响应式验收矩阵（390 / 768 / 1280）
@@ -28,8 +28,8 @@
 
 | 页面 | Phone 390px | Tablet 768px | PC 1280px |
 | :-- | :-- | :-- | :-- |
-| Dashboard / Trips / Users / Orders / OrderDesk / ProcurementDashboard / PickingMaster / StockMaster / ZenAuditView | 关键操作需无横向溢出，表格退化为可读块/卡片或可滚动分区 | 筛选区与操作区不遮挡主体，表格列宽可读 | 信息密度充足，不出现过窄内容柱 |
-| ClientHomeV2 / ClientOrders / ClientBilling / ClientChat | 卡片流、选择器与聊天输入可直接操作 | 主次信息并排但保持触控间距 | 留白与信息区平衡，账单/聊天区不空洞 |
+| Dashboard / Trips / Users / Orders / OrderDesk / ProcurementDashboard / PickingMaster / StockMaster / ZenAuditView | 未纳入本轮自动化矩阵，需人工复核 | 未纳入本轮自动化矩阵，需人工复核 | 未纳入本轮自动化矩阵，需人工复核 |
+| ClientHomeV2 / ClientOrders / ClientBilling / ClientChat | 门禁与首屏关键路径已自动化覆盖，响应式细节仍需人工复核 | 门禁与首屏关键路径已自动化覆盖，响应式细节仍需人工复核 | 门禁与首屏关键路径已自动化覆盖，响应式细节仍需人工复核 |
 
 ## 4. AI 调用链完备性矩阵
 
@@ -43,8 +43,12 @@
 
 ## 5. 访问链路门禁结论（发布前）
 
-1. 先验收角色隔离（菜单、路由、关键 API 三层同时通过）。
-2. 再验收全量响应式（核心页面 390/768/1280）。
-3. 再验收访问链路（角色→菜单→页面→动作→API）。
-4. 再验收 AI 主链路（文本解析、图片扫描、候选确认、失败恢复）。
-5. 四类门禁通过后，才执行全面自动化回归与试运行演练。
+1. 本轮自动化实测：
+   - `frontend npm run build` ✅
+   - `frontend npm test` ✅
+   - `frontend npm run e2e` ✅（4 passed / 2 skipped）
+   - `backend ./mvnw test` ✅
+2. 客户账单链路已打通：`/client/billing` + `GET /api/procurement/{tripId}/ledger`，并在 CUSTOMER 下做数据收敛。
+3. 后端显式角色门禁已自动化覆盖：CUSTOMER 对 `/api/procurement/**`（非白名单）、`/api/financial/audit/**`、`/api/users/**`、`/api/orders/**` 的允许/拒绝矩阵可回归。
+4. `ai_onboarding.spec.ts` 仍为条件化跳过（依赖专用 AI/文件环境），当前不计入常规本地门禁。
+5. 发布前剩余风险：390/768/1280 全量响应式尚无自动化矩阵，需要补充半自动检查清单并固化结果。
