@@ -53,7 +53,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string>();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -70,6 +70,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const knownMessageKeysRef = useRef<Set<string>>(new Set());
+  const loadingMessagesRef = useRef(false);
   const hasScopedConversation = Boolean(tripId || orderId);
 
   const conversationType: ConversationType = tripId ? 'TRIP' : orderId ? 'ORDER' : 'PRIVATE';
@@ -105,6 +106,10 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
 
   const loadMessages = useCallback(
     async ({ silent = false, showFeedback = false }: { silent?: boolean; showFeedback?: boolean } = {}) => {
+      if (loadingMessagesRef.current) {
+        return;
+      }
+      loadingMessagesRef.current = true;
       if (!silent) {
         setRefreshing(true);
       }
@@ -134,6 +139,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
           message.error(t('chat.load_failed'));
         }
       } finally {
+        loadingMessagesRef.current = false;
         if (!silent) {
           setRefreshing(false);
         }
@@ -168,10 +174,10 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   }, [messages]);
 
   const handleSend = async () => {
-    if (!inputValue.trim()) {
+    if (!inputValue.trim() || sendingMessage) {
       return;
     }
-    setLoading(true);
+    setSendingMessage(true);
     try {
       await api.sendChatMessage({
         orderId,
@@ -187,7 +193,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     } catch {
       message.error(t('errors.request_failed'));
     } finally {
-      setLoading(false);
+      setSendingMessage(false);
     }
   };
 
@@ -235,7 +241,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   };
 
   const confirmImageFlow = async () => {
-    if (!pendingSuggestion) {
+    if (!pendingSuggestion || confirmingImage) {
       return;
     }
     setConfirmingImage(true);
@@ -353,10 +359,16 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
 
   const handlePublishInChat = async (target: ChatMessage) => {
     const productId = String(target.metadata?.productId ?? '');
-    if (!productId) {
+    const targetMessageId = messageKey(target);
+    if (!productId || publishingMessageId === targetMessageId) {
       return;
     }
-    const targetMessageId = messageKey(target);
+    const alreadyPublished =
+      target.metadata?.imageFlowStatus === 'PUBLISHED_TO_MARKET' || target.metadata?.visibilityStatus === 'PUBLIC';
+    if (alreadyPublished) {
+      message.info(t('chat.image_status.PUBLISHED_TO_MARKET'));
+      return;
+    }
     setPublishingMessageId(targetMessageId);
     try {
       await api.patchProduct(productId, { visibilityStatus: 'PUBLIC' });
@@ -612,7 +624,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                 onChange={(e) => setInputValue(e.target.value)}
                 onPressEnter={handleSend}
               />
-              <Button aria-label="Send message" type="primary" icon={<SendOutlined />} onClick={handleSend} loading={loading} />
+              <Button aria-label="Send message" type="primary" icon={<SendOutlined />} onClick={handleSend} loading={sendingMessage} />
             </Space.Compact>
           </div>
         </div>

@@ -21,11 +21,11 @@ test.describe('AI Vision Onboarding E2E', () => {
         await fileChooser.setFiles(path.resolve('..', 'sample', 'IMG_1484.jpg'));
 
         // 3. Monitor Progress Steps
-        // The modal should show "Scanning", "Researching", etc.
-        await expect(page.locator('.ant-steps-item-process:has-text("Scanning")')).toBeVisible({ timeout: 10000 });
+        // Use stable stage marker for acceptance, not only UI copy.
+        await expect(page.locator('[data-testid="ai-onboarding-steps"]')).toHaveAttribute('data-stage', 'SCANNING', { timeout: 10000 });
         
         // Wait for final success state (this drives the REAL backend AI flow)
-        await expect(page.locator('.ant-result-title:has-text("AI Onboarding Success")')).toBeVisible({ timeout: 30000 });
+        await expect(page.locator('[data-testid="ai-onboarding-result-subtitle"][data-ai-status="SUCCESS"]')).toBeVisible({ timeout: 30000 });
 
         // 4. Inspect Extracted Metadata & Tiers
         await page.click('button:has-text("Edit Details")');
@@ -51,7 +51,7 @@ test.describe('AI Vision Onboarding E2E', () => {
         const fileChooser = await fileChooserPromise;
         await fileChooser.setFiles(path.resolve('..', 'sample', 'IMG_1638.jpg'));
 
-        // Look for the "Existing Product found" alert
-        await expect(page.locator('.ant-alert-message:has-text("Existing Product found")')).toBeVisible({ timeout: 30000 });
+        // Stable acceptance marker for existing-product path.
+        await expect(page.locator('[data-testid="ai-existing-product-alert"]')).toBeVisible({ timeout: 30000 });
     });
 });

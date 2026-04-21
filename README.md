@@ -33,6 +33,8 @@
 - [MIGRATION-01: PostgreSQL 与 MinIO 迁移记录](docs/migrations/MIGRATION-01-PostgreSQL与MinIO容器化迁移.md)
 - [ARCH-13: 全栈容器化部署方案](docs/architecture/ARCH-13-全栈容器化部署方案.md)
 - [RELEASE-V14: 当前真实能力边界与发布风险](docs/reports/RELEASE-V14-当前真实能力边界.md)
+- [RELEASE-V15: 试运行前最后收口与真实 AI 验收计划](docs/reports/RELEASE-V15-试运行前最后收口与真实AI验收计划.md)
+- [TEST-MATRIX: 本地与CI执行矩阵（含试运行前检查清单）](docs/reports/TEST-MATRIX-本地与CI执行矩阵.md)
 - [PROD-01: 原始需求清单](docs/design/PROD-01-原始需求清单.md)
 - [ARCH-01: 平台技术架构选型](docs/architecture/ARCH-01-平台技术架构选型.md)
 - [ARCH-11: 订单头行模型与业务幂等详细设计](docs/architecture/ARCH-11-订单头行模型与业务幂等详细设计说明书.md)
@@ -59,6 +61,15 @@ docker-compose -p bobbuy up -d
 ### 4. 初始化数据说明
 - 默认启动 **不会** 自动清空业务数据或重灌 Seed。
 - 如需本地演示数据，请显式启用 `dev` profile 或设置 `bobbuy.seed.enabled=true`。
+
+---
+## ✅ 试运行前检查清单
+- [ ] `frontend npm run build`
+- [ ] `frontend npm test`
+- [ ] `frontend npm run e2e`
+- [ ] `backend ./mvnw test`
+- [ ] （可选门控）`RUN_AI_VISION_E2E=1` 后执行 `frontend/e2e/ai_onboarding.spec.ts`
+- [ ] 若 CodeQL 超时，已在发布说明归档并标注缓解方案
 
 ---
 © 2026 BOBBuy 团队. 保留所有权利。
