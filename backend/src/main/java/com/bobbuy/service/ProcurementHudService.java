@@ -68,6 +68,7 @@ public class ProcurementHudService {
   private static final double DEFAULT_PURCHASER_RATIO = 70D;
   private static final double DEFAULT_PROMOTER_RATIO = 30D;
   private static final double DEFAULT_FX_RATE = 1D;
+  private static final Pattern NUMERIC_IDENTITY_PATTERN = Pattern.compile("(\\d+)");
   private static final Logger log = LoggerFactory.getLogger(ProcurementHudService.class);
 
   private final TripRepository tripRepository;
@@ -538,6 +539,10 @@ public class ProcurementHudService {
   }
 
   @Transactional(readOnly = true)
+  /**
+   * Returns trip ledger entries.
+   * AGENT receives full trip ledger; CUSTOMER receives only entries scoped to its injected identity.
+   */
   public List<CustomerBalanceLedgerResponse> getCustomerBalanceLedger(Long tripId, Authentication authentication) {
     tripRepository.findById(tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
@@ -569,7 +574,8 @@ public class ProcurementHudService {
     if (principalName == null || principalName.isBlank()) {
       return List.of();
     }
-    Long customerId = tryExtractNumericIdentity(principalName);
+    // test-injected principal may be numeric customerId (e.g. "1001") or businessId (e.g. "BIZ-1001").
+    Long customerId = parseNumericCustomerId(principalName);
     String businessId = principalName.trim();
     return entries.stream()
         .filter(entry -> Objects.equals(entry.getCustomerId(), customerId)
@@ -577,13 +583,12 @@ public class ProcurementHudService {
         .toList();
   }
 
-  private Long tryExtractNumericIdentity(String principalName) {
-    Matcher matcher = Pattern.compile("(\\d+)").matcher(principalName);
-    Long parsed = null;
-    while (matcher.find()) {
-      parsed = Long.parseLong(matcher.group(1));
+  private Long parseNumericCustomerId(String principalName) {
+    Matcher matcher = NUMERIC_IDENTITY_PATTERN.matcher(principalName);
+    if (matcher.find()) {
+      return Long.parseLong(matcher.group(1));
     }
-    return parsed;
+    return null;
   }
 
   private boolean isCustomer(Authentication authentication) {
