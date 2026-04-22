@@ -83,7 +83,7 @@ set RUN_AI_VISION_E2E=1 && npx playwright test e2e/ai_onboarding.spec.ts
 - 视觉模型：`bobbuy.ai.llm.edge.url` / `bobbuy.ai.llm.edge.model` 可访问（默认 `llava`）
 - 主模型：`bobbuy.ai.llm.main.url` / `bobbuy.ai.llm.main.model` 可访问（用于描述补全/兜底）
 - 对象存储：MinIO 可访问（`bobbuy.minio.*`，默认 `http://localhost:9000`）
-- 样本图片：`/home/runner/work/bobbuy/bobbuy/sample/IMG_1484.jpg`、`/home/runner/work/bobbuy/bobbuy/sample/IMG_1638.jpg`
+- 样本图片：`sample/IMG_1484.jpg`、`sample/IMG_1638.jpg`（相对仓库根目录）
 - 预置数据：启用 `dev` profile 或显式 `bobbuy.seed.enabled=true`，确保可进入 `/stock-master` 并完成确认后写入
 
 成功口径：
