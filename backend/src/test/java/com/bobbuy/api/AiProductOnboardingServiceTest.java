@@ -120,7 +120,13 @@ public class AiProductOnboardingServiceTest {
         """;
     when(llmGateway.generate(anyString(), eq("llava"), anyList()))
         .thenReturn(Optional.of(mockJsonResponse));
-    when(webSearchService.search(anyString())).thenReturn(List.of());
+    when(webSearchService.search(anyString()))
+        .thenReturn(List.of(new WebSearchService.SearchResult(
+            "Trusted Retail",
+            "https://www.costco.com/item/sku-9",
+            "trusted source",
+            List.of("https://images.examplecdn.com/sku-9.jpg")
+        )));
 
     AiOnboardingSuggestion suggestion = onboardingService.onboardFromPhoto("fake-base64").orElseThrow();
 
