@@ -63,7 +63,7 @@ npm run e2e
 - `npm run e2e` 默认串联 `e2e:prepare` 与 `playwright test`，适合本地与 CI 统一执行。
 - 常规本地 E2E（`npm run e2e`）统一复用 `frontend/e2e/responsive_helpers.ts` 的共享 mock；其中 `**/api/**` 为 fallback mock，用于吸收未显式断言的 API，避免 Vite proxy `ECONNREFUSED` 噪声。
 
-### 4.2 AI 专用回归（条件化）
+### 4.2 AI 专用回归（条件化，真实闭环）
 `frontend/e2e/ai_onboarding.spec.ts` 不并入常规 `npm run e2e`，仅在专用环境执行。
 
 ```bash
@@ -79,19 +79,24 @@ npm run e2e:ai:win
 
 最小环境要求：
 - 前端：`RUN_AI_VISION_E2E=1`
-- 后端 profile：建议 `SPRING_PROFILES_ACTIVE=dev,ai-hermes`
-- 视觉模型：`bobbuy.ai.llm.edge.url` / `bobbuy.ai.llm.edge.model` 可访问（默认 `llava`）
-- 主模型：`bobbuy.ai.llm.main.url` / `bobbuy.ai.llm.main.model` 可访问（用于描述补全/兜底）
-- 对象存储：MinIO 可访问（`bobbuy.minio.*`，默认 `http://localhost:9000`）
-- 样本图片：`sample/IMG_1484.jpg`、`sample/IMG_1638.jpg`（已随仓库提交，相对根目录）
-- 预置数据：启用 `dev` profile 或显式 `bobbuy.seed.enabled=true`，确保可进入 `/stock-master` 并完成确认后写入
+- 后端 profile：`SPRING_PROFILES_ACTIVE=dev,ai-hermes`（必须）
+- 外部模型：`bobbuy.ai.llm.edge.*` + `bobbuy.ai.llm.main.*` 可访问
+- 对象存储：MinIO 可访问（`bobbuy.minio.*`）
+- 样本图片：`sample/IMG_1484.jpg`、`sample/IMG_1638.jpg`
+- 预置数据：启用 `dev` profile 或 `bobbuy.seed.enabled=true`，保证已有商品识别路径可命中
 
-成功口径：
-- `IMG_1484` 流程出现 `data-ai-status="SUCCESS"`，且 `Item Number` 含 `53432`
-- `IMG_1638` 流程出现 `data-testid="ai-existing-product-alert"`
+通过标准（真实业务闭环）：
+- `IMG_1484` 触发新商品创建，`/api/ai/onboard/confirm` 返回新 `product.id`
+- 创建后商品列表（`/api/mobile/products`）可查到该 `product.id`，且 `itemNumber/brand/price` 与 AI 最终确认一致
+- `IMG_1638` 命中已有商品，扫描结果 `existingProductFound=true` 且确认返回同一 `existingProductId`
+- 抓图来源治理通过：`sourceDomains` 不包含小红书等禁用域名，且至少一张图属于 `OFFICIAL_SITE/BRAND_SITE/OFFICIAL_STORE/TRUSTED_RETAIL`
 
-失败口径：
-- 任一用例未达到上述稳定标记或流程超时，即视为 AI 专用回归失败
+失败判定（按链路定位）：
+- `error.ai.recognition_failed`：视觉识别失败
+- `error.ai.web_search_failed`：联网抓图失败
+- `error.ai.source_filter_empty`：来源治理后无可用图
+- `error.ai.product_persist_failed`：商品创建/落库失败
+- 前端用例在确认后列表未查到商品或字段不一致：前端确认后列表未同步/闭环失败
 
 ---
 

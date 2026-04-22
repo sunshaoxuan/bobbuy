@@ -25,6 +25,12 @@ public record AiOnboardingSuggestion(
     List<AiProductCandidate> similarProductCandidates,
     ProductVisibility visibilityStatus,
     List<PriceTier> detectedPriceTiers,
-    String originalPhotoBase64
+    String originalPhotoBase64,
+    String inputSampleId,
+    String recognitionSummary,
+    List<String> sourceDomains,
+    List<String> rejectedSourceDomains,
+    String sourcePolicyVersion,
+    AiOnboardingTrace trace
 ) {
 }

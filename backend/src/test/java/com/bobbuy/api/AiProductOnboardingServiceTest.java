@@ -4,6 +4,7 @@ import com.bobbuy.api.AiOnboardingSuggestion;
 import com.bobbuy.model.Product;
 import com.bobbuy.model.ProductVisibility;
 import com.bobbuy.repository.ProductRepository;
+import com.bobbuy.service.AiOnboardingPipelineException;
 import com.bobbuy.service.AiProductOnboardingService;
 import com.bobbuy.service.AiSearchService;
 import com.bobbuy.service.LlmGateway;
@@ -66,9 +67,9 @@ public class AiProductOnboardingServiceTest {
     when(webSearchService.search(contains("Matcha KitKat")))
         .thenReturn(List.of(new WebSearchService.SearchResult(
             "Matcha KitKat Original",
-            "http://example.com",
+            "https://www.costco.com/matcha-kitkat",
             "Deep research snippet description",
-            List.of("http://example.com/hd.jpg")
+            List.of("https://images.costco-static.com/matcha/hd.jpg")
         )));
 
     Optional<AiOnboardingSuggestion> result = onboardingService.onboardFromPhoto("fake-base64");
@@ -80,7 +81,12 @@ public class AiProductOnboardingServiceTest {
     assertEquals(15.5, suggestion.price());
     assertEquals("Deep research snippet description", suggestion.description());
     assertEquals(1, suggestion.mediaGallery().size());
-    assertEquals("http://example.com/hd.jpg", suggestion.mediaGallery().get(0).getUrl());
+    assertEquals("https://images.costco-static.com/matcha/hd.jpg", suggestion.mediaGallery().get(0).getUrl());
+    assertEquals("https://www.costco.com/matcha-kitkat", suggestion.mediaGallery().get(0).getSourceUrl());
+    assertEquals("www.costco.com", suggestion.mediaGallery().get(0).getSourceDomain());
+    assertNotNull(suggestion.trace());
+    assertTrue(suggestion.recognitionSummary().contains("name=Matcha KitKat"));
+    assertTrue(suggestion.sourceDomains().contains("www.costco.com"));
   }
 
   @Test
@@ -114,7 +120,13 @@ public class AiProductOnboardingServiceTest {
         """;
     when(llmGateway.generate(anyString(), eq("llava"), anyList()))
         .thenReturn(Optional.of(mockJsonResponse));
-    when(webSearchService.search(anyString())).thenReturn(List.of());
+    when(webSearchService.search(anyString()))
+        .thenReturn(List.of(new WebSearchService.SearchResult(
+            "Trusted Retail",
+            "https://www.costco.com/item/sku-9",
+            "trusted source",
+            List.of("https://images.examplecdn.com/sku-9.jpg")
+        )));
 
     AiOnboardingSuggestion suggestion = onboardingService.onboardFromPhoto("fake-base64").orElseThrow();
 
@@ -127,5 +139,30 @@ public class AiProductOnboardingServiceTest {
     assertEquals("tea", suggestion.similarProductCandidates().get(0).categoryId());
     assertFalse(suggestion.similarProductCandidates().get(0).matchedFragments().isEmpty());
     assertTrue(suggestion.similarProductCandidates().get(0).score() > suggestion.similarProductCandidates().get(1).score());
+  }
+
+  @Test
+  public void testOnboardFromPhotoRejectsDeniedSources() {
+    String mockJsonResponse = """
+        {
+          "name": "Milk",
+          "brand": "Test",
+          "price": 12.0
+        }
+        """;
+    when(llmGateway.generate(anyString(), eq("llava"), anyList()))
+        .thenReturn(Optional.of(mockJsonResponse));
+    when(webSearchService.search(anyString()))
+        .thenReturn(List.of(new WebSearchService.SearchResult(
+            "Bad Source",
+            "https://www.xiaohongshu.com/item/123",
+            "bad",
+            List.of("https://www.xiaohongshu.com/image/1.jpg")
+        )));
+
+    AiOnboardingPipelineException ex = assertThrows(AiOnboardingPipelineException.class,
+        () -> onboardingService.onboardFromPhoto("fake-base64"));
+    assertEquals("SOURCE_FILTER", ex.getStage());
+    assertEquals("error.ai.source_filter_empty", ex.getMessageKey());
   }
 }
