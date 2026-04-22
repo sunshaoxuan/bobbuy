@@ -165,14 +165,14 @@ export default function Orders() {
   const orderPanels = orders.map((order) => ({
     key: order.businessId,
     label: (
-      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', flexWrap: 'wrap', rowGap: 8, columnGap: 12 }}>
         <div>
           <Text strong>{order.businessId}</Text>
           <Text type="secondary" style={{ marginLeft: 12 }}>
             {t('orders.header.customer_id')}: {order.customerId}
           </Text>
         </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <Text>
             {t('orders.header.total')}: {order.totalAmount?.toFixed(2)}
           </Text>
@@ -182,7 +182,7 @@ export default function Orders() {
     ),
     children: (
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', rowGap: 8, columnGap: 12 }}>
           <Text type="secondary">{t('orders.header.status')}</Text>
             <Select
               value={order.status}
@@ -192,7 +192,7 @@ export default function Orders() {
               style={{ width: 160 }}
             />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', rowGap: 8, columnGap: 12 }}>
             <Text type="secondary">{t('orders.header.payment_status')}</Text>
             <Tag color="blue">{t(`enum.payment_status.${order.paymentStatus ?? 'UNPAID'}`)}</Tag>
           </div>
@@ -202,6 +202,7 @@ export default function Orders() {
           columns={lineColumns}
           pagination={false}
           locale={{ emptyText: t('table.empty') }}
+          scroll={{ x: 'max-content' }}
         />
       </div>
     )
@@ -209,7 +210,7 @@ export default function Orders() {
 
   return (
     <div className="page-card">
-      <div className="section-title">{t('orders.title')}</div>
+      <div className="section-title" data-testid="orders-title">{t('orders.title')}</div>
       <Text className="helper-text">{t('orders.helper')}</Text>
 
       <Card style={{ marginTop: 16, marginBottom: 24 }} bordered={false} title={t('orders.trip.title')}>
@@ -230,7 +231,7 @@ export default function Orders() {
             </div>
           </div>
           {selectedTrip ? (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center', minWidth: 0 }}>
               <div>
                 <Text type="secondary">{t('orders.trip.route')}</Text>
                 <div>{selectedTrip.origin} → {selectedTrip.destination}</div>
@@ -407,7 +408,7 @@ export default function Orders() {
               placeholder={t('orders.form.status.placeholder')}
             />
           </Form.Item>
-          <Button type="primary" htmlType="submit" loading={submitting} disabled={submitting}>
+          <Button type="primary" htmlType="submit" loading={submitting} disabled={submitting} data-testid="orders-submit">
             {t('orders.form.submit')}
           </Button>
         </Form>
