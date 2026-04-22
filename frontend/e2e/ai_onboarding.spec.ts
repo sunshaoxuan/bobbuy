@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
+import { setAgentContext } from './responsive_helpers';
 
 test.skip(!process.env.RUN_AI_VISION_E2E, 'Manual AI onboarding flow requires dedicated backend model/files.');
 
 test.describe('AI Vision Onboarding E2E', () => {
     test.beforeEach(async ({ page }) => {
+        await setAgentContext(page);
         // Navigate to the stock master page
         await page.goto('/stock-master');
     });

@@ -61,9 +61,37 @@ npm run e2e
 **说明**:
 - `npm run e2e:prepare` 会先检测 Playwright Chromium 是否已存在，仅在缺失时安装。
 - `npm run e2e` 默认串联 `e2e:prepare` 与 `playwright test`，适合本地与 CI 统一执行。
-- 测试文件：`frontend/e2e/test_shopping_flow.spec.ts`
-- 该脚本模拟“发布行程 -> 确认订单 -> 状态流转 -> 审计校验”的关键链路。
-- `frontend/e2e/ai_onboarding.spec.ts` 继续保持手动门控，需要显式设置 `RUN_AI_VISION_E2E=1`。
+- 常规本地 E2E（`npm run e2e`）统一复用 `frontend/e2e/responsive_helpers.ts` 的共享 mock；其中 `**/api/**` 为 fallback mock，用于吸收未显式断言的 API，避免 Vite proxy `ECONNREFUSED` 噪声。
+
+### 4.2 AI 专用回归（条件化）
+`frontend/e2e/ai_onboarding.spec.ts` 不并入常规 `npm run e2e`，仅在专用环境执行。
+
+```bash
+cd frontend
+npm run e2e:ai
+```
+
+Windows CMD:
+```bat
+cd frontend
+set RUN_AI_VISION_E2E=1 && npx playwright test e2e/ai_onboarding.spec.ts
+```
+
+最小环境要求：
+- 前端：`RUN_AI_VISION_E2E=1`
+- 后端 profile：建议 `SPRING_PROFILES_ACTIVE=dev,ai-hermes`
+- 视觉模型：`bobbuy.ai.llm.edge.url` / `bobbuy.ai.llm.edge.model` 可访问（默认 `llava`）
+- 主模型：`bobbuy.ai.llm.main.url` / `bobbuy.ai.llm.main.model` 可访问（用于描述补全/兜底）
+- 对象存储：MinIO 可访问（`bobbuy.minio.*`，默认 `http://localhost:9000`）
+- 样本图片：`/home/runner/work/bobbuy/bobbuy/sample/IMG_1484.jpg`、`/home/runner/work/bobbuy/bobbuy/sample/IMG_1638.jpg`
+- 预置数据：启用 `dev` profile 或显式 `bobbuy.seed.enabled=true`，确保可进入 `/stock-master` 并完成确认后写入
+
+成功口径：
+- `IMG_1484` 流程出现 `data-ai-status="SUCCESS"`，且 `Item Number` 含 `53432`
+- `IMG_1638` 流程出现 `data-testid="ai-existing-product-alert"`
+
+失败口径：
+- 任一用例未达到上述稳定标记或流程超时，即视为 AI 专用回归失败
 
 ---
 

@@ -70,8 +70,9 @@ export async function assertNoHorizontalOverflow(page: Page) {
 }
 
 export async function setupCommonMocks(page: Page) {
-  // Fallback mock to absorb any non-essential API request and prevent Vite proxy ECONNREFUSED noise.
-  // Specific routes are registered afterwards and take precedence in Playwright.
+  // [Fallback] Must stay first: this absorbs non-essential `/api/**` calls and prevents
+  // Vite proxy ECONNREFUSED noise in regular local E2E runs.
+  // Any spec-level overrides should be registered after setupCommonMocks(page).
   await page.route('**/api/**', (route) =>
     route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: {} }) })
   );
