@@ -8,6 +8,7 @@ import com.bobbuy.model.Product;
 import com.bobbuy.model.ProductPatch;
 import com.bobbuy.model.ProductVisibility;
 import com.bobbuy.service.AiAgentService;
+import com.bobbuy.service.AiOnboardingPipelineException;
 import com.bobbuy.service.AiProductOnboardingService;
 import com.bobbuy.service.BobbuyStore;
 import com.bobbuy.service.ImageStorageService;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +30,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/ai")
 public class AiAgentController {
+  private static final Logger log = LoggerFactory.getLogger(AiAgentController.class);
   private final AiAgentService aiAgentService;
   private final AiProductOnboardingService aiProductOnboardingService;
   private final BobbuyStore store;
@@ -80,94 +84,126 @@ public class AiAgentController {
 
   @PostMapping("/onboard/scan")
   public ResponseEntity<ApiResponse<AiOnboardingSuggestion>> scan(@Valid @RequestBody AiOnboardScanRequest request) {
-    return aiProductOnboardingService.onboardFromPhoto(request.getBase64Image())
-        .map(suggestion -> ResponseEntity.ok(ApiResponse.success(suggestion)))
-        .orElseThrow(() -> new ApiException(ErrorCode.INVALID_REQUEST, "error.ai.extract_failed"));
+    try {
+      return aiProductOnboardingService.onboardFromPhoto(request.getBase64Image(), request.getSampleId())
+          .map(suggestion -> ResponseEntity.ok(ApiResponse.success(suggestion)))
+          .orElseThrow(() -> new ApiException(ErrorCode.INVALID_REQUEST, "error.ai.extract_failed"));
+    } catch (AiOnboardingPipelineException ex) {
+      log.warn("AI onboarding scan failed at stage={} message={}", ex.getStage(), ex.getMessage());
+      throw new ApiException(ErrorCode.INVALID_REQUEST, ex.getMessageKey());
+    }
   }
 
   @PostMapping("/onboard/confirm")
   public ResponseEntity<ApiResponse<MobileProductResponse>> confirmOnboard(@Valid @RequestBody AiOnboardingSuggestion suggestion) {
-    Product result;
+    try {
+      Product result;
+      String evidenceImageUrl = imageStorageService.saveBase64(suggestion.originalPhotoBase64());
+      ProductVisibility targetVisibility = suggestion.visibilityStatus();
 
-    String evidenceImageUrl = imageStorageService.saveBase64(suggestion.originalPhotoBase64());
-    ProductVisibility targetVisibility = suggestion.visibilityStatus();
-    
-    if (suggestion.existingProductFound() && suggestion.existingProductId() != null) {
-      // Incremental update: patch existing product with detected price tiers
-      ProductPatch patch = new ProductPatch();
-      if (suggestion.price() != null) {
-        patch.setBasePrice(suggestion.price());
-      }
-      if (suggestion.detectedPriceTiers() != null && !suggestion.detectedPriceTiers().isEmpty()) {
-        patch.setPriceTiers(suggestion.detectedPriceTiers());
-      }
-      if (targetVisibility != null) {
-        patch.setVisibilityStatus(targetVisibility);
-      }
-      
-      List<com.bobbuy.model.MediaGalleryItem> gallery = new java.util.ArrayList<>(suggestion.mediaGallery() != null ? suggestion.mediaGallery() : List.of());
-      if (evidenceImageUrl != null) {
-        gallery.add(0, new com.bobbuy.model.MediaGalleryItem(evidenceImageUrl, com.bobbuy.model.MediaType.IMAGE, new HashMap<>()));
-      }
-      patch.setMediaGallery(gallery);
-      
-      if (suggestion.brand() != null) {
-        patch.setBrand(suggestion.brand());
-      }
-      result = store.patchProduct(suggestion.existingProductId(), patch)
-          .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.product.not_found"));
-    } else {
-      // Create new product
-      Product newProduct = new Product();
-      Map<String, String> nameMap = new HashMap<>();
-      nameMap.put("zh-CN", suggestion.name());
-      nameMap.put("ja-JP", suggestion.name());
-      nameMap.put("en-US", suggestion.name());
-      newProduct.setName(nameMap);
+      if (suggestion.existingProductFound() && suggestion.existingProductId() != null) {
+        ProductPatch patch = new ProductPatch();
+        if (suggestion.price() != null) {
+          patch.setBasePrice(suggestion.price());
+        }
+        if (suggestion.detectedPriceTiers() != null && !suggestion.detectedPriceTiers().isEmpty()) {
+          patch.setPriceTiers(suggestion.detectedPriceTiers());
+        }
+        if (targetVisibility != null) {
+          patch.setVisibilityStatus(targetVisibility);
+        }
 
-      Map<String, String> descMap = new HashMap<>();
-      if (suggestion.description() != null) {
-        descMap.put("zh-CN", suggestion.description());
-        descMap.put("ja-JP", suggestion.description());
-        descMap.put("en-US", suggestion.description());
-      }
-      newProduct.setDescription(descMap);
+        List<com.bobbuy.model.MediaGalleryItem> gallery = new java.util.ArrayList<>(suggestion.mediaGallery() != null ? suggestion.mediaGallery() : List.of());
+        if (evidenceImageUrl != null) {
+          gallery.add(0, new com.bobbuy.model.MediaGalleryItem(
+              evidenceImageUrl,
+              com.bobbuy.model.MediaType.IMAGE,
+              new HashMap<>(),
+              true,
+              evidenceImageUrl,
+              "",
+              "USER_UPLOAD_EVIDENCE"));
+        }
+        patch.setMediaGallery(gallery);
 
-      newProduct.setBrand(suggestion.brand());
-      newProduct.setBasePrice(suggestion.price() != null ? suggestion.price() : 0.0);
-      
-      List<com.bobbuy.model.MediaGalleryItem> gallery = new java.util.ArrayList<>(suggestion.mediaGallery() != null ? suggestion.mediaGallery() : List.of());
-      if (evidenceImageUrl != null) {
-        gallery.add(0, new com.bobbuy.model.MediaGalleryItem(evidenceImageUrl, com.bobbuy.model.MediaType.IMAGE, new HashMap<>()));
-      }
-      newProduct.setMediaGallery(gallery);
-      
-      newProduct.setStorageCondition(suggestion.storageCondition());
-      newProduct.setOrderMethod(suggestion.orderMethod());
-      newProduct.setCategoryId(suggestion.categoryId());
-      newProduct.setItemNumber(suggestion.itemNumber());
-      newProduct.setTemporary(true);
-      newProduct.setVisibilityStatus(targetVisibility != null ? targetVisibility : ProductVisibility.DRAFTER_ONLY);
-      newProduct.setRecommended(false);
-      newProduct.setMerchantSkus(new HashMap<>());
-      if (suggestion.detectedPriceTiers() != null) {
-        newProduct.setPriceTiers(suggestion.detectedPriceTiers());
+        if (suggestion.brand() != null) {
+          patch.setBrand(suggestion.brand());
+        }
+        result = store.patchProduct(suggestion.existingProductId(), patch)
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.product.not_found"));
+      } else {
+        Product newProduct = new Product();
+        Map<String, String> nameMap = new HashMap<>();
+        nameMap.put("zh-CN", suggestion.name());
+        nameMap.put("ja-JP", suggestion.name());
+        nameMap.put("en-US", suggestion.name());
+        newProduct.setName(nameMap);
+
+        Map<String, String> descMap = new HashMap<>();
+        if (suggestion.description() != null) {
+          descMap.put("zh-CN", suggestion.description());
+          descMap.put("ja-JP", suggestion.description());
+          descMap.put("en-US", suggestion.description());
+        }
+        newProduct.setDescription(descMap);
+
+        newProduct.setBrand(suggestion.brand());
+        newProduct.setBasePrice(suggestion.price() != null ? suggestion.price() : 0.0);
+
+        List<com.bobbuy.model.MediaGalleryItem> gallery = new java.util.ArrayList<>(suggestion.mediaGallery() != null ? suggestion.mediaGallery() : List.of());
+        if (evidenceImageUrl != null) {
+          gallery.add(0, new com.bobbuy.model.MediaGalleryItem(
+              evidenceImageUrl,
+              com.bobbuy.model.MediaType.IMAGE,
+              new HashMap<>(),
+              true,
+              evidenceImageUrl,
+              "",
+              "USER_UPLOAD_EVIDENCE"));
+        }
+        newProduct.setMediaGallery(gallery);
+
+        newProduct.setStorageCondition(suggestion.storageCondition());
+        newProduct.setOrderMethod(suggestion.orderMethod());
+        newProduct.setCategoryId(suggestion.categoryId());
+        newProduct.setItemNumber(suggestion.itemNumber());
+        newProduct.setTemporary(true);
+        newProduct.setVisibilityStatus(targetVisibility != null ? targetVisibility : ProductVisibility.DRAFTER_ONLY);
+        newProduct.setRecommended(false);
+        newProduct.setMerchantSkus(new HashMap<>());
+        if (suggestion.detectedPriceTiers() != null) {
+          newProduct.setPriceTiers(suggestion.detectedPriceTiers());
+        }
+
+        result = store.createProduct(newProduct);
       }
 
-      result = store.createProduct(newProduct);
+      ProcurementHudService.ReconcileInventoryResult reconcileResult =
+          procurementHudService.reconcileInventoryWithDetails(result.getId(), defaultReconcileQuantity);
+
+      AiOnboardingTrace requestTrace = suggestion.trace();
+      AiOnboardingTrace finalTrace = new AiOnboardingTrace(
+          requestTrace != null ? requestTrace.inputSampleId() : suggestion.inputSampleId(),
+          requestTrace != null ? requestTrace.recognitionSummary() : suggestion.recognitionSummary(),
+          requestTrace != null ? requestTrace.sourceDomains() : suggestion.sourceDomains(),
+          suggestion.existingProductFound() ? "EXISTING_PRODUCT" : "NEW_PRODUCT",
+          result.getId());
+
+      return ResponseEntity.ok(ApiResponse.success(
+          new MobileProductResponse(
+              result,
+              suggestion.name(),
+              suggestion.description(),
+              reconcileResult.reconciledQuantity(),
+              reconcileResult.tripId(),
+              reconcileResult.allocatedBusinessIds(),
+              finalTrace)));
+    } catch (ApiException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      log.error("AI onboarding confirm failed [PERSISTENCE]: itemNumber={} existingProductFound={}",
+          suggestion.itemNumber(), suggestion.existingProductFound(), ex);
+      throw new ApiException(ErrorCode.INTERNAL_ERROR, "error.ai.product_persist_failed");
     }
-
-    ProcurementHudService.ReconcileInventoryResult reconcileResult =
-        procurementHudService.reconcileInventoryWithDetails(result.getId(), defaultReconcileQuantity);
-
-    // Return a simple response with the product
-    return ResponseEntity.ok(ApiResponse.success(
-        new MobileProductResponse(
-            result,
-            suggestion.name(),
-            suggestion.description(),
-            reconcileResult.reconciledQuantity(),
-            reconcileResult.tripId(),
-            reconcileResult.allocatedBusinessIds())));
   }
 }

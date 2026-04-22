@@ -113,7 +113,7 @@ export type MobileProductResponse = {
             updatedAt?: string;
             storageCondition?: string;
         orderMethod?: string;
-        mediaGallery?: { url: string; title?: Record<string, string>; type: string }[];
+        mediaGallery?: { url: string; title?: Record<string, string>; type: string; sourceUrl?: string; sourceDomain?: string; sourceType?: string }[];
         priceTiers?: PriceTier[];
     };
     displayName: string;
@@ -121,6 +121,13 @@ export type MobileProductResponse = {
     reconciledQuantity?: number;
     reconciledTripId?: number;
     allocatedBusinessIds?: string[];
+    onboardingTrace?: {
+        inputSampleId?: string;
+        recognitionSummary?: string;
+        sourceDomains?: string[];
+        resultDecision?: string;
+        finalProductId?: string;
+    };
 };
 
 export type ProcurementHudStats = {
@@ -634,7 +641,7 @@ export type AiOnboardingSuggestion = {
     itemNumber?: string;
     storageCondition?: string;
     orderMethod?: string;
-    mediaGallery?: { url: string; title?: Record<string, string>; type: string; visible?: boolean }[];
+    mediaGallery?: { url: string; title?: Record<string, string>; type: string; visible?: boolean; sourceUrl?: string; sourceDomain?: string; sourceType?: string }[];
     attributes?: Record<string, string>;
     existingProductFound?: boolean;
     existingProductId?: string;
@@ -642,6 +649,18 @@ export type AiOnboardingSuggestion = {
     visibilityStatus?: string;
     detectedPriceTiers?: PriceTier[];
     originalPhotoBase64?: string;
+    inputSampleId?: string;
+    recognitionSummary?: string;
+    sourceDomains?: string[];
+    rejectedSourceDomains?: string[];
+    sourcePolicyVersion?: string;
+    trace?: {
+        inputSampleId?: string;
+        recognitionSummary?: string;
+        sourceDomains?: string[];
+        resultDecision?: string;
+        finalProductId?: string;
+    };
 };
 
 export const api = {
@@ -675,8 +694,8 @@ export const api = {
             text,
             targetLocale
         }),
-    onboardScan: (base64Image: string) =>
-        postJson<AiOnboardingSuggestion, { base64Image: string }>('/api/ai/onboard/scan', { base64Image }),
+    onboardScan: (base64Image: string, sampleId?: string) =>
+        postJson<AiOnboardingSuggestion, { base64Image: string; sampleId?: string }>('/api/ai/onboard/scan', { base64Image, sampleId }),
     onboardConfirm: (suggestion: AiOnboardingSuggestion) =>
         postJson<MobileProductResponse, AiOnboardingSuggestion>('/api/ai/onboard/confirm', suggestion),
     products: () => fetchJson<MobileProductResponse[]>('/api/mobile/products', fallback.products),

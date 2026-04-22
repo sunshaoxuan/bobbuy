@@ -1,6 +1,7 @@
 package com.bobbuy.service;
 
 import com.bobbuy.api.AiOnboardingSuggestion;
+import com.bobbuy.api.AiOnboardingTrace;
 import com.bobbuy.api.AiProductCandidate;
 import com.bobbuy.model.MediaGalleryItem;
 import com.bobbuy.model.MediaType;
@@ -26,7 +27,9 @@ import java.util.Optional;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
+import java.net.URI;
 
 @Service
 public class AiProductOnboardingService {
@@ -44,6 +47,19 @@ public class AiProductOnboardingService {
     private static final double MEDIUM_NAME_OVERLAP_BONUS = 0.4d;
     // Keep audit metadata concise so chat cards remain readable while still showing the strongest evidence.
     private static final int MAX_MATCHED_AUDIT_FRAGMENTS = 4;
+    private static final String SOURCE_POLICY_VERSION = "V23";
+    private static final Set<String> DENIED_SOURCE_KEYWORDS = Set.of(
+        "xiaohongshu.com", "xhslink.com", "rednote", "weibo.com", "watermark"
+    );
+    private static final Set<String> LOW_TRUST_SOURCE_KEYWORDS = Set.of(
+        "pinterest.", "imgur.", "douban.", "baidu.", "blogspot.", "wordpress."
+    );
+    private static final Set<String> OFFICIAL_STORE_KEYWORDS = Set.of(
+        "official", "store", "shop", "mall"
+    );
+    private static final Set<String> TRUSTED_RETAIL_DOMAINS = Set.of(
+        "costco.com", "walmart.com", "target.com", "amazon.", "rakuten.", "yodobashi.com", "biccamera.com", "nestle.jp"
+    );
     private static final Map<String, List<String>> TOKEN_ALIASES = Map.of(
         "milk", List.of("牛乳", "ミルク"),
         "matcha", List.of("抹茶"),
@@ -75,10 +91,14 @@ public class AiProductOnboardingService {
     }
 
     public Optional<AiOnboardingSuggestion> onboardFromPhoto(String base64Image) {
+        return onboardFromPhoto(base64Image, null);
+    }
+
+    public Optional<AiOnboardingSuggestion> onboardFromPhoto(String base64Image, String inputSampleId) {
         log.info("Starting AI onboarding from photo. Base64 length: {}", base64Image != null ? base64Image.length() : 0);
         if (base64Image == null || base64Image.isBlank()) {
-            log.warn("Onboarding failed: Empty image data provided.");
-            return Optional.empty();
+            log.warn("Onboarding failed [VALIDATION]: empty image data provided.");
+            throw new AiOnboardingPipelineException("VALIDATION", "error.ai.invalid_image", "Empty image data provided");
         }
         // 1. Vision Extract (Edge Node - Llava)
         log.info("Phase 1: Dispatching to Vision Model (Llava)...");
@@ -97,8 +117,8 @@ public class AiProductOnboardingService {
 
         Optional<String> visionResponse = llmGateway.generate(prompt, "llava", List.of(base64Image));
         if (visionResponse.isEmpty()) {
-            log.error("Phase 1 Failed: Vision model returned empty response.");
-            return Optional.empty();
+            log.error("Onboarding failed [AI_RECOGNITION]: vision model returned empty response.");
+            throw new AiOnboardingPipelineException("AI_RECOGNITION", "error.ai.recognition_failed", "Vision model returned empty response");
         }
         log.info("Phase 1 Success: Vision extraction complete. Raw JSON length: {}", visionResponse.get().length());
 
@@ -134,21 +154,57 @@ public class AiProductOnboardingService {
                 }
             }
 
+            String recognitionSummary = buildRecognitionSummary(name, brand, itemNumber, basePrice, extracted);
             // 3. Deep Research (Brave via WebSearchService)
             String searchQuery = brand != null ? brand + " " + name : name;
             log.info("Phase 3: Deep Researching for query: '{}'...", searchQuery);
-            List<WebSearchService.SearchResult> searchResults = webSearchService.search(searchQuery);
+            List<WebSearchService.SearchResult> searchResults;
+            try {
+                searchResults = webSearchService.search(searchQuery);
+            } catch (Exception ex) {
+                log.error("Onboarding failed [WEB_RESEARCH]: web search error for query='{}'", searchQuery, ex);
+                throw new AiOnboardingPipelineException("WEB_RESEARCH", "error.ai.web_search_failed", "Web search failed");
+            }
             log.info("Phase 3 Success: Found {} search results.", searchResults.size());
 
             // Build media gallery from search results
             List<MediaGalleryItem> gallery = new ArrayList<>();
+            List<String> rejectedSourceDomains = new ArrayList<>();
+            LinkedHashSet<String> sourceDomains = new LinkedHashSet<>();
             String researchSnippet = "";
-            if (!searchResults.isEmpty()) {
-                WebSearchService.SearchResult topResult = searchResults.get(0);
-                researchSnippet = topResult.snippet();
-                for (String imageUrl : topResult.imageUrls()) {
-                    gallery.add(new MediaGalleryItem(imageUrl, MediaType.IMAGE, new HashMap<>()));
+            for (WebSearchService.SearchResult result : searchResults) {
+                String sourceUrl = firstNonBlank(result.url(), "");
+                String sourceDomain = extractDomain(sourceUrl);
+                SourceType sourceType = classifySourceType(sourceDomain, sourceUrl, result.title(), brand);
+                if (!sourceType.allowed()) {
+                    if (!sourceDomain.isBlank()) {
+                        rejectedSourceDomains.add(sourceDomain);
+                    }
+                    continue;
                 }
+                sourceDomains.add(sourceDomain);
+                if (researchSnippet.isBlank()) {
+                    researchSnippet = firstNonBlank(result.snippet(), "");
+                }
+                for (String imageUrl : result.imageUrls()) {
+                    if (!isAllowedImageUrl(imageUrl)) {
+                        rejectedSourceDomains.add(extractDomain(imageUrl));
+                        continue;
+                    }
+                    gallery.add(new MediaGalleryItem(
+                        imageUrl,
+                        MediaType.IMAGE,
+                        new HashMap<>(),
+                        true,
+                        sourceUrl,
+                        sourceDomain,
+                        sourceType.name()
+                    ));
+                }
+            }
+            if (gallery.isEmpty()) {
+                log.error("Onboarding failed [SOURCE_FILTER]: no usable gallery images after policy filtering. rejectedDomains={}", rejectedSourceDomains);
+                throw new AiOnboardingPipelineException("SOURCE_FILTER", "error.ai.source_filter_empty", "No usable images after source filtering");
             }
 
             // 4. Knowledge Synthesis (Cloud Core - Qwen)
@@ -174,6 +230,14 @@ public class AiProductOnboardingService {
                 log.info("Price Tiers Extracted: {} tiers found.", detectedTiers.size());
             }
 
+            String resultDecision = existingFound ? "EXISTING_PRODUCT" : "NEW_PRODUCT";
+            AiOnboardingTrace trace = new AiOnboardingTrace(
+                firstNonBlank(inputSampleId, ""),
+                recognitionSummary,
+                List.copyOf(sourceDomains),
+                resultDecision,
+                null
+            );
             return Optional.of(new AiOnboardingSuggestion(
                 name,
                 brand,
@@ -190,12 +254,20 @@ public class AiProductOnboardingService {
                 similarCandidates,
                 ProductVisibility.DRAFTER_ONLY,
                 detectedTiers,
-                base64Image
+                base64Image,
+                firstNonBlank(inputSampleId, ""),
+                recognitionSummary,
+                List.copyOf(sourceDomains),
+                rejectedSourceDomains.stream().filter(domain -> domain != null && !domain.isBlank()).distinct().toList(),
+                SOURCE_POLICY_VERSION,
+                trace
             ));
 
+        } catch (AiOnboardingPipelineException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Failed to parse vision response", e);
-            return Optional.empty();
+            log.error("Onboarding failed [AI_RECOGNITION]: Failed to parse vision response", e);
+            throw new AiOnboardingPipelineException("AI_RECOGNITION", "error.ai.recognition_failed", "Failed to parse vision response");
         }
     }
 
@@ -377,5 +449,92 @@ public class AiProductOnboardingService {
             }
         }
         return List.copyOf(aliasSources);
+    }
+
+    private String buildRecognitionSummary(String name,
+                                           String brand,
+                                           String itemNumber,
+                                           Double basePrice,
+                                           Map<String, Object> extracted) {
+        StringBuilder summary = new StringBuilder();
+        summary.append("name=").append(firstNonBlank(name, "UNKNOWN"));
+        if (brand != null && !brand.isBlank()) {
+            summary.append(", brand=").append(brand);
+        }
+        if (itemNumber != null && !itemNumber.isBlank()) {
+            summary.append(", itemNumber=").append(itemNumber);
+        }
+        if (basePrice != null) {
+            summary.append(", price=").append(basePrice);
+        }
+        Object tiers = extracted.get("priceTiers");
+        if (tiers instanceof List<?> list && !list.isEmpty()) {
+            summary.append(", tierCount=").append(list.size());
+        }
+        return summary.toString();
+    }
+
+    private String extractDomain(String url) {
+        if (url == null || url.isBlank()) {
+            return "";
+        }
+        try {
+            URI uri = URI.create(url);
+            String host = uri.getHost();
+            if (host == null) {
+                return "";
+            }
+            return host.toLowerCase(Locale.ROOT);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private boolean isAllowedImageUrl(String imageUrl) {
+        String normalized = firstNonBlank(imageUrl, "").toLowerCase(Locale.ROOT);
+        if (normalized.isBlank()) {
+            return false;
+        }
+        return DENIED_SOURCE_KEYWORDS.stream().noneMatch(normalized::contains);
+    }
+
+    private SourceType classifySourceType(String domain, String sourceUrl, String title, String brand) {
+        String normalized = (firstNonBlank(domain, "") + " " + firstNonBlank(sourceUrl, "") + " " + firstNonBlank(title, ""))
+            .toLowerCase(Locale.ROOT);
+        if (DENIED_SOURCE_KEYWORDS.stream().anyMatch(normalized::contains)) {
+            return SourceType.DENIED;
+        }
+        if (LOW_TRUST_SOURCE_KEYWORDS.stream().anyMatch(normalized::contains)) {
+            return SourceType.LOW_TRUST_AGGREGATOR;
+        }
+        if (brand != null && !brand.isBlank() && normalized.contains(brand.toLowerCase(Locale.ROOT))) {
+            return SourceType.BRAND_SITE;
+        }
+        if (OFFICIAL_STORE_KEYWORDS.stream().anyMatch(normalized::contains)) {
+            return SourceType.OFFICIAL_STORE;
+        }
+        if (TRUSTED_RETAIL_DOMAINS.stream().anyMatch(normalized::contains)) {
+            return SourceType.TRUSTED_RETAIL;
+        }
+        return SourceType.TRUSTED_RETAIL;
+    }
+
+    private enum SourceType {
+        OFFICIAL_SITE(true),
+        BRAND_SITE(true),
+        OFFICIAL_STORE(true),
+        TRUSTED_RETAIL(true),
+        LOW_TRUST_AGGREGATOR(false),
+        DENIED(false);
+
+        private final boolean allowed;
+
+        SourceType(boolean allowed) {
+            this.allowed = allowed;
+        }
+
+        public boolean allowed() {
+            return allowed;
+        }
     }
 }

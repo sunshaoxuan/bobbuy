@@ -11,6 +11,7 @@ public class MobileProductResponse {
     private int reconciledQuantity;
     private Long reconciledTripId;
     private List<String> allocatedBusinessIds;
+    private AiOnboardingTrace onboardingTrace;
 
     public MobileProductResponse() {
     }
@@ -26,13 +27,15 @@ public class MobileProductResponse {
                                  String displayDescription,
                                  int reconciledQuantity,
                                  Long reconciledTripId,
-                                 List<String> allocatedBusinessIds) {
+                                 List<String> allocatedBusinessIds,
+                                 AiOnboardingTrace onboardingTrace) {
         this.product = product;
         this.displayName = displayName;
         this.displayDescription = displayDescription;
         this.reconciledQuantity = reconciledQuantity;
         this.reconciledTripId = reconciledTripId;
         this.allocatedBusinessIds = allocatedBusinessIds;
+        this.onboardingTrace = onboardingTrace;
     }
 
     public Product getProduct() {
@@ -81,5 +84,13 @@ public class MobileProductResponse {
 
     public void setAllocatedBusinessIds(List<String> allocatedBusinessIds) {
         this.allocatedBusinessIds = allocatedBusinessIds;
+    }
+
+    public AiOnboardingTrace getOnboardingTrace() {
+        return onboardingTrace;
+    }
+
+    public void setOnboardingTrace(AiOnboardingTrace onboardingTrace) {
+        this.onboardingTrace = onboardingTrace;
     }
 }
