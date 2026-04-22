@@ -83,8 +83,7 @@ npm run e2e:ai:win
 - 视觉模型：`bobbuy.ai.llm.edge.url` / `bobbuy.ai.llm.edge.model` 可访问（默认 `llava`）
 - 主模型：`bobbuy.ai.llm.main.url` / `bobbuy.ai.llm.main.model` 可访问（用于描述补全/兜底）
 - 对象存储：MinIO 可访问（`bobbuy.minio.*`，默认 `http://localhost:9000`）
-- 样本图片：`sample/IMG_1484.jpg`、`sample/IMG_1638.jpg`（相对仓库根目录）
-- 样本来源：上述图片默认已随仓库提交在 `sample/` 目录，无需额外下载
+- 样本图片：`sample/IMG_1484.jpg`、`sample/IMG_1638.jpg`（已随仓库提交，相对根目录）
 - 预置数据：启用 `dev` profile 或显式 `bobbuy.seed.enabled=true`，确保可进入 `/stock-master` 并完成确认后写入
 
 成功口径：

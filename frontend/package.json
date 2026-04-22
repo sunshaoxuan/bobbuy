@@ -14,7 +14,7 @@
     "e2e:prepare": "node -e \"const fs = require('node:fs'); const { execSync } = require('node:child_process'); const { chromium } = require('@playwright/test'); let executable = ''; try { executable = chromium.executablePath(); } catch (error) {} if (!executable || !fs.existsSync(executable)) { execSync('npx playwright install chromium', { stdio: 'inherit' }); }\"",
     "e2e": "npm run e2e:prepare && playwright test",
     "e2e:ai": "npm run e2e:prepare && RUN_AI_VISION_E2E=1 playwright test e2e/ai_onboarding.spec.ts",
-    "e2e:ai:win": "npm run e2e:prepare && set \"RUN_AI_VISION_E2E=1\" && playwright test e2e/ai_onboarding.spec.ts"
+    "e2e:ai:win": "npm run e2e:prepare && set RUN_AI_VISION_E2E=1 && playwright test e2e/ai_onboarding.spec.ts"
   },
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
