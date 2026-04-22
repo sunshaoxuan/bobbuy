@@ -115,14 +115,7 @@ public class AiAgentController {
 
         List<com.bobbuy.model.MediaGalleryItem> gallery = new java.util.ArrayList<>(suggestion.mediaGallery() != null ? suggestion.mediaGallery() : List.of());
         if (evidenceImageUrl != null) {
-          gallery.add(0, new com.bobbuy.model.MediaGalleryItem(
-              evidenceImageUrl,
-              com.bobbuy.model.MediaType.IMAGE,
-              new HashMap<>(),
-              true,
-              evidenceImageUrl,
-              "",
-              "USER_UPLOAD_EVIDENCE"));
+          gallery.add(0, createEvidenceImage(evidenceImageUrl));
         }
         patch.setMediaGallery(gallery);
 
@@ -152,14 +145,7 @@ public class AiAgentController {
 
         List<com.bobbuy.model.MediaGalleryItem> gallery = new java.util.ArrayList<>(suggestion.mediaGallery() != null ? suggestion.mediaGallery() : List.of());
         if (evidenceImageUrl != null) {
-          gallery.add(0, new com.bobbuy.model.MediaGalleryItem(
-              evidenceImageUrl,
-              com.bobbuy.model.MediaType.IMAGE,
-              new HashMap<>(),
-              true,
-              evidenceImageUrl,
-              "",
-              "USER_UPLOAD_EVIDENCE"));
+          gallery.add(0, createEvidenceImage(evidenceImageUrl));
         }
         newProduct.setMediaGallery(gallery);
 
@@ -205,5 +191,16 @@ public class AiAgentController {
           suggestion.itemNumber(), suggestion.existingProductFound(), ex);
       throw new ApiException(ErrorCode.INTERNAL_ERROR, "error.ai.product_persist_failed");
     }
+  }
+
+  private com.bobbuy.model.MediaGalleryItem createEvidenceImage(String evidenceImageUrl) {
+    return new com.bobbuy.model.MediaGalleryItem(
+        evidenceImageUrl,
+        com.bobbuy.model.MediaType.IMAGE,
+        new HashMap<>(),
+        true,
+        evidenceImageUrl,
+        "user-upload",
+        "USER_UPLOAD_EVIDENCE");
   }
 }

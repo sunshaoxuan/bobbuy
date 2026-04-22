@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import java.net.URI;
 
@@ -170,7 +169,7 @@ public class AiProductOnboardingService {
             // Build media gallery from search results
             List<MediaGalleryItem> gallery = new ArrayList<>();
             List<String> rejectedSourceDomains = new ArrayList<>();
-            LinkedHashSet<String> sourceDomains = new LinkedHashSet<>();
+            LinkedHashSet<String> collectedSourceDomains = new LinkedHashSet<>();
             String researchSnippet = "";
             for (WebSearchService.SearchResult result : searchResults) {
                 String sourceUrl = firstNonBlank(result.url(), "");
@@ -182,7 +181,7 @@ public class AiProductOnboardingService {
                     }
                     continue;
                 }
-                sourceDomains.add(sourceDomain);
+                collectedSourceDomains.add(sourceDomain);
                 if (researchSnippet.isBlank()) {
                     researchSnippet = firstNonBlank(result.snippet(), "");
                 }
@@ -234,7 +233,7 @@ public class AiProductOnboardingService {
             AiOnboardingTrace trace = new AiOnboardingTrace(
                 firstNonBlank(inputSampleId, ""),
                 recognitionSummary,
-                List.copyOf(sourceDomains),
+                List.copyOf(collectedSourceDomains),
                 resultDecision,
                 null
             );
@@ -257,7 +256,7 @@ public class AiProductOnboardingService {
                 base64Image,
                 firstNonBlank(inputSampleId, ""),
                 recognitionSummary,
-                List.copyOf(sourceDomains),
+                List.copyOf(collectedSourceDomains),
                 rejectedSourceDomains.stream().filter(domain -> domain != null && !domain.isBlank()).distinct().toList(),
                 SOURCE_POLICY_VERSION,
                 trace
@@ -495,7 +494,8 @@ public class AiProductOnboardingService {
         if (normalized.isBlank()) {
             return false;
         }
-        return DENIED_SOURCE_KEYWORDS.stream().noneMatch(normalized::contains);
+        return DENIED_SOURCE_KEYWORDS.stream().noneMatch(normalized::contains)
+            && LOW_TRUST_SOURCE_KEYWORDS.stream().noneMatch(normalized::contains);
     }
 
     private SourceType classifySourceType(String domain, String sourceUrl, String title, String brand) {
@@ -507,7 +507,9 @@ public class AiProductOnboardingService {
         if (LOW_TRUST_SOURCE_KEYWORDS.stream().anyMatch(normalized::contains)) {
             return SourceType.LOW_TRUST_AGGREGATOR;
         }
-        if (brand != null && !brand.isBlank() && normalized.contains(brand.toLowerCase(Locale.ROOT))) {
+        String normalizedBrandToken = normalizeBrandToken(brand);
+        if (!normalizedBrandToken.isBlank()
+            && firstNonBlank(domain, "").toLowerCase(Locale.ROOT).contains(normalizedBrandToken)) {
             return SourceType.BRAND_SITE;
         }
         if (OFFICIAL_STORE_KEYWORDS.stream().anyMatch(normalized::contains)) {
@@ -516,7 +518,15 @@ public class AiProductOnboardingService {
         if (TRUSTED_RETAIL_DOMAINS.stream().anyMatch(normalized::contains)) {
             return SourceType.TRUSTED_RETAIL;
         }
-        return SourceType.TRUSTED_RETAIL;
+        return SourceType.LOW_TRUST_AGGREGATOR;
+    }
+
+    private String normalizeBrandToken(String brand) {
+        if (brand == null || brand.isBlank()) {
+            return "";
+        }
+        String token = brand.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N}]", "");
+        return token.length() >= 4 ? token : "";
     }
 
     private enum SourceType {

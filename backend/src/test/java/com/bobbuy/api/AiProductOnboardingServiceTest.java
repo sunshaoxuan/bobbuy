@@ -67,9 +67,9 @@ public class AiProductOnboardingServiceTest {
     when(webSearchService.search(contains("Matcha KitKat")))
         .thenReturn(List.of(new WebSearchService.SearchResult(
             "Matcha KitKat Original",
-            "http://example.com",
+            "https://www.costco.com/matcha-kitkat",
             "Deep research snippet description",
-            List.of("http://example.com/hd.jpg")
+            List.of("https://images.costco-static.com/matcha/hd.jpg")
         )));
 
     Optional<AiOnboardingSuggestion> result = onboardingService.onboardFromPhoto("fake-base64");
@@ -81,12 +81,12 @@ public class AiProductOnboardingServiceTest {
     assertEquals(15.5, suggestion.price());
     assertEquals("Deep research snippet description", suggestion.description());
     assertEquals(1, suggestion.mediaGallery().size());
-    assertEquals("http://example.com/hd.jpg", suggestion.mediaGallery().get(0).getUrl());
-    assertEquals("http://example.com", suggestion.mediaGallery().get(0).getSourceUrl());
-    assertEquals("example.com", suggestion.mediaGallery().get(0).getSourceDomain());
+    assertEquals("https://images.costco-static.com/matcha/hd.jpg", suggestion.mediaGallery().get(0).getUrl());
+    assertEquals("https://www.costco.com/matcha-kitkat", suggestion.mediaGallery().get(0).getSourceUrl());
+    assertEquals("www.costco.com", suggestion.mediaGallery().get(0).getSourceDomain());
     assertNotNull(suggestion.trace());
     assertTrue(suggestion.recognitionSummary().contains("name=Matcha KitKat"));
-    assertTrue(suggestion.sourceDomains().contains("example.com"));
+    assertTrue(suggestion.sourceDomains().contains("www.costco.com"));
   }
 
   @Test
