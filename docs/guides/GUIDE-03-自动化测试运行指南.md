@@ -74,7 +74,7 @@ npm run e2e:ai
 Windows CMD:
 ```bat
 cd frontend
-set RUN_AI_VISION_E2E=1 && npx playwright test e2e/ai_onboarding.spec.ts
+npm run e2e:ai:win
 ```
 
 最小环境要求：
