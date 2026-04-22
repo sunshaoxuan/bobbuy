@@ -68,7 +68,7 @@ docker-compose -p bobbuy up -d
 - [ ] `frontend npm test`
 - [ ] `frontend npm run e2e`
 - [ ] `backend ./mvnw test`
-- [ ] （可选门控）`RUN_AI_VISION_E2E=1` 后执行 `frontend/e2e/ai_onboarding.spec.ts`
+- [ ] （可选门控）`frontend npm run e2e:ai`（等价于 `RUN_AI_VISION_E2E=1` 的 AI 专用回归）
 - [ ] 若 CodeQL 超时，已在发布说明归档并标注缓解方案
 
 ---

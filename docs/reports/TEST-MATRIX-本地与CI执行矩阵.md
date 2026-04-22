@@ -8,6 +8,7 @@
 
 ## 环境门控
 - `frontend/e2e/ai_onboarding.spec.ts` 依赖真实 AI 视觉链路，默认由 `RUN_AI_VISION_E2E` 控制，不纳入常规 CI。
+- AI 专用回归入口：`cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai`（仅专用环境执行）。
 - 聊天与商城发布页面级回归默认走 Playwright 路由桩，避免依赖外部模型与对象存储。
 - AI 视觉受控验收建议增加稳定标记断言：`ai-onboarding-stage`、`ai-onboarding-result-subtitle[data-ai-status="SUCCESS"]`、`ai-existing-product-alert`。
 

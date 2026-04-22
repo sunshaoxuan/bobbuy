@@ -29,9 +29,10 @@
 | 页面 | Phone 390px | Tablet 768px | PC 1280px |
 | :-- | :-- | :-- | :-- |
 | ClientHomeV2 (`/`) / ClientOrders / ClientBilling / ClientChat | ✅ 已纳入 `responsive_client.spec.ts`，通过 | ✅ 已纳入 `responsive_client.spec.ts`，通过 | ✅ 已纳入 `responsive_client.spec.ts`，通过 |
-| Dashboard / Trips / Users / OrderDesk / ProcurementDashboard / PickingMaster / Orders(back-office) / StockMaster / ZenAuditView | ✅ 已纳入 `responsive_backoffice.spec.ts`，通过 | ✅ 已纳入 `responsive_backoffice.spec.ts`，通过 | ✅ 已纳入 `responsive_backoffice.spec.ts`，通过 |
+| Dashboard / Trips / Users / OrderDesk / Orders(back-office) | ✅ 已纳入 `responsive_backoffice.spec.ts`，通过 | ✅ 已纳入 `responsive_backoffice.spec.ts`，通过 | ✅ 已纳入 `responsive_backoffice.spec.ts`，通过 |
+| ProcurementDashboard / PickingMaster / StockMaster / ZenAuditView | ✅ 已纳入 `responsive_backoffice_ops.spec.ts`，通过 | ✅ 已纳入 `responsive_backoffice_ops.spec.ts`，通过 | ✅ 已纳入 `responsive_backoffice_ops.spec.ts`，通过 |
 
-> V21 本轮结论：后台页面响应式矩阵已完整覆盖（含 `Orders(back-office)`、`StockMaster`、`ZenAuditView`）；断言统一为“主标题/核心区块可见 + 首屏关键操作可达 + 无整页横向滚动”；常规本地 E2E mock 基础设施已统一，复跑 `frontend npm run e2e` 未出现 Vite proxy `ECONNREFUSED` 噪声。
+> V22 本轮结论：后台页面响应式矩阵已按核心/运营拆分并完整覆盖；断言统一为“主标题/核心区块可见 + 首屏关键操作可达 + 无整页横向滚动”；常规本地 E2E 统一复用共享 mock（含 `/api/metrics`、`/api/trips`、`/api/orders`），复跑 `frontend npm run e2e` 未出现 Vite proxy `ECONNREFUSED` 噪声。
 
 ## 4. AI 调用链完备性矩阵
 
@@ -48,10 +49,10 @@
 1. 本轮自动化实测：
    - `frontend npm run build` ✅
    - `frontend npm test` ✅
-   - `frontend npm run e2e` ✅（43 passed / 2 skipped）
+   - `frontend npm run e2e` ✅（43 passed / 2 skipped，终端未出现 proxy `ECONNREFUSED`）
    - `backend ./mvnw test` ✅
 2. 客户账单链路已打通：`/client/billing` + `GET /api/procurement/{tripId}/ledger`，并在 CUSTOMER 下做数据收敛。
 3. 后端显式角色门禁已自动化覆盖：CUSTOMER 对 `/api/procurement/**`（非白名单）、`/api/financial/audit/**`、`/api/users/**`、`/api/orders/**` 的允许/拒绝矩阵可回归；其中 `GET /api/orders/{id}` 已与列表统一隔离策略（CUSTOMER 仅可读本人，越权返回 404）。
-4. `ai_onboarding.spec.ts` 仍为条件化跳过（依赖专用 AI/文件环境），当前不计入常规本地门禁。
+4. `ai_onboarding.spec.ts` 仍为条件化回归（不并入常规门禁），已提供专用入口：`cd frontend && npm run e2e:ai`。
 5. 发布前剩余风险：
-   - `ai_onboarding.spec.ts` 仍为条件化跳过（依赖专用 AI/文件环境），如需纳入常规回归需补充可复现的专用环境。
+   - `ai_onboarding.spec.ts` 依赖专用 AI/文件环境（`RUN_AI_VISION_E2E=1`、`SPRING_PROFILES_ACTIVE=dev,ai-hermes`、可访问 LLM/MinIO、样本图片与 seed 数据），当前仍不纳入常规本地门禁。
