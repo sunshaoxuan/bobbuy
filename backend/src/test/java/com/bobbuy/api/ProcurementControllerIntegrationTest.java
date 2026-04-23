@@ -160,7 +160,8 @@ class ProcurementControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.meta.total").value(2))
         .andExpect(jsonPath("$.data[0].businessId").value("LEDGER-FROM"))
-        .andExpect(jsonPath("$.data[0].totalReceivable").value(10.0));
+        .andExpect(jsonPath("$.data[0].totalReceivable").value(10.0))
+        .andExpect(jsonPath("$.data[0].amountDueThisTrip").value(10.0));
 
     mockMvc.perform(asAgent(get("/api/procurement/{tripId}/audit-logs", trip.getId())))
         .andExpect(status().isOk())
@@ -216,6 +217,7 @@ class ProcurementControllerIntegrationTest {
         .andExpect(jsonPath("$.meta.total").value(1))
         .andExpect(jsonPath("$.data[0].processingStatus").value("READY_FOR_REVIEW"))
         .andExpect(jsonPath("$.data[0].reconciliationResult.recognitionMode").value("RULE_FALLBACK"))
+        .andExpect(jsonPath("$.data[0].rawRecognitionResult.reviewStatus").value("PENDING_REVIEW"))
         .andExpect(jsonPath("$.data[0].reconciliationResult.receiptItems").isArray());
 
     MvcResult listResult = mockMvc.perform(asAgent(get("/api/procurement/{tripId}/receipts", trip.getId())))
@@ -231,7 +233,88 @@ class ProcurementControllerIntegrationTest {
                 """)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.processingStatus").value("RECONCILED"))
-        .andExpect(jsonPath("$.data.reconciliationResult.selfUseItems[0].name").value("自购饮料"));
+        .andExpect(jsonPath("$.data.reconciliationResult.selfUseItems[0].name").value("自购饮料"))
+        .andExpect(jsonPath("$.data.reconciliationResult.reviewStatus").value("REVIEWED"))
+        .andExpect(jsonPath("$.data.manualReconciliationResult.reviewedBy").value(AGENT_USER));
+
+    mockMvc.perform(asAgent(post("/api/procurement/{tripId}/receipts/{receiptId}/re-recognize", trip.getId(), receiptId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.processingStatus").value("READY_FOR_REVIEW"))
+        .andExpect(jsonPath("$.data.rawRecognitionResult.reviewStatus").value("PENDING_REVIEW"));
+  }
+
+  @Test
+  void offlinePaymentEndpointsReturnTripAndCustomerBalances() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader order = new OrderHeader("PAY-100", 1001L, trip.getId());
+    order.addLine(new OrderLine("prd-1000", "抹茶セット", null, 2, 10.0));
+    store.upsertOrder(order);
+
+    mockMvc.perform(asAgent(post("/api/procurement/{tripId}/payments", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"businessId":"PAY-100","amount":12.5,"paymentMethod":"CASH","note":"柜台现金"}
+                """)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.businessId").value("PAY-100"))
+        .andExpect(jsonPath("$.data.amount").value(12.5));
+
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/ledger", trip.getId())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].businessId").value("PAY-100"))
+        .andExpect(jsonPath("$.data[0].amountReceivedThisTrip").value(12.5))
+        .andExpect(jsonPath("$.data[0].amountPendingThisTrip").value(7.5))
+        .andExpect(jsonPath("$.data[0].paymentRecords[0].paymentMethod").value("CASH"));
+
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/ledger/{businessId}/payments", trip.getId(), "PAY-100")))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(1))
+        .andExpect(jsonPath("$.data[0].note").value("柜台现金"));
+
+    mockMvc.perform(asAgent(get("/api/procurement/customers/{customerId}/balance", 1001L)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.customerId").value(1001L))
+        .andExpect(jsonPath("$.data.currentBalance").value(-7.5));
+
+    mockMvc.perform(asAgent(get("/api/procurement/customers/{customerId}/ledger-history", 1001L)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(1))
+        .andExpect(jsonPath("$.data[0].businessId").value("PAY-100"));
+  }
+
+  @Test
+  void settledTripRejectsOfflinePaymentAndReceiptReviewMutation() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader order = new OrderHeader("PAY-SETTLED", 1001L, trip.getId());
+    order.addLine(new OrderLine("prd-1000", "抹茶セット", null, 1, 10.0));
+    store.upsertOrder(order);
+
+    MvcResult uploadResult = mockMvc.perform(asAgent(post("/api/procurement/{tripId}/receipts", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"receipts":[{"fileName":"receipt-locked.jpg","imageBase64":"data:image/jpeg;base64,aGVsbG8="}]}
+                """)))
+        .andExpect(status().isOk())
+        .andReturn();
+    long receiptId = objectMapper.readTree(uploadResult.getResponse().getContentAsString()).path("data").get(0).path("id").asLong();
+    store.updateTripStatus(trip.getId(), TripStatus.SETTLED);
+
+    mockMvc.perform(asAgent(post("/api/procurement/{tripId}/payments", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"businessId":"PAY-SETTLED","amount":10,"paymentMethod":"BANK_TRANSFER"}
+                """)))
+        .andExpect(status().isBadRequest());
+
+    mockMvc.perform(asAgent(patch("/api/procurement/{tripId}/receipts/{receiptId}", trip.getId(), receiptId)
+            .contentType("application/json")
+            .content("""
+                {"processingStatus":"RECONCILED","reconciliationResult":{"receiptItems":[],"matchedOrderLines":[],"unmatchedReceiptItems":[],"missingOrderedItems":[],"selfUseItems":[]}}
+                """)))
+        .andExpect(status().isBadRequest());
+
+    mockMvc.perform(asAgent(post("/api/procurement/{tripId}/receipts/{receiptId}/re-recognize", trip.getId(), receiptId)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test

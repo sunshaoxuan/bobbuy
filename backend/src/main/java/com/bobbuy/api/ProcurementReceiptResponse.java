@@ -13,6 +13,8 @@ public class ProcurementReceiptResponse {
   private final LocalDateTime uploadedAt;
   private final LocalDateTime updatedAt;
   private final Map<String, Object> reconciliationResult;
+  private final Map<String, Object> rawRecognitionResult;
+  private final Map<String, Object> manualReconciliationResult;
 
   public ProcurementReceiptResponse(Long id,
                                     Long tripId,
@@ -22,7 +24,9 @@ public class ProcurementReceiptResponse {
                                     String processingStatus,
                                     LocalDateTime uploadedAt,
                                     LocalDateTime updatedAt,
-                                    Map<String, Object> reconciliationResult) {
+                                    Map<String, Object> reconciliationResult,
+                                    Map<String, Object> rawRecognitionResult,
+                                    Map<String, Object> manualReconciliationResult) {
     this.id = id;
     this.tripId = tripId;
     this.fileName = fileName;
@@ -32,6 +36,8 @@ public class ProcurementReceiptResponse {
     this.uploadedAt = uploadedAt;
     this.updatedAt = updatedAt;
     this.reconciliationResult = reconciliationResult;
+    this.rawRecognitionResult = rawRecognitionResult;
+    this.manualReconciliationResult = manualReconciliationResult;
   }
 
   public Long getId() {
@@ -68,5 +74,13 @@ public class ProcurementReceiptResponse {
 
   public Map<String, Object> getReconciliationResult() {
     return reconciliationResult;
+  }
+
+  public Map<String, Object> getRawRecognitionResult() {
+    return rawRecognitionResult;
+  }
+
+  public Map<String, Object> getManualReconciliationResult() {
+    return manualReconciliationResult;
   }
 }

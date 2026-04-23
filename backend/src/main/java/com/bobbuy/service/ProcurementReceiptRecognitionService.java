@@ -27,6 +27,7 @@ public class ProcurementReceiptRecognitionService {
   private static final Pattern JSON_BLOCK_PATTERN = Pattern.compile("```(?:json)?\\s*(\\{.*}|\\[.*])\\s*```", Pattern.DOTALL);
   private static final String AI_MODE = "AI";
   private static final String FALLBACK_MODE = "RULE_FALLBACK";
+  private static final String REVIEW_STATUS_PENDING = "PENDING_REVIEW";
   // Keep name overlap as the primary signal while still letting price help disambiguate very similar receipt lines.
   private static final double MATCH_SCORE_THRESHOLD = 0.45d;
   private static final double TOKEN_SCORE_WEIGHT = 0.8d;
@@ -190,12 +191,16 @@ public class ProcurementReceiptRecognitionService {
     result.put("receiptDate", extraction.receiptDate());
     result.put("currency", extraction.currency());
     result.put("summary", extraction.summary());
-    result.put("rawAiResponse", extraction.rawAiResponse());
-    result.put("receiptItems", receiptItems);
-    result.put("matchedOrderLines", matchedOrderLines);
-    result.put("unmatchedReceiptItems", unmatchedReceiptItems);
-    result.put("missingOrderedItems", missingOrderedItems);
-    result.put("selfUseItems", new ArrayList<>());
+      result.put("rawAiResponse", extraction.rawAiResponse());
+      result.put("receiptItems", receiptItems);
+      result.put("matchedOrderLines", matchedOrderLines);
+      result.put("unmatchedReceiptItems", unmatchedReceiptItems);
+      result.put("missingOrderedItems", missingOrderedItems);
+      result.put("selfUseItems", new ArrayList<>());
+      result.put("confidence", 0.86d);
+      result.put("reviewStatus", REVIEW_STATUS_PENDING);
+      result.put("reviewedBy", null);
+      result.put("reviewedAt", null);
     return result;
   }
 
@@ -239,7 +244,11 @@ public class ProcurementReceiptRecognitionService {
         "matchedOrderLines", matchedOrderLines,
         "unmatchedReceiptItems", new ArrayList<>(),
         "missingOrderedItems", missingOrderedItems,
-        "selfUseItems", new ArrayList<>()
+        "selfUseItems", new ArrayList<>(),
+        "confidence", 0.42d,
+        "reviewStatus", REVIEW_STATUS_PENDING,
+        "reviewedBy", "",
+        "reviewedAt", ""
     ));
   }
 

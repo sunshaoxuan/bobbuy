@@ -11,10 +11,33 @@ class ModelTest {
     @Test
     void userTest() {
         User user = new User(1L, "Name", Role.CUSTOMER, 4.5);
+        user.setPhone("+81-9012345678");
+        user.setEmail("user@bobbuy.test");
+        user.setNote("Test note");
+        User.UserAddress address = new User.UserAddress();
+        address.setContactName("Name");
+        address.setPhone("+81-9012345678");
+        address.setCountryRegion("Japan");
+        address.setCity("Tokyo");
+        address.setAddressLine("Shinjuku 1-2-3");
+        address.setPostalCode("160-0022");
+        address.setLatitude(35.0);
+        address.setLongitude(139.0);
+        user.setDefaultAddress(address);
+        User.UserSocialAccount socialAccount = new User.UserSocialAccount();
+        socialAccount.setPlatform("LINE");
+        socialAccount.setHandle("@name");
+        socialAccount.setDisplayName("Name");
+        socialAccount.setVerified(false);
+        socialAccount.setNote("Registration only");
+        user.setSocialAccounts(List.of(socialAccount));
         assertThat(user.getId()).isEqualTo(1L);
         assertThat(user.getName()).isEqualTo("Name");
         assertThat(user.getRole()).isEqualTo(Role.CUSTOMER);
         assertThat(user.getRating()).isEqualTo(4.5);
+        assertThat(user.getPhone()).isEqualTo("+81-9012345678");
+        assertThat(user.getDefaultAddress().getCity()).isEqualTo("Tokyo");
+        assertThat(user.getSocialAccounts()).hasSize(1);
 
         user.setName("New");
         user.setRole(Role.AGENT);

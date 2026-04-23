@@ -129,7 +129,7 @@ public class ProcurementController {
 
   @GetMapping("/{tripId}/ledger")
   public ResponseEntity<ApiResponse<List<CustomerBalanceLedgerResponse>>> customerLedger(@PathVariable Long tripId,
-                                                                                         Authentication authentication) {
+                                                                                          Authentication authentication) {
     List<CustomerBalanceLedgerResponse> entries = procurementHudService.getCustomerBalanceLedger(
         tripId,
         authentication);
@@ -143,6 +143,31 @@ public class ProcurementController {
                                                                                           Authentication authentication) {
     return ResponseEntity.ok(ApiResponse.success(
         procurementHudService.confirmCustomerLedger(tripId, businessId, request, authentication)));
+  }
+
+  @PostMapping("/{tripId}/payments")
+  public ResponseEntity<ApiResponse<CustomerPaymentRecordResponse>> recordOfflinePayment(@PathVariable Long tripId,
+                                                                                         @RequestBody CustomerPaymentRecordRequest request,
+                                                                                         Authentication authentication) {
+    return ResponseEntity.ok(ApiResponse.success(procurementHudService.recordOfflinePayment(tripId, request, authentication)));
+  }
+
+  @GetMapping("/{tripId}/ledger/{businessId}/payments")
+  public ResponseEntity<ApiResponse<List<CustomerPaymentRecordResponse>>> tripCustomerPayments(@PathVariable Long tripId,
+                                                                                               @PathVariable String businessId) {
+    List<CustomerPaymentRecordResponse> items = procurementHudService.getTripCustomerPayments(tripId, businessId);
+    return ResponseEntity.ok(ApiResponse.success(items, new ApiMeta(items.size())));
+  }
+
+  @GetMapping("/customers/{customerId}/balance")
+  public ResponseEntity<ApiResponse<CustomerBalanceSummaryResponse>> customerBalance(@PathVariable Long customerId) {
+    return ResponseEntity.ok(ApiResponse.success(procurementHudService.getCustomerBalanceSummary(customerId)));
+  }
+
+  @GetMapping("/customers/{customerId}/ledger-history")
+  public ResponseEntity<ApiResponse<List<CustomerPaymentRecordResponse>>> customerLedgerHistory(@PathVariable Long customerId) {
+    List<CustomerPaymentRecordResponse> items = procurementHudService.getCustomerLedgerHistory(customerId);
+    return ResponseEntity.ok(ApiResponse.success(items, new ApiMeta(items.size())));
   }
 
   @GetMapping("/{tripId}/audit-logs")
@@ -188,7 +213,15 @@ public class ProcurementController {
                                                                                                        @RequestBody ProcurementReceiptSaveRequest request,
                                                                                                        Authentication authentication) {
     return ResponseEntity.ok(ApiResponse.success(
-        procurementHudService.saveProcurementReceiptReconciliation(tripId, receiptId, request, authentication)));
+            procurementHudService.saveProcurementReceiptReconciliation(tripId, receiptId, request, authentication)));
+  }
+
+  @PostMapping("/{tripId}/receipts/{receiptId}/re-recognize")
+  public ResponseEntity<ApiResponse<ProcurementReceiptResponse>> rerecognizeProcurementReceipt(@PathVariable Long tripId,
+                                                                                               @PathVariable Long receiptId,
+                                                                                               Authentication authentication) {
+    return ResponseEntity.ok(ApiResponse.success(
+        procurementHudService.rerecognizeProcurementReceipt(tripId, receiptId, authentication)));
   }
 
   @GetMapping("/wallets/{partnerId}")

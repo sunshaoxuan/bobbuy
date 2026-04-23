@@ -3,6 +3,9 @@ package com.bobbuy.service;
 import com.bobbuy.api.ProcurementDeficitItemResponse;
 import com.bobbuy.api.ProcurementHudResponse;
 import com.bobbuy.api.CustomerBalanceLedgerResponse;
+import com.bobbuy.api.CustomerBalanceSummaryResponse;
+import com.bobbuy.api.CustomerPaymentRecordRequest;
+import com.bobbuy.api.CustomerPaymentRecordResponse;
 import com.bobbuy.api.FinancialAuditLogResponse;
 import com.bobbuy.api.LogisticsTrackingRequest;
 import com.bobbuy.api.LogisticsTrackingResponse;
@@ -24,6 +27,7 @@ import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.OrderStatus;
 import com.bobbuy.model.PaymentStatus;
+import com.bobbuy.model.CustomerPaymentLedger;
 import com.bobbuy.model.ProcurementReceipt;
 import com.bobbuy.model.Product;
 import com.bobbuy.model.Trip;
@@ -34,6 +38,7 @@ import com.bobbuy.model.TripProfitShareConfig;
 import com.bobbuy.model.LogisticsChannel;
 import com.bobbuy.model.LogisticsProvider;
 import com.bobbuy.model.LogisticsStatus;
+import com.bobbuy.repository.CustomerPaymentLedgerRepository;
 import com.bobbuy.repository.OrderHeaderRepository;
 import com.bobbuy.repository.ProcurementReceiptRepository;
 import com.bobbuy.repository.ProductRepository;
@@ -81,6 +86,7 @@ public class ProcurementHudService {
   private final ProductRepository productRepository;
   private final TripExpenseRepository tripExpenseRepository;
   private final ProcurementReceiptRepository procurementReceiptRepository;
+  private final CustomerPaymentLedgerRepository customerPaymentLedgerRepository;
   private final ProcurementReceiptRecognitionService procurementReceiptRecognitionService;
   private final TripProfitShareConfigRepository tripProfitShareConfigRepository;
   private final TripLogisticsTrackingRepository tripLogisticsTrackingRepository;
@@ -95,9 +101,10 @@ public class ProcurementHudService {
   public ProcurementHudService(TripRepository tripRepository,
                                OrderHeaderRepository orderHeaderRepository,
                                ProductRepository productRepository,
-                               TripExpenseRepository tripExpenseRepository,
-                               ProcurementReceiptRepository procurementReceiptRepository,
-                               ProcurementReceiptRecognitionService procurementReceiptRecognitionService,
+                                TripExpenseRepository tripExpenseRepository,
+                                ProcurementReceiptRepository procurementReceiptRepository,
+                                CustomerPaymentLedgerRepository customerPaymentLedgerRepository,
+                                ProcurementReceiptRecognitionService procurementReceiptRecognitionService,
                                TripProfitShareConfigRepository tripProfitShareConfigRepository,
                                TripLogisticsTrackingRepository tripLogisticsTrackingRepository,
                                FinancialAuditTrailService financialAuditTrailService,
@@ -112,6 +119,7 @@ public class ProcurementHudService {
     this.productRepository = productRepository;
     this.tripExpenseRepository = tripExpenseRepository;
     this.procurementReceiptRepository = procurementReceiptRepository;
+    this.customerPaymentLedgerRepository = customerPaymentLedgerRepository;
     this.procurementReceiptRecognitionService = procurementReceiptRecognitionService;
     this.tripProfitShareConfigRepository = tripProfitShareConfigRepository;
     this.tripLogisticsTrackingRepository = tripLogisticsTrackingRepository;
@@ -563,40 +571,7 @@ public class ProcurementHudService {
     Trip trip = tripRepository.findById(tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
     List<CustomerBalanceLedgerResponse> entries = orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
-        .map(order -> {
-          List<CustomerBalanceLedgerResponse.LedgerOrderLineResponse> orderLines = safeLines(order).stream()
-              .map(line -> new CustomerBalanceLedgerResponse.LedgerOrderLineResponse(
-                  line.getSkuId(),
-                  line.getItemName(),
-                  Math.max(line.getQuantity(), 0),
-                  round2(line.getUnitPrice()),
-                  Math.max(line.getPurchasedQuantity(), 0),
-                  buildDifferenceNote(line)))
-              .toList();
-          double totalReceivable = safeLines(order).stream()
-              .mapToDouble(line -> {
-                int settledQty = Math.max(line.getPurchasedQuantity(), 0) > 0 ? line.getPurchasedQuantity() : line.getQuantity();
-                return settledQty * line.getUnitPrice();
-              })
-              .sum();
-          double paidDeposit = order.getPaymentStatus() == PaymentStatus.PAID ? totalReceivable : 0D;
-          return new CustomerBalanceLedgerResponse(
-              tripId,
-              order.getBusinessId(),
-              order.getCustomerId(),
-              round2(totalReceivable),
-              round2(paidDeposit),
-              round2(Math.max(totalReceivable - paidDeposit, 0D)),
-              resolveSettlementStatus(order),
-              trip.isSettlementFrozen(),
-              trip.getSettlementFreezeStage(),
-              trip.getSettlementFreezeReason(),
-              order.getReceiptConfirmedAt(),
-              order.getReceiptConfirmedBy(),
-              order.getBillingConfirmedAt(),
-              order.getBillingConfirmedBy(),
-              orderLines);
-        })
+        .map(order -> buildLedgerEntry(trip, order))
         .toList();
     if (customerIdentityResolver.isCustomer(authentication)) {
       return filterLedgerForCustomer(entries, authentication);
@@ -755,7 +730,9 @@ public class ProcurementHudService {
           RECEIPT_STATUS_READY,
           now,
           now,
+          payload.getImageBase64(),
           procurementReceiptRecognitionService.recognize(payload.getImageBase64(), payload.getFileName(), orders));
+      receipt.setRawRecognitionResult(copyMap(receipt.getReconciliationResult()));
       ProcurementReceipt saved = procurementReceiptRepository.save(receipt);
       financialAuditTrailService.logProcurementReceiptUpload(
           tripId,
@@ -772,15 +749,30 @@ public class ProcurementHudService {
                                                                          Long receiptId,
                                                                          ProcurementReceiptSaveRequest request,
                                                                          Authentication authentication) {
+    ensureTripNotSettled(tripId);
     ProcurementReceipt receipt = procurementReceiptRepository.findByIdAndTripId(receiptId, tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.procurement.receipt.not_found"));
     if (request == null || request.getReconciliationResult() == null) {
       throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.receipt.reconcile.invalid");
     }
+    Map<String, Object> rawRecognition = receipt.getRawRecognitionResult().isEmpty()
+        ? copyMap(receipt.getReconciliationResult())
+        : copyMap(receipt.getRawRecognitionResult());
+    Map<String, Object> manualResult = copyMap(request.getReconciliationResult());
+    String operatorName = resolveOperatorName(authentication);
+    LocalDateTime reviewedAt = LocalDateTime.now();
+    manualResult.putIfAbsent("confidence", rawRecognition.get("confidence"));
+    manualResult.put("reviewStatus", "REVIEWED");
+    manualResult.put("reviewedBy", operatorName);
+    manualResult.put("reviewedAt", reviewedAt);
     Map<String, Object> original = new LinkedHashMap<>();
     original.put("processingStatus", receipt.getProcessingStatus());
     original.put("reconciliationResult", receipt.getReconciliationResult());
-    receipt.setReconciliationResult(request.getReconciliationResult());
+    original.put("rawRecognitionResult", receipt.getRawRecognitionResult());
+    original.put("manualReconciliationResult", receipt.getManualReconciliationResult());
+    receipt.setRawRecognitionResult(rawRecognition);
+    receipt.setManualReconciliationResult(manualResult);
+    receipt.setReconciliationResult(manualResult);
     receipt.setProcessingStatus(request.getProcessingStatus() == null || request.getProcessingStatus().isBlank()
         ? RECEIPT_STATUS_RECONCILED
         : request.getProcessingStatus().trim());
@@ -788,13 +780,101 @@ public class ProcurementHudService {
     ProcurementReceipt saved = procurementReceiptRepository.save(receipt);
     financialAuditTrailService.logProcurementReceiptReconciliation(
         tripId,
-        resolveOperatorName(authentication),
+        operatorName,
         serializeAuditPayload(original),
         serializeAuditPayload(Map.of(
             "processingStatus", saved.getProcessingStatus(),
             "reconciliationResult", saved.getReconciliationResult(),
+            "rawRecognitionResult", saved.getRawRecognitionResult(),
+            "manualReconciliationResult", saved.getManualReconciliationResult(),
+            "diff", diffMaps(saved.getRawRecognitionResult(), saved.getManualReconciliationResult()),
             "receiptId", saved.getId())));
     return toProcurementReceiptResponse(saved);
+  }
+
+  @Transactional
+  public ProcurementReceiptResponse rerecognizeProcurementReceipt(Long tripId,
+                                                                  Long receiptId,
+                                                                  Authentication authentication) {
+    ensureTripNotSettled(tripId);
+    ProcurementReceipt receipt = procurementReceiptRepository.findByIdAndTripId(receiptId, tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.procurement.receipt.not_found"));
+    if (receipt.getSourceImageBase64() == null || receipt.getSourceImageBase64().isBlank()) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.receipt.rerecognize.invalid");
+    }
+    List<OrderHeader> orders = orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId);
+    Map<String, Object> previousResult = copyMap(receipt.getReconciliationResult());
+    Map<String, Object> recognitionResult = procurementReceiptRecognitionService.recognize(
+        receipt.getSourceImageBase64(),
+        receipt.getFileName(),
+        orders);
+    receipt.setRawRecognitionResult(copyMap(recognitionResult));
+    receipt.setManualReconciliationResult(new LinkedHashMap<>());
+    receipt.setReconciliationResult(recognitionResult);
+    receipt.setProcessingStatus(RECEIPT_STATUS_READY);
+    receipt.setUpdatedAt(LocalDateTime.now());
+    ProcurementReceipt saved = procurementReceiptRepository.save(receipt);
+    financialAuditTrailService.logProcurementReceiptRerecognized(
+        tripId,
+        resolveOperatorName(authentication),
+        serializeAuditPayload(Map.of("receiptId", receiptId, "reconciliationResult", previousResult)),
+        serializeAuditPayload(Map.of("receiptId", receiptId, "reconciliationResult", recognitionResult)));
+    return toProcurementReceiptResponse(saved);
+  }
+
+  @Transactional
+  public CustomerPaymentRecordResponse recordOfflinePayment(Long tripId,
+                                                            CustomerPaymentRecordRequest request,
+                                                            Authentication authentication) {
+    Trip trip = tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    if (trip.getStatus() == TripStatus.SETTLED) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.payment.settled");
+    }
+    if (request == null || request.getBusinessId() == null || request.getBusinessId().isBlank()
+        || request.getPaymentMethod() == null || request.getPaymentMethod().isBlank()
+        || request.getAmount() <= 0D) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.payment.invalid");
+    }
+    OrderHeader order = getTripOrderByBusinessId(tripId, request.getBusinessId());
+    LocalDateTime now = LocalDateTime.now();
+    CustomerPaymentLedger saved = customerPaymentLedgerRepository.save(new CustomerPaymentLedger(
+        tripId,
+        order.getBusinessId(),
+        order.getCustomerId(),
+        round2(request.getAmount()),
+        request.getPaymentMethod().trim(),
+        request.getNote(),
+        now,
+        resolveOperatorName(authentication)));
+    financialAuditTrailService.logCustomerOfflinePayment(
+        tripId,
+        saved.getOperator(),
+        serializeAuditPayload(Map.of("status", "NONE")),
+        serializeAuditPayload(buildPaymentAuditPayload(saved)));
+    return toPaymentRecordResponse(saved);
+  }
+
+  @Transactional(readOnly = true)
+  public CustomerBalanceSummaryResponse getCustomerBalanceSummary(Long customerId) {
+    double balance = calculateCustomerBalanceBeforeTrip(customerId, null);
+    return new CustomerBalanceSummaryResponse(customerId, balance);
+  }
+
+  @Transactional(readOnly = true)
+  public List<CustomerPaymentRecordResponse> getCustomerLedgerHistory(Long customerId) {
+    return customerPaymentLedgerRepository.findByCustomerIdOrderByCreatedAtAscIdAsc(customerId).stream()
+        .map(this::toPaymentRecordResponse)
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<CustomerPaymentRecordResponse> getTripCustomerPayments(Long tripId, String businessId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    return customerPaymentLedgerRepository.findByTripIdAndBusinessIdOrderByCreatedAtAscIdAsc(tripId, businessId).stream()
+        .map(this::toPaymentRecordResponse)
+        .toList();
   }
 
   @Transactional(readOnly = true)
@@ -846,14 +926,25 @@ public class ProcurementHudService {
           return settledQty * line.getUnitPrice();
         })
         .sum();
-    double paidDeposit = order.getPaymentStatus() == PaymentStatus.PAID ? totalReceivable : 0D;
+    List<CustomerPaymentRecordResponse> paymentRecords = customerPaymentLedgerRepository
+        .findByTripIdAndBusinessIdOrderByCreatedAtAscIdAsc(trip.getId(), order.getBusinessId()).stream()
+        .map(this::toPaymentRecordResponse)
+        .toList();
+    double amountReceived = paymentRecords.stream().mapToDouble(CustomerPaymentRecordResponse::getAmount).sum();
+    double balanceBefore = calculateCustomerBalanceBeforeTrip(order.getCustomerId(), trip.getId());
+    double balanceAfter = balanceBefore + amountReceived - totalReceivable;
     return new CustomerBalanceLedgerResponse(
         trip.getId(),
         order.getBusinessId(),
         order.getCustomerId(),
         round2(totalReceivable),
-        round2(paidDeposit),
-        round2(Math.max(totalReceivable - paidDeposit, 0D)),
+        round2(amountReceived),
+        round2(Math.max(totalReceivable - amountReceived, 0D)),
+        round2(totalReceivable),
+        round2(amountReceived),
+        round2(Math.max(totalReceivable - amountReceived, 0D)),
+        round2(balanceBefore),
+        round2(balanceAfter),
         resolveSettlementStatus(order),
         trip.isSettlementFrozen(),
         trip.getSettlementFreezeStage(),
@@ -862,6 +953,7 @@ public class ProcurementHudService {
         order.getReceiptConfirmedBy(),
         order.getBillingConfirmedAt(),
         order.getBillingConfirmedBy(),
+        paymentRecords,
         orderLines);
   }
 
@@ -922,7 +1014,85 @@ public class ProcurementHudService {
         item.getProcessingStatus(),
         item.getUploadedAt(),
         item.getUpdatedAt(),
-        item.getReconciliationResult());
+        item.getReconciliationResult(),
+        item.getRawRecognitionResult(),
+        item.getManualReconciliationResult());
+  }
+
+  private CustomerPaymentRecordResponse toPaymentRecordResponse(CustomerPaymentLedger item) {
+    return new CustomerPaymentRecordResponse(
+        item.getId(),
+        item.getTripId(),
+        item.getBusinessId(),
+        item.getCustomerId(),
+        round2(item.getAmount()),
+        item.getPaymentMethod(),
+        item.getNote(),
+        item.getCreatedAt(),
+        item.getOperator());
+  }
+
+  private double calculateCustomerBalanceBeforeTrip(Long customerId, Long currentTripId) {
+    double totalReceivable = orderHeaderRepository.findAll().stream()
+        .filter(order -> Objects.equals(order.getCustomerId(), customerId))
+        .filter(order -> currentTripId == null || !Objects.equals(order.getTripId(), currentTripId))
+        .mapToDouble(this::calculateReceivable)
+        .sum();
+    double totalReceived = customerPaymentLedgerRepository.findByCustomerIdOrderByCreatedAtAscIdAsc(customerId).stream()
+        .filter(payment -> currentTripId == null || !Objects.equals(payment.getTripId(), currentTripId))
+        .mapToDouble(CustomerPaymentLedger::getAmount)
+        .sum();
+    return round2(totalReceived - totalReceivable);
+  }
+
+  private double calculateReceivable(OrderHeader order) {
+    return safeLines(order).stream()
+        .mapToDouble(line -> {
+          int settledQty = Math.max(line.getPurchasedQuantity(), 0) > 0 ? line.getPurchasedQuantity() : line.getQuantity();
+          return settledQty * line.getUnitPrice();
+        })
+        .sum();
+  }
+
+  private void ensureTripNotSettled(Long tripId) {
+    Trip trip = tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    if (trip.getStatus() == TripStatus.SETTLED) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.receipt.settled");
+    }
+  }
+
+  private Map<String, Object> copyMap(Map<String, Object> source) {
+    return source == null ? new LinkedHashMap<>() : new LinkedHashMap<>(source);
+  }
+
+  private Map<String, Object> buildPaymentAuditPayload(CustomerPaymentLedger payment) {
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("paymentId", payment.getId());
+    payload.put("businessId", payment.getBusinessId());
+    payload.put("customerId", payment.getCustomerId());
+    payload.put("amount", payment.getAmount());
+    payload.put("paymentMethod", payment.getPaymentMethod());
+    payload.put("note", payment.getNote());
+    return payload;
+  }
+
+  private Map<String, Object> diffMaps(Map<String, Object> original, Map<String, Object> modified) {
+    Map<String, Object> diff = new LinkedHashMap<>();
+    LinkedHashSet<String> keys = new LinkedHashSet<>();
+    keys.addAll(original.keySet());
+    keys.addAll(modified.keySet());
+    for (String key : keys) {
+      Object oldValue = original.get(key);
+      Object newValue = modified.get(key);
+      if (!Objects.equals(oldValue, newValue)) {
+        Map<String, Object> delta = new LinkedHashMap<>();
+        delta.put("before", oldValue);
+        delta.put("after", newValue);
+        diff.put(key, delta);
+      }
+    }
+    return diff;
   }
 
   private TripProfitShareConfig getOrCreateProfitShareConfig(Long tripId) {

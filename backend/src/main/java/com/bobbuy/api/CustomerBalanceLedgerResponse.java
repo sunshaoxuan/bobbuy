@@ -10,6 +10,11 @@ public class CustomerBalanceLedgerResponse {
   private final double totalReceivable;
   private final double paidDeposit;
   private final double outstandingBalance;
+  private final double amountDueThisTrip;
+  private final double amountReceivedThisTrip;
+  private final double amountPendingThisTrip;
+  private final double balanceBeforeCarryForward;
+  private final double balanceAfterCarryForward;
   private final String settlementStatus;
   private final boolean settlementFrozen;
   private final String settlementFreezeStage;
@@ -18,6 +23,7 @@ public class CustomerBalanceLedgerResponse {
   private final String receiptConfirmedBy;
   private final LocalDateTime billingConfirmedAt;
   private final String billingConfirmedBy;
+  private final List<CustomerPaymentRecordResponse> paymentRecords;
   private final List<LedgerOrderLineResponse> orderLines;
 
   public CustomerBalanceLedgerResponse(Long tripId,
@@ -26,6 +32,11 @@ public class CustomerBalanceLedgerResponse {
                                        double totalReceivable,
                                        double paidDeposit,
                                        double outstandingBalance,
+                                       double amountDueThisTrip,
+                                       double amountReceivedThisTrip,
+                                       double amountPendingThisTrip,
+                                       double balanceBeforeCarryForward,
+                                       double balanceAfterCarryForward,
                                        String settlementStatus,
                                        boolean settlementFrozen,
                                        String settlementFreezeStage,
@@ -34,6 +45,7 @@ public class CustomerBalanceLedgerResponse {
                                        String receiptConfirmedBy,
                                        LocalDateTime billingConfirmedAt,
                                        String billingConfirmedBy,
+                                       List<CustomerPaymentRecordResponse> paymentRecords,
                                        List<LedgerOrderLineResponse> orderLines) {
     this.tripId = tripId;
     this.businessId = businessId;
@@ -41,6 +53,11 @@ public class CustomerBalanceLedgerResponse {
     this.totalReceivable = totalReceivable;
     this.paidDeposit = paidDeposit;
     this.outstandingBalance = outstandingBalance;
+    this.amountDueThisTrip = amountDueThisTrip;
+    this.amountReceivedThisTrip = amountReceivedThisTrip;
+    this.amountPendingThisTrip = amountPendingThisTrip;
+    this.balanceBeforeCarryForward = balanceBeforeCarryForward;
+    this.balanceAfterCarryForward = balanceAfterCarryForward;
     this.settlementStatus = settlementStatus;
     this.settlementFrozen = settlementFrozen;
     this.settlementFreezeStage = settlementFreezeStage;
@@ -49,6 +66,7 @@ public class CustomerBalanceLedgerResponse {
     this.receiptConfirmedBy = receiptConfirmedBy;
     this.billingConfirmedAt = billingConfirmedAt;
     this.billingConfirmedBy = billingConfirmedBy;
+    this.paymentRecords = paymentRecords;
     this.orderLines = orderLines;
   }
 
@@ -74,6 +92,26 @@ public class CustomerBalanceLedgerResponse {
 
   public double getOutstandingBalance() {
     return outstandingBalance;
+  }
+
+  public double getAmountDueThisTrip() {
+    return amountDueThisTrip;
+  }
+
+  public double getAmountReceivedThisTrip() {
+    return amountReceivedThisTrip;
+  }
+
+  public double getAmountPendingThisTrip() {
+    return amountPendingThisTrip;
+  }
+
+  public double getBalanceBeforeCarryForward() {
+    return balanceBeforeCarryForward;
+  }
+
+  public double getBalanceAfterCarryForward() {
+    return balanceAfterCarryForward;
   }
 
   public String getSettlementStatus() {
@@ -106,6 +144,10 @@ public class CustomerBalanceLedgerResponse {
 
   public String getBillingConfirmedBy() {
     return billingConfirmedBy;
+  }
+
+  public List<CustomerPaymentRecordResponse> getPaymentRecords() {
+    return paymentRecords;
   }
 
   public List<LedgerOrderLineResponse> getOrderLines() {
