@@ -461,7 +461,7 @@ const messages: Dictionary = {
     'procurement.picking_checklist': 'ピッキング確認リスト',
     'procurement.no_picking_data': 'レビュー済みのピッキングデータはありません',
     'procurement.picking_checked': '確認',
-    'procurement.picking_quantity': '実拣 / 注文',
+    'procurement.picking_quantity': '実ピック / 注文',
     'procurement.picking_labels': 'ラベル',
     'procurement.no_address': 'デフォルト住所なし',
     'procurement.total_receivable': '総売掛',

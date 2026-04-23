@@ -1253,7 +1253,7 @@ public class ProcurementHudService {
     if (address == null) {
       return null;
     }
-    return List.of(address.getCountryRegion(), address.getCity(), address.getAddressLine(), address.getPostalCode()).stream()
+    return java.util.stream.Stream.of(address.getCountryRegion(), address.getCity(), address.getAddressLine(), address.getPostalCode())
         .filter(value -> value != null && !value.isBlank())
         .collect(Collectors.joining(" "));
   }
@@ -1323,7 +1323,8 @@ public class ProcurementHudService {
     Integer reviewedMatchedQuantity = receiptSnapshot.matchedQuantityByKey().get(key);
     int actualPurchased = Math.max(line.getPurchasedQuantity(), 0);
     if (reviewedMatchedQuantity != null) {
-      return Math.min(Math.max(reviewedMatchedQuantity, 0), actualPurchased > 0 ? actualPurchased : Math.max(line.getQuantity(), 0));
+      int maxAllowedQuantity = actualPurchased > 0 ? actualPurchased : Math.max(line.getQuantity(), 0);
+      return Math.min(Math.max(reviewedMatchedQuantity, 0), maxAllowedQuantity);
     }
     return actualPurchased;
   }
