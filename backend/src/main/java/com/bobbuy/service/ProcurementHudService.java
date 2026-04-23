@@ -101,10 +101,10 @@ public class ProcurementHudService {
   public ProcurementHudService(TripRepository tripRepository,
                                OrderHeaderRepository orderHeaderRepository,
                                ProductRepository productRepository,
-                                TripExpenseRepository tripExpenseRepository,
-                                ProcurementReceiptRepository procurementReceiptRepository,
-                                CustomerPaymentLedgerRepository customerPaymentLedgerRepository,
-                                ProcurementReceiptRecognitionService procurementReceiptRecognitionService,
+                               TripExpenseRepository tripExpenseRepository,
+                               ProcurementReceiptRepository procurementReceiptRepository,
+                               CustomerPaymentLedgerRepository customerPaymentLedgerRepository,
+                               ProcurementReceiptRecognitionService procurementReceiptRecognitionService,
                                TripProfitShareConfigRepository tripProfitShareConfigRepository,
                                TripLogisticsTrackingRepository tripLogisticsTrackingRepository,
                                FinancialAuditTrailService financialAuditTrailService,
@@ -1033,8 +1033,7 @@ public class ProcurementHudService {
   }
 
   private double calculateCustomerBalanceBeforeTrip(Long customerId, Long currentTripId) {
-    double totalReceivable = orderHeaderRepository.findAll().stream()
-        .filter(order -> Objects.equals(order.getCustomerId(), customerId))
+    double totalReceivable = orderHeaderRepository.findByCustomerId(customerId).stream()
         .filter(order -> currentTripId == null || !Objects.equals(order.getTripId(), currentTripId))
         .mapToDouble(this::calculateReceivable)
         .sum();

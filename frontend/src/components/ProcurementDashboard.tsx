@@ -460,6 +460,7 @@ export default function ProcurementDashboard() {
   };
 
   const tableScroll = { x: 'max-content' as const };
+  const formatConfidencePercent = (confidence?: number) => `${Math.round((confidence ?? 0) * 100)}%`;
 
   return (
     <>
@@ -711,7 +712,7 @@ export default function ProcurementDashboard() {
                         <Space wrap>
                           <Text strong>{receipt.fileName || `${t('procurement.receipt')} #${receipt.id}`}</Text>
                           <Tag color={receipt.processingStatus === 'RECONCILED' ? 'green' : 'gold'}>{receipt.processingStatus}</Tag>
-                         <Tag color={receipt.reconciliationResult?.recognitionMode === 'AI' ? 'blue' : 'default'}>
+                          <Tag color={receipt.reconciliationResult?.recognitionMode === 'AI' ? 'blue' : 'default'}>
                             {receipt.reconciliationResult?.recognitionMode ?? 'UNKNOWN'}
                           </Tag>
                           <Tag color={receipt.reconciliationResult?.reviewStatus === 'REVIEWED' ? 'green' : 'gold'}>
@@ -727,7 +728,7 @@ export default function ProcurementDashboard() {
                         ) : null}
                         <Text type="secondary">{receipt.uploadedAt}</Text>
                         <Text type="secondary">
-                          {t('procurement.receipt_confidence')}: {(((receipt.reconciliationResult?.confidence ?? 0) as number) * 100).toFixed(0)}%
+                          {t('procurement.receipt_confidence')}: {formatConfidencePercent(receipt.reconciliationResult?.confidence as number | undefined)}
                         </Text>
                         <Text>{receipt.reconciliationResult?.summary || t('procurement.receipt_workbench_ai_notice')}</Text>
                       </Space>

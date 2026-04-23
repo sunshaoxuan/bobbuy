@@ -28,6 +28,8 @@ public class ProcurementReceiptRecognitionService {
   private static final String AI_MODE = "AI";
   private static final String FALLBACK_MODE = "RULE_FALLBACK";
   private static final String REVIEW_STATUS_PENDING = "PENDING_REVIEW";
+  private static final double DEFAULT_AI_CONFIDENCE = 0.86d;
+  private static final double DEFAULT_FALLBACK_CONFIDENCE = 0.42d;
   // Keep name overlap as the primary signal while still letting price help disambiguate very similar receipt lines.
   private static final double MATCH_SCORE_THRESHOLD = 0.45d;
   private static final double TOKEN_SCORE_WEIGHT = 0.8d;
@@ -197,7 +199,7 @@ public class ProcurementReceiptRecognitionService {
       result.put("unmatchedReceiptItems", unmatchedReceiptItems);
       result.put("missingOrderedItems", missingOrderedItems);
       result.put("selfUseItems", new ArrayList<>());
-      result.put("confidence", 0.86d);
+      result.put("confidence", DEFAULT_AI_CONFIDENCE);
       result.put("reviewStatus", REVIEW_STATUS_PENDING);
       result.put("reviewedBy", null);
       result.put("reviewedAt", null);
@@ -245,7 +247,7 @@ public class ProcurementReceiptRecognitionService {
     result.put("unmatchedReceiptItems", new ArrayList<>());
     result.put("missingOrderedItems", missingOrderedItems);
     result.put("selfUseItems", new ArrayList<>());
-    result.put("confidence", 0.42d);
+    result.put("confidence", DEFAULT_FALLBACK_CONFIDENCE);
     result.put("reviewStatus", REVIEW_STATUS_PENDING);
     result.put("reviewedBy", "");
     result.put("reviewedAt", "");

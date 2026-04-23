@@ -284,6 +284,21 @@ class ProcurementControllerIntegrationTest {
   }
 
   @Test
+  void offlinePaymentRejectsInvalidPayload() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader order = new OrderHeader("PAY-INVALID", 1001L, trip.getId());
+    order.addLine(new OrderLine("prd-1000", "抹茶セット", null, 1, 10.0));
+    store.upsertOrder(order);
+
+    mockMvc.perform(asAgent(post("/api/procurement/{tripId}/payments", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"businessId":"PAY-INVALID","amount":0,"paymentMethod":""}
+                """)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   void settledTripRejectsOfflinePaymentAndReceiptReviewMutation() throws Exception {
     Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
     OrderHeader order = new OrderHeader("PAY-SETTLED", 1001L, trip.getId());
