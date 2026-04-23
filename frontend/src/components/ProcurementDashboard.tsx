@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import {
+  Alert,
   Breadcrumb,
   Button,
   Card,
@@ -27,6 +28,7 @@ import {
   type FinancialAuditLog,
   type LogisticsTracking,
   type Order,
+  type ProcurementReceipt,
   type ProfitSharingConfig,
   type ProcurementDeficitItemResponse,
   type ProcurementHudStats,
@@ -73,6 +75,9 @@ export default function ProcurementDashboard() {
   const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
   const [reconcileRows, setReconcileRows] = useState<ReconcileDetailRow[]>([]);
   const [deficitItems, setDeficitItems] = useState<ProcurementDeficitItemResponse[]>([]);
+  const [procurementReceipts, setProcurementReceipts] = useState<ProcurementReceipt[]>([]);
+  const [selectedReceiptId, setSelectedReceiptId] = useState<number>();
+  const [receiptFilesBase64, setReceiptFilesBase64] = useState<Array<{ imageBase64: string; fileName?: string }>>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<ReconcileDetailRow>();
@@ -86,7 +91,7 @@ export default function ProcurementDashboard() {
     refreshRequestRef.current = requestId;
     setLoading(true);
     try {
-      const [hud, orderList, expenseList, tripAuditLogs, customerLedger, profitShareConfig, logistics, deficits] = await Promise.all([
+      const [hud, orderList, expenseList, tripAuditLogs, customerLedger, profitShareConfig, logistics, deficits, receiptList] = await Promise.all([
         api.procurementHud(tripId),
         api.orders(tripId),
         api.procurementExpenses(tripId),
@@ -94,7 +99,8 @@ export default function ProcurementDashboard() {
         api.customerBalanceLedger(tripId),
         api.procurementProfitSharing(tripId),
         api.procurementLogistics(tripId),
-        api.procurementDeficitItems(tripId)
+        api.procurementDeficitItems(tripId),
+        api.procurementReceipts(tripId)
       ]);
       if (refreshRequestRef.current !== requestId) {
         return;
@@ -109,6 +115,8 @@ export default function ProcurementDashboard() {
       setPromoterRatio(profitShareConfig.promoterRatioPercent);
       setLogisticsTrackings(logistics);
       setDeficitItems(deficits);
+      setProcurementReceipts(receiptList);
+      setSelectedReceiptId((current) => receiptList.some((item) => item.id === current) ? current : receiptList[0]?.id);
       setReconcileRows(buildReconcileRows(orderList));
       const [wPurchaser, wPromoter, txList] = await Promise.all([
         api.getWallet('PURCHASER'),
@@ -171,6 +179,11 @@ export default function ProcurementDashboard() {
   );
 
   const selectedTrip = useMemo(() => trips.find((trip) => trip.id === selectedTripId), [selectedTripId, trips]);
+  const selectedReceipt = useMemo(
+    () => procurementReceipts.find((receipt) => receipt.id === selectedReceiptId),
+    [procurementReceipts, selectedReceiptId]
+  );
+  const settlementFrozen = Boolean(selectedTrip?.settlementFrozen);
 
   const grossMarginRate = useMemo(() => {
     if (!hudStats) {
@@ -313,6 +326,63 @@ export default function ProcurementDashboard() {
     setExpenseReceiptBase64(base64);
   };
 
+  const onSelectProcurementReceipts = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    const next = await Promise.all(files.map(async (file) => ({ imageBase64: await toBase64(file), fileName: file.name })));
+    setReceiptFilesBase64(next);
+  };
+
+  const uploadProcurementReceipts = async () => {
+    if (!selectedTripId || receiptFilesBase64.length === 0) {
+      return;
+    }
+    await api.uploadProcurementReceipts(selectedTripId, { receipts: receiptFilesBase64 });
+    setReceiptFilesBase64([]);
+    await refreshTripData(selectedTripId);
+  };
+
+  const updateSelectedReceipt = (updater: (receipt: ProcurementReceipt) => ProcurementReceipt) => {
+    setProcurementReceipts((current) =>
+      current.map((receipt) => (receipt.id === selectedReceiptId ? updater(receipt) : receipt))
+    );
+  };
+
+  const setReceiptDisposition = (
+    collectionKey: 'unmatchedReceiptItems' | 'missingOrderedItems',
+    index: number,
+    disposition: string
+  ) => {
+    updateSelectedReceipt((receipt) => {
+      const nextCollection = [...(receipt.reconciliationResult?.[collectionKey] ?? [])];
+      const currentItem = { ...(nextCollection[index] ?? {}) };
+      currentItem.disposition = disposition;
+      nextCollection[index] = currentItem;
+      return {
+        ...receipt,
+        reconciliationResult: {
+          ...receipt.reconciliationResult,
+          [collectionKey]: nextCollection,
+          selfUseItems:
+            disposition === 'SELF_USE'
+              ? [...(receipt.reconciliationResult?.selfUseItems ?? []), currentItem]
+              : (receipt.reconciliationResult?.selfUseItems ?? []).filter((item) => item.name !== currentItem.name)
+        }
+      };
+    });
+  };
+
+  const saveReceiptWorkbench = async () => {
+    if (!selectedTripId || !selectedReceipt) {
+      return;
+    }
+    await api.saveProcurementReceipt(selectedTripId, selectedReceipt.id, {
+      processingStatus: 'RECONCILED',
+      reconciliationResult: selectedReceipt.reconciliationResult
+    });
+    message.success(t('procurement.receipt_reconcile_saved'));
+    await refreshTripData(selectedTripId);
+  };
+
   const exportSettlement = async (format: 'csv' | 'pdf') => {
     if (!selectedTripId) {
       return;
@@ -386,7 +456,16 @@ export default function ProcurementDashboard() {
             ) : (
               <Tag color="gold" style={{ padding: '4px 12px', fontSize: '14px' }}>{t('procurement.status_settled')}</Tag>
             )}
+            {settlementFrozen ? <Tag color="red">{selectedTrip?.settlementFreezeStage}</Tag> : null}
           </Space>
+          {selectedTrip ? (
+            <Alert
+              type={settlementFrozen ? 'warning' : 'info'}
+              showIcon
+              message={`${t('procurement.freeze_banner_title')}: ${selectedTrip.settlementFreezeStage ?? 'ACTIVE'}`}
+              description={selectedTrip.settlementFreezeReason || t('procurement.freeze_banner_active')}
+            />
+          ) : null}
         </Space>
       </Card>
 
@@ -436,7 +515,7 @@ export default function ProcurementDashboard() {
               onChange={(value) => setPromoterRatio(value ?? 0)}
               placeholder={t('procurement.promoter_ratio')}
             />
-            <Button type="primary" onClick={updateProfitSharing}>{t('procurement.update_ratio')}</Button>
+            <Button type="primary" onClick={updateProfitSharing} disabled={settlementFrozen}>{t('procurement.update_ratio')}</Button>
           </Space>
           <Table
             rowKey="partnerRole"
@@ -517,17 +596,18 @@ export default function ProcurementDashboard() {
             >
               <InputNumber min={0.01} precision={2} placeholder={t('procurement.expense_cost_placeholder')} />
             </Form.Item>
-            <Button type="primary" onClick={submitExpense}>
+            <Button type="primary" onClick={submitExpense} disabled={settlementFrozen}>
               {t('procurement.add_expense')}
             </Button>
           </Form>
           <Text>{t('procurement.upload_receipt')}</Text>
-          <Input
-            type="file"
-            accept="image/*"
-            aria-label={t('procurement.upload_receipt')}
-            onChange={onSelectExpenseReceipt}
-          />
+            <Input
+              type="file"
+              accept="image/*"
+              aria-label={t('procurement.upload_receipt')}
+              onChange={onSelectExpenseReceipt}
+              disabled={settlementFrozen}
+            />
           {expenseReceiptBase64 ? <Text type="secondary">{t('procurement.receipt_selected')}</Text> : null}
           <Text strong>
             {t('procurement.total_expenses')}: {(hudStats?.totalTripExpenses ?? 0).toFixed(2)}
@@ -559,6 +639,155 @@ export default function ProcurementDashboard() {
         </Space>
       </Card>
 
+      <Card title={t('procurement.receipt_workbench_title')} loading={loading} className="procurement-glass-card">
+        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+          <Space wrap>
+            <Input
+              type="file"
+              multiple
+              accept="image/*"
+              aria-label={t('procurement.receipt_workbench_upload')}
+              onChange={onSelectProcurementReceipts}
+            />
+            <Button type="primary" onClick={uploadProcurementReceipts} disabled={receiptFilesBase64.length === 0}>
+              {t('procurement.receipt_workbench_upload')}
+            </Button>
+            <Button onClick={saveReceiptWorkbench} disabled={!selectedReceipt}>
+              {t('procurement.receipt_workbench_save')}
+            </Button>
+          </Space>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={10}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                {procurementReceipts.length === 0 ? (
+                  <Empty description={t('procurement.receipt_workbench_empty')} />
+                ) : (
+                  procurementReceipts.map((receipt) => (
+                    <Card
+                      key={receipt.id}
+                      size="small"
+                      hoverable
+                      onClick={() => setSelectedReceiptId(receipt.id)}
+                      style={{ borderColor: selectedReceiptId === receipt.id ? '#1677ff' : undefined }}
+                    >
+                      <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                        <Space wrap>
+                          <Text strong>{receipt.fileName || `${t('procurement.receipt')} #${receipt.id}`}</Text>
+                          <Tag color={receipt.processingStatus === 'RECONCILED' ? 'green' : 'gold'}>{receipt.processingStatus}</Tag>
+                        </Space>
+                        {receipt.thumbnailUrl ? (
+                          <img
+                            src={receipt.thumbnailUrl}
+                            alt={receipt.fileName || String(receipt.id)}
+                            style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8 }}
+                          />
+                        ) : null}
+                        <Text type="secondary">{receipt.uploadedAt}</Text>
+                        <Text>{t('procurement.receipt_workbench_mock_notice')}</Text>
+                      </Space>
+                    </Card>
+                  ))
+                )}
+              </Space>
+            </Col>
+            <Col xs={24} lg={14}>
+              {selectedReceipt ? (
+                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                  <Alert type="info" showIcon message={t('procurement.receipt_workbench_left')} description={t('procurement.receipt_workbench_mock_notice')} />
+                  <Table
+                    size="small"
+                    pagination={false}
+                    rowKey={(_, index) => `receipt-item-${index}`}
+                    dataSource={selectedReceipt.reconciliationResult?.receiptItems ?? []}
+                    columns={[
+                      { title: t('zen.receipt_item'), dataIndex: 'name', key: 'name' },
+                      { title: t('zen.receipt_qty'), dataIndex: 'quantity', key: 'quantity' },
+                      { title: t('zen.receipt_amount'), dataIndex: 'unitPrice', key: 'unitPrice' }
+                    ]}
+                  />
+                  <Alert type="success" showIcon message={t('procurement.receipt_workbench_right')} />
+                  <Table<Order>
+                    size="small"
+                    pagination={false}
+                    rowKey="id"
+                    dataSource={orders}
+                    columns={[
+                      { title: t('procurement.business_id'), dataIndex: 'businessId', key: 'businessId' },
+                      { title: t('orders.header.customer_id'), dataIndex: 'customerId', key: 'customerId' },
+                      { title: t('orders.header.status'), dataIndex: 'status', key: 'status' },
+                      {
+                        title: t('procurement.freeze_banner_title'),
+                        key: 'freeze',
+                        render: (_, row) =>
+                          row.tripId === selectedTripId && settlementFrozen ? <Tag color="red">{selectedTrip?.settlementFreezeStage}</Tag> : '-'
+                      }
+                    ]}
+                  />
+                  <Table
+                    size="small"
+                    pagination={false}
+                    rowKey={(_, index) => `unmatched-${index}`}
+                    dataSource={selectedReceipt.reconciliationResult?.unmatchedReceiptItems ?? []}
+                    columns={[
+                      { title: t('procurement.receipt_unmatched_items'), dataIndex: 'name', key: 'name' },
+                      { title: t('zen.receipt_qty'), dataIndex: 'quantity', key: 'quantity' },
+                      {
+                        title: t('procurement.receipt_manual_disposition'),
+                        key: 'disposition',
+                        render: (_, row, index) => (
+                          <Select
+                            value={row.disposition}
+                            style={{ minWidth: 180 }}
+                            onChange={(value) => setReceiptDisposition('unmatchedReceiptItems', index, value)}
+                            options={[
+                              { label: t('procurement.receipt_disposition_unreviewed'), value: 'UNREVIEWED' },
+                              { label: t('procurement.receipt_disposition_out_of_stock'), value: 'OUT_OF_STOCK' },
+                              { label: t('procurement.receipt_disposition_on_site'), value: 'ON_SITE_REPLENISHED' },
+                              { label: t('procurement.receipt_disposition_self_use'), value: 'SELF_USE' }
+                            ]}
+                          />
+                        )
+                      }
+                    ]}
+                  />
+                  <Table
+                    size="small"
+                    pagination={false}
+                    rowKey={(_, index) => `missing-${index}`}
+                    dataSource={selectedReceipt.reconciliationResult?.missingOrderedItems ?? []}
+                    columns={[
+                      { title: t('procurement.receipt_missing_items'), dataIndex: 'itemName', key: 'itemName' },
+                      { title: t('procurement.deficit_quantity') || 'Deficit Qty', dataIndex: 'missingQuantity', key: 'missingQuantity' },
+                      {
+                        title: t('procurement.receipt_manual_disposition'),
+                        key: 'disposition',
+                        render: (_, row, index) => (
+                          <Select
+                            value={row.disposition}
+                            style={{ minWidth: 180 }}
+                            onChange={(value) => setReceiptDisposition('missingOrderedItems', index, value)}
+                            options={[
+                              { label: t('procurement.receipt_disposition_out_of_stock'), value: 'OUT_OF_STOCK' },
+                              { label: t('procurement.receipt_disposition_on_site'), value: 'ON_SITE_REPLENISHED' },
+                              { label: t('procurement.receipt_disposition_self_use'), value: 'SELF_USE' }
+                            ]}
+                          />
+                        )
+                      }
+                    ]}
+                  />
+                  <Text type="secondary">
+                    {t('procurement.receipt_self_use_count')}: {(selectedReceipt.reconciliationResult?.selfUseItems ?? []).length}
+                  </Text>
+                </Space>
+              ) : (
+                <Empty description={t('procurement.receipt_workbench_empty')} />
+              )}
+            </Col>
+          </Row>
+        </Space>
+      </Card>
+
       <Card title={t('procurement.logistics_tracking')} loading={loading} className="procurement-glass-card">
         <Space direction="vertical" style={{ width: '100%' }}>
           <Space wrap>
@@ -585,7 +814,7 @@ export default function ProcurementDashboard() {
               onChange={setLogisticsProvider}
               style={{ minWidth: 120 }}
             />
-            <Button type="primary" onClick={createLogisticsTracking}>{t('procurement.add_logistics')}</Button>
+            <Button type="primary" onClick={createLogisticsTracking} disabled={settlementFrozen}>{t('procurement.add_logistics')}</Button>
           </Space>
           <Table<LogisticsTracking>
             rowKey="id"
@@ -634,6 +863,17 @@ export default function ProcurementDashboard() {
               { title: t('procurement.total_receivable'), dataIndex: 'totalReceivable', key: 'totalReceivable' },
               { title: t('procurement.paid_deposit'), dataIndex: 'paidDeposit', key: 'paidDeposit' },
               { title: t('procurement.outstanding_balance'), dataIndex: 'outstandingBalance', key: 'outstandingBalance' },
+              {
+                title: t('procurement.settlement_status'),
+                dataIndex: 'settlementStatus',
+                key: 'settlementStatus',
+                render: (value: string, row) => (
+                  <Space wrap>
+                    <Tag color={row.settlementFrozen ? 'red' : 'blue'}>{value}</Tag>
+                    {row.settlementFrozen ? <Tag color="warning">{row.settlementFreezeStage}</Tag> : null}
+                  </Space>
+                )
+              },
               {
                 title: t('procurement.customer_statement'),
                 key: 'statement',
@@ -713,7 +953,7 @@ export default function ProcurementDashboard() {
                 title: t('procurement.reconcile_action'),
                 key: 'action',
                 render: (_, row) => (
-                  <Button size="small" onClick={() => openReconcileModal(row)}>
+                  <Button size="small" onClick={() => openReconcileModal(row)} disabled={settlementFrozen}>
                     {t('procurement.correct')}
                   </Button>
                 )
@@ -730,6 +970,7 @@ export default function ProcurementDashboard() {
         cancelText={t('common.cancel')}
         onCancel={() => setIsModalOpen(false)}
         onOk={submitManualReconcile}
+        okButtonProps={{ disabled: settlementFrozen }}
       >
         <Space direction="vertical" style={{ width: '100%' }}>
           <Text>{editingRow ? `${editingRow.itemName} (${editingRow.skuId})` : ''}</Text>

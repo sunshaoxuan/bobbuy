@@ -163,4 +163,28 @@ public class Trip {
     setCurrentWeight(purchasedQuantity * Math.max(weightPerUnit, 0D));
     setCurrentVolume(purchasedQuantity * Math.max(volumePerUnit, 0D));
   }
+
+  public boolean isSettlementFrozen() {
+    return status == TripStatus.COMPLETED || status == TripStatus.SETTLED;
+  }
+
+  public String getSettlementFreezeStage() {
+    if (status == TripStatus.SETTLED) {
+      return "SETTLED_FROZEN";
+    }
+    if (status == TripStatus.COMPLETED) {
+      return "PROCUREMENT_PENDING_SETTLEMENT";
+    }
+    return "ACTIVE";
+  }
+
+  public String getSettlementFreezeReason() {
+    if (status == TripStatus.SETTLED) {
+      return "Trip already settled and frozen.";
+    }
+    if (status == TripStatus.COMPLETED) {
+      return "Procurement completed, waiting for settlement freeze release.";
+    }
+    return "";
+  }
 }

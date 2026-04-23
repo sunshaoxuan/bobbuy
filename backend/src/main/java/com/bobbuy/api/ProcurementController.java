@@ -136,6 +136,15 @@ public class ProcurementController {
     return ResponseEntity.ok(ApiResponse.success(entries, new ApiMeta(entries.size())));
   }
 
+  @PostMapping("/{tripId}/ledger/{businessId}/confirm")
+  public ResponseEntity<ApiResponse<CustomerBalanceLedgerResponse>> confirmCustomerLedger(@PathVariable Long tripId,
+                                                                                          @PathVariable String businessId,
+                                                                                          @RequestBody LedgerConfirmationRequest request,
+                                                                                          Authentication authentication) {
+    return ResponseEntity.ok(ApiResponse.success(
+        procurementHudService.confirmCustomerLedger(tripId, businessId, request, authentication)));
+  }
+
   @GetMapping("/{tripId}/audit-logs")
   public ResponseEntity<ApiResponse<List<FinancialAuditLogResponse>>> financialAuditLogs(@PathVariable Long tripId) {
     List<FinancialAuditLogResponse> logs = procurementHudService.getFinancialAuditLogs(tripId);
@@ -157,6 +166,29 @@ public class ProcurementController {
   public ResponseEntity<ApiResponse<Void>> finalizeSettlement(@PathVariable Long tripId) {
     procurementHudService.finalizeTripSettlement(tripId);
     return ResponseEntity.ok(ApiResponse.success(null));
+  }
+
+  @GetMapping("/{tripId}/receipts")
+  public ResponseEntity<ApiResponse<List<ProcurementReceiptResponse>>> procurementReceipts(@PathVariable Long tripId) {
+    List<ProcurementReceiptResponse> items = procurementHudService.getProcurementReceipts(tripId);
+    return ResponseEntity.ok(ApiResponse.success(items, new ApiMeta(items.size())));
+  }
+
+  @PostMapping("/{tripId}/receipts")
+  public ResponseEntity<ApiResponse<List<ProcurementReceiptResponse>>> uploadProcurementReceipts(@PathVariable Long tripId,
+                                                                                                  @RequestBody ProcurementReceiptUploadRequest request,
+                                                                                                  Authentication authentication) {
+    List<ProcurementReceiptResponse> items = procurementHudService.uploadProcurementReceipts(tripId, request, authentication);
+    return ResponseEntity.ok(ApiResponse.success(items, new ApiMeta(items.size())));
+  }
+
+  @PatchMapping("/{tripId}/receipts/{receiptId}")
+  public ResponseEntity<ApiResponse<ProcurementReceiptResponse>> saveProcurementReceiptReconciliation(@PathVariable Long tripId,
+                                                                                                       @PathVariable Long receiptId,
+                                                                                                       @RequestBody ProcurementReceiptSaveRequest request,
+                                                                                                       Authentication authentication) {
+    return ResponseEntity.ok(ApiResponse.success(
+        procurementHudService.saveProcurementReceiptReconciliation(tripId, receiptId, request, authentication)));
   }
 
   @GetMapping("/wallets/{partnerId}")

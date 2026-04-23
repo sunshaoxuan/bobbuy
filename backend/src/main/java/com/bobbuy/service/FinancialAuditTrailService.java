@@ -44,6 +44,31 @@ public class FinancialAuditTrailService {
     append(tripId, "SETTLEMENT_REMINDER_TRIGGERED", originalValue, modifiedValue);
   }
 
+  @Transactional
+  public void logSettlementFreeze(Long tripId, String operatorName, String originalValue, String modifiedValue) {
+    append(tripId, "SETTLEMENT_FREEZE", operatorName, originalValue, modifiedValue);
+  }
+
+  @Transactional
+  public void logCustomerReceiptConfirmation(Long tripId, String operatorName, String originalValue, String modifiedValue) {
+    append(tripId, "CUSTOMER_RECEIPT_CONFIRMED", operatorName, originalValue, modifiedValue);
+  }
+
+  @Transactional
+  public void logCustomerBillingConfirmation(Long tripId, String operatorName, String originalValue, String modifiedValue) {
+    append(tripId, "CUSTOMER_BILLING_CONFIRMED", operatorName, originalValue, modifiedValue);
+  }
+
+  @Transactional
+  public void logProcurementReceiptUpload(Long tripId, String operatorName, String originalValue, String modifiedValue) {
+    append(tripId, "PROCUREMENT_RECEIPT_UPLOAD", operatorName, originalValue, modifiedValue);
+  }
+
+  @Transactional
+  public void logProcurementReceiptReconciliation(Long tripId, String operatorName, String originalValue, String modifiedValue) {
+    append(tripId, "PROCUREMENT_RECEIPT_RECONCILED", operatorName, originalValue, modifiedValue);
+  }
+
   @Transactional(readOnly = true)
   public List<FinancialAuditLogResponse> listByTripId(Long tripId) {
     List<FinancialAuditLog> logs = financialAuditLogRepository.findByTripIdOrderByCreatedAtDescIdDesc(tripId);
@@ -93,6 +118,10 @@ public class FinancialAuditTrailService {
   }
 
   private void append(Long tripId, String actionType, String originalValue, String modifiedValue) {
+    append(tripId, actionType, OPERATOR_SYSTEM, originalValue, modifiedValue);
+  }
+
+  private void append(Long tripId, String actionType, String operatorName, String originalValue, String modifiedValue) {
     String previousHash = financialAuditLogRepository.findTopByTripIdOrderByCreatedAtDescIdDesc(tripId)
         .map(FinancialAuditLog::getCurrentHash)
         .orElse(GENESIS_HASH);
@@ -100,7 +129,7 @@ public class FinancialAuditTrailService {
     String payload = String.join("|",
         String.valueOf(tripId),
         actionType,
-        OPERATOR_SYSTEM,
+        nullSafe(operatorName),
         nullSafe(originalValue),
         nullSafe(modifiedValue),
         previousHash,
@@ -109,7 +138,7 @@ public class FinancialAuditTrailService {
     financialAuditLogRepository.save(new FinancialAuditLog(
         tripId,
         actionType,
-        OPERATOR_SYSTEM,
+        nullSafe(operatorName),
         nullSafe(originalValue),
         nullSafe(modifiedValue),
         previousHash,

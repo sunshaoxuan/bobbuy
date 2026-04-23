@@ -27,6 +27,7 @@ import com.bobbuy.repository.CategoryRepository;
 import com.bobbuy.repository.FinancialAuditLogRepository;
 import com.bobbuy.repository.MerchantSkuRepository;
 import com.bobbuy.repository.OrderHeaderRepository;
+import com.bobbuy.repository.ProcurementReceiptRepository;
 import com.bobbuy.repository.ProductRepository;
 import com.bobbuy.repository.SupplierRepository;
 import com.bobbuy.repository.TripRepository;
@@ -67,6 +68,7 @@ public class BobbuyStore {
     private final SupplierRepository supplierRepository;
     private final MerchantSkuRepository merchantSkuRepository;
     private final TripExpenseRepository tripExpenseRepository;
+    private final ProcurementReceiptRepository procurementReceiptRepository;
     private final TripLogisticsTrackingRepository tripLogisticsTrackingRepository;
     private final TripProfitShareConfigRepository tripProfitShareConfigRepository;
     private final FinancialAuditLogRepository financialAuditLogRepository;
@@ -88,6 +90,7 @@ public class BobbuyStore {
             SupplierRepository supplierRepository,
             MerchantSkuRepository merchantSkuRepository,
             TripExpenseRepository tripExpenseRepository,
+            ProcurementReceiptRepository procurementReceiptRepository,
             TripLogisticsTrackingRepository tripLogisticsTrackingRepository,
             TripProfitShareConfigRepository tripProfitShareConfigRepository,
             FinancialAuditLogRepository financialAuditLogRepository,
@@ -103,6 +106,7 @@ public class BobbuyStore {
         this.supplierRepository = supplierRepository;
         this.merchantSkuRepository = merchantSkuRepository;
         this.tripExpenseRepository = tripExpenseRepository;
+        this.procurementReceiptRepository = procurementReceiptRepository;
         this.tripLogisticsTrackingRepository = tripLogisticsTrackingRepository;
         this.tripProfitShareConfigRepository = tripProfitShareConfigRepository;
         this.financialAuditLogRepository = financialAuditLogRepository;
@@ -122,6 +126,7 @@ public class BobbuyStore {
         tripLogisticsTrackingRepository.deleteAll();
         tripProfitShareConfigRepository.deleteAll();
         tripExpenseRepository.deleteAll();
+        procurementReceiptRepository.deleteAll();
         orderHeaderRepository.deleteAll();
         tripRepository.deleteAll();
         userRepository.deleteAll();
@@ -751,8 +756,8 @@ public class BobbuyStore {
             return;
         }
         Trip trip = tripOptional.orElseThrow();
-        if (trip.getStatus() == TripStatus.COMPLETED || trip.getStatus() == TripStatus.SETTLED) {
-            throw new ApiException(ErrorCode.INVALID_REQUEST, "error.order.locked_after_trip_completed");
+        if (trip.isSettlementFrozen()) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "error.trip.settlement_frozen");
         }
     }
 

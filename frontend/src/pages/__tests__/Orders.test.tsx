@@ -109,7 +109,10 @@ describe('Orders page', () => {
         capacity: 6,
         reservedCapacity: 1,
         remainingCapacity: 5,
-        status: 'PUBLISHED'
+        status: 'PUBLISHED',
+        settlementFrozen: false,
+        settlementFreezeStage: 'ACTIVE',
+        settlementFreezeReason: ''
       }
     ]);
     mockApi.orders.mockResolvedValue([]);
@@ -196,5 +199,33 @@ describe('Orders page', () => {
 
     const collapse = await screen.findByTestId('collapse');
     expect(within(collapse).getByText('BIZ-001')).toBeInTheDocument();
+  });
+
+  it('disables create flow when trip is settlement frozen', async () => {
+    const user = userEvent.setup();
+    mockApi.trips.mockResolvedValueOnce([
+      {
+        id: 2000,
+        agentId: 1000,
+        origin: 'Tokyo',
+        destination: 'Shanghai',
+        departDate: '2026-02-01',
+        capacity: 6,
+        reservedCapacity: 1,
+        remainingCapacity: 5,
+        status: 'COMPLETED',
+        settlementFrozen: true,
+        settlementFreezeStage: 'PROCUREMENT_PENDING_SETTLEMENT',
+        settlementFreezeReason: 'Frozen'
+      }
+    ]);
+
+    renderOrders();
+    await waitFor(() => expect(mockApi.trips).toHaveBeenCalled());
+    const submitButton = await screen.findByRole('button', { name: 'Create Order' });
+    expect(submitButton).toBeDisabled();
+    await fillRequiredFields(user);
+    await user.click(submitButton);
+    expect(mockApi.createOrder).not.toHaveBeenCalled();
   });
 });

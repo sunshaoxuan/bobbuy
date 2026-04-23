@@ -10,7 +10,10 @@ const MOCK_TRIPS = [
     capacity: 10,
     reservedCapacity: 2,
     remainingCapacity: 8,
-    status: 'PUBLISHED'
+    status: 'PUBLISHED',
+    settlementFrozen: false,
+    settlementFreezeStage: 'ACTIVE',
+    settlementFreezeReason: ''
   }
 ];
 
@@ -171,7 +174,45 @@ export async function setupCommonMocks(page: Page) {
       status: 200,
       body: JSON.stringify({
         status: 'success',
-        data: [{ businessId: 'BIZ-1001', customerId: 1001, totalReceivable: 65, paidDeposit: 0, outstandingBalance: 65 }]
+        data: [{
+          tripId: 2000,
+          businessId: 'BIZ-1001',
+          customerId: 1001,
+          totalReceivable: 65,
+          paidDeposit: 0,
+          outstandingBalance: 65,
+          settlementStatus: 'PENDING_CONFIRMATION',
+          settlementFrozen: false,
+          settlementFreezeStage: 'ACTIVE',
+          settlementFreezeReason: '',
+          orderLines: [{ skuId: 'SKU-001', itemName: 'Matcha', orderedQuantity: 2, purchasedQuantity: 1, unitPrice: 32.5, differenceNote: 'Short shipped 1' }]
+        }]
+      })
+    })
+  );
+
+  await page.route('**/api/procurement/*/receipts', (route) =>
+    route.fulfill({
+      status: 200,
+      body: JSON.stringify({
+        status: 'success',
+        data: [{
+          id: 11,
+          tripId: 2000,
+          fileName: 'receipt-1.jpg',
+          originalImageUrl: 'https://example.com/receipt.jpg',
+          thumbnailUrl: 'https://example.com/receipt.jpg',
+          processingStatus: 'READY_FOR_REVIEW',
+          uploadedAt: '2026-01-01T00:00:00Z',
+          updatedAt: '2026-01-01T00:00:00Z',
+          reconciliationResult: {
+            receiptItems: [{ name: 'Matcha', quantity: 1, unitPrice: 32.5 }],
+            matchedOrderLines: [],
+            unmatchedReceiptItems: [{ name: 'Store sample item', quantity: 1, disposition: 'UNREVIEWED' }],
+            missingOrderedItems: [],
+            selfUseItems: []
+          }
+        }]
       })
     })
   );

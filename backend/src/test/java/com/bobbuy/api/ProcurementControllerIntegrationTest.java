@@ -183,6 +183,57 @@ class ProcurementControllerIntegrationTest {
   }
 
   @Test
+  void customerCanConfirmReceiptAndBillingForOwnLedger() throws Exception {
+    mockMvc.perform(asCustomer(post("/api/procurement/{tripId}/ledger/{businessId}/confirm", 2000L, "20260117001")
+            .contentType("application/json")
+            .content("""
+                {"action":"RECEIPT"}
+                """), "1001"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.receiptConfirmedBy").value("1001"))
+        .andExpect(jsonPath("$.data.settlementStatus").value("RECEIPT_CONFIRMED"));
+
+    mockMvc.perform(asCustomer(post("/api/procurement/{tripId}/ledger/{businessId}/confirm", 2000L, "20260117001")
+            .contentType("application/json")
+            .content("""
+                {"action":"BILLING"}
+                """), "1001"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.billingConfirmedBy").value("1001"))
+        .andExpect(jsonPath("$.data.settlementStatus").value("BILLING_CONFIRMED"));
+  }
+
+  @Test
+  void receiptWorkbenchEndpointsUploadAndSaveReconciliation() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+
+    mockMvc.perform(asAgent(post("/api/procurement/{tripId}/receipts", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"receipts":[{"fileName":"receipt-1.jpg","imageBase64":"data:image/jpeg;base64,aGVsbG8="}]}
+                """)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(1))
+        .andExpect(jsonPath("$.data[0].processingStatus").value("READY_FOR_REVIEW"))
+        .andExpect(jsonPath("$.data[0].reconciliationResult.receiptItems").isArray());
+
+    MvcResult listResult = mockMvc.perform(asAgent(get("/api/procurement/{tripId}/receipts", trip.getId())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(1))
+        .andReturn();
+    long receiptId = objectMapper.readTree(listResult.getResponse().getContentAsString()).path("data").get(0).path("id").asLong();
+
+    mockMvc.perform(asAgent(patch("/api/procurement/{tripId}/receipts/{receiptId}", trip.getId(), receiptId)
+            .contentType("application/json")
+            .content("""
+                {"processingStatus":"RECONCILED","reconciliationResult":{"receiptItems":[],"matchedOrderLines":[],"unmatchedReceiptItems":[{"name":"补货","quantity":1,"disposition":"ON_SITE_REPLENISHED"}],"missingOrderedItems":[],"selfUseItems":[{"name":"自购饮料","quantity":1}]}}
+                """)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.processingStatus").value("RECONCILED"))
+        .andExpect(jsonPath("$.data.reconciliationResult.selfUseItems[0].name").value("自购饮料"));
+  }
+
+  @Test
   void profitSharingEndpointsSupportReadAndUpdateWithAuditLog() throws Exception {
     Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
     OrderHeader order = new OrderHeader("PS-1", 1001L, trip.getId());
@@ -239,5 +290,11 @@ class ProcurementControllerIntegrationTest {
     return request
         .header(RoleInjectionFilter.ROLE_HEADER, AGENT_ROLE)
         .header(RoleInjectionFilter.USER_HEADER, AGENT_USER);
+  }
+
+  private MockHttpServletRequestBuilder asCustomer(MockHttpServletRequestBuilder request, String user) {
+    return request
+        .header(RoleInjectionFilter.ROLE_HEADER, "CUSTOMER")
+        .header(RoleInjectionFilter.USER_HEADER, user);
   }
 }

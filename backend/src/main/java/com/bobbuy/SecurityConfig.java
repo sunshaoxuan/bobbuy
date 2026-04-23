@@ -35,6 +35,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/health/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/procurement/*/ledger").hasAnyRole("CUSTOMER", "AGENT")
+                .requestMatchers(HttpMethod.POST, "/api/procurement/*/ledger/*/confirm").hasAnyRole("CUSTOMER", "AGENT")
                 .requestMatchers("/api/procurement/**").hasRole("AGENT")
                 .requestMatchers("/api/users/**").hasRole("AGENT")
                 .requestMatchers("/api/audit-logs/**").hasRole("AGENT")

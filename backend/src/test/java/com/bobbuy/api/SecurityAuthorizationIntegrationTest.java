@@ -19,6 +19,7 @@ import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -58,6 +59,17 @@ class SecurityAuthorizationIntegrationTest {
         .andExpect(jsonPath("$.meta.total").value(1))
         .andExpect(jsonPath("$.data[0].customerId").value(9001))
         .andExpect(jsonPath("$.data[0].businessId").value("LEDGER-CUST-OWN"));
+  }
+
+  @Test
+  void customerCanConfirmOwnLedger() throws Exception {
+    mockMvc.perform(asCustomer(post("/api/procurement/{tripId}/ledger/{businessId}/confirm", tripId, "LEDGER-CUST-OWN")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"action":"RECEIPT"}
+                """), "9001"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.receiptConfirmedBy").value("9001"));
   }
 
   @Test
