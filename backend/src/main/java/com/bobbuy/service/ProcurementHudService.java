@@ -81,6 +81,7 @@ public class ProcurementHudService {
   private final ProductRepository productRepository;
   private final TripExpenseRepository tripExpenseRepository;
   private final ProcurementReceiptRepository procurementReceiptRepository;
+  private final ProcurementReceiptRecognitionService procurementReceiptRecognitionService;
   private final TripProfitShareConfigRepository tripProfitShareConfigRepository;
   private final TripLogisticsTrackingRepository tripLogisticsTrackingRepository;
   private final FinancialAuditTrailService financialAuditTrailService;
@@ -96,6 +97,7 @@ public class ProcurementHudService {
                                ProductRepository productRepository,
                                TripExpenseRepository tripExpenseRepository,
                                ProcurementReceiptRepository procurementReceiptRepository,
+                               ProcurementReceiptRecognitionService procurementReceiptRecognitionService,
                                TripProfitShareConfigRepository tripProfitShareConfigRepository,
                                TripLogisticsTrackingRepository tripLogisticsTrackingRepository,
                                FinancialAuditTrailService financialAuditTrailService,
@@ -110,6 +112,7 @@ public class ProcurementHudService {
     this.productRepository = productRepository;
     this.tripExpenseRepository = tripExpenseRepository;
     this.procurementReceiptRepository = procurementReceiptRepository;
+    this.procurementReceiptRecognitionService = procurementReceiptRecognitionService;
     this.tripProfitShareConfigRepository = tripProfitShareConfigRepository;
     this.tripLogisticsTrackingRepository = tripLogisticsTrackingRepository;
     this.financialAuditTrailService = financialAuditTrailService;
@@ -730,6 +733,7 @@ public class ProcurementHudService {
       throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.receipt.upload.invalid");
     }
     String operatorName = resolveOperatorName(authentication);
+    List<OrderHeader> orders = orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId);
     List<ProcurementReceiptResponse> created = new ArrayList<>();
     for (ProcurementReceiptUploadRequest.ReceiptImagePayload payload : request.getReceipts()) {
       if (payload == null || payload.getImageBase64() == null || payload.getImageBase64().isBlank()) {
@@ -747,7 +751,7 @@ public class ProcurementHudService {
           RECEIPT_STATUS_READY,
           now,
           now,
-          buildMockReceiptReconciliation(tripId));
+          procurementReceiptRecognitionService.recognize(payload.getImageBase64(), payload.getFileName(), orders));
       ProcurementReceipt saved = procurementReceiptRepository.save(receipt);
       financialAuditTrailService.logProcurementReceiptUpload(
           tripId,

@@ -442,6 +442,7 @@ const messages: Dictionary = {
     'procurement.receipt_workbench_save': 'Save reconciliation',
     'procurement.receipt_workbench_empty': 'No procurement receipts uploaded yet',
     'procurement.receipt_workbench_mock_notice': 'AI recognition is controlled mock data in this stage, but receipt and audit persistence are real.',
+    'procurement.receipt_workbench_ai_notice': 'Receipt recognition uses the configured AI model first and falls back to deterministic rules only when AI is unavailable.',
     'procurement.receipt_workbench_left': 'Receipt recognition result',
     'procurement.receipt_workbench_right': 'Order / procurement checklist',
     'procurement.receipt_unmatched_items': 'Unmatched Receipt Items',

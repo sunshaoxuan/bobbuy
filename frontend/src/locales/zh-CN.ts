@@ -442,6 +442,7 @@ const messages: Dictionary = {
     'procurement.receipt_workbench_save': '保存核销结果',
     'procurement.receipt_workbench_empty': '暂无采购小票',
     'procurement.receipt_workbench_mock_notice': '当前 AI 识别结果为受控 mock，但小票与审计流均真实落库。',
+    'procurement.receipt_workbench_ai_notice': '采购小票优先走真实 AI 识别，仅在 AI 服务不可用时回退为规则结果。',
     'procurement.receipt_workbench_left': '小票识别结果',
     'procurement.receipt_workbench_right': '订单 / 采购清单',
     'procurement.receipt_unmatched_items': '未匹配小票项',

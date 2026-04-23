@@ -215,6 +215,7 @@ class ProcurementControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.meta.total").value(1))
         .andExpect(jsonPath("$.data[0].processingStatus").value("READY_FOR_REVIEW"))
+        .andExpect(jsonPath("$.data[0].reconciliationResult.recognitionMode").value("RULE_FALLBACK"))
         .andExpect(jsonPath("$.data[0].reconciliationResult.receiptItems").isArray());
 
     MvcResult listResult = mockMvc.perform(asAgent(get("/api/procurement/{tripId}/receipts", trip.getId())))

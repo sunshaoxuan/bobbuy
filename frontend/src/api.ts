@@ -227,6 +227,11 @@ export type ProcurementReceipt = {
     uploadedAt: string;
     updatedAt?: string;
     reconciliationResult: {
+        recognitionMode?: string;
+        summary?: string;
+        merchantName?: string;
+        receiptDate?: string;
+        currency?: string;
         receiptItems: Array<Record<string, any>>;
         matchedOrderLines: Array<Record<string, any>>;
         unmatchedReceiptItems: Array<Record<string, any>>;

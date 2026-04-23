@@ -5,7 +5,7 @@
 | :-- | :-- | :-- |
 | 客户账单 | 行程级账单列表、`businessId` 详情、订单行/数量/单价/实采数量/差额说明、定金/尾款/结算状态、客户确认收货/确认账单、财务审计留痕 | 不提供在线支付网关；确认动作不可逆 |
 | 结算冻结 | `COMPLETED` 视为“采购完成待结算”；`SETTLED` 视为“已结算冻结”；前后端统一锁定订单编辑、删除、采购数量变更、手工对账转移 | 不支持人工解冻工作流 |
-| 采购小票核销 | 独立采购小票模型，多图上传，保存原图/缩略图/上传时间/处理状态；工作台展示 `receiptItems` / `matchedOrderLines` / `unmatchedReceiptItems` / `missingOrderedItems` / `selfUseItems`，并可保存人工修正 | AI 识别仍为受控 mock，不宣称真实 OCR/LLM 识别 |
+| 采购小票核销 | 独立采购小票模型，多图上传，保存原图/缩略图/上传时间/处理状态；工作台展示 `receiptItems` / `matchedOrderLines` / `unmatchedReceiptItems` / `missingOrderedItems` / `selfUseItems`，并可保存人工修正；优先调用真实 AI/LLM 识别 | AI 服务不可用时会降级为规则回退结果，不承诺 100% OCR 命中率 |
 | 客户聊天 | 订单上下文优先，Trip 为次级筛选；消息持久化 + 轮询刷新 | 无 WebSocket、无 MQ |
 | 采购与财务 | Procurement HUD、物流跟踪、分润配置、客户账单导出、伙伴钱包、财务审计链 | 线下结算口径，不提供真实支付扣款 |
 

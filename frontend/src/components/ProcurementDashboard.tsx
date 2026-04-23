@@ -674,6 +674,9 @@ export default function ProcurementDashboard() {
                         <Space wrap>
                           <Text strong>{receipt.fileName || `${t('procurement.receipt')} #${receipt.id}`}</Text>
                           <Tag color={receipt.processingStatus === 'RECONCILED' ? 'green' : 'gold'}>{receipt.processingStatus}</Tag>
+                          <Tag color={receipt.reconciliationResult?.recognitionMode === 'AI' ? 'blue' : 'default'}>
+                            {receipt.reconciliationResult?.recognitionMode ?? 'UNKNOWN'}
+                          </Tag>
                         </Space>
                         {receipt.thumbnailUrl ? (
                           <img
@@ -683,7 +686,7 @@ export default function ProcurementDashboard() {
                           />
                         ) : null}
                         <Text type="secondary">{receipt.uploadedAt}</Text>
-                        <Text>{t('procurement.receipt_workbench_mock_notice')}</Text>
+                        <Text>{receipt.reconciliationResult?.summary || t('procurement.receipt_workbench_ai_notice')}</Text>
                       </Space>
                     </Card>
                   ))
@@ -693,7 +696,12 @@ export default function ProcurementDashboard() {
             <Col xs={24} lg={14}>
               {selectedReceipt ? (
                 <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                  <Alert type="info" showIcon message={t('procurement.receipt_workbench_left')} description={t('procurement.receipt_workbench_mock_notice')} />
+                  <Alert
+                    type="info"
+                    showIcon
+                    message={t('procurement.receipt_workbench_left')}
+                    description={selectedReceipt.reconciliationResult?.summary || t('procurement.receipt_workbench_ai_notice')}
+                  />
                   <Table
                     size="small"
                     pagination={false}
