@@ -4,13 +4,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ClientBilling from './ClientBilling';
 import { I18nProvider } from '../i18n';
 
-const confirmSpy = vi.fn();
-const modalConfirmSpy = vi.fn();
+const { confirmSpy, modalConfirmSpy } = vi.hoisted(() => ({
+  confirmSpy: vi.fn(),
+  modalConfirmSpy: vi.fn()
+}));
 
 vi.mock('antd', async () => {
   const antd = await vi.importActual<typeof import('antd')>('antd');
   return {
     ...antd,
+    Table: ({ dataSource = [] }: any) => <div>{dataSource.map((item: any) => item.itemName ?? '').join(' ')}</div>,
+    Select: ({ options = [], onChange, value }: any) => (
+      <select value={value} onChange={(event) => onChange?.(Number(event.target.value))}>
+        {options.map((option: any) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    ),
     Modal: {
       ...antd.Modal,
       confirm: (config: any) => {
@@ -64,7 +76,7 @@ describe('ClientBilling', () => {
     );
 
     expect(await screen.findByText('BIZ-1001')).toBeInTheDocument();
-    expect(await screen.findByText('Short shipped 1')).toBeInTheDocument();
+    expect(await screen.findByText('Matcha')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Confirm receipt' }));
     await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith(2000, 'BIZ-1001', 'RECEIPT'));

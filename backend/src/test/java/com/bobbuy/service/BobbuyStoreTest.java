@@ -527,11 +527,11 @@ class BobbuyStoreTest {
     updatePayload.addLine(new OrderLine("SKU-L", "Lock Item", null, 2, 9.9));
     assertThatThrownBy(() -> store.updateOrder(created.getId(), updatePayload))
         .isInstanceOf(ApiException.class)
-        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.order.locked_after_trip_completed"));
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.trip.settlement_frozen"));
 
     assertThatThrownBy(() -> store.deleteOrder(created.getId()))
         .isInstanceOf(ApiException.class)
-        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.order.locked_after_trip_completed"));
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.trip.settlement_frozen"));
   }
 
   @Test

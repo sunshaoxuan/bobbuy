@@ -32,7 +32,7 @@ test('client billing confirmation posts irreversible action', async ({ page }) =
   await setCustomerContext(page);
   await page.goto('/client/billing');
   await page.getByRole('button', { name: 'Confirm receipt' }).click();
-  await page.getByRole('button', { name: 'Confirm' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Confirm', exact: true }).click();
   await expect.poll(() => confirmedAction).toBe('RECEIPT');
 });
 
@@ -67,6 +67,6 @@ test('settlement frozen trip disables order mutations and shows receipt workbenc
 
   await page.goto('/procurement');
   await expect(page.getByText('Procurement Receipt Workbench')).toBeVisible();
-  await expect(page.getByText('Settlement freeze')).toBeVisible();
+  await expect(page.getByText(/Settlement freeze:/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save reconciliation' })).toBeVisible();
 });
