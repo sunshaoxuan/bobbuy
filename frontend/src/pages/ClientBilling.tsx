@@ -173,7 +173,7 @@ export default function ClientBilling() {
                     />
                     <Table
                       dataSource={entry.orderLines}
-                      rowKey={(line) => `${entry.businessId}-${line.skuId}-${line.itemName}`}
+                      rowKey={(line) => `${entry.businessId}-${line.skuId}`}
                       columns={lineColumns}
                       pagination={false}
                       size="small"

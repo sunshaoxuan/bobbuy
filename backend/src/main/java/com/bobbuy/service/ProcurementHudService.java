@@ -741,13 +741,17 @@ public class ProcurementHudService {
       }
       ImageStorageService.UploadResult upload = imageStorageService.saveBase64ToObject(payload.getImageBase64());
       LocalDateTime now = LocalDateTime.now();
+      String originalObjectKey = upload == null ? inlineObjectKey("INLINE", now) : upload.objectKey();
+      String originalImageUrl = upload == null ? payload.getImageBase64() : upload.publicUrl();
+      String thumbnailObjectKey = upload == null ? inlineObjectKey("INLINE-THUMB", now) : upload.objectKey();
+      String thumbnailUrl = upload == null ? payload.getImageBase64() : upload.publicUrl();
       ProcurementReceipt receipt = new ProcurementReceipt(
           tripId,
           payload.getFileName(),
-          upload == null ? inlineObjectKey("INLINE", now) : upload.objectKey(),
-          upload == null ? payload.getImageBase64() : upload.publicUrl(),
-          upload == null ? inlineObjectKey("INLINE-THUMB", now) : upload.objectKey(),
-          upload == null ? payload.getImageBase64() : upload.publicUrl(),
+          originalObjectKey,
+          originalImageUrl,
+          thumbnailObjectKey,
+          thumbnailUrl,
           RECEIPT_STATUS_READY,
           now,
           now,

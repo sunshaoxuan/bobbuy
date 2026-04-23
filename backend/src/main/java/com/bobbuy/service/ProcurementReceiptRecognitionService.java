@@ -27,6 +27,7 @@ public class ProcurementReceiptRecognitionService {
   private static final Pattern JSON_BLOCK_PATTERN = Pattern.compile("```(?:json)?\\s*(\\{.*}|\\[.*])\\s*```", Pattern.DOTALL);
   private static final String AI_MODE = "AI";
   private static final String FALLBACK_MODE = "RULE_FALLBACK";
+  // Keep name overlap as the primary signal while still letting price help disambiguate very similar receipt lines.
   private static final double MATCH_SCORE_THRESHOLD = 0.45d;
   private static final double TOKEN_SCORE_WEIGHT = 0.8d;
   private static final double PRICE_SCORE_WEIGHT = 0.2d;
@@ -277,7 +278,7 @@ public class ProcurementReceiptRecognitionService {
     double tokenScore = union <= 0 ? 0d : (double) overlap / (double) union;
     double priceScore = 0d;
     if (receiptUnitPrice > 0d && candidate.unitPrice() > 0d) {
-      double diffRatio = Math.abs(receiptUnitPrice - candidate.unitPrice()) / Math.max(candidate.unitPrice(), 1d);
+      double diffRatio = Math.abs(receiptUnitPrice - candidate.unitPrice()) / candidate.unitPrice();
       priceScore = Math.max(0d, 1d - diffRatio);
     }
     return (tokenScore * TOKEN_SCORE_WEIGHT) + (priceScore * PRICE_SCORE_WEIGHT);

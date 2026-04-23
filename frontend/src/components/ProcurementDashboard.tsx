@@ -354,7 +354,10 @@ export default function ProcurementDashboard() {
   ) => {
     updateSelectedReceipt((receipt) => {
       const nextCollection = [...(receipt.reconciliationResult?.[collectionKey] ?? [])];
-      const currentItem = { ...(nextCollection[index] ?? {}) };
+      if (index < 0 || index >= nextCollection.length) {
+        return receipt;
+      }
+      const currentItem = { ...nextCollection[index] };
       currentItem.disposition = disposition;
       nextCollection[index] = currentItem;
       return {
