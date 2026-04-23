@@ -4,6 +4,7 @@ import {
   Breadcrumb,
   Button,
   Card,
+  Checkbox,
   Col,
   Empty,
   Form,
@@ -25,9 +26,11 @@ import {
 import {
   api,
   type CustomerBalanceLedgerEntry,
+  type DeliveryPreparation,
   type FinancialAuditLog,
   type LogisticsTracking,
   type Order,
+  type PickingChecklist,
   type ProcurementReceipt,
   type ProfitSharingConfig,
   type ProcurementDeficitItemResponse,
@@ -67,6 +70,8 @@ export default function ProcurementDashboard() {
   const [purchaserRatio, setPurchaserRatio] = useState<number>(70);
   const [promoterRatio, setPromoterRatio] = useState<number>(30);
   const [logisticsTrackings, setLogisticsTrackings] = useState<LogisticsTracking[]>([]);
+  const [deliveryPreparations, setDeliveryPreparations] = useState<DeliveryPreparation[]>([]);
+  const [pickingChecklist, setPickingChecklist] = useState<PickingChecklist[]>([]);
   const [logisticsTrackingNumber, setLogisticsTrackingNumber] = useState<string>('');
   const [logisticsChannel, setLogisticsChannel] = useState<string>('DOMESTIC');
   const [logisticsProvider, setLogisticsProvider] = useState<string>('MOCK');
@@ -95,7 +100,7 @@ export default function ProcurementDashboard() {
     refreshRequestRef.current = requestId;
     setLoading(true);
     try {
-      const [hud, orderList, expenseList, tripAuditLogs, customerLedger, profitShareConfig, logistics, deficits, receiptList] = await Promise.all([
+      const [hud, orderList, expenseList, tripAuditLogs, customerLedger, profitShareConfig, logistics, deficits, receiptList, deliveryList, pickingList] = await Promise.all([
         api.procurementHud(tripId),
         api.orders(tripId),
         api.procurementExpenses(tripId),
@@ -104,7 +109,9 @@ export default function ProcurementDashboard() {
         api.procurementProfitSharing(tripId),
         api.procurementLogistics(tripId),
         api.procurementDeficitItems(tripId),
-        api.procurementReceipts(tripId)
+        api.procurementReceipts(tripId),
+        api.procurementDeliveryPreparations(tripId),
+        api.procurementPickingChecklist(tripId)
       ]);
       if (refreshRequestRef.current !== requestId) {
         return;
@@ -121,6 +128,8 @@ export default function ProcurementDashboard() {
       setLogisticsTrackings(logistics);
       setDeficitItems(deficits);
       setProcurementReceipts(receiptList);
+      setDeliveryPreparations(deliveryList);
+      setPickingChecklist(pickingList);
       setSelectedReceiptId((current) => receiptList.some((item) => item.id === current) ? current : receiptList[0]?.id);
       setReconcileRows(buildReconcileRows(orderList));
       const [wPurchaser, wPromoter, txList] = await Promise.all([
@@ -457,6 +466,29 @@ export default function ProcurementDashboard() {
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
+  };
+
+  const exportDeliveryPreparations = async () => {
+    if (!selectedTripId) {
+      return;
+    }
+    const blob = await api.exportDeliveryPreparations(selectedTripId);
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `trip-${selectedTripId}-delivery-preparations.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  };
+
+  const updatePickingItem = async (businessId: string, skuId: string, checked: boolean) => {
+    if (!selectedTripId) {
+      return;
+    }
+    await api.updateProcurementPickingChecklist(selectedTripId, businessId, { skuId, checked });
+    await refreshTripData(selectedTripId);
   };
 
   const tableScroll = { x: 'max-content' as const };
@@ -1000,6 +1032,100 @@ export default function ProcurementDashboard() {
           />
         )}
         </Space>
+      </Card>
+
+      <Card title={t('procurement.delivery_preparation')} loading={loading} className="procurement-glass-card">
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Space wrap>
+            <Button onClick={exportDeliveryPreparations}>{t('procurement.export_delivery_addresses')}</Button>
+          </Space>
+          {deliveryPreparations.length === 0 ? (
+            <Empty description={t('procurement.no_delivery_preparation')} />
+          ) : (
+            <Table<DeliveryPreparation>
+              rowKey="businessId"
+              size="small"
+              pagination={false}
+              dataSource={deliveryPreparations}
+              scroll={tableScroll}
+              columns={[
+                { title: t('procurement.business_id'), dataIndex: 'businessId', key: 'businessId' },
+                { title: t('procurement.customer_name'), dataIndex: 'customerName', key: 'customerName' },
+                {
+                  title: t('procurement.delivery_status'),
+                  dataIndex: 'deliveryStatus',
+                  key: 'deliveryStatus',
+                  render: (value: string) => <Tag color={value === 'READY_FOR_DELIVERY' ? 'green' : 'blue'}>{t(`delivery.status.${value}`)}</Tag>
+                },
+                { title: t('procurement.address_summary'), dataIndex: 'addressSummary', key: 'addressSummary' },
+                { title: t('procurement.route_coordinates'), key: 'coordinates', render: (_, row) => `${row.latitude ?? '-'}, ${row.longitude ?? '-'}` },
+                {
+                  title: t('procurement.picking_progress'),
+                  key: 'progress',
+                  render: (_, row) => `${row.pickedItems}/${row.totalPickItems}`
+                }
+              ]}
+            />
+          )}
+        </Space>
+      </Card>
+
+      <Card title={t('procurement.picking_checklist')} loading={loading} className="procurement-glass-card">
+        {pickingChecklist.length === 0 ? (
+          <Empty description={t('procurement.no_picking_data')} />
+        ) : (
+          <Space direction="vertical" style={{ width: '100%' }} size={12}>
+            {pickingChecklist.map((entry) => (
+              <Card
+                key={entry.businessId}
+                type="inner"
+                title={`${entry.businessId}${entry.customerName ? ` · ${entry.customerName}` : ''}`}
+                extra={<Tag color={entry.readyForDelivery ? 'green' : 'gold'}>{t(`delivery.status.${entry.deliveryStatus}`)}</Tag>}
+              >
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Text type="secondary">{entry.addressSummary || t('procurement.no_address')}</Text>
+                  <Table
+                    rowKey={(row) => `${entry.businessId}-${row.skuId}`}
+                    size="small"
+                    pagination={false}
+                    dataSource={entry.items}
+                    scroll={tableScroll}
+                    columns={[
+                      {
+                        title: t('procurement.picking_checked'),
+                        key: 'checked',
+                        render: (_, row) => (
+                          <Checkbox
+                            checked={row.checked}
+                            onChange={(event) => void updatePickingItem(entry.businessId, row.skuId, event.target.checked)}
+                          />
+                        )
+                      },
+                      { title: t('orders.lines.item_name'), dataIndex: 'itemName', key: 'itemName' },
+                      { title: t('orders.lines.sku_id'), dataIndex: 'skuId', key: 'skuId' },
+                      {
+                        title: t('procurement.picking_quantity'),
+                        key: 'quantity',
+                        render: (_, row) => `${row.pickedQuantity}/${row.orderedQuantity}`
+                      },
+                      {
+                        title: t('procurement.picking_labels'),
+                        key: 'labels',
+                        render: (_, row) => (
+                          <Space wrap>
+                            {row.labels.length === 0 ? <Text type="secondary">-</Text> : row.labels.map((label) => (
+                              <Tag key={label}>{t(`picking.label.${label}`)}</Tag>
+                            ))}
+                          </Space>
+                        )
+                      }
+                    ]}
+                  />
+                </Space>
+              </Card>
+            ))}
+          </Space>
+        )}
       </Card>
 
       <Card title={t('procurement.procurement_deficit') || 'Procurement Deficit'} loading={loading} className="procurement-glass-card">

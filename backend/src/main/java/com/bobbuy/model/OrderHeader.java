@@ -45,6 +45,8 @@ public class OrderHeader {
     private String receiptConfirmedBy;
     private LocalDateTime billingConfirmedAt;
     private String billingConfirmedBy;
+    @Enumerated(EnumType.STRING)
+    private DeliveryStatus deliveryStatus;
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private List<OrderLine> lines = new ArrayList<>(); // 嵌套行条目
@@ -60,6 +62,7 @@ public class OrderHeader {
         this.status = OrderStatus.NEW;
         this.statusUpdatedAt = LocalDateTime.now();
         this.paymentStatus = PaymentStatus.UNPAID;
+        this.deliveryStatus = DeliveryStatus.PENDING_DELIVERY;
     }
 
     // Getters and Setters
@@ -194,5 +197,13 @@ public class OrderHeader {
 
     public void setBillingConfirmedBy(String billingConfirmedBy) {
         this.billingConfirmedBy = billingConfirmedBy;
+    }
+
+    public DeliveryStatus getDeliveryStatus() {
+        return deliveryStatus;
+    }
+
+    public void setDeliveryStatus(DeliveryStatus deliveryStatus) {
+        this.deliveryStatus = deliveryStatus;
     }
 }

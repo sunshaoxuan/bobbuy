@@ -161,6 +161,8 @@ public class BobbuyStore {
         customerAddress.setCity("Shanghai");
         customerAddress.setAddressLine("Pudong Century Ave 88");
         customerAddress.setPostalCode("200120");
+        customerAddress.setLatitude(31.2304);
+        customerAddress.setLongitude(121.4737);
         customer.setDefaultAddress(customerAddress);
         User.UserSocialAccount customerSocial = new User.UserSocialAccount();
         customerSocial.setPlatform("WeChat");

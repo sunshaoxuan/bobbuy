@@ -41,20 +41,23 @@ vi.mock('../api', () => ({
   api: {
     trips: vi.fn(() => Promise.resolve([{ id: 2000, agentId: 1, origin: 'Tokyo', destination: 'Shanghai', departDate: '2026-01-01', capacity: 10, reservedCapacity: 1, status: 'PUBLISHED', settlementFrozen: false, settlementFreezeStage: 'ACTIVE', settlementFreezeReason: '' }])),
     customerBalanceLedger: vi.fn(() => Promise.resolve([
-      {
-        tripId: 2000,
-        businessId: 'BIZ-1001',
-        customerId: 1001,
-        totalReceivable: 100,
+        {
+          tripId: 2000,
+          businessId: 'BIZ-1001',
+          customerId: 1001,
+          customerName: 'Chen Li',
+          totalReceivable: 100,
         paidDeposit: 10,
         outstandingBalance: 90,
         amountDueThisTrip: 100,
         amountReceivedThisTrip: 10,
         amountPendingThisTrip: 90,
-        balanceBeforeCarryForward: 0,
-        balanceAfterCarryForward: -90,
-        settlementStatus: 'PENDING_CONFIRMATION',
-        settlementFrozen: false,
+          balanceBeforeCarryForward: 0,
+          balanceAfterCarryForward: -90,
+          settlementStatus: 'PENDING_CONFIRMATION',
+          deliveryStatus: 'READY_FOR_DELIVERY',
+          deliveryAddressSummary: 'Shanghai Pudong Century Ave 88',
+          settlementFrozen: false,
         settlementFreezeStage: 'ACTIVE',
         settlementFreezeReason: '',
         paymentRecords: [{ id: 1, tripId: 2000, businessId: 'BIZ-1001', customerId: 1001, amount: 10, paymentMethod: 'CASH', createdAt: '2026-01-01T00:00:00' }],
@@ -84,6 +87,8 @@ describe('ClientBilling', () => {
     expect(await screen.findByText('BIZ-1001')).toBeInTheDocument();
     expect(await screen.findByText('Matcha')).toBeInTheDocument();
     expect(await screen.findByText(/CASH ·/)).toBeInTheDocument();
+    expect(await screen.findByText('Shanghai Pudong Century Ave 88')).toBeInTheDocument();
+    expect(await screen.findByText('Ready for Delivery')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Confirm receipt' }));
     await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith(2000, 'BIZ-1001', 'RECEIPT'));
