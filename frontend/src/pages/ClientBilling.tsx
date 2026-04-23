@@ -141,18 +141,28 @@ export default function ClientBilling() {
                       items={[
                         {
                           key: 'receivable',
-                          label: t('zen.statement_total_receivable'),
-                          children: formatAmount(entry.totalReceivable)
+                          label: t('billing.amount_due_this_trip'),
+                          children: formatAmount(entry.amountDueThisTrip ?? entry.totalReceivable)
                         },
                         {
-                          key: 'deposit',
-                          label: t('zen.statement_paid_deposit'),
-                          children: formatAmount(entry.paidDeposit)
+                          key: 'received',
+                          label: t('billing.amount_received_this_trip'),
+                          children: formatAmount(entry.amountReceivedThisTrip ?? entry.paidDeposit)
                         },
                         {
                           key: 'outstanding',
-                          label: t('zen.statement_outstanding'),
-                          children: formatAmount(entry.outstandingBalance)
+                          label: t('billing.amount_pending_this_trip'),
+                          children: formatAmount(entry.amountPendingThisTrip ?? entry.outstandingBalance)
+                        },
+                        {
+                          key: 'carry-before',
+                          label: t('billing.balance_before_carry_forward'),
+                          children: formatAmount(entry.balanceBeforeCarryForward ?? 0)
+                        },
+                        {
+                          key: 'carry-after',
+                          label: t('billing.balance_after_carry_forward'),
+                          children: formatAmount(entry.balanceAfterCarryForward ?? 0)
                         },
                         {
                           key: 'status',
@@ -171,6 +181,15 @@ export default function ClientBilling() {
                         }
                       ]}
                     />
+                    {(entry.paymentRecords ?? []).length > 0 ? (
+                      <Space direction="vertical" size={4}>
+                        {(entry.paymentRecords ?? []).map((record) => (
+                          <Text key={record.id} type="secondary">
+                            {record.paymentMethod} · {formatAmount(record.amount)} · {record.createdAt}
+                          </Text>
+                        ))}
+                      </Space>
+                    ) : null}
                     <Table
                       dataSource={entry.orderLines}
                       rowKey={(line) => `${entry.businessId}-${line.skuId}`}
@@ -197,7 +216,9 @@ export default function ClientBilling() {
                         {t('billing.confirm_statement_action')}
                       </Button>
                     </Space>
-                    <Text type="secondary">{t('billing.order_context_hint')}</Text>
+                    <Text type="secondary">
+                      {t('billing.balance_carry_forward_hint')} {t('billing.order_context_hint')}
+                    </Text>
                   </Space>
                 </Card>
               );

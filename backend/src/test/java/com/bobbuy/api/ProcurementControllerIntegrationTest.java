@@ -245,8 +245,9 @@ class ProcurementControllerIntegrationTest {
 
   @Test
   void offlinePaymentEndpointsReturnTripAndCustomerBalances() throws Exception {
+    long customerId = 9001L;
     Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
-    OrderHeader order = new OrderHeader("PAY-100", 1001L, trip.getId());
+    OrderHeader order = new OrderHeader("PAY-100", customerId, trip.getId());
     order.addLine(new OrderLine("prd-1000", "抹茶セット", null, 2, 10.0));
     store.upsertOrder(order);
 
@@ -271,12 +272,12 @@ class ProcurementControllerIntegrationTest {
         .andExpect(jsonPath("$.meta.total").value(1))
         .andExpect(jsonPath("$.data[0].note").value("柜台现金"));
 
-    mockMvc.perform(asAgent(get("/api/procurement/customers/{customerId}/balance", 1001L)))
+    mockMvc.perform(asAgent(get("/api/procurement/customers/{customerId}/balance", customerId)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.customerId").value(1001L))
+        .andExpect(jsonPath("$.data.customerId").value(customerId))
         .andExpect(jsonPath("$.data.currentBalance").value(-7.5));
 
-    mockMvc.perform(asAgent(get("/api/procurement/customers/{customerId}/ledger-history", 1001L)))
+    mockMvc.perform(asAgent(get("/api/procurement/customers/{customerId}/ledger-history", customerId)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.meta.total").value(1))
         .andExpect(jsonPath("$.data[0].businessId").value("PAY-100"));

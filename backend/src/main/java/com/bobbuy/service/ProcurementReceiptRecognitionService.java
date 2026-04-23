@@ -237,19 +237,19 @@ public class ProcurementReceiptRecognitionService {
         }
       }
     }
-    return new LinkedHashMap<>(Map.of(
-        "recognitionMode", FALLBACK_MODE,
-        "summary", "AI service unavailable, using deterministic fallback from order data.",
-        "receiptItems", receiptItems,
-        "matchedOrderLines", matchedOrderLines,
-        "unmatchedReceiptItems", new ArrayList<>(),
-        "missingOrderedItems", missingOrderedItems,
-        "selfUseItems", new ArrayList<>(),
-        "confidence", 0.42d,
-        "reviewStatus", REVIEW_STATUS_PENDING,
-        "reviewedBy", "",
-        "reviewedAt", ""
-    ));
+    Map<String, Object> result = new LinkedHashMap<>();
+    result.put("recognitionMode", FALLBACK_MODE);
+    result.put("summary", "AI service unavailable, using deterministic fallback from order data.");
+    result.put("receiptItems", receiptItems);
+    result.put("matchedOrderLines", matchedOrderLines);
+    result.put("unmatchedReceiptItems", new ArrayList<>());
+    result.put("missingOrderedItems", missingOrderedItems);
+    result.put("selfUseItems", new ArrayList<>());
+    result.put("confidence", 0.42d);
+    result.put("reviewStatus", REVIEW_STATUS_PENDING);
+    result.put("reviewedBy", "");
+    result.put("reviewedAt", "");
+    return result;
   }
 
   private List<ReceiptLineCandidate> flattenOrders(List<OrderHeader> orders) {

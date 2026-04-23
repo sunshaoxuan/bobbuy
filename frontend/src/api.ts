@@ -61,6 +61,26 @@ export type User = {
     name: string;
     role: string;
     rating: number;
+    phone?: string;
+    email?: string;
+    note?: string;
+    defaultAddress?: {
+        contactName?: string;
+        phone?: string;
+        countryRegion?: string;
+        city?: string;
+        addressLine?: string;
+        postalCode?: string;
+        latitude?: number;
+        longitude?: number;
+    };
+    socialAccounts?: Array<{
+        platform?: string;
+        handle?: string;
+        displayName?: string;
+        verified?: boolean;
+        note?: string;
+    }>;
 };
 
 export type AiExtractedItem = {
@@ -199,6 +219,11 @@ export type CustomerBalanceLedgerEntry = {
     totalReceivable: number;
     paidDeposit: number;
     outstandingBalance: number;
+    amountDueThisTrip?: number;
+    amountReceivedThisTrip?: number;
+    amountPendingThisTrip?: number;
+    balanceBeforeCarryForward?: number;
+    balanceAfterCarryForward?: number;
     settlementStatus: string;
     settlementFrozen: boolean;
     settlementFreezeStage: string;
@@ -207,6 +232,7 @@ export type CustomerBalanceLedgerEntry = {
     receiptConfirmedBy?: string;
     billingConfirmedAt?: string;
     billingConfirmedBy?: string;
+    paymentRecords?: CustomerPaymentRecord[];
     orderLines: {
         skuId: string;
         itemName: string;
@@ -232,6 +258,10 @@ export type ProcurementReceipt = {
         merchantName?: string;
         receiptDate?: string;
         currency?: string;
+        confidence?: number;
+        reviewStatus?: string;
+        reviewedBy?: string;
+        reviewedAt?: string;
         receiptItems: Array<Record<string, any>>;
         matchedOrderLines: Array<Record<string, any>>;
         unmatchedReceiptItems: Array<Record<string, any>>;
@@ -239,6 +269,25 @@ export type ProcurementReceipt = {
         selfUseItems: Array<Record<string, any>>;
         [key: string]: any;
     };
+    rawRecognitionResult?: Record<string, any>;
+    manualReconciliationResult?: Record<string, any>;
+};
+
+export type CustomerPaymentRecord = {
+    id: number;
+    tripId: number;
+    businessId: string;
+    customerId: number;
+    amount: number;
+    paymentMethod: string;
+    note?: string;
+    createdAt: string;
+    operator?: string;
+};
+
+export type CustomerBalanceSummary = {
+    customerId: number;
+    currentBalance: number;
 };
 
 export type ProcurementItemResponse = {
@@ -456,8 +505,42 @@ const fallback = {
         }
     ],
     users: [
-        { id: 1000, name: 'Aiko Tan', role: 'AGENT', rating: 4.8 },
-        { id: 1001, name: 'Chen Li', role: 'CUSTOMER', rating: 4.6 }
+        {
+            id: 1000,
+            name: 'Aiko Tan',
+            role: 'AGENT',
+            rating: 4.8,
+            phone: '+81-90-1000-0000',
+            email: 'aiko@bobbuy.test',
+            note: 'Primary procurement coordinator',
+            defaultAddress: {
+                contactName: 'Aiko Tan',
+                phone: '+81-90-1000-0000',
+                countryRegion: 'Japan',
+                city: 'Tokyo',
+                addressLine: 'Shibuya 1-2-3',
+                postalCode: '150-0002'
+            },
+            socialAccounts: [{ platform: 'LINE', handle: '@aiko-tan', displayName: 'Aiko Tan', verified: false, note: 'Registration only' }]
+        },
+        {
+            id: 1001,
+            name: 'Chen Li',
+            role: 'CUSTOMER',
+            rating: 4.6,
+            phone: '+86-138-0000-0001',
+            email: 'chen.li@bobbuy.test',
+            note: 'Prefers pickup at station',
+            defaultAddress: {
+                contactName: 'Chen Li',
+                phone: '+86-138-0000-0001',
+                countryRegion: 'China',
+                city: 'Shanghai',
+                addressLine: 'Pudong Century Ave 88',
+                postalCode: '200120'
+            },
+            socialAccounts: [{ platform: 'WeChat', handle: 'chen-li-1001', displayName: 'Chen Li', verified: false, note: 'Registration only' }]
+        }
     ],
     stockCategories: fallbackStockCategories,
     products: [
@@ -671,6 +754,24 @@ async function patchJson<TResponse, TBody>(url: string, body: TBody): Promise<TR
     return payload as TResponse;
 }
 
+async function putJson<TResponse, TBody>(url: string, body: TBody): Promise<TResponse> {
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: createRequestHeaders(undefined, true),
+        body: JSON.stringify(body)
+    });
+    if (!response.ok) {
+        const errorMessage = await parseErrorMessage(response);
+        message.error(errorMessage);
+        throw new Error(errorMessage);
+    }
+    const payload = (await response.json()) as ApiResponse<TResponse> | TResponse;
+    if (typeof payload === 'object' && payload !== null && 'status' in payload && 'data' in payload) {
+        return (payload.data ?? ({} as TResponse)) as TResponse;
+    }
+    return payload as TResponse;
+}
+
 export type PriceTier = {
     tierName: string;
     price: number;
@@ -720,6 +821,10 @@ export const api = {
             fallback.orders
         ),
     users: () => fetchJson<User[]>('/api/users', fallback.users),
+    createUser: (user: Omit<User, 'id'>) =>
+        postJson<User, Omit<User, 'id'>>('/api/users', user),
+    updateUser: (id: number, user: Omit<User, 'id'>) =>
+        putJson<User, Omit<User, 'id'>>(`/api/users/${id}`, user),
     createTrip: (trip: Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>) =>
         postJson<Trip, Omit<Trip, 'id' | 'statusUpdatedAt' | 'remainingCapacity'>>('/api/trips', trip),
     createOrder: (order: Omit<Order, 'id' | 'statusUpdatedAt' | 'totalAmount'>) =>
@@ -810,6 +915,23 @@ export const api = {
         fetchJson<FinancialAuditLog[]>(`/api/procurement/${tripId}/audit-logs`, []),
     customerBalanceLedger: (tripId: number) =>
         fetchJson<CustomerBalanceLedgerEntry[]>(`/api/procurement/${tripId}/ledger`, []),
+    recordOfflinePayment: (
+        tripId: number,
+        payload: { businessId: string; amount: number; paymentMethod: string; note?: string }
+    ) =>
+        postJson<CustomerPaymentRecord, { businessId: string; amount: number; paymentMethod: string; note?: string }>(
+            `/api/procurement/${tripId}/payments`,
+            payload
+        ),
+    customerBalance: (customerId: number) =>
+        fetchJson<CustomerBalanceSummary>(`/api/procurement/customers/${customerId}/balance`, {
+            customerId,
+            currentBalance: 0
+        }),
+    customerLedgerHistory: (customerId: number) =>
+        fetchJson<CustomerPaymentRecord[]>(`/api/procurement/customers/${customerId}/ledger-history`, []),
+    tripCustomerPayments: (tripId: number, businessId: string) =>
+        fetchJson<CustomerPaymentRecord[]>(`/api/procurement/${tripId}/ledger/${encodeURIComponent(businessId)}/payments`, []),
     confirmCustomerLedger: (
         tripId: number,
         businessId: string,
@@ -869,6 +991,11 @@ export const api = {
         patchJson<ProcurementReceipt, { processingStatus?: string; reconciliationResult: ProcurementReceipt['reconciliationResult'] }>(
             `/api/procurement/${tripId}/receipts/${receiptId}`,
             payload
+        ),
+    rerecognizeProcurementReceipt: (tripId: number, receiptId: number) =>
+        postJson<ProcurementReceipt, Record<string, never>>(
+            `/api/procurement/${tripId}/receipts/${receiptId}/re-recognize`,
+            {}
         ),
     getWallet: (partnerId: string) =>
         fetchJson<WalletSummary>(`/api/procurement/wallets/${partnerId}`, fallback.walletSummary),
