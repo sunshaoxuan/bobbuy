@@ -69,6 +69,16 @@ public class FinancialAuditTrailService {
     append(tripId, "PROCUREMENT_RECEIPT_RECONCILED", operatorName, originalValue, modifiedValue);
   }
 
+  @Transactional
+  public void logCustomerOfflinePayment(Long tripId, String operatorName, String originalValue, String modifiedValue) {
+    append(tripId, "CUSTOMER_OFFLINE_PAYMENT", operatorName, originalValue, modifiedValue);
+  }
+
+  @Transactional
+  public void logProcurementReceiptRerecognized(Long tripId, String operatorName, String originalValue, String modifiedValue) {
+    append(tripId, "PROCUREMENT_RECEIPT_RERECOGNIZED", operatorName, originalValue, modifiedValue);
+  }
+
   @Transactional(readOnly = true)
   public List<FinancialAuditLogResponse> listByTripId(Long tripId) {
     List<FinancialAuditLog> logs = financialAuditLogRepository.findByTripIdOrderByCreatedAtDescIdDesc(tripId);

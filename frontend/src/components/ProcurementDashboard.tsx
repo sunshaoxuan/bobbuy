@@ -78,6 +78,10 @@ export default function ProcurementDashboard() {
   const [procurementReceipts, setProcurementReceipts] = useState<ProcurementReceipt[]>([]);
   const [selectedReceiptId, setSelectedReceiptId] = useState<number>();
   const [receiptFilesBase64, setReceiptFilesBase64] = useState<Array<{ imageBase64: string; fileName?: string }>>([]);
+  const [paymentBusinessId, setPaymentBusinessId] = useState<string>();
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  const [paymentMethod, setPaymentMethod] = useState<string>('CASH');
+  const [paymentNote, setPaymentNote] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<ReconcileDetailRow>();
@@ -110,6 +114,7 @@ export default function ProcurementDashboard() {
       setExpenses(expenseList);
       setAuditLogs(tripAuditLogs);
       setLedgerEntries(customerLedger);
+      setPaymentBusinessId((current) => customerLedger.some((item) => item.businessId === current) ? current : customerLedger[0]?.businessId);
       setProfitSharing(profitShareConfig);
       setPurchaserRatio(profitShareConfig.purchaserRatioPercent);
       setPromoterRatio(profitShareConfig.promoterRatioPercent);
@@ -184,6 +189,7 @@ export default function ProcurementDashboard() {
     [procurementReceipts, selectedReceiptId]
   );
   const settlementFrozen = Boolean(selectedTrip?.settlementFrozen);
+  const settled = selectedTrip?.status === 'SETTLED';
 
   const grossMarginRate = useMemo(() => {
     if (!hudStats) {
@@ -386,6 +392,31 @@ export default function ProcurementDashboard() {
     await refreshTripData(selectedTripId);
   };
 
+  const rerecognizeReceiptWorkbench = async () => {
+    if (!selectedTripId || !selectedReceipt) {
+      return;
+    }
+    await api.rerecognizeProcurementReceipt(selectedTripId, selectedReceipt.id);
+    message.success(t('procurement.receipt_rerecognized'));
+    await refreshTripData(selectedTripId);
+  };
+
+  const submitOfflinePayment = async () => {
+    if (!selectedTripId || !paymentBusinessId || paymentAmount <= 0) {
+      return;
+    }
+    await api.recordOfflinePayment(selectedTripId, {
+      businessId: paymentBusinessId,
+      amount: paymentAmount,
+      paymentMethod,
+      note: paymentNote || undefined
+    });
+    setPaymentAmount(0);
+    setPaymentNote('');
+    message.success(t('procurement.payment_recorded'));
+    await refreshTripData(selectedTripId);
+  };
+
   const exportSettlement = async (format: 'csv' | 'pdf') => {
     if (!selectedTripId) {
       return;
@@ -429,6 +460,7 @@ export default function ProcurementDashboard() {
   };
 
   const tableScroll = { x: 'max-content' as const };
+  const formatConfidencePercent = (confidence?: number) => `${Math.round((confidence ?? 0) * 100)}%`;
 
   return (
     <>
@@ -655,7 +687,10 @@ export default function ProcurementDashboard() {
             <Button type="primary" onClick={uploadProcurementReceipts} disabled={receiptFilesBase64.length === 0}>
               {t('procurement.receipt_workbench_upload')}
             </Button>
-            <Button onClick={saveReceiptWorkbench} disabled={!selectedReceipt}>
+            <Button onClick={rerecognizeReceiptWorkbench} disabled={!selectedReceipt || settled}>
+              {t('procurement.receipt_workbench_rerecognize')}
+            </Button>
+            <Button onClick={saveReceiptWorkbench} disabled={!selectedReceipt || settled}>
               {t('procurement.receipt_workbench_save')}
             </Button>
           </Space>
@@ -680,6 +715,9 @@ export default function ProcurementDashboard() {
                           <Tag color={receipt.reconciliationResult?.recognitionMode === 'AI' ? 'blue' : 'default'}>
                             {receipt.reconciliationResult?.recognitionMode ?? 'UNKNOWN'}
                           </Tag>
+                          <Tag color={receipt.reconciliationResult?.reviewStatus === 'REVIEWED' ? 'green' : 'gold'}>
+                            {receipt.reconciliationResult?.reviewStatus ?? 'PENDING_REVIEW'}
+                          </Tag>
                         </Space>
                         {receipt.thumbnailUrl ? (
                           <img
@@ -689,6 +727,9 @@ export default function ProcurementDashboard() {
                           />
                         ) : null}
                         <Text type="secondary">{receipt.uploadedAt}</Text>
+                        <Text type="secondary">
+                          {t('procurement.receipt_confidence')}: {formatConfidencePercent(receipt.reconciliationResult?.confidence as number | undefined)}
+                        </Text>
                         <Text>{receipt.reconciliationResult?.summary || t('procurement.receipt_workbench_ai_notice')}</Text>
                       </Space>
                     </Card>
@@ -703,7 +744,12 @@ export default function ProcurementDashboard() {
                     type="info"
                     showIcon
                     message={t('procurement.receipt_workbench_left')}
-                    description={selectedReceipt.reconciliationResult?.summary || t('procurement.receipt_workbench_ai_notice')}
+                    description={[
+                      selectedReceipt.reconciliationResult?.summary || t('procurement.receipt_workbench_ai_notice'),
+                      selectedReceipt.reconciliationResult?.reviewedBy
+                        ? `${t('procurement.receipt_reviewed_by')}: ${selectedReceipt.reconciliationResult.reviewedBy} · ${selectedReceipt.reconciliationResult.reviewedAt ?? '-'}`
+                        : t('procurement.receipt_pending_review_hint')
+                    ].join(' / ')}
                   />
                   <Table
                     size="small"
@@ -859,6 +905,43 @@ export default function ProcurementDashboard() {
       </Card>
 
       <Card title={t('procurement.customer_ledger')} loading={loading} className="procurement-glass-card">
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Space wrap>
+            <Select
+              value={paymentBusinessId}
+              style={{ minWidth: 180 }}
+              placeholder={t('procurement.business_id')}
+              options={ledgerEntries.map((entry) => ({ value: entry.businessId, label: entry.businessId }))}
+              onChange={setPaymentBusinessId}
+            />
+            <InputNumber
+              min={0.01}
+              precision={2}
+              value={paymentAmount}
+              placeholder={t('procurement.payment_amount')}
+              onChange={(value) => setPaymentAmount(value ?? 0)}
+            />
+            <Select
+              value={paymentMethod}
+              style={{ minWidth: 140 }}
+              onChange={setPaymentMethod}
+              options={[
+                { value: 'CASH', label: t('procurement.payment_method_cash') },
+                { value: 'BANK_TRANSFER', label: t('procurement.payment_method_transfer') },
+                { value: 'OTHER', label: t('procurement.payment_method_other') }
+              ]}
+            />
+            <Input
+              value={paymentNote}
+              style={{ minWidth: 220 }}
+              placeholder={t('procurement.payment_note')}
+              onChange={(event) => setPaymentNote(event.target.value)}
+            />
+            <Button type="primary" onClick={submitOfflinePayment} disabled={settled}>
+              {t('procurement.record_offline_payment')}
+            </Button>
+          </Space>
+          {settled ? <Text type="secondary">{t('procurement.payment_readonly_hint')}</Text> : null}
         {ledgerEntries.length === 0 ? (
           <Empty description={t('procurement.no_ledger_data')} />
         ) : (
@@ -871,9 +954,11 @@ export default function ProcurementDashboard() {
             columns={[
               { title: t('procurement.business_id'), dataIndex: 'businessId', key: 'businessId' },
               { title: t('orders.header.customer_id'), dataIndex: 'customerId', key: 'customerId' },
-              { title: t('procurement.total_receivable'), dataIndex: 'totalReceivable', key: 'totalReceivable' },
-              { title: t('procurement.paid_deposit'), dataIndex: 'paidDeposit', key: 'paidDeposit' },
-              { title: t('procurement.outstanding_balance'), dataIndex: 'outstandingBalance', key: 'outstandingBalance' },
+              { title: t('procurement.amount_due_this_trip'), dataIndex: 'amountDueThisTrip', key: 'amountDueThisTrip' },
+              { title: t('procurement.amount_received_this_trip'), dataIndex: 'amountReceivedThisTrip', key: 'amountReceivedThisTrip' },
+              { title: t('procurement.amount_pending_this_trip'), dataIndex: 'amountPendingThisTrip', key: 'amountPendingThisTrip' },
+              { title: t('procurement.balance_before_carry_forward'), dataIndex: 'balanceBeforeCarryForward', key: 'balanceBeforeCarryForward' },
+              { title: t('procurement.balance_after_carry_forward'), dataIndex: 'balanceAfterCarryForward', key: 'balanceAfterCarryForward' },
               {
                 title: t('procurement.settlement_status'),
                 dataIndex: 'settlementStatus',
@@ -882,6 +967,23 @@ export default function ProcurementDashboard() {
                   <Space wrap>
                     <Tag color={row.settlementFrozen ? 'red' : 'blue'}>{value}</Tag>
                     {row.settlementFrozen ? <Tag color="warning">{row.settlementFreezeStage}</Tag> : null}
+                  </Space>
+                )
+              },
+              {
+                title: t('procurement.payment_history'),
+                key: 'payments',
+                render: (_, row) => (
+                  <Space direction="vertical" size={0}>
+                    {(row.paymentRecords ?? []).length === 0 ? (
+                      <Text type="secondary">-</Text>
+                    ) : (
+                      (row.paymentRecords ?? []).map((record) => (
+                        <Text key={record.id} type="secondary">
+                          {record.paymentMethod} · {record.amount}
+                        </Text>
+                      ))
+                    )}
                   </Space>
                 )
               },
@@ -897,6 +999,7 @@ export default function ProcurementDashboard() {
             ]}
           />
         )}
+        </Space>
       </Card>
 
       <Card title={t('procurement.procurement_deficit') || 'Procurement Deficit'} loading={loading} className="procurement-glass-card">

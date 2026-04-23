@@ -27,6 +27,9 @@ public class ProcurementReceiptRecognitionService {
   private static final Pattern JSON_BLOCK_PATTERN = Pattern.compile("```(?:json)?\\s*(\\{.*}|\\[.*])\\s*```", Pattern.DOTALL);
   private static final String AI_MODE = "AI";
   private static final String FALLBACK_MODE = "RULE_FALLBACK";
+  private static final String REVIEW_STATUS_PENDING = "PENDING_REVIEW";
+  private static final double DEFAULT_AI_CONFIDENCE = 0.86d;
+  private static final double DEFAULT_FALLBACK_CONFIDENCE = 0.42d;
   // Keep name overlap as the primary signal while still letting price help disambiguate very similar receipt lines.
   private static final double MATCH_SCORE_THRESHOLD = 0.45d;
   private static final double TOKEN_SCORE_WEIGHT = 0.8d;
@@ -190,12 +193,16 @@ public class ProcurementReceiptRecognitionService {
     result.put("receiptDate", extraction.receiptDate());
     result.put("currency", extraction.currency());
     result.put("summary", extraction.summary());
-    result.put("rawAiResponse", extraction.rawAiResponse());
-    result.put("receiptItems", receiptItems);
-    result.put("matchedOrderLines", matchedOrderLines);
-    result.put("unmatchedReceiptItems", unmatchedReceiptItems);
-    result.put("missingOrderedItems", missingOrderedItems);
-    result.put("selfUseItems", new ArrayList<>());
+      result.put("rawAiResponse", extraction.rawAiResponse());
+      result.put("receiptItems", receiptItems);
+      result.put("matchedOrderLines", matchedOrderLines);
+      result.put("unmatchedReceiptItems", unmatchedReceiptItems);
+      result.put("missingOrderedItems", missingOrderedItems);
+      result.put("selfUseItems", new ArrayList<>());
+      result.put("confidence", DEFAULT_AI_CONFIDENCE);
+      result.put("reviewStatus", REVIEW_STATUS_PENDING);
+      result.put("reviewedBy", null);
+      result.put("reviewedAt", null);
     return result;
   }
 
@@ -232,15 +239,19 @@ public class ProcurementReceiptRecognitionService {
         }
       }
     }
-    return new LinkedHashMap<>(Map.of(
-        "recognitionMode", FALLBACK_MODE,
-        "summary", "AI service unavailable, using deterministic fallback from order data.",
-        "receiptItems", receiptItems,
-        "matchedOrderLines", matchedOrderLines,
-        "unmatchedReceiptItems", new ArrayList<>(),
-        "missingOrderedItems", missingOrderedItems,
-        "selfUseItems", new ArrayList<>()
-    ));
+    Map<String, Object> result = new LinkedHashMap<>();
+    result.put("recognitionMode", FALLBACK_MODE);
+    result.put("summary", "AI service unavailable, using deterministic fallback from order data.");
+    result.put("receiptItems", receiptItems);
+    result.put("matchedOrderLines", matchedOrderLines);
+    result.put("unmatchedReceiptItems", new ArrayList<>());
+    result.put("missingOrderedItems", missingOrderedItems);
+    result.put("selfUseItems", new ArrayList<>());
+    result.put("confidence", DEFAULT_FALLBACK_CONFIDENCE);
+    result.put("reviewStatus", REVIEW_STATUS_PENDING);
+    result.put("reviewedBy", "");
+    result.put("reviewedAt", "");
+    return result;
   }
 
   private List<ReceiptLineCandidate> flattenOrders(List<OrderHeader> orders) {

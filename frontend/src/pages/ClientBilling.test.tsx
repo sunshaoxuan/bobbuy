@@ -48,10 +48,16 @@ vi.mock('../api', () => ({
         totalReceivable: 100,
         paidDeposit: 10,
         outstandingBalance: 90,
+        amountDueThisTrip: 100,
+        amountReceivedThisTrip: 10,
+        amountPendingThisTrip: 90,
+        balanceBeforeCarryForward: 0,
+        balanceAfterCarryForward: -90,
         settlementStatus: 'PENDING_CONFIRMATION',
         settlementFrozen: false,
         settlementFreezeStage: 'ACTIVE',
         settlementFreezeReason: '',
+        paymentRecords: [{ id: 1, tripId: 2000, businessId: 'BIZ-1001', customerId: 1001, amount: 10, paymentMethod: 'CASH', createdAt: '2026-01-01T00:00:00' }],
         orderLines: [{ skuId: 'SKU-1', itemName: 'Matcha', orderedQuantity: 2, purchasedQuantity: 1, unitPrice: 50, differenceNote: 'Short shipped 1' }]
       }
     ])),
@@ -77,6 +83,7 @@ describe('ClientBilling', () => {
 
     expect(await screen.findByText('BIZ-1001')).toBeInTheDocument();
     expect(await screen.findByText('Matcha')).toBeInTheDocument();
+    expect(await screen.findByText(/CASH ·/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Confirm receipt' }));
     await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith(2000, 'BIZ-1001', 'RECEIPT'));

@@ -29,8 +29,17 @@ vi.mock('antd', async () => {
 // Mock API
 vi.mock('../api', () => ({
     api: {
-        users: () => Promise.resolve([
-            { id: 1000, name: 'Test User', role: 'CUSTOMER', rating: 5.0 }
+      users: () => Promise.resolve([
+            {
+                id: 1000,
+                name: 'Test User',
+                role: 'CUSTOMER',
+                rating: 5.0,
+                phone: '+86-13800000000',
+                email: 'test@bobbuy.test',
+                defaultAddress: { city: 'Shanghai' },
+                socialAccounts: [{ platform: 'WeChat', handle: 'test-user', verified: false }]
+            }
         ])
     }
 }));
@@ -45,5 +54,6 @@ describe('Users Component', () => {
             </I18nProvider>
         );
         expect(await screen.findByText('Test User')).toBeInTheDocument();
+        expect(screen.getByText(/社交账号仅用于登记与展示/)).toBeInTheDocument();
     });
 });

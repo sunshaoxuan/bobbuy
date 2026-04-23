@@ -59,12 +59,17 @@ vi.mock('../api', () => ({
                 uploadedAt: '2026-01-01T00:00:00',
                 updatedAt: '2026-01-01T00:00:00',
                 reconciliationResult: {
+                    recognitionMode: 'AI',
+                    confidence: 0.91,
+                    reviewStatus: 'PENDING_REVIEW',
                     receiptItems: [{ name: 'Matcha Kit', quantity: 1, unitPrice: 50 }],
                     matchedOrderLines: [],
                     unmatchedReceiptItems: [{ name: 'Store item', quantity: 1, disposition: 'UNREVIEWED' }],
                     missingOrderedItems: [],
                     selfUseItems: []
-                }
+                },
+                rawRecognitionResult: { reviewStatus: 'PENDING_REVIEW' },
+                manualReconciliationResult: {}
             }
         ]),
         procurementAuditLogs: () => Promise.resolve([
@@ -81,7 +86,25 @@ vi.mock('../api', () => ({
             }
         ]),
         customerBalanceLedger: () => Promise.resolve([
-            { tripId: 2000, businessId: '20260117001', customerId: 1001, totalReceivable: 100, paidDeposit: 0, outstandingBalance: 100, settlementStatus: 'PENDING_CONFIRMATION', settlementFrozen: false, settlementFreezeStage: 'ACTIVE', settlementFreezeReason: '', orderLines: [] }
+            {
+                tripId: 2000,
+                businessId: '20260117001',
+                customerId: 1001,
+                totalReceivable: 100,
+                paidDeposit: 0,
+                outstandingBalance: 100,
+                amountDueThisTrip: 100,
+                amountReceivedThisTrip: 0,
+                amountPendingThisTrip: 100,
+                balanceBeforeCarryForward: 5,
+                balanceAfterCarryForward: -95,
+                settlementStatus: 'PENDING_CONFIRMATION',
+                settlementFrozen: false,
+                settlementFreezeStage: 'ACTIVE',
+                settlementFreezeReason: '',
+                paymentRecords: [],
+                orderLines: []
+            }
         ]),
         createProcurementExpense: () => Promise.resolve({ id: 2, tripId: 2000, cost: 1, category: '运费', createdAt: '2026-01-01T00:00:00' }),
         manualReconcile: () => Promise.resolve({ skuId: 'prd-1000', fromBusinessId: '20260117001', toBusinessId: '20260117002', transferredQuantity: 1 }),
@@ -177,6 +200,8 @@ vi.mock('../api', () => ({
         finalizeProcurementSettlement: () => Promise.resolve(undefined),
         uploadProcurementReceipts: () => Promise.resolve([]),
         saveProcurementReceipt: () => Promise.resolve({}),
+        rerecognizeProcurementReceipt: () => Promise.resolve({}),
+        recordOfflinePayment: () => Promise.resolve({}),
         procurementList: () => Promise.resolve([])
     }
 }));

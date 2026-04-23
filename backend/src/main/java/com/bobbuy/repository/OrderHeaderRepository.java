@@ -18,6 +18,8 @@ public interface OrderHeaderRepository extends JpaRepository<OrderHeader, Long> 
 
     List<OrderHeader> findByTripIdOrderByCreatedAtAscIdAsc(Long tripId);
 
+    List<OrderHeader> findByCustomerId(Long customerId);
+
     List<OrderHeader> findByStatusOrderByCreatedAtAscIdAsc(OrderStatus status);
 
     Optional<OrderHeader> findTopByOrderByIdDesc();
