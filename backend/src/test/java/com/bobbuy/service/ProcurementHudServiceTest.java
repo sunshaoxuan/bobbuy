@@ -1,7 +1,9 @@
 package com.bobbuy.service;
 
 import com.bobbuy.api.BobbuyApplication;
+import com.bobbuy.api.LedgerConfirmationRequest;
 import com.bobbuy.api.ProcurementHudResponse;
+import com.bobbuy.api.response.ApiException;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.ProductPatch;
@@ -11,10 +13,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest(classes = BobbuyApplication.class)
 class ProcurementHudServiceTest {
@@ -137,6 +141,39 @@ class ProcurementHudServiceTest {
     assertThat(moved).isEqualTo(1);
     assertThat(store.getOrderByBusinessId("MANUAL-FROM").orElseThrow().getLines().get(0).getPurchasedQuantity()).isEqualTo(1);
     assertThat(store.getOrderByBusinessId("MANUAL-TO").orElseThrow().getLines().get(0).getPurchasedQuantity()).isEqualTo(1);
+  }
+
+  @Test
+  void manualReconcileIsBlockedWhenTripSettlementFrozen() {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader fromOrder = new OrderHeader("MANUAL-FROZEN-FROM", 1001L, trip.getId());
+    OrderLine fromLine = new OrderLine("prd-1000", "Matcha", null, 2, 10.0);
+    fromLine.setPurchasedQuantity(2);
+    fromOrder.addLine(fromLine);
+    store.upsertOrder(fromOrder);
+
+    OrderHeader toOrder = new OrderHeader("MANUAL-FROZEN-TO", 1001L, trip.getId());
+    toOrder.addLine(new OrderLine("prd-1000", "Matcha", null, 2, 10.0));
+    store.upsertOrder(toOrder);
+    store.updateTripStatus(trip.getId(), TripStatus.COMPLETED);
+
+    assertThatThrownBy(() -> procurementHudService.manualReconcile(trip.getId(), "prd-1000", "MANUAL-FROZEN-FROM", "MANUAL-FROZEN-TO", 1))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.trip.settlement_frozen"));
+  }
+
+  @Test
+  void confirmCustomerLedgerRequiresReceiptBeforeBilling() {
+    LedgerConfirmationRequest request = new LedgerConfirmationRequest();
+    request.setAction("BILLING");
+
+    assertThatThrownBy(() -> procurementHudService.confirmCustomerLedger(
+        2000L,
+        "20260117001",
+        request,
+        new UsernamePasswordAuthenticationToken("1001", "N/A")))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.procurement.billing.receipt_required"));
   }
 
   private com.bobbuy.api.TripExpenseRequest buildExpense(String category, double cost) {

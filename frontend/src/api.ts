@@ -23,6 +23,9 @@ export type Trip = {
     remainingCapacity?: number;
     status: string;
     statusUpdatedAt?: string;
+    settlementFrozen?: boolean;
+    settlementFreezeStage?: string;
+    settlementFreezeReason?: string;
 };
 
 export type OrderLine = {
@@ -46,6 +49,10 @@ export type Order = {
     paymentMethod?: string;
     paymentStatus?: string;
     totalAmount: number;
+    receiptConfirmedAt?: string;
+    receiptConfirmedBy?: string;
+    billingConfirmedAt?: string;
+    billingConfirmedBy?: string;
     lines: OrderLine[];
 };
 
@@ -186,11 +193,52 @@ export type ManualReconcileResponse = {
 };
 
 export type CustomerBalanceLedgerEntry = {
+    tripId: number;
     businessId: string;
     customerId: number;
     totalReceivable: number;
     paidDeposit: number;
     outstandingBalance: number;
+    settlementStatus: string;
+    settlementFrozen: boolean;
+    settlementFreezeStage: string;
+    settlementFreezeReason: string;
+    receiptConfirmedAt?: string;
+    receiptConfirmedBy?: string;
+    billingConfirmedAt?: string;
+    billingConfirmedBy?: string;
+    orderLines: {
+        skuId: string;
+        itemName: string;
+        orderedQuantity: number;
+        unitPrice: number;
+        purchasedQuantity: number;
+        differenceNote: string;
+    }[];
+};
+
+export type ProcurementReceipt = {
+    id: number;
+    tripId: number;
+    fileName?: string;
+    originalImageUrl?: string;
+    thumbnailUrl?: string;
+    processingStatus: string;
+    uploadedAt: string;
+    updatedAt?: string;
+    reconciliationResult: {
+        recognitionMode?: string;
+        summary?: string;
+        merchantName?: string;
+        receiptDate?: string;
+        currency?: string;
+        receiptItems: Array<Record<string, any>>;
+        matchedOrderLines: Array<Record<string, any>>;
+        unmatchedReceiptItems: Array<Record<string, any>>;
+        missingOrderedItems: Array<Record<string, any>>;
+        selfUseItems: Array<Record<string, any>>;
+        [key: string]: any;
+    };
 };
 
 export type ProcurementItemResponse = {
@@ -762,6 +810,15 @@ export const api = {
         fetchJson<FinancialAuditLog[]>(`/api/procurement/${tripId}/audit-logs`, []),
     customerBalanceLedger: (tripId: number) =>
         fetchJson<CustomerBalanceLedgerEntry[]>(`/api/procurement/${tripId}/ledger`, []),
+    confirmCustomerLedger: (
+        tripId: number,
+        businessId: string,
+        action: 'RECEIPT' | 'BILLING'
+    ) =>
+        postJson<CustomerBalanceLedgerEntry, { action: 'RECEIPT' | 'BILLING' }>(
+            `/api/procurement/${tripId}/ledger/${encodeURIComponent(businessId)}/confirm`,
+            { action }
+        ),
     manualReconcile: (
         tripId: number,
         payload: { skuId: string; fromBusinessId: string; toBusinessId: string; quantity: number }
@@ -794,6 +851,25 @@ export const api = {
     },
     finalizeProcurementSettlement: (tripId: number) =>
         postJson<void, Record<string, never>>(`/api/procurement/${tripId}/finalize-settlement`, {}),
+    procurementReceipts: (tripId: number) =>
+        fetchJson<ProcurementReceipt[]>(`/api/procurement/${tripId}/receipts`, []),
+    uploadProcurementReceipts: (
+        tripId: number,
+        payload: { receipts: Array<{ imageBase64: string; fileName?: string }> }
+    ) =>
+        postJson<ProcurementReceipt[], { receipts: Array<{ imageBase64: string; fileName?: string }> }>(
+            `/api/procurement/${tripId}/receipts`,
+            payload
+        ),
+    saveProcurementReceipt: (
+        tripId: number,
+        receiptId: number,
+        payload: { processingStatus?: string; reconciliationResult: ProcurementReceipt['reconciliationResult'] }
+    ) =>
+        patchJson<ProcurementReceipt, { processingStatus?: string; reconciliationResult: ProcurementReceipt['reconciliationResult'] }>(
+            `/api/procurement/${tripId}/receipts/${receiptId}`,
+            payload
+        ),
     getWallet: (partnerId: string) =>
         fetchJson<WalletSummary>(`/api/procurement/wallets/${partnerId}`, fallback.walletSummary),
     getWalletTransactions: (partnerId: string) =>

@@ -41,6 +41,10 @@ public class OrderHeader {
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus; // 支付状态
     private double totalAmount; // 冗余汇总金额
+    private LocalDateTime receiptConfirmedAt;
+    private String receiptConfirmedBy;
+    private LocalDateTime billingConfirmedAt;
+    private String billingConfirmedBy;
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private List<OrderLine> lines = new ArrayList<>(); // 嵌套行条目
@@ -158,5 +162,37 @@ public class OrderHeader {
     public void addLine(OrderLine line) {
         this.lines.add(line);
         line.setHeaderId(this.id);
+    }
+
+    public LocalDateTime getReceiptConfirmedAt() {
+        return receiptConfirmedAt;
+    }
+
+    public void setReceiptConfirmedAt(LocalDateTime receiptConfirmedAt) {
+        this.receiptConfirmedAt = receiptConfirmedAt;
+    }
+
+    public String getReceiptConfirmedBy() {
+        return receiptConfirmedBy;
+    }
+
+    public void setReceiptConfirmedBy(String receiptConfirmedBy) {
+        this.receiptConfirmedBy = receiptConfirmedBy;
+    }
+
+    public LocalDateTime getBillingConfirmedAt() {
+        return billingConfirmedAt;
+    }
+
+    public void setBillingConfirmedAt(LocalDateTime billingConfirmedAt) {
+        this.billingConfirmedAt = billingConfirmedAt;
+    }
+
+    public String getBillingConfirmedBy() {
+        return billingConfirmedBy;
+    }
+
+    public void setBillingConfirmedBy(String billingConfirmedBy) {
+        this.billingConfirmedBy = billingConfirmedBy;
     }
 }

@@ -28,7 +28,7 @@ vi.mock('antd', async () => {
 vi.mock('../api', () => ({
     api: {
         trips: () => Promise.resolve([
-            { id: 2000, agentId: 1, origin: 'Tokyo', destination: 'Shanghai', departDate: '2026-01-01', capacity: 10, reservedCapacity: 1, status: 'PUBLISHED' }
+            { id: 2000, agentId: 1, origin: 'Tokyo', destination: 'Shanghai', departDate: '2026-01-01', capacity: 10, reservedCapacity: 1, status: 'PUBLISHED', settlementFrozen: false, settlementFreezeStage: 'ACTIVE', settlementFreezeReason: '' }
         ]),
         procurementHud: () => Promise.resolve({
             tripId: 2000,
@@ -48,6 +48,25 @@ vi.mock('../api', () => ({
         procurementExpenses: () => Promise.resolve([
             { id: 1, tripId: 2000, cost: 5, category: '停车费', createdAt: '2026-01-01T00:00:00' }
         ]),
+        procurementReceipts: () => Promise.resolve([
+            {
+                id: 11,
+                tripId: 2000,
+                fileName: 'receipt-1.jpg',
+                originalImageUrl: 'https://example.com/receipt.jpg',
+                thumbnailUrl: 'https://example.com/receipt.jpg',
+                processingStatus: 'READY_FOR_REVIEW',
+                uploadedAt: '2026-01-01T00:00:00',
+                updatedAt: '2026-01-01T00:00:00',
+                reconciliationResult: {
+                    receiptItems: [{ name: 'Matcha Kit', quantity: 1, unitPrice: 50 }],
+                    matchedOrderLines: [],
+                    unmatchedReceiptItems: [{ name: 'Store item', quantity: 1, disposition: 'UNREVIEWED' }],
+                    missingOrderedItems: [],
+                    selfUseItems: []
+                }
+            }
+        ]),
         procurementAuditLogs: () => Promise.resolve([
             {
                 id: 1,
@@ -62,7 +81,7 @@ vi.mock('../api', () => ({
             }
         ]),
         customerBalanceLedger: () => Promise.resolve([
-            { businessId: '20260117001', customerId: 1001, totalReceivable: 100, paidDeposit: 0, outstandingBalance: 100 }
+            { tripId: 2000, businessId: '20260117001', customerId: 1001, totalReceivable: 100, paidDeposit: 0, outstandingBalance: 100, settlementStatus: 'PENDING_CONFIRMATION', settlementFrozen: false, settlementFreezeStage: 'ACTIVE', settlementFreezeReason: '', orderLines: [] }
         ]),
         createProcurementExpense: () => Promise.resolve({ id: 2, tripId: 2000, cost: 1, category: '运费', createdAt: '2026-01-01T00:00:00' }),
         manualReconcile: () => Promise.resolve({ skuId: 'prd-1000', fromBusinessId: '20260117001', toBusinessId: '20260117002', transferredQuantity: 1 }),
@@ -155,7 +174,10 @@ vi.mock('../api', () => ({
             displayName: 'Matcha Kit',
             displayDescription: 'Updated'
         }),
-        finalizeProcurementSettlement: () => Promise.resolve(undefined)
+        finalizeProcurementSettlement: () => Promise.resolve(undefined),
+        uploadProcurementReceipts: () => Promise.resolve([]),
+        saveProcurementReceipt: () => Promise.resolve({}),
+        procurementList: () => Promise.resolve([])
     }
 }));
 
@@ -181,6 +203,7 @@ describe('ProcurementHUD Component', () => {
         expect(await screen.findByText(/Capacity Redline|容积红线/i)).toBeInTheDocument();
         expect(await screen.findByText(/Reconcile Detail|对账详情/i)).toBeInTheDocument();
         expect((await screen.findAllByText(/Extra Expenses|额外支出列表/i)).length).toBeGreaterThan(0);
+        expect(await screen.findByText(/Procurement Receipt Workbench|采购小票核销工作台/i)).toBeInTheDocument();
         expect(await screen.findByText(/Customer Balance Ledger|客户结算/i)).toBeInTheDocument();
         expect(await screen.findByText(/Operation History|操作历史/i)).toBeInTheDocument();
         expect((await screen.findAllByText('20260117001')).length).toBeGreaterThan(0);

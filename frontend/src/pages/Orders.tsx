@@ -114,7 +114,7 @@ export default function Orders() {
   }, [selectedTripId, trips, form]);
 
   const handleSubmit = async (values: any) => {
-    if (submitting) {
+    if (submitting || selectedTrip?.settlementFrozen) {
       return;
     }
     try {
@@ -160,7 +160,8 @@ export default function Orders() {
   };
 
   const selectedTrip = trips.find((trip) => trip.id === selectedTripId);
-  const bulkDisabled = typeof selectedTripId !== 'number' || orders.length === 0;
+  const settlementFrozen = Boolean(selectedTrip?.settlementFrozen);
+  const bulkDisabled = typeof selectedTripId !== 'number' || orders.length === 0 || settlementFrozen;
 
   const orderPanels = orders.map((order) => ({
     key: order.businessId,
@@ -184,13 +185,13 @@ export default function Orders() {
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', rowGap: 8, columnGap: 12 }}>
           <Text type="secondary">{t('orders.header.status')}</Text>
-            <Select
-              value={order.status}
-              onChange={(newStatus) => handleStatusChange(order.id, newStatus, order.status)}
-              options={statusOptions.map((status) => ({ value: status, label: t(`enum.order_status.${status}`) }))}
-              disabled={order.status === 'SETTLED' || order.status === 'CANCELLED'}
-              style={{ width: 160 }}
-            />
+              <Select
+                value={order.status}
+                onChange={(newStatus) => handleStatusChange(order.id, newStatus, order.status)}
+                options={statusOptions.map((status) => ({ value: status, label: t(`enum.order_status.${status}`) }))}
+                disabled={order.status === 'SETTLED' || order.status === 'CANCELLED' || settlementFrozen}
+                style={{ width: 160 }}
+              />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', rowGap: 8, columnGap: 12 }}>
             <Text type="secondary">{t('orders.header.payment_status')}</Text>
@@ -251,6 +252,12 @@ export default function Orders() {
                 <div><Tag color="blue">{selectedTrip.status}</Tag></div>
               </div>
               <div>
+                <Text type="secondary">{t('orders.trip.freeze_status')}</Text>
+                <div>
+                  {settlementFrozen ? <Tag color="red">{selectedTrip.settlementFreezeStage}</Tag> : <Tag color="green">{t('orders.trip.freeze_active')}</Tag>}
+                </div>
+              </div>
+              <div>
                 <Text type="secondary">{t('orders.trip.actions.title')}</Text>
                 <div>
                   <Space wrap>
@@ -300,6 +307,7 @@ export default function Orders() {
             paymentMethod: 'ALIPAY'
           }}
         >
+          {settlementFrozen ? <Text type="danger">{selectedTrip?.settlementFreezeReason || t('orders.trip.freeze_warning')}</Text> : null}
           <Form.Item
             label={t('orders.form.customer_id.label')}
             name="customerId"
@@ -408,7 +416,7 @@ export default function Orders() {
               placeholder={t('orders.form.status.placeholder')}
             />
           </Form.Item>
-          <Button type="primary" htmlType="submit" loading={submitting} disabled={submitting} data-testid="orders-submit">
+          <Button type="primary" htmlType="submit" loading={submitting} disabled={submitting || settlementFrozen} data-testid="orders-submit">
             {t('orders.form.submit')}
           </Button>
         </Form>

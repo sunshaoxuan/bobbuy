@@ -227,6 +227,28 @@ class BobbuyStoreTest {
   }
 
   @Test
+  void settlementFrozenTripBlocksOrderMutationAndDeletion() {
+    Trip frozenTrip = store.updateTripStatus(2000L, TripStatus.COMPLETED);
+    assertThat(frozenTrip.isSettlementFrozen()).isTrue();
+
+    OrderHeader header = new OrderHeader("BIZ-FROZEN", 1001L, 2000L);
+    header.addLine(new OrderLine("SKU-F", "Frozen", null, 1, 8.0));
+
+    assertThatThrownBy(() -> store.upsertOrder(header))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.trip.settlement_frozen"));
+
+    OrderHeader existing = store.getOrder(3000L).orElseThrow();
+    assertThatThrownBy(() -> store.updateOrder(existing.getId(), existing))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.trip.settlement_frozen"));
+
+    assertThatThrownBy(() -> store.deleteOrder(existing.getId()))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.trip.settlement_frozen"));
+  }
+
+  @Test
   void getOrderByBusinessIdReturnsOptional() {
     assertThat(store.getOrderByBusinessId("20260117001")).isPresent();
     assertThat(store.getOrderByBusinessId("MISSING")).isEmpty();
@@ -505,11 +527,11 @@ class BobbuyStoreTest {
     updatePayload.addLine(new OrderLine("SKU-L", "Lock Item", null, 2, 9.9));
     assertThatThrownBy(() -> store.updateOrder(created.getId(), updatePayload))
         .isInstanceOf(ApiException.class)
-        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.order.locked_after_trip_completed"));
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.trip.settlement_frozen"));
 
     assertThatThrownBy(() -> store.deleteOrder(created.getId()))
         .isInstanceOf(ApiException.class)
-        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.order.locked_after_trip_completed"));
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.trip.settlement_frozen"));
   }
 
   @Test

@@ -1,5 +1,5 @@
-import { Card, Empty, Grid, Select, Space, Spin, Typography } from 'antd';
-import { useEffect, useState } from 'react';
+import { Alert, Button, Card, Descriptions, Empty, Grid, Modal, Select, Space, Spin, Table, Tag, Typography, message } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
 import { api, type CustomerBalanceLedgerEntry, type Trip } from '../api';
 import { useI18n } from '../i18n';
 
@@ -13,8 +13,14 @@ export default function ClientBilling() {
   const [selectedTripId, setSelectedTripId] = useState<number>();
   const [entries, setEntries] = useState<CustomerBalanceLedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmingKey, setConfirmingKey] = useState<string>();
+
   const formatAmount = (amount: number) =>
     new Intl.NumberFormat(undefined, { style: 'currency', currency: 'JPY' }).format(amount);
+
+  const refreshEntries = async (tripId: number) => {
+    setEntries(await api.customerBalanceLedger(tripId));
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -26,7 +32,7 @@ export default function ClientBilling() {
         const firstTripId = tripList[0]?.id;
         if (firstTripId) {
           setSelectedTripId(firstTripId);
-          setEntries(await api.customerBalanceLedger(firstTripId));
+          await refreshEntries(firstTripId);
         }
       } finally {
         if (!cancelled) {
@@ -43,11 +49,52 @@ export default function ClientBilling() {
     setSelectedTripId(tripId);
     setLoading(true);
     try {
-      setEntries(await api.customerBalanceLedger(tripId));
+      await refreshEntries(tripId);
     } finally {
       setLoading(false);
     }
   };
+
+  const selectedTrip = useMemo(() => trips.find((trip) => trip.id === selectedTripId), [selectedTripId, trips]);
+
+  const confirmLedger = async (entry: CustomerBalanceLedgerEntry, action: 'RECEIPT' | 'BILLING') => {
+    if (!selectedTripId) {
+      return;
+    }
+    const key = `${entry.businessId}-${action}`;
+    Modal.confirm({
+      title: action === 'RECEIPT' ? t('billing.confirm_receipt_title') : t('billing.confirm_statement_title'),
+      content: t('billing.confirm_irreversible'),
+      okText: t('billing.confirm_action'),
+      cancelText: t('common.cancel'),
+      onOk: async () => {
+        try {
+          setConfirmingKey(key);
+          await api.confirmCustomerLedger(selectedTripId, entry.businessId, action);
+          await refreshEntries(selectedTripId);
+          message.success(t('billing.confirm_success'));
+        } catch {
+          message.error(t('errors.request_failed'));
+        } finally {
+          setConfirmingKey(undefined);
+        }
+      }
+    });
+  };
+
+  const lineColumns = [
+    { title: t('orders.lines.item_name'), dataIndex: 'itemName', key: 'itemName' },
+    { title: t('orders.lines.sku_id'), dataIndex: 'skuId', key: 'skuId' },
+    { title: t('billing.line_ordered_qty'), dataIndex: 'orderedQuantity', key: 'orderedQuantity' },
+    { title: t('billing.line_purchased_qty'), dataIndex: 'purchasedQuantity', key: 'purchasedQuantity' },
+    {
+      title: t('orders.lines.unit_price'),
+      dataIndex: 'unitPrice',
+      key: 'unitPrice',
+      render: (value: number) => formatAmount(value)
+    },
+    { title: t('billing.line_difference_note'), dataIndex: 'differenceNote', key: 'differenceNote' }
+  ];
 
   return (
     <div className="page-card client-page">
@@ -60,35 +107,101 @@ export default function ClientBilling() {
             value={selectedTripId}
             placeholder={t('orders.trip.select.placeholder')}
             onChange={onTripChange}
-            style={{ minWidth: isMobile ? '100%' : 280 }}
+            style={{ minWidth: isMobile ? '100%' : 320 }}
             options={trips.map((trip) => ({
               value: trip.id,
               label: `${trip.origin} → ${trip.destination}`
             }))}
           />
         </Space>
+        {selectedTrip ? (
+          <Alert
+            type={selectedTrip.settlementFrozen ? 'warning' : 'info'}
+            showIcon
+            message={`${t('billing.freeze_stage')}: ${selectedTrip.settlementFreezeStage ?? 'ACTIVE'}`}
+            description={selectedTrip.settlementFreezeReason || t('billing.freeze_stage_active')}
+          />
+        ) : null}
         {loading ? (
           <Spin />
         ) : entries.length === 0 ? (
           <Empty description={t('procurement.no_ledger_data')} />
         ) : (
           <div className="client-card-list">
-            {entries.map((entry) => (
-              <Card key={entry.businessId} className="client-list-card">
-                <Space direction="vertical" size={6} style={{ width: '100%' }}>
-                  <Text strong>{entry.businessId}</Text>
-                  <Text>
-                    {t('zen.statement_total_receivable')}: {formatAmount(entry.totalReceivable)}
-                  </Text>
-                  <Text>
-                    {t('zen.statement_paid_deposit')}: {formatAmount(entry.paidDeposit)}
-                  </Text>
-                  <Text strong>
-                    {t('zen.statement_outstanding')}: {formatAmount(entry.outstandingBalance)}
-                  </Text>
-                </Space>
-              </Card>
-            ))}
+            {entries.map((entry) => {
+              const receiptConfirmed = Boolean(entry.receiptConfirmedAt);
+              const billingConfirmed = Boolean(entry.billingConfirmedAt);
+              return (
+                <Card key={entry.businessId} className="client-list-card" title={entry.businessId}>
+                  <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                    <Descriptions
+                      size="small"
+                      bordered
+                      column={isMobile ? 1 : 3}
+                      items={[
+                        {
+                          key: 'receivable',
+                          label: t('zen.statement_total_receivable'),
+                          children: formatAmount(entry.totalReceivable)
+                        },
+                        {
+                          key: 'deposit',
+                          label: t('zen.statement_paid_deposit'),
+                          children: formatAmount(entry.paidDeposit)
+                        },
+                        {
+                          key: 'outstanding',
+                          label: t('zen.statement_outstanding'),
+                          children: formatAmount(entry.outstandingBalance)
+                        },
+                        {
+                          key: 'status',
+                          label: t('billing.settlement_status'),
+                          children: <Tag color={billingConfirmed ? 'green' : receiptConfirmed ? 'blue' : 'gold'}>{entry.settlementStatus}</Tag>
+                        },
+                        {
+                          key: 'receipt',
+                          label: t('billing.receipt_confirmation'),
+                          children: receiptConfirmed ? `${entry.receiptConfirmedBy ?? '-'} · ${entry.receiptConfirmedAt}` : t('billing.pending_confirmation')
+                        },
+                        {
+                          key: 'statement',
+                          label: t('billing.statement_confirmation'),
+                          children: billingConfirmed ? `${entry.billingConfirmedBy ?? '-'} · ${entry.billingConfirmedAt}` : t('billing.pending_confirmation')
+                        }
+                      ]}
+                    />
+                    <Table
+                      dataSource={entry.orderLines}
+                      rowKey={(line) => `${entry.businessId}-${line.skuId}`}
+                      columns={lineColumns}
+                      pagination={false}
+                      size="small"
+                      scroll={{ x: 'max-content' }}
+                    />
+                    <Space wrap>
+                      <Button
+                        type="default"
+                        onClick={() => confirmLedger(entry, 'RECEIPT')}
+                        disabled={receiptConfirmed}
+                        loading={confirmingKey === `${entry.businessId}-RECEIPT`}
+                      >
+                        {t('billing.confirm_receipt_action')}
+                      </Button>
+                      <Button
+                        type="primary"
+                        onClick={() => confirmLedger(entry, 'BILLING')}
+                        disabled={!receiptConfirmed || billingConfirmed}
+                        loading={confirmingKey === `${entry.businessId}-BILLING`}
+                      >
+                        {t('billing.confirm_statement_action')}
+                      </Button>
+                    </Space>
+                    <Text type="secondary">{t('billing.order_context_hint')}</Text>
+                  </Space>
+                </Card>
+              );
+            })}
           </div>
         )}
       </Space>
