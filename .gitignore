@@ -5,6 +5,10 @@ docs/temp_docx/
 .DS_Store
 Thumbs.db
 
+# Runtime logs
+*.log
+backend-start*.log
+
 # Gemini data
 .gemini/
 

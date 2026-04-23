@@ -99,8 +99,13 @@ public class AiProductOnboardingService {
             log.warn("Onboarding failed [VALIDATION]: empty image data provided.");
             throw new AiOnboardingPipelineException("VALIDATION", "error.ai.invalid_image", "Empty image data provided");
         }
-        // 1. Vision Extract (Edge Node - Llava)
-        log.info("Phase 1: Dispatching to Vision Model (Llava)...");
+        String normalizedBase64Image = normalizeBase64Image(base64Image);
+        if (normalizedBase64Image.isBlank()) {
+            log.warn("Onboarding failed [VALIDATION]: image data is blank after normalization.");
+            throw new AiOnboardingPipelineException("VALIDATION", "error.ai.invalid_image", "Image data is blank after normalization");
+        }
+        // 1. Vision Extract (Edge Node - configured vision model)
+        log.info("Phase 1: Dispatching to configured vision model...");
         String prompt = """
             请分析这张商品实拍图（货架图），提取商品信息并以JSON格式输出。
             特别注意提取"会员价"、"优惠价"以及价格下方的"货号/Item Number"。
@@ -114,7 +119,7 @@ public class AiProductOnboardingService {
             只输出JSON对象，不要有额外解释。
             """;
 
-        Optional<String> visionResponse = llmGateway.generate(prompt, "llava", List.of(base64Image));
+        Optional<String> visionResponse = llmGateway.generate(prompt, null, List.of(normalizedBase64Image));
         if (visionResponse.isEmpty()) {
             log.error("Onboarding failed [AI_RECOGNITION]: vision model returned empty response.");
             throw new AiOnboardingPipelineException("AI_RECOGNITION", "error.ai.recognition_failed", "Vision model returned empty response");
@@ -268,6 +273,18 @@ public class AiProductOnboardingService {
             log.error("Onboarding failed [AI_RECOGNITION]: Failed to parse vision response", e);
             throw new AiOnboardingPipelineException("AI_RECOGNITION", "error.ai.recognition_failed", "Failed to parse vision response");
         }
+    }
+
+    private String normalizeBase64Image(String base64Image) {
+        if (base64Image == null) {
+            return "";
+        }
+        String trimmed = base64Image.trim();
+        int markerIndex = trimmed.indexOf("base64,");
+        if (markerIndex >= 0) {
+            return trimmed.substring(markerIndex + "base64,".length()).trim();
+        }
+        return trimmed;
     }
 
     /**

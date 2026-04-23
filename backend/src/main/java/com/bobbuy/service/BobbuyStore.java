@@ -195,6 +195,27 @@ public class BobbuyStore {
         product.setTemporary(false);
         productRepository.save(product);
 
+        Product muffinProduct = new Product(
+                "prd-1638",
+                new LinkedHashMap<>(Map.of("zh-CN", "Kirkland 玛芬蛋糕预拌粉", "ja-JP", "カークランド マフィンミックス", "en-US", "Kirkland Muffin Mix")),
+                new LinkedHashMap<>(Map.of("zh-CN", "AI 上架既有商品命中样例", "ja-JP", "AIオンボーディング既存商品サンプル", "en-US", "Existing product sample for AI onboarding")),
+                "Kirkland Signature",
+                3.99,
+                0.8,
+                0.3,
+                List.of(new MediaGalleryItem(
+                        "https://images.costco-static.com/ImageDelivery/imageService?profileId=12026540&imageId=31692-847__1&recipeName=680",
+                        MediaType.IMAGE,
+                        new LinkedHashMap<>(Map.of("zh-CN", "既有商品图", "ja-JP", "既存商品画像", "en-US", "Existing product image")))),
+                StorageCondition.AMBIENT,
+                OrderMethod.DIRECT_BUY,
+                foodCategory.getId(),
+                new LinkedHashMap<>(Map.of(supplier.getId(), "COSTCO-MUFFIN-3169-2")));
+        muffinProduct.setItemNumber("3169-2");
+        muffinProduct.setRecommended(false);
+        muffinProduct.setTemporary(false);
+        productRepository.save(muffinProduct);
+
         MerchantSku merchantSku = new MerchantSku(
                 "msku-1000",
                 product.getId(),
@@ -203,6 +224,15 @@ public class BobbuyStore {
                 30.0,
                 StockStatus.IN_STOCK);
         merchantSkuRepository.save(merchantSku);
+
+        MerchantSku muffinSku = new MerchantSku(
+                "msku-1638",
+                muffinProduct.getId(),
+                supplier.getId(),
+                "COSTCO-MUFFIN-3169-2",
+                3.5,
+                StockStatus.IN_STOCK);
+        merchantSkuRepository.save(muffinSku);
         orderIdentity.set(3000L);
     }
 

@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -60,7 +61,7 @@ public class AiProductOnboardingServiceTest {
           "category": "Food"
         }
         """;
-    when(llmGateway.generate(anyString(), eq("llava"), anyList()))
+    when(llmGateway.generate(anyString(), isNull(), anyList()))
         .thenReturn(Optional.of(mockJsonResponse));
 
     // Mock Web Research
@@ -87,6 +88,30 @@ public class AiProductOnboardingServiceTest {
     assertNotNull(suggestion.trace());
     assertTrue(suggestion.recognitionSummary().contains("name=Matcha KitKat"));
     assertTrue(suggestion.sourceDomains().contains("www.costco.com"));
+  }
+
+  @Test
+  public void testOnboardFromPhotoStripsDataUrlPrefixBeforeVisionCall() {
+    String mockJsonResponse = """
+        {
+          "name": "Milk",
+          "brand": "Test",
+          "price": 12.0
+        }
+        """;
+    when(llmGateway.generate(anyString(), isNull(), anyList()))
+        .thenReturn(Optional.of(mockJsonResponse));
+    when(webSearchService.search(anyString()))
+        .thenReturn(List.of(new WebSearchService.SearchResult(
+            "Trusted Retail",
+            "https://www.costco.com/milk",
+            "trusted source",
+            List.of("https://images.costco-static.com/milk/hd.jpg")
+        )));
+
+    onboardingService.onboardFromPhoto("data:image/jpeg;base64,ZmFrZS1pbWFnZQ==");
+
+    verify(llmGateway).generate(anyString(), isNull(), eq(List.of("ZmFrZS1pbWFnZQ==")));
   }
 
   @Test
@@ -118,7 +143,7 @@ public class AiProductOnboardingServiceTest {
           "categoryId": "tea"
         }
         """;
-    when(llmGateway.generate(anyString(), eq("llava"), anyList()))
+    when(llmGateway.generate(anyString(), isNull(), anyList()))
         .thenReturn(Optional.of(mockJsonResponse));
     when(webSearchService.search(anyString()))
         .thenReturn(List.of(new WebSearchService.SearchResult(
@@ -150,7 +175,7 @@ public class AiProductOnboardingServiceTest {
           "price": 12.0
         }
         """;
-    when(llmGateway.generate(anyString(), eq("llava"), anyList()))
+    when(llmGateway.generate(anyString(), isNull(), anyList()))
         .thenReturn(Optional.of(mockJsonResponse));
     when(webSearchService.search(anyString()))
         .thenReturn(List.of(new WebSearchService.SearchResult(
