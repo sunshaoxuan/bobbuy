@@ -584,7 +584,7 @@ public class ProcurementHudService {
     Trip trip = tripRepository.findById(tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
     List<CustomerBalanceLedgerResponse> entries = orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
-        .filter(this::isSettlementRelevantOrder)
+        .filter(this::isLedgerVisibleOrder)
         .map(order -> buildLedgerEntry(trip, order))
         .toList();
     if (customerIdentityResolver.isCustomer(authentication)) {
@@ -875,7 +875,16 @@ public class ProcurementHudService {
 
   @Transactional(readOnly = true)
   public CustomerBalanceSummaryResponse getCustomerBalanceSummary(Long customerId) {
-    double balance = calculateCustomerBalanceBeforeTrip(customerId, null);
+    double totalReceivable = orderHeaderRepository.findByCustomerId(customerId).stream()
+        .filter(this::isLedgerVisibleOrder)
+        .filter(order -> isHistoricalOrder(order, LocalDate.now()))
+        .mapToDouble(this::calculateReceivable)
+        .sum();
+    double totalReceived = customerPaymentLedgerRepository.findByCustomerIdOrderByCreatedAtAscIdAsc(customerId).stream()
+        .filter(payment -> isHistoricalPayment(payment, LocalDate.now()))
+        .mapToDouble(CustomerPaymentLedger::getAmount)
+        .sum();
+    double balance = round2(totalReceived - totalReceivable);
     return new CustomerBalanceSummaryResponse(customerId, balance);
   }
 
@@ -904,7 +913,7 @@ public class ProcurementHudService {
       return List.of();
     }
     return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
-        .filter(this::isSettlementRelevantOrder)
+        .filter(this::isLedgerVisibleOrder)
         .map(order -> buildPickingChecklistResponse(order, receiptSnapshot))
         .filter(response -> !response.getItems().isEmpty())
         .toList();
@@ -949,7 +958,7 @@ public class ProcurementHudService {
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
     ReviewedReceiptSnapshot receiptSnapshot = buildReviewedReceiptSnapshot(tripId);
     return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
-        .filter(this::isSettlementRelevantOrder)
+        .filter(this::isLedgerVisibleOrder)
         .map(order -> buildDeliveryPreparationResponse(order, receiptSnapshot))
         .filter(Objects::nonNull)
         .filter(response -> !"DELIVERED".equals(response.getDeliveryStatus()))
@@ -1190,6 +1199,10 @@ public class ProcurementHudService {
       }
     }
     return diff;
+  }
+
+  private boolean isLedgerVisibleOrder(OrderHeader order) {
+    return order != null && order.getTripId() != null && order.getStatus() != OrderStatus.CANCELLED;
   }
 
   private boolean isSettlementRelevantOrder(OrderHeader order) {

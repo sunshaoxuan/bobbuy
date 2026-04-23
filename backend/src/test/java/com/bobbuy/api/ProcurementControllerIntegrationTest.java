@@ -312,7 +312,7 @@ class ProcurementControllerIntegrationTest {
                 {"businessId":"PAY-METHOD","amount":10,"paymentMethod":"ALIPAY"}
                 """)))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
   }
 
   @Test

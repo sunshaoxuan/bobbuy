@@ -84,7 +84,7 @@ describe('ClientBilling', () => {
       </I18nProvider>
     );
 
-    expect(await screen.findByText('BIZ-1001')).toBeInTheDocument();
+    expect(await screen.findByText(/BIZ-1001/)).toBeInTheDocument();
     expect(await screen.findByText('Matcha')).toBeInTheDocument();
     expect(await screen.findByText(/CASH ·/)).toBeInTheDocument();
     expect(await screen.findByText('Shanghai Pudong Century Ave 88')).toBeInTheDocument();

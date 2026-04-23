@@ -182,9 +182,9 @@ class ProcurementHudServiceTest {
   @Test
   void customerBalanceCarryForwardIgnoresCancelledNewAndFutureOrders() {
     long customerId = 9001L;
-    Trip historicalTrip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now().minusDays(10), 20, 0, TripStatus.COMPLETED, null));
+    Trip historicalTrip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now().minusDays(10), 20, 0, TripStatus.DRAFT, null));
     Trip futureTrip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now().plusDays(10), 20, 0, TripStatus.PUBLISHED, null));
-    Trip currentTrip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.IN_PROGRESS, null));
+    Trip currentTrip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
 
     OrderHeader historicalOrder = new OrderHeader("BAL-HIS", customerId, historicalTrip.getId());
     OrderLine historicalLine = new OrderLine("prd-1000", "Matcha", null, 2, 10.0);
@@ -237,8 +237,8 @@ class ProcurementHudServiceTest {
   @Test
   void customerBalanceCarryForwardSupportsOverpaymentAndUnderpayment() {
     long customerId = 9002L;
-    Trip historicalTrip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now().minusDays(5), 20, 0, TripStatus.COMPLETED, null));
-    Trip currentTrip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.IN_PROGRESS, null));
+    Trip historicalTrip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now().minusDays(5), 20, 0, TripStatus.DRAFT, null));
+    Trip currentTrip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
 
     OrderHeader historicalOrder = new OrderHeader("BAL-OVERPAID", customerId, historicalTrip.getId());
     OrderLine historicalLine = new OrderLine("prd-1000", "Matcha", null, 2, 10.0);
