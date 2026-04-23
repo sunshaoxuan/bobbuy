@@ -307,7 +307,7 @@ export default function Orders() {
             paymentMethod: 'ALIPAY'
           }}
         >
-          {settlementFrozen ? <Text type="danger">{selectedTrip?.settlementFreezeReason || t('orders.trip.freeze_active')}</Text> : null}
+          {settlementFrozen ? <Text type="danger">{selectedTrip?.settlementFreezeReason || t('orders.trip.freeze_warning')}</Text> : null}
           <Form.Item
             label={t('orders.form.customer_id.label')}
             name="customerId"

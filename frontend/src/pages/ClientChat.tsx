@@ -25,9 +25,9 @@ export default function ClientChat() {
       }
       setTrips(tripList);
       setOrders(orderList);
-      const firstTripId = orderList[0]?.tripId ?? tripList[0]?.id;
+      const firstTripId = resolveInitialTripId(tripList, orderList);
       setSelectedTripId(firstTripId ?? undefined);
-      setSelectedOrderId(orderList.find((order) => order.tripId === firstTripId)?.id ?? orderList[0]?.id);
+      setSelectedOrderId(resolveInitialOrderId(orderList, firstTripId));
     });
     return () => {
       cancelled = true;
@@ -84,4 +84,15 @@ export default function ClientChat() {
       </Space>
     </div>
   );
+}
+
+function resolveInitialTripId(trips: Trip[], orders: Order[]) {
+  return orders[0]?.tripId ?? trips[0]?.id;
+}
+
+function resolveInitialOrderId(orders: Order[], tripId?: number) {
+  if (orders.length === 0) {
+    return undefined;
+  }
+  return orders.find((order) => order.tripId === tripId)?.id ?? orders[0]?.id;
 }

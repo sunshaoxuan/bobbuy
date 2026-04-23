@@ -27,6 +27,9 @@ public class ProcurementReceiptRecognitionService {
   private static final Pattern JSON_BLOCK_PATTERN = Pattern.compile("```(?:json)?\\s*(\\{.*}|\\[.*])\\s*```", Pattern.DOTALL);
   private static final String AI_MODE = "AI";
   private static final String FALLBACK_MODE = "RULE_FALLBACK";
+  private static final double MATCH_SCORE_THRESHOLD = 0.45d;
+  private static final double TOKEN_SCORE_WEIGHT = 0.8d;
+  private static final double PRICE_SCORE_WEIGHT = 0.2d;
 
   private final LlmGateway llmGateway;
   private final ObjectMapper objectMapper;
@@ -116,7 +119,7 @@ public class ProcurementReceiptRecognitionService {
       Optional<ReceiptLineCandidate> best = candidates.stream()
           .filter(candidate -> remainingQuantity(candidate, matchedByKey) > 0)
           .map(candidate -> Map.entry(candidate, matchScore(receiptName, receiptUnitPrice, candidate)))
-          .filter(entry -> entry.getValue() >= 0.45d)
+          .filter(entry -> entry.getValue() >= MATCH_SCORE_THRESHOLD)
           .max(Comparator.comparingDouble(Map.Entry::getValue))
           .map(Map.Entry::getKey);
 
@@ -277,7 +280,7 @@ public class ProcurementReceiptRecognitionService {
       double diffRatio = Math.abs(receiptUnitPrice - candidate.unitPrice()) / Math.max(candidate.unitPrice(), 1d);
       priceScore = Math.max(0d, 1d - diffRatio);
     }
-    return (tokenScore * 0.8d) + (priceScore * 0.2d);
+    return (tokenScore * TOKEN_SCORE_WEIGHT) + (priceScore * PRICE_SCORE_WEIGHT);
   }
 
   private Set<String> normalizeTokens(String raw) {

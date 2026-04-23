@@ -744,9 +744,9 @@ public class ProcurementHudService {
       ProcurementReceipt receipt = new ProcurementReceipt(
           tripId,
           payload.getFileName(),
-          upload == null ? "INLINE-" + now.toString() : upload.objectKey(),
+          upload == null ? inlineObjectKey("INLINE", now) : upload.objectKey(),
           upload == null ? payload.getImageBase64() : upload.publicUrl(),
-          upload == null ? "INLINE-THUMB-" + now.toString() : upload.objectKey(),
+          upload == null ? inlineObjectKey("INLINE-THUMB", now) : upload.objectKey(),
           upload == null ? payload.getImageBase64() : upload.publicUrl(),
           RECEIPT_STATUS_READY,
           now,
@@ -904,6 +904,10 @@ public class ProcurementHudService {
     return authentication.getName();
   }
 
+  private String inlineObjectKey(String prefix, LocalDateTime timestamp) {
+    return prefix + "-" + timestamp;
+  }
+
   private ProcurementReceiptResponse toProcurementReceiptResponse(ProcurementReceipt item) {
     return new ProcurementReceiptResponse(
         item.getId(),
@@ -915,50 +919,6 @@ public class ProcurementHudService {
         item.getUploadedAt(),
         item.getUpdatedAt(),
         item.getReconciliationResult());
-  }
-
-  private Map<String, Object> buildMockReceiptReconciliation(Long tripId) {
-    List<OrderHeader> orders = orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId);
-    List<Map<String, Object>> receiptItems = new ArrayList<>();
-    List<Map<String, Object>> matchedOrderLines = new ArrayList<>();
-    List<Map<String, Object>> missingOrderedItems = new ArrayList<>();
-    for (OrderHeader order : orders) {
-      for (OrderLine line : safeLines(order)) {
-        int orderedQuantity = Math.max(line.getQuantity(), 0);
-        int purchasedQuantity = Math.max(line.getPurchasedQuantity(), 0);
-        receiptItems.add(Map.of(
-            "name", line.getItemName(),
-            "quantity", Math.max(purchasedQuantity, 1),
-            "unitPrice", round2(line.getUnitPrice())));
-        matchedOrderLines.add(Map.of(
-            "businessId", order.getBusinessId(),
-            "skuId", line.getSkuId(),
-            "itemName", line.getItemName(),
-            "orderedQuantity", orderedQuantity,
-            "purchasedQuantity", purchasedQuantity,
-            "matchedQuantity", Math.max(purchasedQuantity, Math.min(orderedQuantity, 1))));
-        if (purchasedQuantity < orderedQuantity) {
-          missingOrderedItems.add(Map.of(
-              "businessId", order.getBusinessId(),
-              "skuId", line.getSkuId(),
-              "itemName", line.getItemName(),
-              "missingQuantity", orderedQuantity - purchasedQuantity,
-              "disposition", "OUT_OF_STOCK"));
-        }
-      }
-    }
-    List<Map<String, Object>> unmatchedReceiptItems = new ArrayList<>();
-    unmatchedReceiptItems.add(new LinkedHashMap<>(Map.of(
-        "name", "Store sample item",
-        "quantity", 1,
-        "unitPrice", 0D,
-        "disposition", "UNREVIEWED")));
-    return new LinkedHashMap<>(Map.of(
-        "receiptItems", receiptItems,
-        "matchedOrderLines", matchedOrderLines,
-        "unmatchedReceiptItems", unmatchedReceiptItems,
-        "missingOrderedItems", missingOrderedItems,
-        "selfUseItems", new ArrayList<>()));
   }
 
   private TripProfitShareConfig getOrCreateProfitShareConfig(Long tripId) {
