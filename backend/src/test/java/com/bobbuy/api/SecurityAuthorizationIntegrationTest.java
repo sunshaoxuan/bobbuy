@@ -2,6 +2,7 @@ package com.bobbuy.api;
 
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
+import com.bobbuy.model.OrderStatus;
 import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
 import com.bobbuy.security.RoleInjectionFilter;
@@ -45,10 +46,12 @@ class SecurityAuthorizationIntegrationTest {
 
     OrderHeader ownOrder = new OrderHeader("LEDGER-CUST-OWN", 9001L, tripId);
     ownOrder.addLine(new OrderLine("SKU-OWN", "Own Item", null, 2, 10.0));
+    ownOrder.setStatus(OrderStatus.CONFIRMED);
     ownOrderId = store.upsertOrder(ownOrder).getId();
 
     OrderHeader otherOrder = new OrderHeader("LEDGER-CUST-OTHER", 9002L, tripId);
     otherOrder.addLine(new OrderLine("SKU-OTHER", "Other Item", null, 1, 20.0));
+    otherOrder.setStatus(OrderStatus.CONFIRMED);
     otherOrderId = store.upsertOrder(otherOrder).getId();
   }
 

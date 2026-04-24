@@ -9,6 +9,11 @@ const { confirmSpy, modalConfirmSpy } = vi.hoisted(() => ({
   modalConfirmSpy: vi.fn()
 }));
 
+const { tripsMock, ledgerMock } = vi.hoisted(() => ({
+  tripsMock: vi.fn(),
+  ledgerMock: vi.fn()
+}));
+
 vi.mock('antd', async () => {
   const antd = await vi.importActual<typeof import('antd')>('antd');
   return {
@@ -39,31 +44,8 @@ vi.mock('antd', async () => {
 
 vi.mock('../api', () => ({
   api: {
-    trips: vi.fn(() => Promise.resolve([{ id: 2000, agentId: 1, origin: 'Tokyo', destination: 'Shanghai', departDate: '2026-01-01', capacity: 10, reservedCapacity: 1, status: 'PUBLISHED', settlementFrozen: false, settlementFreezeStage: 'ACTIVE', settlementFreezeReason: '' }])),
-    customerBalanceLedger: vi.fn(() => Promise.resolve([
-        {
-          tripId: 2000,
-          businessId: 'BIZ-1001',
-          customerId: 1001,
-          customerName: 'Chen Li',
-          totalReceivable: 100,
-        paidDeposit: 10,
-        outstandingBalance: 90,
-        amountDueThisTrip: 100,
-        amountReceivedThisTrip: 10,
-        amountPendingThisTrip: 90,
-          balanceBeforeCarryForward: 0,
-          balanceAfterCarryForward: -90,
-          settlementStatus: 'PENDING_CONFIRMATION',
-          deliveryStatus: 'READY_FOR_DELIVERY',
-          deliveryAddressSummary: 'Shanghai Pudong Century Ave 88',
-          settlementFrozen: false,
-        settlementFreezeStage: 'ACTIVE',
-        settlementFreezeReason: '',
-        paymentRecords: [{ id: 1, tripId: 2000, businessId: 'BIZ-1001', customerId: 1001, amount: 10, paymentMethod: 'CASH', createdAt: '2026-01-01T00:00:00' }],
-        orderLines: [{ skuId: 'SKU-1', itemName: 'Matcha', orderedQuantity: 2, purchasedQuantity: 1, unitPrice: 50, differenceNote: 'Short shipped 1' }]
-      }
-    ])),
+    trips: tripsMock,
+    customerBalanceLedger: ledgerMock,
     confirmCustomerLedger: confirmSpy
   }
 }));
@@ -74,6 +56,31 @@ describe('ClientBilling', () => {
     confirmSpy.mockReset();
     modalConfirmSpy.mockReset();
     confirmSpy.mockResolvedValue({});
+    tripsMock.mockResolvedValue([{ id: 2000, agentId: 1, origin: 'Tokyo', destination: 'Shanghai', departDate: '2026-01-01', capacity: 10, reservedCapacity: 1, status: 'PUBLISHED', settlementFrozen: false, settlementFreezeStage: 'ACTIVE', settlementFreezeReason: '' }]);
+    ledgerMock.mockResolvedValue([
+      {
+        tripId: 2000,
+        businessId: 'BIZ-1001',
+        customerId: 1001,
+        customerName: 'Chen Li',
+        totalReceivable: 100,
+        paidDeposit: 10,
+        outstandingBalance: 90,
+        amountDueThisTrip: 100,
+        amountReceivedThisTrip: 10,
+        amountPendingThisTrip: 90,
+        balanceBeforeCarryForward: 0,
+        balanceAfterCarryForward: -90,
+        settlementStatus: 'PENDING_CONFIRMATION',
+        deliveryStatus: 'READY_FOR_DELIVERY',
+        deliveryAddressSummary: 'Shanghai Pudong Century Ave 88',
+        settlementFrozen: false,
+        settlementFreezeStage: 'ACTIVE',
+        settlementFreezeReason: '',
+        paymentRecords: [{ id: 1, tripId: 2000, businessId: 'BIZ-1001', customerId: 1001, amount: 10, paymentMethod: 'CASH', createdAt: '2026-01-01T00:00:00' }],
+        orderLines: [{ skuId: 'SKU-1', itemName: 'Matcha', orderedQuantity: 2, purchasedQuantity: 1, unitPrice: 50, differenceNote: 'Short shipped 1' }]
+      }
+    ]);
   });
 
   it('renders detailed bill and triggers receipt confirmation', async () => {
@@ -93,5 +100,43 @@ describe('ClientBilling', () => {
     await user.click(screen.getByRole('button', { name: 'Confirm receipt' }));
     await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith(2000, 'BIZ-1001', 'RECEIPT'));
     expect(modalConfirmSpy).toHaveBeenCalled();
+  });
+
+  it('disables confirmation actions when the trip is frozen', async () => {
+    tripsMock.mockResolvedValue([{ id: 2000, agentId: 1, origin: 'Tokyo', destination: 'Shanghai', departDate: '2026-01-01', capacity: 10, reservedCapacity: 1, status: 'COMPLETED', settlementFrozen: true, settlementFreezeStage: 'PROCUREMENT_PENDING_SETTLEMENT', settlementFreezeReason: 'Trip completed and frozen for settlement' }]);
+    ledgerMock.mockResolvedValue([
+      {
+        tripId: 2000,
+        businessId: 'BIZ-1001',
+        customerId: 1001,
+        customerName: 'Chen Li',
+        totalReceivable: 100,
+        paidDeposit: 10,
+        outstandingBalance: 90,
+        amountDueThisTrip: 100,
+        amountReceivedThisTrip: 10,
+        amountPendingThisTrip: 90,
+        balanceBeforeCarryForward: 0,
+        balanceAfterCarryForward: -90,
+        settlementStatus: 'PENDING_CONFIRMATION',
+        deliveryStatus: 'PENDING_DELIVERY',
+        deliveryAddressSummary: 'Shanghai Pudong Century Ave 88',
+        settlementFrozen: true,
+        settlementFreezeStage: 'PROCUREMENT_PENDING_SETTLEMENT',
+        settlementFreezeReason: 'Trip completed and frozen for settlement',
+        paymentRecords: [],
+        orderLines: [{ skuId: 'SKU-1', itemName: 'Matcha', orderedQuantity: 2, purchasedQuantity: 1, unitPrice: 50, differenceNote: 'Short shipped 1' }]
+      }
+    ]);
+
+    render(
+      <I18nProvider>
+        <ClientBilling />
+      </I18nProvider>
+    );
+
+    expect(await screen.findByText('Trip completed and frozen for settlement')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirm receipt' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Confirm statement' })).toBeDisabled();
   });
 });

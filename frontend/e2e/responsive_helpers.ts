@@ -191,6 +191,56 @@ export async function setupCommonMocks(page: Page) {
     })
   );
 
+  await page.route('**/api/procurement/*/picking', (route) =>
+    route.fulfill({
+      status: 200,
+      body: JSON.stringify({
+        status: 'success',
+        data: [{
+          businessId: 'BIZ-1001',
+          customerId: 1001,
+          customerName: 'Alice Wang',
+          deliveryStatus: 'PENDING_DELIVERY',
+          addressSummary: 'Shanghai Pudong Century Ave 88',
+          readyForDelivery: false,
+          items: [{
+            skuId: 'SKU-001',
+            itemName: 'Matcha',
+            orderedQuantity: 2,
+            pickedQuantity: 1,
+            checked: false,
+            labels: ['SHORT_SHIPPED']
+          }]
+        }]
+      })
+    })
+  );
+
+  await page.route('**/api/procurement/*/picking/*', (route) =>
+    route.fulfill({
+      status: 200,
+      body: JSON.stringify({
+        status: 'success',
+        data: {
+          businessId: 'BIZ-1001',
+          customerId: 1001,
+          customerName: 'Alice Wang',
+          deliveryStatus: 'READY_FOR_DELIVERY',
+          addressSummary: 'Shanghai Pudong Century Ave 88',
+          readyForDelivery: true,
+          items: [{
+            skuId: 'SKU-001',
+            itemName: 'Matcha',
+            orderedQuantity: 2,
+            pickedQuantity: 1,
+            checked: true,
+            labels: ['SHORT_SHIPPED']
+          }]
+        }
+      })
+    })
+  );
+
   await page.route('**/api/procurement/*/receipts', (route) =>
     route.fulfill({
       status: 200,

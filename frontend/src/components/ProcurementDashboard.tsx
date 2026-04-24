@@ -198,7 +198,6 @@ export default function ProcurementDashboard() {
     [procurementReceipts, selectedReceiptId]
   );
   const settlementFrozen = Boolean(selectedTrip?.settlementFrozen);
-  const settled = selectedTrip?.status === 'SETTLED';
 
   const grossMarginRate = useMemo(() => {
     if (!hudStats) {
@@ -715,14 +714,15 @@ export default function ProcurementDashboard() {
               accept="image/*"
               aria-label={t('procurement.receipt_workbench_upload')}
               onChange={onSelectProcurementReceipts}
+              disabled={settlementFrozen}
             />
-            <Button type="primary" onClick={uploadProcurementReceipts} disabled={receiptFilesBase64.length === 0}>
+            <Button type="primary" onClick={uploadProcurementReceipts} disabled={settlementFrozen || receiptFilesBase64.length === 0}>
               {t('procurement.receipt_workbench_upload')}
             </Button>
-            <Button onClick={rerecognizeReceiptWorkbench} disabled={!selectedReceipt || settled}>
+            <Button onClick={rerecognizeReceiptWorkbench} disabled={!selectedReceipt || settlementFrozen}>
               {t('procurement.receipt_workbench_rerecognize')}
             </Button>
-            <Button onClick={saveReceiptWorkbench} disabled={!selectedReceipt || settled}>
+            <Button onClick={saveReceiptWorkbench} disabled={!selectedReceipt || settlementFrozen}>
               {t('procurement.receipt_workbench_save')}
             </Button>
           </Space>
@@ -827,6 +827,7 @@ export default function ProcurementDashboard() {
                           <Select
                             value={row.disposition}
                             style={{ minWidth: 180 }}
+                            disabled={settlementFrozen}
                             onChange={(value) => setReceiptDisposition('unmatchedReceiptItems', index, value)}
                             options={[
                               { label: t('procurement.receipt_disposition_unreviewed'), value: 'UNREVIEWED' },
@@ -854,6 +855,7 @@ export default function ProcurementDashboard() {
                           <Select
                             value={row.disposition}
                             style={{ minWidth: 180 }}
+                            disabled={settlementFrozen}
                             onChange={(value) => setReceiptDisposition('missingOrderedItems', index, value)}
                             options={[
                               { label: t('procurement.receipt_disposition_out_of_stock'), value: 'OUT_OF_STOCK' },
@@ -884,9 +886,11 @@ export default function ProcurementDashboard() {
               value={logisticsTrackingNumber}
               onChange={(event) => setLogisticsTrackingNumber(event.target.value)}
               placeholder={t('procurement.logistics_number_placeholder')}
+              disabled={settlementFrozen}
             />
             <Select
               value={logisticsChannel}
+              disabled={settlementFrozen}
               options={[
                 { label: t('procurement.channel_domestic'), value: 'DOMESTIC' },
                 { label: t('procurement.channel_international'), value: 'INTERNATIONAL' }
@@ -896,6 +900,7 @@ export default function ProcurementDashboard() {
             />
             <Select
               value={logisticsProvider}
+              disabled={settlementFrozen}
               options={[
                 { label: 'MOCK', value: 'MOCK' },
                 { label: '17TRACK', value: 'TRACK17' }
@@ -926,7 +931,7 @@ export default function ProcurementDashboard() {
                 title: t('procurement.reconcile_action'),
                 key: 'action',
                 render: (_, row) => (
-                  <Button size="small" onClick={() => refreshLogisticsTracking(row.id)}>
+                  <Button size="small" onClick={() => refreshLogisticsTracking(row.id)} disabled={settlementFrozen}>
                     {t('procurement.refresh_logistics')}
                   </Button>
                 )
@@ -945,6 +950,7 @@ export default function ProcurementDashboard() {
               placeholder={t('procurement.business_id')}
               options={ledgerEntries.map((entry) => ({ value: entry.businessId, label: entry.businessId }))}
               onChange={setPaymentBusinessId}
+              disabled={settlementFrozen}
             />
             <InputNumber
               min={0.01}
@@ -952,10 +958,12 @@ export default function ProcurementDashboard() {
               value={paymentAmount}
               placeholder={t('procurement.payment_amount')}
               onChange={(value) => setPaymentAmount(value ?? 0)}
+              disabled={settlementFrozen}
             />
             <Select
               value={paymentMethod}
               style={{ minWidth: 140 }}
+              disabled={settlementFrozen}
               onChange={setPaymentMethod}
               options={[
                 { value: 'CASH', label: t('procurement.payment_method_cash') },
@@ -968,12 +976,13 @@ export default function ProcurementDashboard() {
               style={{ minWidth: 220 }}
               placeholder={t('procurement.payment_note')}
               onChange={(event) => setPaymentNote(event.target.value)}
+              disabled={settlementFrozen}
             />
-            <Button type="primary" onClick={submitOfflinePayment} disabled={settled}>
+            <Button type="primary" onClick={submitOfflinePayment} disabled={settlementFrozen}>
               {t('procurement.record_offline_payment')}
             </Button>
           </Space>
-          {settled ? <Text type="secondary">{t('procurement.payment_readonly_hint')}</Text> : null}
+          {settlementFrozen ? <Text type="secondary">{selectedTrip?.settlementFreezeReason || t('procurement.payment_readonly_hint')}</Text> : null}
         {ledgerEntries.length === 0 ? (
           <Empty description={t('procurement.no_ledger_data')} />
         ) : (
@@ -1097,6 +1106,7 @@ export default function ProcurementDashboard() {
                         render: (_, row) => (
                           <Checkbox
                             checked={row.checked}
+                            disabled={settlementFrozen}
                             onChange={(event) => void updatePickingItem(entry.businessId, row.skuId, event.target.checked)}
                           />
                         )
