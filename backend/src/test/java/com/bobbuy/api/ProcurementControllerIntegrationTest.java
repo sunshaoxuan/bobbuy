@@ -410,7 +410,7 @@ class ProcurementControllerIntegrationTest {
   }
 
   @Test
-  void balanceSummaryAndLedgerExcludeNewAndCancelledOrders() throws Exception {
+  void balanceSummaryAndLedgerExcludesNewAndCancelledOrders() throws Exception {
     long customerId = 9010L;
     Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now().minusDays(1), 20, 0, TripStatus.DRAFT, null));
 

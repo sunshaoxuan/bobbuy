@@ -76,6 +76,13 @@ export default function PickingMaster() {
       }),
     [entries, filter]
   );
+  const pickingCounts = useMemo(
+    () => ({
+      todo: entries.filter((entry) => !entry.readyForDelivery && entry.deliveryStatus !== 'READY_FOR_DELIVERY').length,
+      done: entries.filter((entry) => entry.readyForDelivery || entry.deliveryStatus === 'READY_FOR_DELIVERY').length
+    }),
+    [entries]
+  );
 
   const updatePickingItem = async (businessId: string, skuId: string, checked: boolean) => {
     if (!activeTripId || settlementFrozen) {
@@ -136,10 +143,10 @@ export default function PickingMaster() {
             <Radio.Group value={filter} onChange={(event) => setFilter(event.target.value)} buttonStyle="solid">
               <Radio.Button value="all">{t('picking.filter.all')}</Radio.Button>
               <Radio.Button value="todo">
-                {t('picking.filter.todo')} ({entries.filter((entry) => !entry.readyForDelivery && entry.deliveryStatus !== 'READY_FOR_DELIVERY').length})
+                {t('picking.filter.todo')} ({pickingCounts.todo})
               </Radio.Button>
               <Radio.Button value="done">
-                {t('picking.filter.done')} ({entries.filter((entry) => entry.readyForDelivery || entry.deliveryStatus === 'READY_FOR_DELIVERY').length})
+                {t('picking.filter.done')} ({pickingCounts.done})
               </Radio.Button>
             </Radio.Group>
           </Space>
