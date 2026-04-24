@@ -13,6 +13,7 @@ public class OrderLine {
     private int quantity; // 数量
     private int purchasedQuantity; // 已采购数量
     private double unitPrice; // 单价
+    private boolean pickingConfirmed; // 拣货确认
 
     public OrderLine() {
     }
@@ -24,6 +25,7 @@ public class OrderLine {
         this.quantity = quantity;
         this.purchasedQuantity = 0;
         this.unitPrice = unitPrice;
+        this.pickingConfirmed = false;
     }
 
     // Getters and Setters
@@ -89,6 +91,14 @@ public class OrderLine {
 
     public void setPurchasedQuantity(int purchasedQuantity) {
         this.purchasedQuantity = Math.max(purchasedQuantity, 0);
+    }
+
+    public boolean isPickingConfirmed() {
+        return pickingConfirmed;
+    }
+
+    public void setPickingConfirmed(boolean pickingConfirmed) {
+        this.pickingConfirmed = pickingConfirmed;
     }
 
     /**

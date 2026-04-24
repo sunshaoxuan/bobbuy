@@ -90,6 +90,7 @@ vi.mock('../api', () => ({
                 tripId: 2000,
                 businessId: '20260117001',
                 customerId: 1001,
+                customerName: 'Chen Li',
                 totalReceivable: 100,
                 paidDeposit: 0,
                 outstandingBalance: 100,
@@ -99,6 +100,8 @@ vi.mock('../api', () => ({
                 balanceBeforeCarryForward: 5,
                 balanceAfterCarryForward: -95,
                 settlementStatus: 'PENDING_CONFIRMATION',
+                deliveryStatus: 'PENDING_DELIVERY',
+                deliveryAddressSummary: 'Shanghai Pudong Century Ave 88',
                 settlementFrozen: false,
                 settlementFreezeStage: 'ACTIVE',
                 settlementFreezeReason: '',
@@ -202,7 +205,35 @@ vi.mock('../api', () => ({
         saveProcurementReceipt: () => Promise.resolve({}),
         rerecognizeProcurementReceipt: () => Promise.resolve({}),
         recordOfflinePayment: () => Promise.resolve({}),
-        procurementList: () => Promise.resolve([])
+        procurementList: () => Promise.resolve([]),
+        procurementDeliveryPreparations: () => Promise.resolve([
+            {
+                businessId: '20260117001',
+                customerId: 1001,
+                customerName: 'Chen Li',
+                deliveryStatus: 'PENDING_DELIVERY',
+                addressSummary: 'Shanghai Pudong Century Ave 88',
+                contactName: 'Chen Li',
+                contactPhone: '13800000001',
+                latitude: 31.23,
+                longitude: 121.47,
+                totalPickItems: 1,
+                pickedItems: 0
+            }
+        ]),
+        procurementPickingChecklist: () => Promise.resolve([
+            {
+                businessId: '20260117001',
+                customerId: 1001,
+                customerName: 'Chen Li',
+                deliveryStatus: 'PENDING_DELIVERY',
+                addressSummary: 'Shanghai Pudong Century Ave 88',
+                readyForDelivery: false,
+                items: [{ skuId: 'prd-1000', itemName: 'Matcha Kit', orderedQuantity: 2, pickedQuantity: 1, checked: false, labels: ['SHORT_SHIPPED'] }]
+            }
+        ]),
+        updateProcurementPickingChecklist: () => Promise.resolve({}),
+        exportDeliveryPreparations: () => Promise.resolve(new Blob())
     }
 }));
 
@@ -230,6 +261,8 @@ describe('ProcurementHUD Component', () => {
         expect((await screen.findAllByText(/Extra Expenses|额外支出列表/i)).length).toBeGreaterThan(0);
         expect(await screen.findByText(/Procurement Receipt Workbench|采购小票核销工作台/i)).toBeInTheDocument();
         expect(await screen.findByText(/Customer Balance Ledger|客户结算/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Pending Delivery Customers|待配送客户列表/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Picking Checklist|拣货确认清单/i)).toBeInTheDocument();
         expect(await screen.findByText(/Operation History|操作历史/i)).toBeInTheDocument();
         expect((await screen.findAllByText('20260117001')).length).toBeGreaterThan(0);
     });

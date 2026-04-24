@@ -6,11 +6,15 @@ import com.bobbuy.api.CustomerBalanceLedgerResponse;
 import com.bobbuy.api.CustomerBalanceSummaryResponse;
 import com.bobbuy.api.CustomerPaymentRecordRequest;
 import com.bobbuy.api.CustomerPaymentRecordResponse;
+import com.bobbuy.api.DeliveryPreparationResponse;
 import com.bobbuy.api.FinancialAuditLogResponse;
 import com.bobbuy.api.LogisticsTrackingRequest;
 import com.bobbuy.api.LogisticsTrackingResponse;
 import com.bobbuy.api.LedgerConfirmationRequest;
 import com.bobbuy.api.PartnerProfitShareResponse;
+import com.bobbuy.api.PickingChecklistItemResponse;
+import com.bobbuy.api.PickingChecklistResponse;
+import com.bobbuy.api.PickingChecklistUpdateRequest;
 import com.bobbuy.api.ProcurementReceiptResponse;
 import com.bobbuy.api.ProcurementReceiptSaveRequest;
 import com.bobbuy.api.ProcurementReceiptUploadRequest;
@@ -26,8 +30,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
 import com.bobbuy.model.OrderStatus;
+import com.bobbuy.model.DeliveryStatus;
 import com.bobbuy.model.PaymentStatus;
 import com.bobbuy.model.CustomerPaymentLedger;
+import com.bobbuy.model.OfflinePaymentMethod;
 import com.bobbuy.model.ProcurementReceipt;
 import com.bobbuy.model.Product;
 import com.bobbuy.model.Trip;
@@ -46,6 +52,7 @@ import com.bobbuy.repository.TripRepository;
 import com.bobbuy.repository.TripExpenseRepository;
 import com.bobbuy.repository.TripLogisticsTrackingRepository;
 import com.bobbuy.repository.TripProfitShareConfigRepository;
+import com.bobbuy.repository.UserRepository;
 import com.bobbuy.api.WalletSummaryResponse;
 import com.bobbuy.api.WalletTransactionResponse;
 import com.bobbuy.security.CustomerIdentityResolver;
@@ -58,8 +65,11 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -90,6 +100,7 @@ public class ProcurementHudService {
   private final ProcurementReceiptRecognitionService procurementReceiptRecognitionService;
   private final TripProfitShareConfigRepository tripProfitShareConfigRepository;
   private final TripLogisticsTrackingRepository tripLogisticsTrackingRepository;
+  private final UserRepository userRepository;
   private final FinancialAuditTrailService financialAuditTrailService;
   private final FxRateService fxRateService;
   private final ImageStorageService imageStorageService;
@@ -104,11 +115,12 @@ public class ProcurementHudService {
                                TripExpenseRepository tripExpenseRepository,
                                ProcurementReceiptRepository procurementReceiptRepository,
                                CustomerPaymentLedgerRepository customerPaymentLedgerRepository,
-                               ProcurementReceiptRecognitionService procurementReceiptRecognitionService,
-                               TripProfitShareConfigRepository tripProfitShareConfigRepository,
-                               TripLogisticsTrackingRepository tripLogisticsTrackingRepository,
-                               FinancialAuditTrailService financialAuditTrailService,
-                               FxRateService fxRateService,
+                                ProcurementReceiptRecognitionService procurementReceiptRecognitionService,
+                                TripProfitShareConfigRepository tripProfitShareConfigRepository,
+                                TripLogisticsTrackingRepository tripLogisticsTrackingRepository,
+                                UserRepository userRepository,
+                                FinancialAuditTrailService financialAuditTrailService,
+                                FxRateService fxRateService,
                                ImageStorageService imageStorageService,
                                ObjectMapper objectMapper,
                                WalletService walletService,
@@ -123,6 +135,7 @@ public class ProcurementHudService {
     this.procurementReceiptRecognitionService = procurementReceiptRecognitionService;
     this.tripProfitShareConfigRepository = tripProfitShareConfigRepository;
     this.tripLogisticsTrackingRepository = tripLogisticsTrackingRepository;
+    this.userRepository = userRepository;
     this.financialAuditTrailService = financialAuditTrailService;
     this.fxRateService = fxRateService;
     this.imageStorageService = imageStorageService;
@@ -571,6 +584,7 @@ public class ProcurementHudService {
     Trip trip = tripRepository.findById(tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
     List<CustomerBalanceLedgerResponse> entries = orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
+        .filter(this::isLedgerVisibleOrder)
         .map(order -> buildLedgerEntry(trip, order))
         .toList();
     if (customerIdentityResolver.isCustomer(authentication)) {
@@ -836,6 +850,10 @@ public class ProcurementHudService {
         || request.getAmount() <= 0D) {
       throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.payment.invalid");
     }
+    OfflinePaymentMethod paymentMethod = OfflinePaymentMethod.parse(request.getPaymentMethod());
+    if (paymentMethod == null) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.payment.invalid_method");
+    }
     OrderHeader order = getTripOrderByBusinessId(tripId, request.getBusinessId());
     LocalDateTime now = LocalDateTime.now();
     CustomerPaymentLedger saved = customerPaymentLedgerRepository.save(new CustomerPaymentLedger(
@@ -843,7 +861,7 @@ public class ProcurementHudService {
         order.getBusinessId(),
         order.getCustomerId(),
         round2(request.getAmount()),
-        request.getPaymentMethod().trim(),
+        paymentMethod.name(),
         request.getNote(),
         now,
         resolveOperatorName(authentication)));
@@ -857,7 +875,16 @@ public class ProcurementHudService {
 
   @Transactional(readOnly = true)
   public CustomerBalanceSummaryResponse getCustomerBalanceSummary(Long customerId) {
-    double balance = calculateCustomerBalanceBeforeTrip(customerId, null);
+    double totalReceivable = orderHeaderRepository.findByCustomerId(customerId).stream()
+        .filter(this::isLedgerVisibleOrder)
+        .filter(order -> isHistoricalOrder(order, LocalDate.now()))
+        .mapToDouble(this::calculateReceivable)
+        .sum();
+    double totalReceived = customerPaymentLedgerRepository.findByCustomerIdOrderByCreatedAtAscIdAsc(customerId).stream()
+        .filter(payment -> isHistoricalPayment(payment, LocalDate.now()))
+        .mapToDouble(CustomerPaymentLedger::getAmount)
+        .sum();
+    double balance = round2(totalReceived - totalReceivable);
     return new CustomerBalanceSummaryResponse(customerId, balance);
   }
 
@@ -874,6 +901,67 @@ public class ProcurementHudService {
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
     return customerPaymentLedgerRepository.findByTripIdAndBusinessIdOrderByCreatedAtAscIdAsc(tripId, businessId).stream()
         .map(this::toPaymentRecordResponse)
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<PickingChecklistResponse> getPickingChecklist(Long tripId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    ReviewedReceiptSnapshot receiptSnapshot = buildReviewedReceiptSnapshot(tripId);
+    if (!receiptSnapshot.hasReviewedReceipts()) {
+      return List.of();
+    }
+    return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
+        .filter(this::isLedgerVisibleOrder)
+        .map(order -> buildPickingChecklistResponse(order, receiptSnapshot))
+        .filter(response -> !response.getItems().isEmpty())
+        .toList();
+  }
+
+  @Transactional
+  public PickingChecklistResponse updatePickingChecklistItem(Long tripId,
+                                                             String businessId,
+                                                             PickingChecklistUpdateRequest request) {
+    ensureTripMutable(tripId);
+    if (request == null || request.getSkuId() == null || request.getSkuId().isBlank()) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.picking.invalid");
+    }
+    OrderHeader order = getTripOrderByBusinessId(tripId, businessId);
+    ReviewedReceiptSnapshot receiptSnapshot = buildReviewedReceiptSnapshot(tripId);
+    if (!receiptSnapshot.hasReviewedReceipts()) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.picking.invalid");
+    }
+    List<PickingChecklistItemResponse> eligibleItems = buildPickingItems(order, receiptSnapshot);
+    boolean eligible = eligibleItems.stream().anyMatch(item -> Objects.equals(item.getSkuId(), request.getSkuId()));
+    if (!eligible) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.picking.invalid");
+    }
+    safeLines(order).stream()
+        .filter(line -> Objects.equals(line.getSkuId(), request.getSkuId()))
+        .findFirst()
+        .ifPresent(line -> line.setPickingConfirmed(request.isChecked()));
+    List<PickingChecklistItemResponse> updatedItems = buildPickingItems(order, receiptSnapshot);
+    boolean allChecked = !updatedItems.isEmpty() && updatedItems.stream().allMatch(PickingChecklistItemResponse::isChecked);
+    if (allChecked) {
+      order.setDeliveryStatus(DeliveryStatus.READY_FOR_DELIVERY);
+    } else if (resolveDeliveryStatus(order) == DeliveryStatus.READY_FOR_DELIVERY) {
+      order.setDeliveryStatus(DeliveryStatus.PENDING_DELIVERY);
+    }
+    orderHeaderRepository.save(order);
+    return buildPickingChecklistResponse(order, receiptSnapshot);
+  }
+
+  @Transactional(readOnly = true)
+  public List<DeliveryPreparationResponse> getDeliveryPreparations(Long tripId) {
+    tripRepository.findById(tripId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    ReviewedReceiptSnapshot receiptSnapshot = buildReviewedReceiptSnapshot(tripId);
+    return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
+        .filter(this::isLedgerVisibleOrder)
+        .map(order -> buildDeliveryPreparationResponse(order, receiptSnapshot))
+        .filter(Objects::nonNull)
+        .filter(response -> !"DELIVERED".equals(response.getDeliveryStatus()))
         .toList();
   }
 
@@ -911,6 +999,7 @@ public class ProcurementHudService {
   }
 
   private CustomerBalanceLedgerResponse buildLedgerEntry(Trip trip, OrderHeader order) {
+    CustomerProfileSnapshot customerProfile = resolveCustomerProfile(order.getCustomerId());
     List<CustomerBalanceLedgerResponse.LedgerOrderLineResponse> orderLines = safeLines(order).stream()
         .map(line -> new CustomerBalanceLedgerResponse.LedgerOrderLineResponse(
             line.getSkuId(),
@@ -931,12 +1020,13 @@ public class ProcurementHudService {
         .map(this::toPaymentRecordResponse)
         .toList();
     double amountReceived = paymentRecords.stream().mapToDouble(CustomerPaymentRecordResponse::getAmount).sum();
-    double balanceBefore = calculateCustomerBalanceBeforeTrip(order.getCustomerId(), trip.getId());
+    double balanceBefore = calculateCustomerBalanceBeforeTrip(order.getCustomerId(), trip);
     double balanceAfter = balanceBefore + amountReceived - totalReceivable;
     return new CustomerBalanceLedgerResponse(
         trip.getId(),
         order.getBusinessId(),
         order.getCustomerId(),
+        customerProfile.customerName(),
         round2(totalReceivable),
         round2(amountReceived),
         round2(Math.max(totalReceivable - amountReceived, 0D)),
@@ -946,6 +1036,12 @@ public class ProcurementHudService {
         round2(balanceBefore),
         round2(balanceAfter),
         resolveSettlementStatus(order),
+        resolveDeliveryStatus(order).name(),
+        customerProfile.addressSummary(),
+        customerProfile.contactName(),
+        customerProfile.contactPhone(),
+        customerProfile.latitude(),
+        customerProfile.longitude(),
         trip.isSettlementFrozen(),
         trip.getSettlementFreezeStage(),
         trip.getSettlementFreezeReason(),
@@ -1033,12 +1129,23 @@ public class ProcurementHudService {
   }
 
   private double calculateCustomerBalanceBeforeTrip(Long customerId, Long currentTripId) {
+    Trip currentTrip = currentTripId == null ? null : tripRepository.findById(currentTripId).orElse(null);
+    return calculateCustomerBalanceBeforeTrip(customerId, currentTrip);
+  }
+
+  private double calculateCustomerBalanceBeforeTrip(Long customerId, Trip currentTrip) {
+    LocalDate cutoffDate = currentTrip != null && currentTrip.getDepartDate() != null
+        ? currentTrip.getDepartDate()
+        : LocalDate.now();
     double totalReceivable = orderHeaderRepository.findByCustomerId(customerId).stream()
-        .filter(order -> currentTripId == null || !Objects.equals(order.getTripId(), currentTripId))
+        .filter(this::isSettlementRelevantOrder)
+        .filter(order -> currentTrip == null || !Objects.equals(order.getTripId(), currentTrip.getId()))
+        .filter(order -> isHistoricalOrder(order, cutoffDate))
         .mapToDouble(this::calculateReceivable)
         .sum();
     double totalReceived = customerPaymentLedgerRepository.findByCustomerIdOrderByCreatedAtAscIdAsc(customerId).stream()
-        .filter(payment -> currentTripId == null || !Objects.equals(payment.getTripId(), currentTripId))
+        .filter(payment -> currentTrip == null || !Objects.equals(payment.getTripId(), currentTrip.getId()))
+        .filter(payment -> isHistoricalPayment(payment, cutoffDate))
         .mapToDouble(CustomerPaymentLedger::getAmount)
         .sum();
     return round2(totalReceived - totalReceivable);
@@ -1092,6 +1199,235 @@ public class ProcurementHudService {
       }
     }
     return diff;
+  }
+
+  private boolean isLedgerVisibleOrder(OrderHeader order) {
+    return order != null && order.getTripId() != null && order.getStatus() != OrderStatus.CANCELLED;
+  }
+
+  private boolean isSettlementRelevantOrder(OrderHeader order) {
+    return order != null && order.getTripId() != null && order.getStatus() != null
+        && order.getStatus() != OrderStatus.NEW
+        && order.getStatus() != OrderStatus.CANCELLED;
+  }
+
+  private boolean isHistoricalOrder(OrderHeader order, LocalDate cutoffDate) {
+    Trip trip = order.getTripId() == null ? null : tripRepository.findById(order.getTripId()).orElse(null);
+    if (trip == null || trip.getDepartDate() == null) {
+      return true;
+    }
+    return !trip.getDepartDate().isAfter(cutoffDate);
+  }
+
+  private boolean isHistoricalPayment(CustomerPaymentLedger payment, LocalDate cutoffDate) {
+    if (payment.getTripId() == null) {
+      return true;
+    }
+    Trip trip = tripRepository.findById(payment.getTripId()).orElse(null);
+    if (trip == null || trip.getDepartDate() == null) {
+      return true;
+    }
+    return !trip.getDepartDate().isAfter(cutoffDate);
+  }
+
+  private DeliveryStatus resolveDeliveryStatus(OrderHeader order) {
+    return order.getDeliveryStatus() == null ? DeliveryStatus.PENDING_DELIVERY : order.getDeliveryStatus();
+  }
+
+  private CustomerProfileSnapshot resolveCustomerProfile(Long customerId) {
+    return userRepository.findById(customerId)
+        .map(user -> {
+          String addressSummary = buildAddressSummary(user.getDefaultAddress());
+          return new CustomerProfileSnapshot(
+              user.getName(),
+              addressSummary,
+              user.getDefaultAddress() == null ? null : user.getDefaultAddress().getContactName(),
+              user.getDefaultAddress() == null ? null : user.getDefaultAddress().getPhone(),
+              user.getDefaultAddress() == null ? null : user.getDefaultAddress().getLatitude(),
+              user.getDefaultAddress() == null ? null : user.getDefaultAddress().getLongitude());
+        })
+        .orElse(new CustomerProfileSnapshot(null, null, null, null, null, null));
+  }
+
+  private String buildAddressSummary(com.bobbuy.model.User.UserAddress address) {
+    if (address == null) {
+      return null;
+    }
+    return java.util.stream.Stream.of(address.getCountryRegion(), address.getCity(), address.getAddressLine(), address.getPostalCode())
+        .filter(value -> value != null && !value.isBlank())
+        .collect(Collectors.joining(" "));
+  }
+
+  private PickingChecklistResponse buildPickingChecklistResponse(OrderHeader order, ReviewedReceiptSnapshot receiptSnapshot) {
+    CustomerProfileSnapshot customerProfile = resolveCustomerProfile(order.getCustomerId());
+    List<PickingChecklistItemResponse> items = buildPickingItems(order, receiptSnapshot);
+    boolean readyForDelivery = !items.isEmpty() && items.stream().allMatch(PickingChecklistItemResponse::isChecked);
+    return new PickingChecklistResponse(
+        order.getBusinessId(),
+        order.getCustomerId(),
+        customerProfile.customerName(),
+        resolveDeliveryStatus(order).name(),
+        customerProfile.addressSummary(),
+        readyForDelivery,
+        items);
+  }
+
+  private DeliveryPreparationResponse buildDeliveryPreparationResponse(OrderHeader order, ReviewedReceiptSnapshot receiptSnapshot) {
+    CustomerProfileSnapshot customerProfile = resolveCustomerProfile(order.getCustomerId());
+    List<PickingChecklistItemResponse> items = buildPickingItems(order, receiptSnapshot);
+    if (items.isEmpty()) {
+      return null;
+    }
+    int pickedItems = (int) items.stream().filter(PickingChecklistItemResponse::isChecked).count();
+    return new DeliveryPreparationResponse(
+        order.getBusinessId(),
+        order.getCustomerId(),
+        customerProfile.customerName(),
+        resolveDeliveryStatus(order).name(),
+        customerProfile.addressSummary(),
+        customerProfile.contactName(),
+        customerProfile.contactPhone(),
+        customerProfile.latitude(),
+        customerProfile.longitude(),
+        items.size(),
+        pickedItems);
+  }
+
+  private List<PickingChecklistItemResponse> buildPickingItems(OrderHeader order, ReviewedReceiptSnapshot receiptSnapshot) {
+    if (!receiptSnapshot.hasReviewedReceipts()) {
+      return List.of();
+    }
+    List<PickingChecklistItemResponse> items = new ArrayList<>();
+    for (OrderLine line : safeLines(order)) {
+      int pickedQuantity = resolvePickingQuantity(order, line, receiptSnapshot);
+      if (pickedQuantity <= 0) {
+        continue;
+      }
+      LinkedHashSet<String> labels = new LinkedHashSet<>(receiptSnapshot.labelsByKey().getOrDefault(pickingKey(order.getBusinessId(), line.getSkuId()), new LinkedHashSet<>()));
+      if (pickedQuantity < Math.max(line.getQuantity(), 0)) {
+        labels.add("SHORT_SHIPPED");
+      }
+      items.add(new PickingChecklistItemResponse(
+          line.getSkuId(),
+          line.getItemName(),
+          Math.max(line.getQuantity(), 0),
+          pickedQuantity,
+          line.isPickingConfirmed(),
+          new ArrayList<>(labels)));
+    }
+    return items;
+  }
+
+  private int resolvePickingQuantity(OrderHeader order, OrderLine line, ReviewedReceiptSnapshot receiptSnapshot) {
+    String key = pickingKey(order.getBusinessId(), line.getSkuId());
+    Integer reviewedMatchedQuantity = receiptSnapshot.matchedQuantityByKey().get(key);
+    int actualPurchased = Math.max(line.getPurchasedQuantity(), 0);
+    if (reviewedMatchedQuantity != null) {
+      int maxAllowedQuantity = actualPurchased > 0 ? actualPurchased : Math.max(line.getQuantity(), 0);
+      return Math.min(Math.max(reviewedMatchedQuantity, 0), maxAllowedQuantity);
+    }
+    return actualPurchased;
+  }
+
+  private ReviewedReceiptSnapshot buildReviewedReceiptSnapshot(Long tripId) {
+    Map<String, Integer> matchedQuantityByKey = new HashMap<>();
+    Map<String, LinkedHashSet<String>> labelsByKey = new HashMap<>();
+    boolean hasReviewedReceipts = false;
+    for (ProcurementReceipt receipt : procurementReceiptRepository.findByTripIdOrderByUploadedAtDescIdDesc(tripId)) {
+      Map<String, Object> result = receipt.getReconciliationResult();
+      if (!Objects.equals("REVIEWED", stringValue(result.get("reviewStatus")))) {
+        continue;
+      }
+      hasReviewedReceipts = true;
+      for (Map<String, Object> item : objectList(result.get("matchedOrderLines"))) {
+        String businessId = stringValue(item.get("businessId"));
+        String skuId = stringValue(item.get("skuId"));
+        if (businessId == null || skuId == null) {
+          continue;
+        }
+        matchedQuantityByKey.merge(pickingKey(businessId, skuId), intValue(item.get("matchedQuantity"), 0), Integer::sum);
+        addPickingLabel(labelsByKey, businessId, skuId, stringValue(item.get("disposition")));
+      }
+      for (Map<String, Object> item : objectList(result.get("missingOrderedItems"))) {
+        addPickingLabel(labelsByKey, stringValue(item.get("businessId")), stringValue(item.get("skuId")), stringValue(item.get("disposition")));
+      }
+      for (Map<String, Object> item : objectList(result.get("unmatchedReceiptItems"))) {
+        addPickingLabel(labelsByKey, stringValue(item.get("businessId")), stringValue(item.get("skuId")), stringValue(item.get("disposition")));
+      }
+    }
+    return new ReviewedReceiptSnapshot(hasReviewedReceipts, matchedQuantityByKey, labelsByKey);
+  }
+
+  private void addPickingLabel(Map<String, LinkedHashSet<String>> labelsByKey,
+                               String businessId,
+                               String skuId,
+                               String disposition) {
+    if (businessId == null || businessId.isBlank() || skuId == null || skuId.isBlank() || disposition == null || disposition.isBlank()) {
+      return;
+    }
+    String normalized = switch (disposition.trim().toUpperCase()) {
+      case "OUT_OF_STOCK" -> "SHORT_SHIPPED";
+      case "ON_SITE_REPLENISHED" -> "ON_SITE_REPLENISHED";
+      case "SELF_USE" -> "SELF_USE";
+      default -> null;
+    };
+    if (normalized == null) {
+      return;
+    }
+    labelsByKey.computeIfAbsent(pickingKey(businessId, skuId), _key -> new LinkedHashSet<>()).add(normalized);
+  }
+
+  private String pickingKey(String businessId, String skuId) {
+    return businessId + "::" + skuId;
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Map<String, Object>> objectList(Object value) {
+    if (!(value instanceof Collection<?> collection)) {
+      return List.of();
+    }
+    List<Map<String, Object>> result = new ArrayList<>();
+    for (Object item : collection) {
+      if (item instanceof Map<?, ?> map) {
+        result.add((Map<String, Object>) map);
+      }
+    }
+    return result;
+  }
+
+  private String stringValue(Object value) {
+    if (value == null) {
+      return null;
+    }
+    String stringValue = String.valueOf(value).trim();
+    return stringValue.isBlank() ? null : stringValue;
+  }
+
+  private int intValue(Object value, int fallback) {
+    if (value instanceof Number number) {
+      return number.intValue();
+    }
+    if (value instanceof String stringValue) {
+      try {
+        return Integer.parseInt(stringValue.trim());
+      } catch (NumberFormatException ignored) {
+        return fallback;
+      }
+    }
+    return fallback;
+  }
+
+  private record CustomerProfileSnapshot(String customerName,
+                                         String addressSummary,
+                                         String contactName,
+                                         String contactPhone,
+                                         Double latitude,
+                                         Double longitude) {
+  }
+
+  private record ReviewedReceiptSnapshot(boolean hasReviewedReceipts,
+                                         Map<String, Integer> matchedQuantityByKey,
+                                         Map<String, LinkedHashSet<String>> labelsByKey) {
   }
 
   private TripProfitShareConfig getOrCreateProfitShareConfig(Long tripId) {

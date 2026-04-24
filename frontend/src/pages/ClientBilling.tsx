@@ -132,7 +132,7 @@ export default function ClientBilling() {
               const receiptConfirmed = Boolean(entry.receiptConfirmedAt);
               const billingConfirmed = Boolean(entry.billingConfirmedAt);
               return (
-                <Card key={entry.businessId} className="client-list-card" title={entry.businessId}>
+                <Card key={entry.businessId} className="client-list-card" title={`${entry.businessId}${entry.customerName ? ` · ${entry.customerName}` : ''}`}>
                   <Space direction="vertical" size={12} style={{ width: '100%' }}>
                     <Descriptions
                       size="small"
@@ -168,6 +168,16 @@ export default function ClientBilling() {
                           key: 'status',
                           label: t('billing.settlement_status'),
                           children: <Tag color={billingConfirmed ? 'green' : receiptConfirmed ? 'blue' : 'gold'}>{entry.settlementStatus}</Tag>
+                        },
+                        {
+                          key: 'delivery-status',
+                          label: t('billing.delivery_status'),
+                          children: <Tag color={entry.deliveryStatus === 'READY_FOR_DELIVERY' ? 'green' : entry.deliveryStatus === 'DELIVERED' ? 'blue' : 'gold'}>{t(`delivery.status.${entry.deliveryStatus ?? 'PENDING_DELIVERY'}`)}</Tag>
+                        },
+                        {
+                          key: 'delivery-address',
+                          label: t('billing.delivery_address'),
+                          children: entry.deliveryAddressSummary || t('billing.no_delivery_address')
                         },
                         {
                           key: 'receipt',

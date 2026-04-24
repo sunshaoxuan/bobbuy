@@ -36,6 +36,7 @@ export type OrderLine = {
     quantity: number;
     purchasedQuantity?: number;
     unitPrice: number;
+    pickingConfirmed?: boolean;
 };
 
 export type Order = {
@@ -48,6 +49,7 @@ export type Order = {
     statusUpdatedAt?: string;
     paymentMethod?: string;
     paymentStatus?: string;
+    deliveryStatus?: string;
     totalAmount: number;
     receiptConfirmedAt?: string;
     receiptConfirmedBy?: string;
@@ -216,6 +218,7 @@ export type CustomerBalanceLedgerEntry = {
     tripId: number;
     businessId: string;
     customerId: number;
+    customerName?: string;
     totalReceivable: number;
     paidDeposit: number;
     outstandingBalance: number;
@@ -225,6 +228,12 @@ export type CustomerBalanceLedgerEntry = {
     balanceBeforeCarryForward?: number;
     balanceAfterCarryForward?: number;
     settlementStatus: string;
+    deliveryStatus?: string;
+    deliveryAddressSummary?: string;
+    deliveryContactName?: string;
+    deliveryContactPhone?: string;
+    deliveryLatitude?: number;
+    deliveryLongitude?: number;
     settlementFrozen: boolean;
     settlementFreezeStage: string;
     settlementFreezeReason: string;
@@ -297,6 +306,39 @@ export type ProcurementItemResponse = {
     purchasedQuantity: number;
     unitPrice: number;
     businessIds: string[];
+};
+
+export type PickingChecklistItem = {
+    skuId: string;
+    itemName: string;
+    orderedQuantity: number;
+    pickedQuantity: number;
+    checked: boolean;
+    labels: string[];
+};
+
+export type PickingChecklist = {
+    businessId: string;
+    customerId: number;
+    customerName?: string;
+    deliveryStatus: string;
+    addressSummary?: string;
+    readyForDelivery: boolean;
+    items: PickingChecklistItem[];
+};
+
+export type DeliveryPreparation = {
+    businessId: string;
+    customerId: number;
+    customerName?: string;
+    deliveryStatus: string;
+    addressSummary?: string;
+    contactName?: string;
+    contactPhone?: string;
+    latitude?: number;
+    longitude?: number;
+    totalPickItems: number;
+    pickedItems: number;
 };
 
 export type ProcurementDeficitItemResponse = {
@@ -928,6 +970,26 @@ export const api = {
             customerId,
             currentBalance: 0
         }),
+    procurementPickingChecklist: (tripId: number) =>
+        fetchJson<PickingChecklist[]>(`/api/procurement/${tripId}/picking`, []),
+    updateProcurementPickingChecklist: (tripId: number, businessId: string, payload: { skuId: string; checked: boolean }) =>
+        patchJson<PickingChecklist, { skuId: string; checked: boolean }>(
+            `/api/procurement/${tripId}/picking/${encodeURIComponent(businessId)}`,
+            payload
+        ),
+    procurementDeliveryPreparations: (tripId: number) =>
+        fetchJson<DeliveryPreparation[]>(`/api/procurement/${tripId}/delivery-preparations`, []),
+    exportDeliveryPreparations: async (tripId: number) => {
+        const response = await fetch(`/api/procurement/${tripId}/delivery-preparations/export`, {
+            headers: createRequestHeaders()
+        });
+        if (!response.ok) {
+            const errorMessage = await parseErrorMessage(response);
+            message.error(errorMessage);
+            throw new Error(errorMessage);
+        }
+        return response.blob();
+    },
     customerLedgerHistory: (customerId: number) =>
         fetchJson<CustomerPaymentRecord[]>(`/api/procurement/customers/${customerId}/ledger-history`, []),
     tripCustomerPayments: (tripId: number, businessId: string) =>

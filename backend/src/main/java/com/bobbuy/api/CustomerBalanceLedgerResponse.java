@@ -7,6 +7,7 @@ public class CustomerBalanceLedgerResponse {
   private final Long tripId;
   private final String businessId;
   private final Long customerId;
+  private final String customerName;
   private final double totalReceivable;
   private final double paidDeposit;
   private final double outstandingBalance;
@@ -16,6 +17,12 @@ public class CustomerBalanceLedgerResponse {
   private final double balanceBeforeCarryForward;
   private final double balanceAfterCarryForward;
   private final String settlementStatus;
+  private final String deliveryStatus;
+  private final String deliveryAddressSummary;
+  private final String deliveryContactName;
+  private final String deliveryContactPhone;
+  private final Double deliveryLatitude;
+  private final Double deliveryLongitude;
   private final boolean settlementFrozen;
   private final String settlementFreezeStage;
   private final String settlementFreezeReason;
@@ -29,6 +36,7 @@ public class CustomerBalanceLedgerResponse {
   public CustomerBalanceLedgerResponse(Long tripId,
                                        String businessId,
                                        Long customerId,
+                                       String customerName,
                                        double totalReceivable,
                                        double paidDeposit,
                                        double outstandingBalance,
@@ -38,6 +46,12 @@ public class CustomerBalanceLedgerResponse {
                                        double balanceBeforeCarryForward,
                                        double balanceAfterCarryForward,
                                        String settlementStatus,
+                                       String deliveryStatus,
+                                       String deliveryAddressSummary,
+                                       String deliveryContactName,
+                                       String deliveryContactPhone,
+                                       Double deliveryLatitude,
+                                       Double deliveryLongitude,
                                        boolean settlementFrozen,
                                        String settlementFreezeStage,
                                        String settlementFreezeReason,
@@ -50,6 +64,7 @@ public class CustomerBalanceLedgerResponse {
     this.tripId = tripId;
     this.businessId = businessId;
     this.customerId = customerId;
+    this.customerName = customerName;
     this.totalReceivable = totalReceivable;
     this.paidDeposit = paidDeposit;
     this.outstandingBalance = outstandingBalance;
@@ -59,6 +74,12 @@ public class CustomerBalanceLedgerResponse {
     this.balanceBeforeCarryForward = balanceBeforeCarryForward;
     this.balanceAfterCarryForward = balanceAfterCarryForward;
     this.settlementStatus = settlementStatus;
+    this.deliveryStatus = deliveryStatus;
+    this.deliveryAddressSummary = deliveryAddressSummary;
+    this.deliveryContactName = deliveryContactName;
+    this.deliveryContactPhone = deliveryContactPhone;
+    this.deliveryLatitude = deliveryLatitude;
+    this.deliveryLongitude = deliveryLongitude;
     this.settlementFrozen = settlementFrozen;
     this.settlementFreezeStage = settlementFreezeStage;
     this.settlementFreezeReason = settlementFreezeReason;
@@ -80,6 +101,10 @@ public class CustomerBalanceLedgerResponse {
 
   public Long getCustomerId() {
     return customerId;
+  }
+
+  public String getCustomerName() {
+    return customerName;
   }
 
   public double getTotalReceivable() {
@@ -116,6 +141,30 @@ public class CustomerBalanceLedgerResponse {
 
   public String getSettlementStatus() {
     return settlementStatus;
+  }
+
+  public String getDeliveryStatus() {
+    return deliveryStatus;
+  }
+
+  public String getDeliveryAddressSummary() {
+    return deliveryAddressSummary;
+  }
+
+  public String getDeliveryContactName() {
+    return deliveryContactName;
+  }
+
+  public String getDeliveryContactPhone() {
+    return deliveryContactPhone;
+  }
+
+  public Double getDeliveryLatitude() {
+    return deliveryLatitude;
+  }
+
+  public Double getDeliveryLongitude() {
+    return deliveryLongitude;
   }
 
   public boolean isSettlementFrozen() {

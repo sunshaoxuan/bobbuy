@@ -299,6 +299,23 @@ class ProcurementControllerIntegrationTest {
   }
 
   @Test
+  void offlinePaymentRejectsUnsupportedMethod() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader order = new OrderHeader("PAY-METHOD", 1001L, trip.getId());
+    order.addLine(new OrderLine("prd-1000", "抹茶セット", null, 1, 10.0));
+    order.setStatus(com.bobbuy.model.OrderStatus.CONFIRMED);
+    store.upsertOrder(order);
+
+    mockMvc.perform(asAgent(post("/api/procurement/{tripId}/payments", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"businessId":"PAY-METHOD","amount":10,"paymentMethod":"ALIPAY"}
+                """)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+  }
+
+  @Test
   void settledTripRejectsOfflinePaymentAndReceiptReviewMutation() throws Exception {
     Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
     OrderHeader order = new OrderHeader("PAY-SETTLED", 1001L, trip.getId());
@@ -384,6 +401,60 @@ class ProcurementControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.meta.total").value(1))
         .andExpect(jsonPath("$.data[0].settlementReminderTriggered").value(true));
+  }
+
+  @Test
+  void deliveryPreparationAndPickingChecklistSupportReadyForDeliveryFlow() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.IN_PROGRESS, null));
+    OrderHeader order = new OrderHeader("PICK-100", 1001L, trip.getId());
+    OrderLine line = new OrderLine("prd-1000", "抹茶セット", null, 2, 10.0);
+    line.setPurchasedQuantity(1);
+    order.addLine(line);
+    order.setStatus(com.bobbuy.model.OrderStatus.CONFIRMED);
+    store.upsertOrder(order);
+
+    MvcResult uploadResult = mockMvc.perform(asAgent(post("/api/procurement/{tripId}/receipts", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"receipts":[{"fileName":"receipt-pick.jpg","imageBase64":"data:image/jpeg;base64,aGVsbG8="}]}
+                """)))
+        .andExpect(status().isOk())
+        .andReturn();
+    long receiptId = objectMapper.readTree(uploadResult.getResponse().getContentAsString()).path("data").get(0).path("id").asLong();
+
+    mockMvc.perform(asAgent(patch("/api/procurement/{tripId}/receipts/{receiptId}", trip.getId(), receiptId)
+            .contentType("application/json")
+            .content("""
+                {"processingStatus":"RECONCILED","reconciliationResult":{"reviewStatus":"REVIEWED","receiptItems":[],"matchedOrderLines":[{"businessId":"PICK-100","skuId":"prd-1000","itemName":"抹茶セット","matchedQuantity":1}],"unmatchedReceiptItems":[],"missingOrderedItems":[{"businessId":"PICK-100","skuId":"prd-1000","itemName":"抹茶セット","missingQuantity":1,"disposition":"OUT_OF_STOCK"}],"selfUseItems":[]}}
+                """)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.reconciliationResult.reviewStatus").value("REVIEWED"));
+
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/picking", trip.getId())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].businessId").value("PICK-100"))
+        .andExpect(jsonPath("$.data[0].items[0].labels[0]").value("SHORT_SHIPPED"));
+
+    mockMvc.perform(asAgent(patch("/api/procurement/{tripId}/picking/{businessId}", trip.getId(), "PICK-100")
+            .contentType("application/json")
+            .content("""
+                {"skuId":"prd-1000","checked":true}
+                """)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.readyForDelivery").value(true))
+        .andExpect(jsonPath("$.data.deliveryStatus").value("READY_FOR_DELIVERY"));
+
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/delivery-preparations", trip.getId())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].businessId").value("PICK-100"))
+        .andExpect(jsonPath("$.data[0].addressSummary").value(org.hamcrest.Matchers.containsString("Pudong")))
+        .andExpect(jsonPath("$.data[0].deliveryStatus").value("READY_FOR_DELIVERY"));
+
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/delivery-preparations/export", trip.getId())))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+        .andExpect(content().string(org.hamcrest.Matchers.containsString("PICK-100")))
+        .andExpect(content().string(org.hamcrest.Matchers.containsString("Pudong")));
   }
 
   private MockHttpServletRequestBuilder asAgent(MockHttpServletRequestBuilder request) {

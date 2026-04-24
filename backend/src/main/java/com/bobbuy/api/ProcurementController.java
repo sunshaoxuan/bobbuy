@@ -154,9 +154,52 @@ public class ProcurementController {
 
   @GetMapping("/{tripId}/ledger/{businessId}/payments")
   public ResponseEntity<ApiResponse<List<CustomerPaymentRecordResponse>>> tripCustomerPayments(@PathVariable Long tripId,
-                                                                                               @PathVariable String businessId) {
+                                                                                                @PathVariable String businessId) {
     List<CustomerPaymentRecordResponse> items = procurementHudService.getTripCustomerPayments(tripId, businessId);
     return ResponseEntity.ok(ApiResponse.success(items, new ApiMeta(items.size())));
+  }
+
+  @GetMapping("/{tripId}/picking")
+  public ResponseEntity<ApiResponse<List<PickingChecklistResponse>>> pickingChecklist(@PathVariable Long tripId) {
+    List<PickingChecklistResponse> items = procurementHudService.getPickingChecklist(tripId);
+    return ResponseEntity.ok(ApiResponse.success(items, new ApiMeta(items.size())));
+  }
+
+  @PatchMapping("/{tripId}/picking/{businessId}")
+  public ResponseEntity<ApiResponse<PickingChecklistResponse>> updatePickingChecklist(@PathVariable Long tripId,
+                                                                                      @PathVariable String businessId,
+                                                                                      @RequestBody PickingChecklistUpdateRequest request) {
+    return ResponseEntity.ok(ApiResponse.success(procurementHudService.updatePickingChecklistItem(tripId, businessId, request)));
+  }
+
+  @GetMapping("/{tripId}/delivery-preparations")
+  public ResponseEntity<ApiResponse<List<DeliveryPreparationResponse>>> deliveryPreparations(@PathVariable Long tripId) {
+    List<DeliveryPreparationResponse> items = procurementHudService.getDeliveryPreparations(tripId);
+    return ResponseEntity.ok(ApiResponse.success(items, new ApiMeta(items.size())));
+  }
+
+  @GetMapping("/{tripId}/delivery-preparations/export")
+  public ResponseEntity<byte[]> exportDeliveryPreparations(@PathVariable Long tripId) {
+    List<DeliveryPreparationResponse> items = procurementHudService.getDeliveryPreparations(tripId);
+    StringBuilder builder = new StringBuilder();
+    builder.append("businessId,customerId,customerName,deliveryStatus,addressSummary,contactName,contactPhone,latitude,longitude,totalPickItems,pickedItems\n");
+    for (DeliveryPreparationResponse item : items) {
+      builder.append(csvSafe(item.getBusinessId())).append(",")
+          .append(item.getCustomerId()).append(",")
+          .append(csvSafe(item.getCustomerName())).append(",")
+          .append(csvSafe(item.getDeliveryStatus())).append(",")
+          .append(csvSafe(item.getAddressSummary())).append(",")
+          .append(csvSafe(item.getContactName())).append(",")
+          .append(csvSafe(item.getContactPhone())).append(",")
+          .append(item.getLatitude() == null ? "" : item.getLatitude()).append(",")
+          .append(item.getLongitude() == null ? "" : item.getLongitude()).append(",")
+          .append(item.getTotalPickItems()).append(",")
+          .append(item.getPickedItems()).append("\n");
+    }
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=trip-" + tripId + "-delivery-preparations.csv")
+        .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+        .body(builder.toString().getBytes(StandardCharsets.UTF_8));
   }
 
   @GetMapping("/customers/{customerId}/balance")
