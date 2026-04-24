@@ -58,7 +58,7 @@ export default function ClientBilling() {
   const selectedTrip = useMemo(() => trips.find((trip) => trip.id === selectedTripId), [selectedTripId, trips]);
 
   const confirmLedger = async (entry: CustomerBalanceLedgerEntry, action: 'RECEIPT' | 'BILLING') => {
-    if (!selectedTripId) {
+    if (!selectedTripId || selectedTrip?.settlementFrozen || entry.settlementFrozen) {
       return;
     }
     const key = `${entry.businessId}-${action}`;
@@ -131,6 +131,7 @@ export default function ClientBilling() {
             {entries.map((entry) => {
               const receiptConfirmed = Boolean(entry.receiptConfirmedAt);
               const billingConfirmed = Boolean(entry.billingConfirmedAt);
+              const settlementFrozen = Boolean(selectedTrip?.settlementFrozen || entry.settlementFrozen);
               return (
                 <Card key={entry.businessId} className="client-list-card" title={`${entry.businessId}${entry.customerName ? ` · ${entry.customerName}` : ''}`}>
                   <Space direction="vertical" size={12} style={{ width: '100%' }}>
@@ -212,7 +213,7 @@ export default function ClientBilling() {
                       <Button
                         type="default"
                         onClick={() => confirmLedger(entry, 'RECEIPT')}
-                        disabled={receiptConfirmed}
+                        disabled={settlementFrozen || receiptConfirmed}
                         loading={confirmingKey === `${entry.businessId}-RECEIPT`}
                       >
                         {t('billing.confirm_receipt_action')}
@@ -220,12 +221,15 @@ export default function ClientBilling() {
                       <Button
                         type="primary"
                         onClick={() => confirmLedger(entry, 'BILLING')}
-                        disabled={!receiptConfirmed || billingConfirmed}
+                        disabled={settlementFrozen || !receiptConfirmed || billingConfirmed}
                         loading={confirmingKey === `${entry.businessId}-BILLING`}
                       >
                         {t('billing.confirm_statement_action')}
                       </Button>
                     </Space>
+                    {settlementFrozen ? (
+                      <Text type="secondary">{entry.settlementFreezeReason || selectedTrip?.settlementFreezeReason}</Text>
+                    ) : null}
                     <Text type="secondary">
                       {t('billing.balance_carry_forward_hint')} {t('billing.order_context_hint')}
                     </Text>

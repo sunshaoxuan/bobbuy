@@ -1,17 +1,23 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import PickingMaster from './PickingMaster';
 import { I18nProvider } from '../i18n';
 
+const { tripsMock, checklistMock, updateChecklistMock } = vi.hoisted(() => ({
+  tripsMock: vi.fn(),
+  checklistMock: vi.fn(),
+  updateChecklistMock: vi.fn()
+}));
+
 vi.mock('antd', async () => {
   const antd = await vi.importActual<typeof import('antd')>('antd');
   return {
     ...antd,
-    Select: ({ options = [], onChange, value }: any) => (
+    Select: ({ options = [], onChange, value, ...props }: any) => (
       <select
         aria-label="trip-select"
-        data-testid="trip-select"
+        data-testid={props['data-testid']}
         value={value}
         onChange={(event) => onChange?.(Number(event.target.value))}
       >
@@ -27,82 +33,67 @@ vi.mock('antd', async () => {
 
 vi.mock('../api', () => ({
   api: {
-    trips: () =>
-      Promise.resolve([
-        {
-          id: 2000,
-          agentId: 1000,
-          origin: 'Tokyo',
-          destination: 'Shanghai',
-          departDate: '2026-04-20',
-          capacity: 10,
-          reservedCapacity: 2,
-          remainingCapacity: 8,
-          status: 'PUBLISHED'
-        }
-      ]),
-    procurementList: () =>
-      Promise.resolve([
-        {
-          skuId: 'prd-1000',
-          itemName: 'Matcha Kit',
-          totalQuantity: 3,
-          purchasedQuantity: 1,
-          unitPrice: 32.5,
-          businessIds: ['BIZ-001', 'BIZ-002']
-        },
-        {
-          skuId: 'prd-1001',
-          itemName: 'Tokyo Banana',
-          totalQuantity: 1,
-          purchasedQuantity: 1,
-          unitPrice: 18,
-          businessIds: ['BIZ-003']
-        }
-      ]),
-    orders: () =>
-      Promise.resolve([
-        {
-          id: 3000,
-          businessId: 'BIZ-001',
-          customerId: 1001,
-          tripId: 2000,
-          status: 'CONFIRMED',
-          totalAmount: 65,
-          lines: [{ skuId: 'prd-1000', itemName: 'Matcha Kit', quantity: 2, purchasedQuantity: 1, unitPrice: 32.5 }]
-        },
-        {
-          id: 3001,
-          businessId: 'BIZ-002',
-          customerId: 1002,
-          tripId: 2000,
-          status: 'CONFIRMED',
-          totalAmount: 32.5,
-          lines: [{ skuId: 'prd-1000', itemName: 'Matcha Kit', quantity: 1, purchasedQuantity: 0, unitPrice: 32.5 }]
-        },
-        {
-          id: 3002,
-          businessId: 'BIZ-003',
-          customerId: 1003,
-          tripId: 2000,
-          status: 'CONFIRMED',
-          totalAmount: 18,
-          lines: [{ skuId: 'prd-1001', itemName: 'Tokyo Banana', quantity: 1, purchasedQuantity: 1, unitPrice: 18 }]
-        }
-      ])
+    trips: tripsMock,
+    procurementPickingChecklist: checklistMock,
+    updateProcurementPickingChecklist: updateChecklistMock
   }
 }));
 
 describe('PickingMaster', () => {
   beforeEach(() => {
     window.localStorage.setItem('bobbuy_locale', 'en-US');
+    tripsMock.mockResolvedValue([
+      {
+        id: 2000,
+        agentId: 1000,
+        origin: 'Tokyo',
+        destination: 'Shanghai',
+        departDate: '2026-04-20',
+        capacity: 10,
+        reservedCapacity: 2,
+        remainingCapacity: 8,
+        status: 'PUBLISHED',
+        settlementFrozen: false,
+        settlementFreezeStage: 'ACTIVE',
+        settlementFreezeReason: ''
+      }
+    ]);
+    checklistMock.mockResolvedValue([
+      {
+        businessId: 'BIZ-001',
+        customerId: 1001,
+        customerName: 'Alice',
+        deliveryStatus: 'PENDING_DELIVERY',
+        addressSummary: 'Shanghai Pudong Century Ave 88',
+        readyForDelivery: false,
+        items: [{ skuId: 'prd-1000', itemName: 'Matcha Kit', orderedQuantity: 2, pickedQuantity: 1, checked: false, labels: ['SHORT_SHIPPED'] }]
+      },
+      {
+        businessId: 'BIZ-002',
+        customerId: 1002,
+        customerName: 'Bob',
+        deliveryStatus: 'READY_FOR_DELIVERY',
+        addressSummary: 'Shanghai Hongqiao',
+        readyForDelivery: true,
+        items: [{ skuId: 'prd-1001', itemName: 'Tokyo Banana', orderedQuantity: 1, pickedQuantity: 1, checked: true, labels: ['ON_SITE_REPLENISHED'] }]
+      }
+    ]);
+    updateChecklistMock.mockResolvedValue({
+      businessId: 'BIZ-001',
+      customerId: 1001,
+      customerName: 'Alice',
+      deliveryStatus: 'READY_FOR_DELIVERY',
+      addressSummary: 'Shanghai Pudong Century Ave 88',
+      readyForDelivery: true,
+      items: [{ skuId: 'prd-1000', itemName: 'Matcha Kit', orderedQuantity: 2, pickedQuantity: 1, checked: true, labels: ['SHORT_SHIPPED'] }]
+    });
   });
 
   afterEach(() => {
     window.localStorage.removeItem('bobbuy_locale');
   });
 
-  it('renders procurement items from the real procurement contract', async () => {
+  it('renders reviewed picking checklist items and labels', async () => {
     render(
       <I18nProvider>
         <BrowserRouter>
@@ -114,10 +105,11 @@ describe('PickingMaster', () => {
     expect((await screen.findAllByText(/Picking Master/i)).length).toBeGreaterThan(0);
     expect(await screen.findByText('Matcha Kit')).toBeInTheDocument();
     expect(await screen.findByText('Tokyo Banana')).toBeInTheDocument();
-    expect(await screen.findByText('￥32.5')).toBeInTheDocument();
+    expect(await screen.findByText('Short shipped')).toBeInTheDocument();
+    expect(await screen.findByText('On-site replenished')).toBeInTheDocument();
   });
 
-  it('filters incomplete procurement rows', async () => {
+  it('filters entries by delivery readiness', async () => {
     render(
       <I18nProvider>
         <BrowserRouter>
@@ -128,12 +120,11 @@ describe('PickingMaster', () => {
 
     expect(await screen.findByText('Matcha Kit')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('radio', { name: /To Pick/i }));
-
     expect(screen.getByText('Matcha Kit')).toBeInTheDocument();
     expect(screen.queryByText('Tokyo Banana')).not.toBeInTheDocument();
   });
 
-  it('shows business drill-down in the details modal', async () => {
+  it('updates checklist state through the picking checklist api', async () => {
     render(
       <I18nProvider>
         <BrowserRouter>
@@ -142,11 +133,10 @@ describe('PickingMaster', () => {
       </I18nProvider>
     );
 
-    expect(await screen.findByText('Matcha Kit')).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole('button', { name: /Details/i })[0]);
+    const checkbox = (await screen.findAllByRole('checkbox'))[0];
+    fireEvent.click(checkbox);
 
-    expect(await screen.findByText(/Business ID: BIZ-001/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Business ID: BIZ-002/i)).toBeInTheDocument();
-    expect(screen.getByText('1/2')).toBeInTheDocument();
+    await waitFor(() => expect(updateChecklistMock).toHaveBeenCalledWith(2000, 'BIZ-001', { skuId: 'prd-1000', checked: true }));
+    expect((await screen.findAllByText('Ready for Delivery')).length).toBeGreaterThan(0);
   });
 });

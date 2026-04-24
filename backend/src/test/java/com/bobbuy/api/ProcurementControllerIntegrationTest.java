@@ -135,10 +135,12 @@ class ProcurementControllerIntegrationTest {
     OrderLine fromLine = new OrderLine("prd-1000", "抹茶セット", null, 3, 10.0);
     fromLine.setPurchasedQuantity(2);
     fromOrder.addLine(fromLine);
+    fromOrder.setStatus(com.bobbuy.model.OrderStatus.CONFIRMED);
     store.upsertOrder(fromOrder);
 
     OrderHeader toOrder = new OrderHeader("LEDGER-TO", 1001L, trip.getId());
     toOrder.addLine(new OrderLine("prd-1000", "抹茶セット", null, 3, 10.0));
+    toOrder.setStatus(com.bobbuy.model.OrderStatus.CONFIRMED);
     store.upsertOrder(toOrder);
 
     mockMvc.perform(asAgent(post("/api/procurement/{tripId}/expenses", trip.getId())
@@ -185,6 +187,10 @@ class ProcurementControllerIntegrationTest {
 
   @Test
   void customerCanConfirmReceiptAndBillingForOwnLedger() throws Exception {
+    store.getOrderByBusinessId("20260117001").ifPresent(order -> {
+      order.setStatus(com.bobbuy.model.OrderStatus.CONFIRMED);
+      store.updateOrder(order.getId(), order);
+    });
     mockMvc.perform(asCustomer(post("/api/procurement/{tripId}/ledger/{businessId}/confirm", 2000L, "20260117001")
             .contentType("application/json")
             .content("""
@@ -249,6 +255,7 @@ class ProcurementControllerIntegrationTest {
     Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
     OrderHeader order = new OrderHeader("PAY-100", customerId, trip.getId());
     order.addLine(new OrderLine("prd-1000", "抹茶セット", null, 2, 10.0));
+    order.setStatus(com.bobbuy.model.OrderStatus.CONFIRMED);
     store.upsertOrder(order);
 
     mockMvc.perform(asAgent(post("/api/procurement/{tripId}/payments", trip.getId())
@@ -320,6 +327,7 @@ class ProcurementControllerIntegrationTest {
     Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
     OrderHeader order = new OrderHeader("PAY-SETTLED", 1001L, trip.getId());
     order.addLine(new OrderLine("prd-1000", "抹茶セット", null, 1, 10.0));
+    order.setStatus(com.bobbuy.model.OrderStatus.CONFIRMED);
     store.upsertOrder(order);
 
     MvcResult uploadResult = mockMvc.perform(asAgent(post("/api/procurement/{tripId}/receipts", trip.getId())
@@ -348,6 +356,88 @@ class ProcurementControllerIntegrationTest {
 
     mockMvc.perform(asAgent(post("/api/procurement/{tripId}/receipts/{receiptId}/re-recognize", trip.getId(), receiptId)))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void completedTripRejectsCustomerConfirmationReceiptUploadAndPickingMutation() throws Exception {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.IN_PROGRESS, null));
+    OrderHeader order = new OrderHeader("FROZEN-OPS", 1001L, trip.getId());
+    OrderLine line = new OrderLine("prd-1000", "抹茶セット", null, 1, 10.0);
+    line.setPurchasedQuantity(1);
+    order.addLine(line);
+    order.setStatus(com.bobbuy.model.OrderStatus.CONFIRMED);
+    store.upsertOrder(order);
+
+    MvcResult uploadResult = mockMvc.perform(asAgent(post("/api/procurement/{tripId}/receipts", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"receipts":[{"fileName":"receipt-pick.jpg","imageBase64":"data:image/jpeg;base64,aGVsbG8="}]}
+                """)))
+        .andExpect(status().isOk())
+        .andReturn();
+    long receiptId = objectMapper.readTree(uploadResult.getResponse().getContentAsString()).path("data").get(0).path("id").asLong();
+
+    mockMvc.perform(asAgent(patch("/api/procurement/{tripId}/receipts/{receiptId}", trip.getId(), receiptId)
+            .contentType("application/json")
+            .content("""
+                {"processingStatus":"RECONCILED","reconciliationResult":{"reviewStatus":"REVIEWED","receiptItems":[],"matchedOrderLines":[{"businessId":"FROZEN-OPS","skuId":"prd-1000","matchedQuantity":1}],"unmatchedReceiptItems":[],"missingOrderedItems":[],"selfUseItems":[]}}
+                """)))
+        .andExpect(status().isOk());
+
+    store.updateTripStatus(trip.getId(), TripStatus.COMPLETED);
+
+    mockMvc.perform(asCustomer(post("/api/procurement/{tripId}/ledger/{businessId}/confirm", trip.getId(), "FROZEN-OPS")
+            .contentType("application/json")
+            .content("""
+                {"action":"RECEIPT"}
+                """), "1001"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").exists());
+
+    mockMvc.perform(asAgent(post("/api/procurement/{tripId}/receipts", trip.getId())
+            .contentType("application/json")
+            .content("""
+                {"receipts":[{"fileName":"receipt-locked.jpg","imageBase64":"data:image/jpeg;base64,aGVsbG8="}]}
+                """)))
+        .andExpect(status().isBadRequest());
+
+    mockMvc.perform(asAgent(patch("/api/procurement/{tripId}/picking/{businessId}", trip.getId(), "FROZEN-OPS")
+            .contentType("application/json")
+            .content("""
+                {"skuId":"prd-1000","checked":true}
+                """)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void balanceSummaryAndLedgerExcludesNewAndCancelledOrders() throws Exception {
+    long customerId = 9010L;
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now().minusDays(1), 20, 0, TripStatus.DRAFT, null));
+
+    OrderHeader confirmedOrder = new OrderHeader("BAL-CONFIRMED", customerId, trip.getId());
+    confirmedOrder.addLine(new OrderLine("prd-1000", "抹茶セット", null, 2, 10.0));
+    confirmedOrder.setStatus(com.bobbuy.model.OrderStatus.CONFIRMED);
+    store.upsertOrder(confirmedOrder);
+
+    OrderHeader newOrder = new OrderHeader("BAL-NEW", customerId, trip.getId());
+    newOrder.addLine(new OrderLine("prd-1000", "抹茶セット", null, 3, 20.0));
+    newOrder.setStatus(com.bobbuy.model.OrderStatus.NEW);
+    store.upsertOrder(newOrder);
+
+    OrderHeader cancelledOrder = new OrderHeader("BAL-CANCELLED", customerId, trip.getId());
+    cancelledOrder.addLine(new OrderLine("prd-1000", "抹茶セット", null, 4, 30.0));
+    cancelledOrder.setStatus(com.bobbuy.model.OrderStatus.CANCELLED);
+    store.upsertOrder(cancelledOrder);
+
+    mockMvc.perform(asAgent(get("/api/procurement/{tripId}/ledger", trip.getId())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.meta.total").value(1))
+        .andExpect(jsonPath("$.data[0].businessId").value("BAL-CONFIRMED"))
+        .andExpect(jsonPath("$.data[0].amountDueThisTrip").value(20.0));
+
+    mockMvc.perform(asAgent(get("/api/procurement/customers/{customerId}/balance", customerId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.currentBalance").value(-20.0));
   }
 
   @Test

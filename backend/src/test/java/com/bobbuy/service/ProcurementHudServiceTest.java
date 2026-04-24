@@ -167,6 +167,10 @@ class ProcurementHudServiceTest {
 
   @Test
   void confirmCustomerLedgerRequiresReceiptBeforeBilling() {
+    store.getOrderByBusinessId("20260117001").ifPresent(order -> {
+      order.setStatus(OrderStatus.CONFIRMED);
+      store.updateOrder(order.getId(), order);
+    });
     LedgerConfirmationRequest request = new LedgerConfirmationRequest();
     request.setAction("BILLING");
 
@@ -177,6 +181,34 @@ class ProcurementHudServiceTest {
         new UsernamePasswordAuthenticationToken("1001", "N/A")))
         .isInstanceOf(ApiException.class)
         .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.procurement.billing.receipt_required"));
+  }
+
+  @Test
+  void frozenTripBlocksCustomerConfirmationAndOfflinePayment() {
+    Trip trip = store.createTrip(new Trip(null, 1000L, "HK", "NY", LocalDate.now(), 20, 0, TripStatus.DRAFT, null));
+    OrderHeader order = new OrderHeader("FROZEN-BILL", 1001L, trip.getId());
+    order.addLine(new OrderLine("prd-1000", "Matcha", null, 1, 10.0));
+    order.setStatus(OrderStatus.CONFIRMED);
+    store.upsertOrder(order);
+    store.updateTripStatus(trip.getId(), TripStatus.COMPLETED);
+
+    LedgerConfirmationRequest request = new LedgerConfirmationRequest();
+    request.setAction("RECEIPT");
+
+    assertThatThrownBy(() -> procurementHudService.confirmCustomerLedger(
+        trip.getId(),
+        "FROZEN-BILL",
+        request,
+        new UsernamePasswordAuthenticationToken("1001", "N/A")))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.trip.settlement_frozen"));
+
+    assertThatThrownBy(() -> procurementHudService.recordOfflinePayment(
+        trip.getId(),
+        buildPayment("FROZEN-BILL", 10.0, "CASH"),
+        new UsernamePasswordAuthenticationToken("1000", "N/A")))
+        .isInstanceOf(ApiException.class)
+        .satisfies(error -> assertThat(((ApiException) error).getMessageKey()).isEqualTo("error.trip.settlement_frozen"));
   }
 
   @Test

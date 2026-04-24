@@ -584,7 +584,7 @@ public class ProcurementHudService {
     Trip trip = tripRepository.findById(tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
     List<CustomerBalanceLedgerResponse> entries = orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
-        .filter(this::isLedgerVisibleOrder)
+        .filter(this::isSettlementRelevantOrder)
         .map(order -> buildLedgerEntry(trip, order))
         .toList();
     if (customerIdentityResolver.isCustomer(authentication)) {
@@ -655,7 +655,8 @@ public class ProcurementHudService {
     }
     Trip trip = tripRepository.findById(tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
-    OrderHeader order = getTripOrderByBusinessId(tripId, businessId);
+    ensureTripMutable(trip);
+    OrderHeader order = getSettlementRelevantTripOrderByBusinessId(tripId, businessId);
     if (customerIdentityResolver.isCustomer(authentication)) {
       Long customerId = customerIdentityResolver.resolveCustomerId(authentication).orElse(null);
       if (!Objects.equals(customerId, order.getCustomerId())) {
@@ -716,8 +717,9 @@ public class ProcurementHudService {
   public List<ProcurementReceiptResponse> uploadProcurementReceipts(Long tripId,
                                                                     ProcurementReceiptUploadRequest request,
                                                                     Authentication authentication) {
-    tripRepository.findById(tripId)
+    Trip trip = tripRepository.findById(tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
+    ensureTripMutable(trip);
     if (request == null || request.getReceipts() == null || request.getReceipts().isEmpty()) {
       throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.receipt.upload.invalid");
     }
@@ -763,7 +765,7 @@ public class ProcurementHudService {
                                                                          Long receiptId,
                                                                          ProcurementReceiptSaveRequest request,
                                                                          Authentication authentication) {
-    ensureTripNotSettled(tripId);
+    ensureTripMutable(tripId);
     ProcurementReceipt receipt = procurementReceiptRepository.findByIdAndTripId(receiptId, tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.procurement.receipt.not_found"));
     if (request == null || request.getReconciliationResult() == null) {
@@ -810,7 +812,7 @@ public class ProcurementHudService {
   public ProcurementReceiptResponse rerecognizeProcurementReceipt(Long tripId,
                                                                   Long receiptId,
                                                                   Authentication authentication) {
-    ensureTripNotSettled(tripId);
+    ensureTripMutable(tripId);
     ProcurementReceipt receipt = procurementReceiptRepository.findByIdAndTripId(receiptId, tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.procurement.receipt.not_found"));
     if (receipt.getSourceImageBase64() == null || receipt.getSourceImageBase64().isBlank()) {
@@ -842,9 +844,7 @@ public class ProcurementHudService {
                                                             Authentication authentication) {
     Trip trip = tripRepository.findById(tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
-    if (trip.getStatus() == TripStatus.SETTLED) {
-      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.payment.settled");
-    }
+    ensureTripMutable(trip);
     if (request == null || request.getBusinessId() == null || request.getBusinessId().isBlank()
         || request.getPaymentMethod() == null || request.getPaymentMethod().isBlank()
         || request.getAmount() <= 0D) {
@@ -854,7 +854,7 @@ public class ProcurementHudService {
     if (paymentMethod == null) {
       throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.payment.invalid_method");
     }
-    OrderHeader order = getTripOrderByBusinessId(tripId, request.getBusinessId());
+    OrderHeader order = getSettlementRelevantTripOrderByBusinessId(tripId, request.getBusinessId());
     LocalDateTime now = LocalDateTime.now();
     CustomerPaymentLedger saved = customerPaymentLedgerRepository.save(new CustomerPaymentLedger(
         tripId,
@@ -876,7 +876,7 @@ public class ProcurementHudService {
   @Transactional(readOnly = true)
   public CustomerBalanceSummaryResponse getCustomerBalanceSummary(Long customerId) {
     double totalReceivable = orderHeaderRepository.findByCustomerId(customerId).stream()
-        .filter(this::isLedgerVisibleOrder)
+        .filter(this::isSettlementRelevantOrder)
         .filter(order -> isHistoricalOrder(order, LocalDate.now()))
         .mapToDouble(this::calculateReceivable)
         .sum();
@@ -913,7 +913,7 @@ public class ProcurementHudService {
       return List.of();
     }
     return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
-        .filter(this::isLedgerVisibleOrder)
+        .filter(this::isSettlementRelevantOrder)
         .map(order -> buildPickingChecklistResponse(order, receiptSnapshot))
         .filter(response -> !response.getItems().isEmpty())
         .toList();
@@ -958,7 +958,7 @@ public class ProcurementHudService {
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
     ReviewedReceiptSnapshot receiptSnapshot = buildReviewedReceiptSnapshot(tripId);
     return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
-        .filter(this::isLedgerVisibleOrder)
+        .filter(this::isSettlementRelevantOrder)
         .map(order -> buildDeliveryPreparationResponse(order, receiptSnapshot))
         .filter(Objects::nonNull)
         .filter(response -> !"DELIVERED".equals(response.getDeliveryStatus()))
@@ -993,6 +993,14 @@ public class ProcurementHudService {
     tripRepository.findById(tripId)
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
     return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
+        .filter(order -> Objects.equals(order.getBusinessId(), businessId))
+        .findFirst()
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
+  }
+
+  private OrderHeader getSettlementRelevantTripOrderByBusinessId(Long tripId, String businessId) {
+    return orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId).stream()
+        .filter(this::isSettlementRelevantOrder)
         .filter(order -> Objects.equals(order.getBusinessId(), businessId))
         .findFirst()
         .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.order.not_found"));
@@ -1089,6 +1097,15 @@ public class ProcurementHudService {
     }
   }
 
+  private void ensureTripMutable(Trip trip) {
+    if (trip == null) {
+      throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found");
+    }
+    if (trip.isSettlementFrozen()) {
+      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.trip.settlement_frozen");
+    }
+  }
+
   private String resolveOperatorName(Authentication authentication) {
     if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
       return "SYSTEM";
@@ -1158,14 +1175,6 @@ public class ProcurementHudService {
           return settledQty * line.getUnitPrice();
         })
         .sum();
-  }
-
-  private void ensureTripNotSettled(Long tripId) {
-    Trip trip = tripRepository.findById(tripId)
-        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.trip.not_found"));
-    if (trip.getStatus() == TripStatus.SETTLED) {
-      throw new ApiException(ErrorCode.INVALID_REQUEST, "error.procurement.receipt.settled");
-    }
   }
 
   private Map<String, Object> copyMap(Map<String, Object> source) {

@@ -16,8 +16,18 @@
 - 聊天仍为 REST + 轮询，不宣称 WebSocket。
 - 结算仍为人工确认 / 线下结算，不宣称真实支付网关。
 - 采购小票识别优先使用真实 AI 结果；当 AI 服务不可达时自动降级为规则回退结果。
+- 配送仍是“准备 / 导出 / 状态流转”，不宣称实时追踪、实时地图重规划。
 
-## 3. 自动化口径
+## 3. 冻结与履约统一验收点
+
+| 主题 | 当前可验收事实 |
+| :-- | :-- |
+| 冻结门禁 | Trip 进入 `COMPLETED` / `SETTLED` 后，客户确认、线下收款、小票重识别、人工复核保存、拣货确认全部后端拒绝，前端按钮同步只读并展示冻结原因。 |
+| 余额口径 | `customerBalanceSummary`、`balanceBeforeCarryForward`、`balanceAfterCarryForward` 统一只统计进入结算语义的订单，排除 `NEW` / `CANCELLED` / 无效草稿单。 |
+| 拣货视图 | `/procurement` 与 `/picking` 共用 reviewed receipt + picking checklist 单一事实来源，按 `READY_FOR_DELIVERY` / `PENDING_DELIVERY` 展示一致状态。 |
+| 拣货标签 | `SHORT_SHIPPED` / `ON_SITE_REPLENISHED` / `SELF_USE` 在两页保持一致展示。 |
+
+## 4. 自动化口径
 - `frontend npm run build`
 - `frontend npm test`
 - `frontend npm run e2e`
