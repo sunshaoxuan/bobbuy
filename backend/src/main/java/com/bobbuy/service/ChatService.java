@@ -93,13 +93,16 @@ public class ChatService {
         if ("ORDER".equals(conversationType) && message.getOrderId() != null) {
             return "/topic/order/" + message.getOrderId();
         }
-        String senderId = UriUtils.encodePathSegment(message.getSenderId(), StandardCharsets.UTF_8);
-        String recipientId = UriUtils.encodePathSegment(message.getRecipientId(), StandardCharsets.UTF_8);
+        String senderId = message.getSenderId();
+        String recipientId = message.getRecipientId();
         if (senderId.compareTo(recipientId) > 0) {
             String current = senderId;
             senderId = recipientId;
             recipientId = current;
         }
-        return "/topic/private/" + senderId + "/" + recipientId;
+        return "/topic/private/"
+            + UriUtils.encodePathSegment(senderId, StandardCharsets.UTF_8)
+            + "/"
+            + UriUtils.encodePathSegment(recipientId, StandardCharsets.UTF_8);
     }
 }

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, fireEvent, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { I18nProvider } from '../i18n';
 import React from 'react';
@@ -157,9 +157,7 @@ describe('StockMaster Component', () => {
     const saveButton = screen.getByText(/保存并关闭/i);
     fireEvent.click(saveButton);
     
-    await waitFor(() => {
-      expect(screen.queryByText(/编辑商品详情/i)).not.toBeInTheDocument();
-    });
+    await waitForElementToBeRemoved(() => screen.queryByRole('dialog'));
   });
 
   it('deletes a row when clicking the delete button', async () => {

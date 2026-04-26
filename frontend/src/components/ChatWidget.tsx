@@ -164,7 +164,9 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     enabled: Boolean(senderId && recipientId && (hasScopedConversation || open)),
     destination: websocketDestination,
     onConnect: ({ reconnected }) => {
-      void loadMessages({ silent: true, baseline: !reconnected && !open });
+      if (reconnected) {
+        void loadMessages({ silent: true });
+      }
     },
     onMessage: () => {
       void loadMessages({ silent: true });
@@ -836,7 +838,6 @@ function buildConversationDestination({
     return `/topic/order/${orderId}`;
   }
   const [firstParticipant, secondParticipant] = [senderId, recipientId]
-    .map((participant) => encodeURIComponent(participant))
-    .sort((left, right) => left.localeCompare(right));
-  return `/topic/private/${firstParticipant}/${secondParticipant}`;
+    .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
+  return `/topic/private/${encodeURIComponent(firstParticipant)}/${encodeURIComponent(secondParticipant)}`;
 }
