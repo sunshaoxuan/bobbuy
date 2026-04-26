@@ -96,7 +96,7 @@ services:
       JVM_XMS: 256m
       JVM_XMX: 256m
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:8848/nacos/v1/console/health/readiness | grep -q UP"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8848/nacos/v1/console/health/readiness"]
       interval: 10s
       timeout: 5s
       retries: 15
@@ -173,6 +173,8 @@ services:
       NACOS_SERVER_ADDR: nacos:8848
       BOBBUY_AI_LLM_MAIN_URL: ${BOBBUY_AI_LLM_MAIN_URL}
       BOBBUY_AI_LLM_EDGE_URL: ${BOBBUY_AI_LLM_EDGE_URL}
+      BOBBUY_AI_LLM_MAIN_MODEL: ${BOBBUY_AI_LLM_MAIN_MODEL}
+      BOBBUY_AI_LLM_EDGE_MODEL: ${BOBBUY_AI_LLM_EDGE_MODEL}
     depends_on:
       postgres:
         condition: service_healthy

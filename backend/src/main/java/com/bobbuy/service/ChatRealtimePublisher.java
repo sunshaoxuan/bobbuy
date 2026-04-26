@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 public class ChatRealtimePublisher {
     private static final Logger log = LoggerFactory.getLogger(ChatRealtimePublisher.class);
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private final ObjectProvider<SimpMessagingTemplate> messagingTemplateProvider;
     private final ChatDestinationResolver destinationResolver;
     private final ObjectMapper objectMapper;
     private final ObjectProvider<StringRedisTemplate> redisTemplateProvider;
@@ -23,14 +23,14 @@ public class ChatRealtimePublisher {
     private final String redisChannel;
 
     public ChatRealtimePublisher(
-        SimpMessagingTemplate messagingTemplate,
+        ObjectProvider<SimpMessagingTemplate> messagingTemplateProvider,
         ChatDestinationResolver destinationResolver,
         ObjectMapper objectMapper,
         ObjectProvider<StringRedisTemplate> redisTemplateProvider,
         @Value("${bobbuy.chat.redis.pubsub.enabled:false}") boolean redisPubSubEnabled,
         @Value("${bobbuy.chat.redis.pubsub.channel:bobbuy.chat.realtime}") String redisChannel
     ) {
-        this.messagingTemplate = messagingTemplate;
+        this.messagingTemplateProvider = messagingTemplateProvider;
         this.destinationResolver = destinationResolver;
         this.objectMapper = objectMapper;
         this.redisTemplateProvider = redisTemplateProvider;
@@ -47,7 +47,12 @@ public class ChatRealtimePublisher {
     }
 
     public void publishLocal(ChatRealtimeEnvelope envelope) {
-        messagingTemplate.convertAndSend(envelope.destination(), envelope.message());
+        SimpMessagingTemplate messagingTemplate = messagingTemplateProvider.getIfAvailable();
+        if (messagingTemplate != null) {
+            messagingTemplate.convertAndSend(envelope.destination(), envelope.message());
+        } else {
+            log.trace("SimpMessagingTemplate unavailable, skipping local websocket push for {}", envelope.destination());
+        }
     }
 
     public void publishLocal(String payload) {

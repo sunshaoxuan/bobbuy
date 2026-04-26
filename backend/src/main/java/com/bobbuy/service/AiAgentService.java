@@ -2,6 +2,7 @@ package com.bobbuy.service;
 
 import com.bobbuy.model.ExperienceMapping;
 import com.bobbuy.repository.ExperienceMappingRepository;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +26,11 @@ public class AiAgentService {
   private static final List<String> CHINESE_NUMBERS = List.of("一", "二", "两", "三", "四", "五", "六", "七", "八", "九", "十");
 
   private final LlmGateway llmGateway;
-  private final ExperienceMappingRepository experienceMappingRepository;
+  private final ObjectProvider<ExperienceMappingRepository> experienceMappingRepositoryProvider;
 
-  public AiAgentService(LlmGateway llmGateway, ExperienceMappingRepository experienceMappingRepository) {
+  public AiAgentService(LlmGateway llmGateway, ObjectProvider<ExperienceMappingRepository> experienceMappingRepositoryProvider) {
     this.llmGateway = llmGateway;
-    this.experienceMappingRepository = experienceMappingRepository;
+    this.experienceMappingRepositoryProvider = experienceMappingRepositoryProvider;
   }
 
   public Optional<String> translate(String text, String targetLocale) {
@@ -91,6 +92,10 @@ public class AiAgentService {
       return;
     }
     String normalized = normalize(originalName);
+    ExperienceMappingRepository experienceMappingRepository = experienceMappingRepositoryProvider.getIfAvailable();
+    if (experienceMappingRepository == null) {
+      return;
+    }
     ExperienceMapping mapping = experienceMappingRepository.findByFuzzyTerm(normalized)
         .orElseGet(() -> new ExperienceMapping(normalized, matchedName.trim()));
     mapping.setMappedName(matchedName.trim());
@@ -205,14 +210,17 @@ public class AiAgentService {
     catalog.put("Spinach", new MatchCatalogItem("Spinach", "SKU-SPINACH", 3.49,
         new HashSet<>(Set.of("spinach", "菠菜", "ほれんそ", "ほうれん草"))));
 
-    for (ExperienceMapping mapping : experienceMappingRepository.findAll()) {
-      String mapped = mapping.getMappedName();
-      MatchCatalogItem existing = catalog.get(mapped);
-      if (existing != null) {
-        existing.aliases().add(mapping.getFuzzyTerm());
-      } else {
-        catalog.put(mapped, new MatchCatalogItem(mapped, "SKU-CUSTOM-" + normalize(mapped).toUpperCase(Locale.ROOT), 0.0,
-            new HashSet<>(Set.of(mapping.getFuzzyTerm(), mapped))));
+    ExperienceMappingRepository experienceMappingRepository = experienceMappingRepositoryProvider.getIfAvailable();
+    if (experienceMappingRepository != null) {
+      for (ExperienceMapping mapping : experienceMappingRepository.findAll()) {
+        String mapped = mapping.getMappedName();
+        MatchCatalogItem existing = catalog.get(mapped);
+        if (existing != null) {
+          existing.aliases().add(mapping.getFuzzyTerm());
+        } else {
+          catalog.put(mapped, new MatchCatalogItem(mapped, "SKU-CUSTOM-" + normalize(mapped).toUpperCase(Locale.ROOT), 0.0,
+              new HashSet<>(Set.of(mapping.getFuzzyTerm(), mapped))));
+        }
       }
     }
 

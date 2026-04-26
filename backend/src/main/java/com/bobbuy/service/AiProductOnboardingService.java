@@ -140,11 +140,38 @@ public class AiProductOnboardingService {
         log.info("Phase 1 Success: Vision extraction complete. Raw JSON length: {}", visionResponse.get().length());
 
         try {
-            Map<String, Object> extracted = objectMapper.readValue(visionResponse.get(), new TypeReference<>() {});
-            String name = (String) extracted.getOrDefault("name", "Unknown Product");
-            String brand = (String) extracted.get("brand");
-            String itemNumber = (String) extracted.get("itemNumber");
-            String categoryHint = firstNonBlank((String) extracted.get("categoryId"), (String) extracted.get("category"));
+            String rawResponse = visionResponse.get();
+            // Strip <think>...</think> from reasoning models (e.g. qwen3)
+            rawResponse = rawResponse.replaceAll("(?s)<think>.*?</think>", "").trim();
+            // Ollama sometimes returns HTML error pages (e.g. 502/503) for very large images
+            if (rawResponse.startsWith("<") || rawResponse.toLowerCase().startsWith("<!doctype")) {
+                log.warn("Phase 1: Vision model returned HTML (likely error page). Treating as unknown product.");
+                rawResponse = "{\"name\":\"Unknown Product\"}";
+            } else if (rawResponse.contains("```json")) {
+                int start = rawResponse.indexOf("```json") + 7;
+                int end = rawResponse.indexOf("```", start);
+                if (end > start) {
+                    rawResponse = rawResponse.substring(start, end).trim();
+                }
+            } else if (rawResponse.indexOf('{') >= 0 && rawResponse.lastIndexOf('}') >= 0) {
+                rawResponse = rawResponse.substring(rawResponse.indexOf('{'), rawResponse.lastIndexOf('}') + 1);
+            } else {
+                // Vision model returned plain text - extract product name from first line as fallback
+                String firstLine = rawResponse.lines().filter(l -> !l.isBlank()).findFirst().orElse("Unknown Product");
+                String productName = firstLine.replaceAll("[*#\\-]", "").trim();
+                if (productName.length() > 100) productName = productName.substring(0, 100);
+                rawResponse = String.format("{\"name\":\"%s\"}", productName.replace("\"", "'"));
+                log.warn("Phase 1: Vision model returned plain text, using fallback name: '{}'", productName);
+            }
+            // Fix LLM-generated price formatting: remove thousand separators inside numbers e.g. 1,768 -> 1768
+            rawResponse = rawResponse.replaceAll("(\\d),(\\d{3})", "$1$2");
+            // Fix trailing commas before closing brace/bracket (another common LLM mistake)
+            rawResponse = rawResponse.replaceAll(",\\s*([}\\]])", "$1");
+            Map<String, Object> extracted = objectMapper.readValue(rawResponse, new TypeReference<>() {});
+            String name = stringValue(extracted.getOrDefault("name", "Unknown Product"));
+            String brand = stringValue(extracted.get("brand"));
+            String itemNumber = stringValue(extracted.get("itemNumber"));
+            String categoryHint = firstNonBlank(stringValue(extracted.get("categoryId")), stringValue(extracted.get("category")));
             Double basePrice = extracted.get("basePrice") instanceof Number n ? n.doubleValue()
                     : extracted.get("price") instanceof Number n2 ? n2.doubleValue() : null;
             Map<String, String> extractedAttributes = extractStructuredAttributes(
@@ -268,7 +295,7 @@ public class AiProductOnboardingService {
                     if (t instanceof Map<?, ?> m) {
                         detectedTiers.add(new PriceTier(
                             (String) m.get("tierName"),
-                            ((Number) m.get("price")).doubleValue(),
+                            m.get("price") instanceof Number n ? n.doubleValue() : 0.0,
                             "JPY",
                             false
                         ));
@@ -351,10 +378,12 @@ public class AiProductOnboardingService {
             1. AI 视觉识别结果：%s
             2. 网页搜索摘要：%s
 
-            请将这两段信息整合为一段简洁专业的中文商品描述（100字以内），只输出描述文本。
+            请将这两段信息整合为一段简洁专业的中文商品描述（100字以内），只输出描述文本，不要有<think>标签。
             """, visionJson, searchSnippet);
 
-        return safeGenerate(synthesisPrompt).orElse(searchSnippet);
+        String result = safeGenerate(synthesisPrompt).orElse(searchSnippet);
+        // Strip any <think>...</think> blocks that reasoning models may include
+        return result.replaceAll("(?s)<think>.*?</think>", "").trim();
     }
 
     private VerificationAssessment verifyAgainstExistingProduct(Product verificationProduct,

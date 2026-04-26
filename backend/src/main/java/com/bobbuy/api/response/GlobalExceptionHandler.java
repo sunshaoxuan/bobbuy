@@ -46,6 +46,7 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(HttpMessageNotReadableException.class)
   public ResponseEntity<ApiError> handleNotReadable(HttpMessageNotReadableException ex) {
+    log.warn("HttpMessageNotReadable: {}", ex.getMessage());
     String message = messageSource.getMessage("error.validation.failed", null, LocaleContextHolder.getLocale());
     return ResponseEntity.badRequest().body(new ApiError(ErrorCode.INVALID_REQUEST.name(), message));
   }
