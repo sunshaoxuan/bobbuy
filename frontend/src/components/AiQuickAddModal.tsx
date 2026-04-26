@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Modal, Upload, Button, Steps, Result, Spin, message, Space, Typography, Alert } from 'antd';
+import { Modal, Upload, Button, Steps, Result, Spin, message, Space, Typography, Alert, Card, Divider, Progress } from 'antd';
 import type { RcFile } from 'antd/es/upload';
 import { CameraOutlined, UploadOutlined, FileSearchOutlined, GlobalOutlined, CheckCircleOutlined, PictureOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { api, type AiOnboardingSuggestion } from '../api';
 import { useI18n } from '../i18n';
+import AttributeDiffTable from './AttributeDiffTable';
 
-const { Text } = Typography;
+const { Text, Title, Paragraph } = Typography;
 
 interface AiQuickAddModalProps {
   visible: boolean;
@@ -20,6 +21,8 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
   const [fileList, setFileList] = useState<any[]>([]);
 
   const [suggestion, setSuggestion] = useState<AiOnboardingSuggestion | null>(null);
+  const lowConfidence = (suggestion?.matchScore ?? 100) < 70;
+  const historicalImage = suggestion?.verificationTarget?.mediaGallery?.find((item) => item.type === 'IMAGE' || item.type === 'image')?.url;
 
   const handleUpload = async (file: RcFile) => {
     setLoading(true);
@@ -59,6 +62,17 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
     }
   };
 
+  const handleSaveAsNew = () => {
+    if (!suggestion) {
+      return;
+    }
+    onSuccess({
+      ...suggestion,
+      existingProductFound: false,
+      existingProductId: undefined,
+    });
+  };
+
   const steps = [
     { title: t('stock.ai_quick_add.step_upload'), icon: <CameraOutlined /> },
     { title: t('stock.ai_quick_add.step_scan'), icon: <FileSearchOutlined /> },
@@ -74,11 +88,21 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
       open={visible}
       onCancel={onCancel}
       footer={currentStep === 4 ? [
-        <Button key="ok" type="primary" onClick={handleFinish}>
+        suggestion?.verificationTarget ? (
+          <Button key="save-as-new" onClick={handleSaveAsNew}>
+            {t('stock.ai_quick_add.save_as_new')}
+          </Button>
+        ) : null,
+        <Button
+          key="ok"
+          type="primary"
+          onClick={handleFinish}
+          disabled={Boolean(suggestion?.verificationTarget) && lowConfidence}
+        >
           {t('stock.master.edit_detail')}
         </Button>
-      ] : null}
-      width={600}
+      ].filter(Boolean) : null}
+      width={880}
       centered
       destroyOnClose
     >
@@ -130,6 +154,14 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
 
         {currentStep === 4 && (
           <>
+            {suggestion?.verificationTarget && (
+              <Alert
+                message={`${t('stock.ai_quick_add.compare_mode')}${suggestion.verificationTarget.displayName ? `：${suggestion.verificationTarget.displayName}` : ''}`}
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
             {suggestion?.existingProductFound && (
               <Alert
                 data-testid="ai-existing-product-alert"
@@ -141,6 +173,16 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
                 style={{ marginBottom: 24 }}
               />
             )}
+            {lowConfidence && suggestion?.verificationTarget ? (
+              <Alert
+                data-testid="ai-low-match-warning"
+                message={t('stock.ai_quick_add.low_match_warning')}
+                description={t('stock.ai_quick_add.low_match_hint')}
+                type="error"
+                showIcon
+                style={{ marginBottom: 24 }}
+              />
+            ) : null}
             {!suggestion?.existingProductFound && suggestion?.similarProductCandidates?.length ? (
               <Alert
                 message={t('stock.ai_quick_add.candidate_found')}
@@ -150,6 +192,58 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
                 style={{ marginBottom: 24 }}
               />
             ) : null}
+            {typeof suggestion?.matchScore === 'number' ? (
+              <Card size="small" style={{ marginBottom: 16 }} data-testid="ai-match-score-card">
+                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                  <div>
+                    <Text strong>{t('stock.ai_quick_add.match_score')}</Text>
+                    <Title level={4} style={{ margin: '4px 0 0' }}>{`${Math.round(suggestion.matchScore)}%`}</Title>
+                  </div>
+                  <Progress
+                    percent={Math.round(suggestion.matchScore)}
+                    status={lowConfidence ? 'exception' : 'success'}
+                    strokeColor={lowConfidence ? '#ff4d4f' : '#52c41a'}
+                  />
+                </Space>
+              </Card>
+            ) : null}
+            {(historicalImage || suggestion?.originalPhotoBase64) && (
+              <Card size="small" title={t('stock.ai_quick_add.visual_evidence')} style={{ marginBottom: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                  <div>
+                    <Text strong>{t('stock.ai_quick_add.history_image')}</Text>
+                    <div style={{ marginTop: 8, border: '1px solid #f0f0f0', borderRadius: 8, minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: '#fafafa' }}>
+                      {historicalImage ? (
+                        <img src={historicalImage} alt={t('stock.ai_quick_add.history_image')} style={{ width: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <Text type="secondary">{t('stock.ai_quick_add.no_history_image')}</Text>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <Text strong>{t('stock.ai_quick_add.current_image')}</Text>
+                    <div style={{ marginTop: 8, border: '1px solid #f0f0f0', borderRadius: 8, minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: '#fafafa' }}>
+                      {suggestion?.originalPhotoBase64 ? (
+                        <img src={suggestion.originalPhotoBase64} alt={t('stock.ai_quick_add.current_image')} style={{ width: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <Text type="secondary">{t('stock.ai_quick_add.no_current_image')}</Text>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+            {suggestion?.fieldDiffs?.length ? (
+              <Card size="small" title={t('stock.ai_quick_add.diff_table')} style={{ marginBottom: 16 }}>
+                <AttributeDiffTable diffs={suggestion.fieldDiffs} />
+              </Card>
+            ) : null}
+            {suggestion?.semanticReasoning ? (
+              <Card size="small" title={t('stock.ai_quick_add.reasoning_title')} style={{ marginBottom: 16 }}>
+                <Paragraph style={{ marginBottom: 0 }}>{suggestion.semanticReasoning}</Paragraph>
+              </Card>
+            ) : null}
+            <Divider />
             <Result
               data-testid="ai-onboarding-result"
               subTitle={

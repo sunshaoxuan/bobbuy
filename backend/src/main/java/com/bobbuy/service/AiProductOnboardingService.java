@@ -2,7 +2,9 @@ package com.bobbuy.service;
 
 import com.bobbuy.api.AiOnboardingSuggestion;
 import com.bobbuy.api.AiOnboardingTrace;
+import com.bobbuy.api.AiFieldDiff;
 import com.bobbuy.api.AiProductCandidate;
+import com.bobbuy.api.AiVerificationTarget;
 import com.bobbuy.model.MediaGalleryItem;
 import com.bobbuy.model.MediaType;
 import com.bobbuy.model.OrderMethod;
@@ -29,6 +31,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.net.URI;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class AiProductOnboardingService {
@@ -47,6 +51,9 @@ public class AiProductOnboardingService {
     // Keep audit metadata concise so chat cards remain readable while still showing the strongest evidence.
     private static final int MAX_MATCHED_AUDIT_FRAGMENTS = 4;
     private static final String SOURCE_POLICY_VERSION = "V23";
+    private static final double SEMANTIC_OVERWRITE_THRESHOLD = 70d;
+    private static final Pattern NET_CONTENT_PATTERN = Pattern.compile("(\\d+(?:\\.\\d+)?)\\s?(kg|g|mg|lb|oz|l|ml)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PACK_PATTERN = Pattern.compile("(\\d+)\\s?(pack|pcs|piece|pieces|bottle|bottles|袋|包|盒|箱)", Pattern.CASE_INSENSITIVE);
     private static final Set<String> DENIED_SOURCE_KEYWORDS = Set.of(
         "xiaohongshu.com", "xhslink.com", "rednote", "weibo.com", "watermark"
     );
@@ -69,6 +76,12 @@ public class AiProductOnboardingService {
         "g", List.of("gram"),
         "l", List.of("liter"),
         "ml", List.of("milliliter")
+    );
+    private static final Set<String> FOOD_CATEGORY_HINTS = Set.of(
+        "food", "foods", "snack", "snacks", "grocery", "groceries", "beverage", "drink", "fruit", "食品", "饮料", "飲料", "水果", "零食"
+    );
+    private static final Set<String> FLAVOR_IGNORED_TOKENS = Set.of(
+        "brand", "food", "snack", "drink", "set", "box", "pack", "fresh", "organic"
     );
 
     private final LlmGateway llmGateway;
@@ -134,16 +147,24 @@ public class AiProductOnboardingService {
             String categoryHint = firstNonBlank((String) extracted.get("categoryId"), (String) extracted.get("category"));
             Double basePrice = extracted.get("basePrice") instanceof Number n ? n.doubleValue()
                     : extracted.get("price") instanceof Number n2 ? n2.doubleValue() : null;
+            Map<String, String> extractedAttributes = extractStructuredAttributes(
+                extracted,
+                name,
+                firstNonBlank((String) extracted.get("description"), ""),
+                categoryHint
+            );
 
             // 2. Incremental Matching (itemNumber is the unique key)
             boolean existingFound = false;
             String existingId = null;
             List<AiProductCandidate> similarCandidates = List.of();
+            Product verificationProduct = null;
             if (itemNumber != null && !itemNumber.isBlank()) {
                 Optional<Product> matched = productRepository.findByItemNumber(itemNumber);
                 if (matched.isPresent()) {
                     existingFound = true;
-                    existingId = matched.get().getId();
+                    verificationProduct = matched.get();
+                    existingId = verificationProduct.getId();
                     log.info("Phase 2: MATCH FOUND. Existing Product ID: {}, ItemNumber: {}", existingId, itemNumber);
                 } else {
                     log.info("Phase 2: No existing product found for itemNumber: {}", itemNumber);
@@ -151,8 +172,10 @@ public class AiProductOnboardingService {
             } else {
                 log.info("Phase 2: Skipping incremental match (no itemNumber detected).");
             }
-            if (!existingFound) {
-                similarCandidates = findSimilarCandidates(name, brand, itemNumber, categoryHint);
+            if (verificationProduct == null) {
+                SimilarProductSelection similarSelection = findSimilarCandidates(name, brand, itemNumber, categoryHint);
+                similarCandidates = similarSelection.candidates();
+                verificationProduct = similarSelection.bestProduct();
                 if (!similarCandidates.isEmpty()) {
                     log.info("Phase 2: Found {} similar name-level product candidates for '{}'.", similarCandidates.size(), name);
                 }
@@ -213,6 +236,30 @@ public class AiProductOnboardingService {
 
             // 4. Knowledge Synthesis (Cloud Core - Qwen)
             String description = synthesize(name, brand, basePrice, visionResponse.get(), researchSnippet);
+            VerificationAssessment verificationAssessment = verifyAgainstExistingProduct(
+                verificationProduct,
+                name,
+                brand,
+                description,
+                categoryHint,
+                itemNumber,
+                basePrice,
+                extractedAttributes
+            );
+            if (!existingFound && verificationProduct != null && verificationAssessment.matchScore() >= SEMANTIC_OVERWRITE_THRESHOLD) {
+                existingFound = true;
+                existingId = verificationProduct.getId();
+            }
+            List<AiFieldDiff> fieldDiffs = createFieldDiffs(
+                verificationProduct,
+                name,
+                brand,
+                description,
+                categoryHint,
+                itemNumber,
+                basePrice,
+                extractedAttributes
+            );
 
             // 5. Map Price Tiers
             List<PriceTier> detectedTiers = new ArrayList<>();
@@ -264,7 +311,11 @@ public class AiProductOnboardingService {
                 List.copyOf(collectedSourceDomains),
                 rejectedSourceDomains.stream().filter(domain -> domain != null && !domain.isBlank()).distinct().toList(),
                 SOURCE_POLICY_VERSION,
-                trace
+                trace,
+                verificationAssessment.matchScore(),
+                verificationAssessment.reasoning(),
+                fieldDiffs,
+                buildVerificationTarget(verificationProduct)
             ));
 
         } catch (AiOnboardingPipelineException e) {
@@ -303,21 +354,414 @@ public class AiProductOnboardingService {
             请将这两段信息整合为一段简洁专业的中文商品描述（100字以内），只输出描述文本。
             """, visionJson, searchSnippet);
 
-        return llmGateway.generate(synthesisPrompt, null, null)
-                .orElse(searchSnippet);
+        return safeGenerate(synthesisPrompt).orElse(searchSnippet);
     }
 
-    private List<AiProductCandidate> findSimilarCandidates(String name, String brand, String itemNumber, String categoryHint) {
-        Set<String> queryTokens = normalizeTokens(joinNonBlank(brand, name, itemNumber, categoryHint));
-        if (queryTokens.isEmpty()) {
+    private VerificationAssessment verifyAgainstExistingProduct(Product verificationProduct,
+                                                                String name,
+                                                                String brand,
+                                                                String description,
+                                                                String categoryHint,
+                                                                String itemNumber,
+                                                                Double basePrice,
+                                                                Map<String, String> extractedAttributes) {
+        if (verificationProduct == null) {
+            return new VerificationAssessment(0d, "未找到可对照的历史档案，建议以新商品流程处理。");
+        }
+        String newSummary = buildIncomingSummary(name, brand, description, categoryHint, itemNumber, basePrice, extractedAttributes);
+        String existingSummary = buildExistingSummary(verificationProduct);
+        VerificationAssessment heuristic = buildHeuristicAssessment(
+            verificationProduct,
+            name,
+            brand,
+            description,
+            categoryHint,
+            itemNumber,
+            basePrice,
+            extractedAttributes
+        );
+        String prompt = """
+            你是商品建档校验助手。请根据以下两个商品语义摘要，输出 JSON：
+            {
+              "matchScore": 0-100 的数字,
+              "reasoning": "一句到两句中文解释"
+            }
+            需要重点判断是否属于同一商品、是否只是规格变更，以及食品类必须关注净含量与口味。
+            历史档案摘要：
+            %s
+
+            当前识别摘要：
+            %s
+            """.formatted(existingSummary, newSummary);
+        try {
+            Optional<String> llmResponse = safeGenerate(prompt);
+            if (llmResponse.isPresent()) {
+                Map<String, Object> parsed = objectMapper.readValue(llmResponse.get(), new TypeReference<>() {});
+                Double llmScore = parsed.get("matchScore") instanceof Number n ? n.doubleValue() : null;
+                String llmReasoning = parsed.get("reasoning") instanceof String text ? text.trim() : "";
+                if (llmScore != null && !llmReasoning.isBlank()) {
+                    double blended = Math.max(0d, Math.min(100d, (llmScore + heuristic.matchScore()) / 2d));
+                    return new VerificationAssessment(blended, llmReasoning);
+                }
+            }
+        } catch (Exception ex) {
+            log.debug("Semantic verification fell back to heuristic mode.", ex);
+        }
+        return heuristic;
+    }
+
+    private VerificationAssessment buildHeuristicAssessment(Product verificationProduct,
+                                                            String name,
+                                                            String brand,
+                                                            String description,
+                                                            String categoryHint,
+                                                            String itemNumber,
+                                                            Double basePrice,
+                                                            Map<String, String> extractedAttributes) {
+        Map<String, String> existingAttributes = extractStructuredAttributes(
+            Map.of(),
+            selectProductName(verificationProduct),
+            firstNonBlank(selectProductDescription(verificationProduct), ""),
+            verificationProduct.getCategoryId()
+        );
+        double score = 0d;
+        List<String> reasons = new ArrayList<>();
+        String existingName = selectProductName(verificationProduct);
+        String existingBrand = firstNonBlank(verificationProduct.getBrand(), "");
+        String existingCategory = firstNonBlank(verificationProduct.getCategoryId(), "");
+        String existingItemNumber = firstNonBlank(verificationProduct.getItemNumber(), "");
+
+        if (!existingBrand.isBlank() && !firstNonBlank(brand, "").isBlank() && existingBrand.equalsIgnoreCase(brand)) {
+            score += 15d;
+            reasons.add("品牌一致");
+        }
+        double coreNameSimilarity = computeSimilarity(stripMeasurementTokens(existingName), stripMeasurementTokens(name));
+        if (coreNameSimilarity > 0) {
+            score += coreNameSimilarity * 40d;
+            if (coreNameSimilarity >= 0.85d) {
+                reasons.add("核心品名高度重合");
+            } else if (coreNameSimilarity >= 0.5d) {
+                reasons.add("核心品名存在较强重合");
+            }
+        }
+        double fullNameSimilarity = computeSimilarity(existingName, name);
+        score += fullNameSimilarity * 15d;
+
+        if (!existingCategory.isBlank() && !firstNonBlank(categoryHint, "").isBlank() && existingCategory.equalsIgnoreCase(categoryHint)) {
+            score += 10d;
+            reasons.add("类目一致");
+        }
+        if (!existingItemNumber.isBlank() && !firstNonBlank(itemNumber, "").isBlank()) {
+            if (existingItemNumber.equalsIgnoreCase(itemNumber)) {
+                score += 20d;
+                reasons.add("货号完全一致");
+            } else if (existingItemNumber.toLowerCase(Locale.ROOT).contains(itemNumber.toLowerCase(Locale.ROOT))
+                || itemNumber.toLowerCase(Locale.ROOT).contains(existingItemNumber.toLowerCase(Locale.ROOT))) {
+                score += 10d;
+                reasons.add("货号片段接近");
+            }
+        }
+
+        for (String identityField : requiredIdentityFields(firstNonBlank(categoryHint, verificationProduct.getCategoryId()))) {
+            String oldValue = firstNonBlank(existingAttributes.get(identityField), "");
+            String newValue = firstNonBlank(extractedAttributes.get(identityField), "");
+            if (oldValue.isBlank() || newValue.isBlank()) {
+                continue;
+            }
+            if (oldValue.equalsIgnoreCase(newValue)) {
+                score += 10d;
+                reasons.add(identityFieldLabel(identityField) + "一致");
+            } else {
+                score -= 5d;
+                reasons.add(identityFieldLabel(identityField) + "不一致");
+            }
+        }
+
+        if (basePrice != null && verificationProduct.getBasePrice() > 0d) {
+            double priceGapRatio = Math.abs(basePrice - verificationProduct.getBasePrice()) / verificationProduct.getBasePrice();
+            if (priceGapRatio <= 0.1d) {
+                score += 4d;
+            } else if (priceGapRatio >= 0.5d) {
+                score -= 4d;
+                reasons.add("价格差异较大");
+            }
+        }
+
+        if (!firstNonBlank(description, "").isBlank()) {
+            score += computeSimilarity(description, selectProductDescription(verificationProduct)) * 6d;
+        }
+
+        double finalScore = Math.max(0d, Math.min(100d, score));
+        if (!existingItemNumber.isBlank() && existingItemNumber.equalsIgnoreCase(firstNonBlank(itemNumber, ""))) {
+            finalScore = Math.max(finalScore, 96d);
+        }
+        if (reasons.isEmpty()) {
+            reasons.add(finalScore >= SEMANTIC_OVERWRITE_THRESHOLD ? "语义指纹整体接近" : "语义指纹差异明显");
+        }
+        return new VerificationAssessment(finalScore, String.join("，", reasons) + "。");
+    }
+
+    private List<AiFieldDiff> createFieldDiffs(Product verificationProduct,
+                                               String name,
+                                               String brand,
+                                               String description,
+                                               String categoryHint,
+                                               String itemNumber,
+                                               Double basePrice,
+                                               Map<String, String> extractedAttributes) {
+        if (verificationProduct == null) {
             return List.of();
         }
-        return productRepository.findAll().stream()
-            .map(product -> toCandidate(product, queryTokens, itemNumber, categoryHint))
+        Map<String, String> existingAttributes = extractStructuredAttributes(
+            Map.of(),
+            selectProductName(verificationProduct),
+            firstNonBlank(selectProductDescription(verificationProduct), ""),
+            verificationProduct.getCategoryId()
+        );
+        List<AiFieldDiff> diffs = new ArrayList<>();
+        diffs.add(toFieldDiff("name", "商品名称", selectProductName(verificationProduct), name, false));
+        diffs.add(toFieldDiff("brand", "品牌", verificationProduct.getBrand(), brand, false));
+        diffs.add(toFieldDiff("categoryId", "类目", verificationProduct.getCategoryId(), categoryHint, false));
+        diffs.add(toFieldDiff("itemNumber", "货号", verificationProduct.getItemNumber(), itemNumber, false));
+        diffs.add(toFieldDiff("price", "价格", formatNumericValue(verificationProduct.getBasePrice()), formatNumericValue(basePrice), false));
+        for (String identityField : requiredIdentityFields(firstNonBlank(categoryHint, verificationProduct.getCategoryId()))) {
+            String oldValue = existingAttributes.get(identityField);
+            String newValue = extractedAttributes.get(identityField);
+            if (firstNonBlank(oldValue, "").isBlank() && firstNonBlank(newValue, "").isBlank()) {
+                continue;
+            }
+            diffs.add(toFieldDiff(identityField, identityFieldLabel(identityField), oldValue, newValue, true));
+        }
+        if (!firstNonBlank(description, "").isBlank() || !firstNonBlank(selectProductDescription(verificationProduct), "").isBlank()) {
+            diffs.add(toFieldDiff("description", "描述", selectProductDescription(verificationProduct), description, false));
+        }
+        return diffs;
+    }
+
+    private AiFieldDiff toFieldDiff(String field, String label, String oldValue, String newValue, boolean identityField) {
+        String normalizedOld = firstNonBlank(oldValue, "");
+        String normalizedNew = firstNonBlank(newValue, "");
+        boolean different = !normalizedOld.equalsIgnoreCase(normalizedNew);
+        return new AiFieldDiff(field, label, normalizedOld, normalizedNew, different, identityField);
+    }
+
+    private AiVerificationTarget buildVerificationTarget(Product verificationProduct) {
+        if (verificationProduct == null) {
+            return null;
+        }
+        return new AiVerificationTarget(
+            verificationProduct.getId(),
+            selectProductName(verificationProduct),
+            verificationProduct.getMediaGallery() == null ? List.of() : List.copyOf(verificationProduct.getMediaGallery())
+        );
+    }
+
+    private Map<String, String> extractStructuredAttributes(Map<String, Object> extracted, String name, String description, String categoryHint) {
+        Map<String, String> attributes = new HashMap<>();
+        putIfPresent(attributes, "netContent", extracted.get("netContent"));
+        putIfPresent(attributes, "flavor", extracted.get("flavor"));
+        putIfPresent(attributes, "specification", firstNonBlank((String) extracted.get("specification"), (String) extracted.get("size")));
+        String combinedText = joinNonBlank(name, description, stringValue(extracted.get("specification")), stringValue(extracted.get("size")));
+        Matcher netContentMatcher = NET_CONTENT_PATTERN.matcher(combinedText);
+        if (!attributes.containsKey("netContent") && netContentMatcher.find()) {
+            attributes.put("netContent", (netContentMatcher.group(1) + netContentMatcher.group(2)).toLowerCase(Locale.ROOT));
+        }
+        Matcher packMatcher = PACK_PATTERN.matcher(combinedText);
+        if (!attributes.containsKey("packSize") && packMatcher.find()) {
+            attributes.put("packSize", (packMatcher.group(1) + packMatcher.group(2)).toLowerCase(Locale.ROOT));
+        }
+        if (isFoodCategory(categoryHint) && !attributes.containsKey("flavor")) {
+            String flavor = inferFlavorLikeToken(name);
+            if (!flavor.isBlank()) {
+                attributes.put("flavor", flavor);
+            }
+        }
+        return attributes;
+    }
+
+    private List<String> requiredIdentityFields(String categoryHint) {
+        if (isFoodCategory(categoryHint)) {
+            return List.of("netContent", "flavor");
+        }
+        return List.of();
+    }
+
+    private boolean isFoodCategory(String categoryHint) {
+        String normalized = firstNonBlank(categoryHint, "").trim().toLowerCase(Locale.ROOT);
+        if (normalized.isBlank()) {
+            return false;
+        }
+        return FOOD_CATEGORY_HINTS.stream().anyMatch(normalized::contains);
+    }
+
+    private String identityFieldLabel(String field) {
+        return switch (field) {
+            case "netContent" -> "净含量";
+            case "flavor" -> "口味";
+            case "packSize" -> "包装规格";
+            default -> field;
+        };
+    }
+
+    private String buildIncomingSummary(String name,
+                                        String brand,
+                                        String description,
+                                        String categoryHint,
+                                        String itemNumber,
+                                        Double basePrice,
+                                        Map<String, String> extractedAttributes) {
+        return """
+            品名=%s
+            品牌=%s
+            类目=%s
+            货号=%s
+            价格=%s
+            描述=%s
+            身份属性=%s
+            """.formatted(
+            firstNonBlank(name, ""),
+            firstNonBlank(brand, ""),
+            firstNonBlank(categoryHint, ""),
+            firstNonBlank(itemNumber, ""),
+            formatNumericValue(basePrice),
+            firstNonBlank(description, ""),
+            extractedAttributes
+        );
+    }
+
+    private String buildExistingSummary(Product product) {
+        Map<String, String> attributes = extractStructuredAttributes(
+            Map.of(),
+            selectProductName(product),
+            firstNonBlank(selectProductDescription(product), ""),
+            product.getCategoryId()
+        );
+        return """
+            品名=%s
+            品牌=%s
+            类目=%s
+            货号=%s
+            价格=%s
+            描述=%s
+            身份属性=%s
+            """.formatted(
+            selectProductName(product),
+            firstNonBlank(product.getBrand(), ""),
+            firstNonBlank(product.getCategoryId(), ""),
+            firstNonBlank(product.getItemNumber(), ""),
+            formatNumericValue(product.getBasePrice()),
+            firstNonBlank(selectProductDescription(product), ""),
+            attributes
+        );
+    }
+
+    private String selectProductName(Product product) {
+        return firstNonBlank(
+            product.getName() == null ? null : product.getName().get("zh-CN"),
+            product.getName() == null ? null : product.getName().get("ja-JP"),
+            product.getName() == null ? null : product.getName().get("en-US"),
+            product.getId()
+        );
+    }
+
+    private String selectProductDescription(Product product) {
+        return firstNonBlank(
+            product.getDescription() == null ? null : product.getDescription().get("zh-CN"),
+            product.getDescription() == null ? null : product.getDescription().get("ja-JP"),
+            product.getDescription() == null ? null : product.getDescription().get("en-US"),
+            ""
+        );
+    }
+
+    private void putIfPresent(Map<String, String> attributes, String key, Object value) {
+        String normalized = stringValue(value);
+        if (!normalized.isBlank()) {
+            attributes.put(key, normalized);
+        }
+    }
+
+    private String stringValue(Object value) {
+        if (value == null) {
+            return "";
+        }
+        return String.valueOf(value).trim();
+    }
+
+    private String inferFlavorLikeToken(String name) {
+        List<String> tokens = normalizeOrderedTokens(name);
+        List<String> candidates = tokens.stream()
+            .filter(token -> token.length() > 1)
+            .filter(token -> !NET_CONTENT_PATTERN.matcher(token).matches())
+            .filter(token -> FLAVOR_IGNORED_TOKENS.stream().noneMatch(token::equalsIgnoreCase))
+            .toList();
+        if (candidates.isEmpty()) {
+            return "";
+        }
+        return candidates.get(candidates.size() - 1);
+    }
+
+    private List<String> normalizeOrderedTokens(String value) {
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+        return List.of(value.toLowerCase(Locale.ROOT).split("[^a-z0-9\\u4e00-\\u9fa5]+")).stream()
+            .filter(token -> token != null && !token.isBlank())
+            .toList();
+    }
+
+    private String stripMeasurementTokens(String value) {
+        return NET_CONTENT_PATTERN.matcher(firstNonBlank(value, "")).replaceAll(" ").replaceAll("\\s+", " ").trim();
+    }
+
+    private double computeSimilarity(String left, String right) {
+        Set<String> leftTokens = normalizeTokens(left);
+        Set<String> rightTokens = normalizeTokens(right);
+        if (leftTokens.isEmpty() || rightTokens.isEmpty()) {
+            return 0d;
+        }
+        Set<String> intersection = new LinkedHashSet<>(leftTokens);
+        intersection.retainAll(rightTokens);
+        Set<String> union = new LinkedHashSet<>(leftTokens);
+        union.addAll(rightTokens);
+        return union.isEmpty() ? 0d : (double) intersection.size() / union.size();
+    }
+
+    private String formatNumericValue(Number value) {
+        if (value == null) {
+            return "";
+        }
+        double number = value.doubleValue();
+        if (number == Math.rint(number)) {
+            return String.format(Locale.ROOT, "%.0f", number);
+        }
+        return String.format(Locale.ROOT, "%.2f", number);
+    }
+
+    private Optional<String> safeGenerate(String prompt) {
+        Optional<String> response = llmGateway.generate(prompt, null, null);
+        return response == null ? Optional.empty() : response;
+    }
+
+    private SimilarProductSelection findSimilarCandidates(String name, String brand, String itemNumber, String categoryHint) {
+        Set<String> queryTokens = normalizeTokens(joinNonBlank(brand, name, itemNumber, categoryHint));
+        if (queryTokens.isEmpty()) {
+            return new SimilarProductSelection(null, List.of());
+        }
+        List<CandidateWithProduct> matches = productRepository.findAll().stream()
+            .map(product -> {
+                AiProductCandidate candidate = toCandidate(product, queryTokens, itemNumber, categoryHint);
+                return candidate == null ? null : new CandidateWithProduct(product, candidate);
+            })
             .filter(Objects::nonNull)
-            .sorted(Comparator.comparingDouble(AiProductCandidate::score).reversed())
+            .map(CandidateWithProduct.class::cast)
+            .sorted(Comparator.comparingDouble((CandidateWithProduct match) -> match.candidate().score()).reversed())
+            .toList();
+        Product bestProduct = matches.isEmpty() ? null : matches.get(0).product();
+        List<AiProductCandidate> candidates = matches.stream()
+            .map(CandidateWithProduct::candidate)
             .limit(3)
             .toList();
+        return new SimilarProductSelection(bestProduct, candidates);
     }
 
     private AiProductCandidate toCandidate(Product product, Set<String> queryTokens, String itemNumber, String categoryHint) {
@@ -563,5 +1007,14 @@ public class AiProductOnboardingService {
         public boolean allowed() {
             return allowed;
         }
+    }
+
+    private record CandidateWithProduct(Product product, AiProductCandidate candidate) {
+    }
+
+    private record SimilarProductSelection(Product bestProduct, List<AiProductCandidate> candidates) {
+    }
+
+    private record VerificationAssessment(double matchScore, String reasoning) {
     }
 }

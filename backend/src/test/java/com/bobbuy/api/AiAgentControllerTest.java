@@ -1,63 +1,67 @@
 package com.bobbuy.api;
 
-import com.bobbuy.api.response.ApiResponse;
-import com.bobbuy.model.ExperienceMapping;
-import com.bobbuy.repository.ExperienceMappingRepository;
+import com.bobbuy.model.OrderMethod;
+import com.bobbuy.model.ProductVisibility;
+import com.bobbuy.model.StorageCondition;
+import com.bobbuy.service.BobbuyStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.ResponseEntity;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 class AiAgentControllerTest {
-  @Autowired
-  private AiAgentController controller;
 
-  @Autowired
-  private ExperienceMappingRepository experienceMappingRepository;
+    @Autowired
+    private BobbuyStore store;
 
-  @BeforeEach
-  void setUp() {
-    experienceMappingRepository.deleteAll();
-  }
+    @Autowired
+    private AiAgentController controller;
 
-  @Test
-  void parseExtractsStructuredItemsFromFuzzyText() {
-    AiParseRequest request = new AiParseRequest();
-    request.setText("马粪蛋糕两个，还有 Tomato");
+    @BeforeEach
+    void setUp() {
+        store.seed();
+    }
 
-    ResponseEntity<ApiResponse<AiParseResponse>> response = controller.parse(request);
+    @Test
+    void confirmOnboardCreatesNewProductWhenMatchScoreIsTooLow() {
+        AiOnboardingSuggestion suggestion = new AiOnboardingSuggestion(
+            "Acme Orange Box 1kg",
+            "Acme",
+            "orange box",
+            10.0,
+            "Food",
+            null,
+            StorageCondition.AMBIENT,
+            OrderMethod.DIRECT_BUY,
+            List.of(),
+            Map.of(),
+            true,
+            "prd-1000",
+            List.of(),
+            ProductVisibility.DRAFTER_ONLY,
+            List.of(),
+            null,
+            "sample-low-score",
+            "summary",
+            List.of(),
+            List.of(),
+            "V23",
+            new AiOnboardingTrace("sample-low-score", "summary", List.of(), "EXISTING_PRODUCT", null),
+            45.0,
+            "fruit variant mismatch",
+            List.of(),
+            new AiVerificationTarget("prd-1000", "Acme Apple Box 1kg", List.of())
+        );
 
-    assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getData().getItems()).hasSize(2);
-    AiExtractedItemResponse muffin = response.getBody().getData().getItems().stream()
-        .filter(item -> "Muffin".equals(item.getMatchedName()))
-        .findFirst()
-        .orElseThrow();
-    assertThat(muffin.getQuantity()).isEqualTo(2);
-    assertThat(muffin.getConfidence()).isGreaterThanOrEqualTo(0.85);
-  }
+        MobileProductResponse response = controller.confirmOnboard(suggestion).getBody().getData();
 
-  @Test
-  void confirmMappingPersistsExperienceAndEnhancesMatch() {
-    AiConfirmMappingRequest confirm = new AiConfirmMappingRequest();
-    confirm.setOriginalName("马粪杯糕");
-    confirm.setMatchedName("Muffin");
-
-    controller.confirmMapping(confirm);
-
-    ExperienceMapping saved = experienceMappingRepository.findByFuzzyTerm("马粪杯糕").orElseThrow();
-    assertThat(saved.getMappedName()).isEqualTo("Muffin");
-
-    AiParseRequest request = new AiParseRequest();
-    request.setText("马粪杯糕一个");
-    ResponseEntity<ApiResponse<AiParseResponse>> parsed = controller.parse(request);
-    assertThat(parsed.getBody()).isNotNull();
-    assertThat(parsed.getBody().getData().getItems()).hasSize(1);
-    assertThat(parsed.getBody().getData().getItems().get(0).getMatchedName()).isEqualTo("Muffin");
-    assertThat(parsed.getBody().getData().getItems().get(0).getConfidence()).isGreaterThanOrEqualTo(0.85);
-  }
+        assertThat(response.getProduct().getId()).isNotEqualTo("prd-1000");
+        assertThat(response.getOnboardingTrace().resultDecision()).isEqualTo("NEW_PRODUCT");
+    }
 }

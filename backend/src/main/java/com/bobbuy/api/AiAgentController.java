@@ -31,6 +31,7 @@ import java.util.Map;
 @RequestMapping("/api/ai")
 public class AiAgentController {
   private static final Logger log = LoggerFactory.getLogger(AiAgentController.class);
+  private static final double SEMANTIC_OVERWRITE_THRESHOLD = 70d;
   private final AiAgentService aiAgentService;
   private final AiProductOnboardingService aiProductOnboardingService;
   private final BobbuyStore store;
@@ -100,8 +101,11 @@ public class AiAgentController {
       Product result;
       String evidenceImageUrl = imageStorageService.saveBase64(suggestion.originalPhotoBase64());
       ProductVisibility targetVisibility = suggestion.visibilityStatus();
+      boolean allowOverwrite = suggestion.existingProductFound()
+          && suggestion.existingProductId() != null
+          && (suggestion.matchScore() == null || suggestion.matchScore() >= SEMANTIC_OVERWRITE_THRESHOLD);
 
-      if (suggestion.existingProductFound() && suggestion.existingProductId() != null) {
+      if (allowOverwrite) {
         ProductPatch patch = new ProductPatch();
         if (suggestion.price() != null) {
           patch.setBasePrice(suggestion.price());
@@ -172,7 +176,7 @@ public class AiAgentController {
           requestTrace != null ? requestTrace.inputSampleId() : suggestion.inputSampleId(),
           requestTrace != null ? requestTrace.recognitionSummary() : suggestion.recognitionSummary(),
           requestTrace != null ? requestTrace.sourceDomains() : suggestion.sourceDomains(),
-          suggestion.existingProductFound() ? "EXISTING_PRODUCT" : "NEW_PRODUCT",
+          allowOverwrite ? "EXISTING_PRODUCT" : "NEW_PRODUCT",
           result.getId());
 
       return ResponseEntity.ok(ApiResponse.success(

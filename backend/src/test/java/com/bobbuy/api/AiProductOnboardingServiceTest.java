@@ -86,6 +86,7 @@ public class AiProductOnboardingServiceTest {
     assertEquals("https://www.costco.com/matcha-kitkat", suggestion.mediaGallery().get(0).getSourceUrl());
     assertEquals("www.costco.com", suggestion.mediaGallery().get(0).getSourceDomain());
     assertNotNull(suggestion.trace());
+    assertNotNull(suggestion.matchScore());
     assertTrue(suggestion.recognitionSummary().contains("name=Matcha KitKat"));
     assertTrue(suggestion.sourceDomains().contains("www.costco.com"));
   }
@@ -189,5 +190,51 @@ public class AiProductOnboardingServiceTest {
         () -> onboardingService.onboardFromPhoto("fake-base64"));
     assertEquals("SOURCE_FILTER", ex.getStage());
     assertEquals("error.ai.source_filter_empty", ex.getMessageKey());
+  }
+
+  @Test
+  public void testSemanticVerificationDetectsSpecChangeAndBuildsDiffs() {
+    Product existing = new Product();
+    existing.setId("prd-semantic");
+    existing.setName(Map.of("zh-CN", "Acme Chips 100g"));
+    existing.setDescription(Map.of("zh-CN", "Acme Chips 100g classic"));
+    existing.setBrand("Acme");
+    existing.setCategoryId("Food");
+    existing.setBasePrice(10.0);
+    existing.setVisibilityStatus(ProductVisibility.PUBLIC);
+    productRepository.save(existing);
+
+    String mockJsonResponse = """
+        {
+          "name": "Acme Chips 120g",
+          "brand": "Acme",
+          "price": 12,
+          "category": "Food"
+        }
+        """;
+    when(llmGateway.generate(anyString(), isNull(), anyList()))
+        .thenReturn(Optional.of(mockJsonResponse));
+    when(webSearchService.search(anyString()))
+        .thenReturn(List.of(new WebSearchService.SearchResult(
+            "Trusted Retail",
+            "https://www.costco.com/item/acme-chips",
+            "trusted source",
+            List.of("https://images.examplecdn.com/acme-chips.jpg")
+        )));
+
+    AiOnboardingSuggestion suggestion = onboardingService.onboardFromPhoto("fake-base64").orElseThrow();
+
+    assertEquals("prd-semantic", suggestion.existingProductId());
+    assertTrue(suggestion.existingProductFound());
+    assertNotNull(suggestion.verificationTarget());
+    assertEquals("prd-semantic", suggestion.verificationTarget().productId());
+    assertTrue(suggestion.matchScore() >= 70.0);
+    assertTrue(suggestion.matchScore() <= 90.0);
+    assertNotNull(suggestion.semanticReasoning());
+    assertTrue(suggestion.fieldDiffs().stream().anyMatch(diff ->
+        "netContent".equals(diff.field())
+            && "100g".equalsIgnoreCase(diff.oldValue())
+            && "120g".equalsIgnoreCase(diff.newValue())
+            && diff.different()));
   }
 }
