@@ -287,7 +287,7 @@ public class AiProductOnboardingService {
             }
 
             // 4. Knowledge Synthesis (Cloud Core - Qwen)
-            String description = synthesize(name, brand, basePrice, visionResponse.get(), researchSnippet);
+            String description = synthesize(name, brand, basePrice, rawResponse, researchSnippet);
             VerificationAssessment verificationAssessment = verifyAgainstExistingProduct(
                 verificationProduct,
                 name,
