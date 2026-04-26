@@ -120,17 +120,31 @@ public class AiProductOnboardingService {
         // 1. Vision Extract (Edge Node - configured vision model)
         log.info("Phase 1: Dispatching to configured vision model...");
         String prompt = """
-            请分析这张商品实拍图（货架图），提取商品信息并以JSON格式输出。
-            特别注意提取"会员价"、"优惠价"以及价格下方的"货号/Item Number"。
-            需要包含以下字段：
-            - name: 商品名称
-            - brand: 品牌
-            - basePrice: 标准零售价（数字）
-            - itemNumber: 货号（如有）
-            - priceTiers: 价格数组，每个对象含 tierName (如 "Member", "Sale"), price, note
-
-            只输出JSON对象，不要有额外解释。
+            你是一个专门识别日本Costco商品标签的AI助手。请仔细分析这张商品图片，提取标签上的信息，以JSON格式输出。
+            
+            === 日本Costco标签格式说明 ===
+            标签上通常包含以下区域（按从上到下顺序）：
+            1. 【商品名称】：日文名（如「山形牛 切落し」）和英文名（如「YAMAGATA GYU STIR FRY」），取完整的两行
+            2. 【品番】：紧跟「品番：」后面的 4-6 位纯数字（例如「品番：91900」→ itemNumber = "91900"）
+               ⚠️ 重要：不要把重量（705g）、条形码、税率等误认为品番！
+               ⚠️ 重量通常在「正味量」或「内容量」后面，单位是g/kg，与品番完全不同！
+            3. 【价格】：100g当り价格 和 パック合計（税込）价格，取「税込」后的数字作为basePrice
+            4. 【品牌】：通常为「KIRKLAND」或商品产地名称
+            
+            === 输出格式 ===
+            {
+              "name": "完整商品名（日文+英文，如有）",
+              "brand": "品牌名（如 Kirkland Signature, 山形県産）",
+              "itemNumber": "品番数字字符串（仅限4-6位纯数字，如没有则留空字符串）",
+              "basePrice": 包装总价数字（税込价格，单位日元）,
+              "pricePerUnit": "100g当り价格字符串（如 '498円/100g'）",
+              "netWeight": "重量字符串（如 '705g'）",
+              "priceTiers": []
+            }
+            
+            只输出JSON对象，不要有任何解释文字。
             """;
+
 
         Optional<String> visionResponse = llmGateway.generate(prompt, null, List.of(normalizedBase64Image));
         if (visionResponse.isEmpty()) {
@@ -587,7 +601,7 @@ public class AiProductOnboardingService {
 
     private Map<String, String> extractStructuredAttributes(Map<String, Object> extracted, String name, String description, String categoryHint) {
         Map<String, String> attributes = new HashMap<>();
-        putIfPresent(attributes, "netContent", extracted.get("netContent"));
+        putIfPresent(attributes, "netContent", firstNonBlank(stringValue(extracted.get("netWeight")), stringValue(extracted.get("netContent"))));
         putIfPresent(attributes, "flavor", extracted.get("flavor"));
         putIfPresent(attributes, "specification", firstNonBlank((String) extracted.get("specification"), (String) extracted.get("size")));
         String combinedText = joinNonBlank(name, description, stringValue(extracted.get("specification")), stringValue(extracted.get("size")));
