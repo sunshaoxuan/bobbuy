@@ -96,9 +96,9 @@ public class ChatService {
         String senderId = message.getSenderId();
         String recipientId = message.getRecipientId();
         if (senderId.compareTo(recipientId) > 0) {
-            String current = senderId;
+            String temp = senderId;
             senderId = recipientId;
-            recipientId = current;
+            recipientId = temp;
         }
         return "/topic/private/"
             + UriUtils.encodePathSegment(senderId, StandardCharsets.UTF_8)
