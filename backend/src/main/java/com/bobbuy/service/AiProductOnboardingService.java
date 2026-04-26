@@ -80,6 +80,9 @@ public class AiProductOnboardingService {
     private static final Set<String> FOOD_CATEGORY_HINTS = Set.of(
         "food", "foods", "snack", "snacks", "grocery", "groceries", "beverage", "drink", "fruit", "食品", "饮料", "飲料", "水果", "零食"
     );
+    private static final Set<String> FLAVOR_IGNORED_TOKENS = Set.of(
+        "brand", "food", "snack", "drink", "set", "box", "pack", "fresh", "organic"
+    );
 
     private final LlmGateway llmGateway;
     private final AiSearchService aiSearchService;
@@ -351,9 +354,7 @@ public class AiProductOnboardingService {
             请将这两段信息整合为一段简洁专业的中文商品描述（100字以内），只输出描述文本。
             """, visionJson, searchSnippet);
 
-        return Optional.ofNullable(llmGateway.generate(synthesisPrompt, null, null))
-                .orElse(Optional.empty())
-                .orElse(searchSnippet);
+        return safeGenerate(synthesisPrompt).orElse(searchSnippet);
     }
 
     private VerificationAssessment verifyAgainstExistingProduct(Product verificationProduct,
@@ -393,7 +394,7 @@ public class AiProductOnboardingService {
             %s
             """.formatted(existingSummary, newSummary);
         try {
-            Optional<String> llmResponse = Optional.ofNullable(llmGateway.generate(prompt, null, null)).orElse(Optional.empty());
+            Optional<String> llmResponse = safeGenerate(prompt);
             if (llmResponse.isPresent()) {
                 Map<String, Object> parsed = objectMapper.readValue(llmResponse.get(), new TypeReference<>() {});
                 Double llmScore = parsed.get("matchScore") instanceof Number n ? n.doubleValue() : null;
@@ -688,11 +689,10 @@ public class AiProductOnboardingService {
 
     private String inferFlavorLikeToken(String name) {
         List<String> tokens = normalizeOrderedTokens(name);
-        List<String> ignored = List.of("brand", "food", "snack", "drink", "set", "box", "pack", "fresh", "organic");
         List<String> candidates = tokens.stream()
             .filter(token -> token.length() > 1)
             .filter(token -> !NET_CONTENT_PATTERN.matcher(token).matches())
-            .filter(token -> ignored.stream().noneMatch(token::equalsIgnoreCase))
+            .filter(token -> FLAVOR_IGNORED_TOKENS.stream().noneMatch(token::equalsIgnoreCase))
             .toList();
         if (candidates.isEmpty()) {
             return "";
@@ -735,6 +735,11 @@ public class AiProductOnboardingService {
             return String.format(Locale.ROOT, "%.0f", number);
         }
         return String.format(Locale.ROOT, "%.2f", number);
+    }
+
+    private Optional<String> safeGenerate(String prompt) {
+        Optional<String> response = llmGateway.generate(prompt, null, null);
+        return response == null ? Optional.empty() : response;
     }
 
     private SimilarProductSelection findSimilarCandidates(String name, String brand, String itemNumber, String categoryHint) {

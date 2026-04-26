@@ -1,5 +1,6 @@
 import React from 'react';
 import { Table, Tag, Typography } from 'antd';
+import { useI18n } from '../i18n';
 
 const { Text } = Typography;
 
@@ -19,6 +20,8 @@ interface AttributeDiffTableProps {
 const renderEmpty = (value?: string) => value?.trim() || '—';
 
 const AttributeDiffTable: React.FC<AttributeDiffTableProps> = ({ diffs = [] }) => {
+  const { t } = useI18n();
+
   if (!diffs.length) {
     return null;
   }
@@ -32,17 +35,17 @@ const AttributeDiffTable: React.FC<AttributeDiffTableProps> = ({ diffs = [] }) =
       data-testid="attribute-diff-table"
       columns={[
         {
-          title: '字段',
+          title: t('stock.ai_quick_add.field_column'),
           dataIndex: 'label',
           render: (label: string, record) => (
             <>
               <Text strong={record.identityField}>{label}</Text>
-              {record.identityField ? <Tag color="gold" style={{ marginInlineStart: 8 }}>身份标识</Tag> : null}
+              {record.identityField ? <Tag color="gold" style={{ marginInlineStart: 8 }}>{t('stock.ai_quick_add.identity_field')}</Tag> : null}
             </>
           )
         },
         {
-          title: '对比结果',
+          title: t('stock.ai_quick_add.comparison_result'),
           key: 'diff',
           render: (_, record) => {
             if (!record.different) {
@@ -54,7 +57,7 @@ const AttributeDiffTable: React.FC<AttributeDiffTableProps> = ({ diffs = [] }) =
                   {renderEmpty(record.newValue)}
                 </Text>
                 <Text type="secondary" style={{ marginInlineStart: 8 }}>
-                  (原值: {renderEmpty(record.oldValue)})
+                  ({t('stock.ai_quick_add.original_value')}: {renderEmpty(record.oldValue)})
                 </Text>
               </>
             );
