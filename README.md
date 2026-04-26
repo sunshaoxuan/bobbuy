@@ -23,9 +23,17 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - 无人值守 AI 小票识别
 
 ## 技术栈
-- **Backend**: Spring Boot 3 / Spring Security / Spring Data JPA
+- **Backend**: Spring Boot 3 / Spring Cloud / Nacos / OpenFeign / Resilience4j / Spring Security / Spring Data JPA
 - **Frontend**: React 18 / Ant Design / Vite / Vitest / Playwright
 - **Storage**: PostgreSQL 15 / MinIO
+
+## 微服务模块
+- `bobbuy-common`：复用现有后端代码与共享 DTO / 响应模型
+- `bobbuy-core`：订单、行程、采购、财务等核心业务
+- `bobbuy-ai`：AI 解析、翻译、商品引导、收据识别
+- `bobbuy-im`：聊天 REST + WebSocket(STOMP)
+- `bobbuy-auth`：预留认证服务注册节点
+- `bobbuy-gateway`：Spring Cloud Gateway 路由层
 
 ## 快速开始
 ```bash
@@ -33,11 +41,19 @@ docker-compose -p bobbuy up -d
 ```
 
 - Frontend: http://localhost
-- Backend API: http://localhost/api
+- Gateway API: http://localhost/api
 - MinIO Console: http://localhost:9001
+- Nacos Console: http://localhost:8848/nacos
+
+### 网关路由
+- `/api/chat/**` → `im-service`
+- `/api/ai/**` → `ai-service`
+- `/ws` / `/ws/**` → `im-service`
+- 其余 `/api/**` → `core-service`
 
 ## 验收命令
 - `cd frontend && npm run build`
 - `cd frontend && npm test`
 - `cd frontend && npm run e2e`
-- `cd backend && ./mvnw test`
+- `mvn -pl bobbuy-common test`
+- `mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am package -DskipTests`

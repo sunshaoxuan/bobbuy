@@ -1,0 +1,23 @@
+bobbuy:
+  ai:
+    remote:
+      enabled: true
+  persistence:
+    schema: public
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        default_schema: public
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      aiService:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 2
+        waitDurationInOpenState: 10s

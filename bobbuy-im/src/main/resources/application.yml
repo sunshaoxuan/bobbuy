@@ -1,0 +1,25 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  application:
+    name: im-service
+  config:
+    import: optional:nacos:bobbuy-infra.yaml,optional:nacos:im-service.yaml
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        file-extension: yaml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

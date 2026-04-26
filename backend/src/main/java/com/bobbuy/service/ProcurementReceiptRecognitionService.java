@@ -1,11 +1,18 @@
 package com.bobbuy.service;
 
+import com.bobbuy.api.response.ApiResponse;
 import com.bobbuy.model.OrderHeader;
 import com.bobbuy.model.OrderLine;
+import com.bobbuy.service.client.AiReceiptRecognitionClient;
+import com.bobbuy.service.client.AiReceiptRecognitionRequest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -37,18 +44,70 @@ public class ProcurementReceiptRecognitionService {
 
   private final LlmGateway llmGateway;
   private final ObjectMapper objectMapper;
+  private final AiReceiptRecognitionClient aiReceiptRecognitionClient;
+  private final CircuitBreakerFactory<?, ?> circuitBreakerFactory;
+  private final boolean remoteEnabled;
 
-  public ProcurementReceiptRecognitionService(LlmGateway llmGateway, ObjectMapper objectMapper) {
+  @Autowired
+  public ProcurementReceiptRecognitionService(LlmGateway llmGateway,
+                                              ObjectMapper objectMapper,
+                                              ObjectProvider<AiReceiptRecognitionClient> aiReceiptRecognitionClientProvider,
+                                              ObjectProvider<CircuitBreakerFactory<?, ?>> circuitBreakerFactoryProvider,
+                                              @Value("${bobbuy.ai.remote.enabled:false}") boolean remoteEnabled) {
     this.llmGateway = llmGateway;
     this.objectMapper = objectMapper;
+    this.aiReceiptRecognitionClient = aiReceiptRecognitionClientProvider.getIfAvailable();
+    this.circuitBreakerFactory = circuitBreakerFactoryProvider.getIfAvailable();
+    this.remoteEnabled = remoteEnabled;
+  }
+
+  ProcurementReceiptRecognitionService(LlmGateway llmGateway, ObjectMapper objectMapper) {
+    this.llmGateway = llmGateway;
+    this.objectMapper = objectMapper;
+    this.aiReceiptRecognitionClient = null;
+    this.circuitBreakerFactory = null;
+    this.remoteEnabled = false;
   }
 
   public Map<String, Object> recognize(String base64Image, String fileName, List<OrderHeader> orders) {
+    if (remoteEnabled && aiReceiptRecognitionClient != null) {
+      return recognizeRemotely(base64Image, fileName, orders);
+    }
+    return recognizeLocally(base64Image, fileName, orders);
+  }
+
+  public Map<String, Object> recognizeLocally(String base64Image, String fileName, List<OrderHeader> orders) {
     Optional<AiReceiptExtraction> extracted = extractWithAi(base64Image, fileName);
     if (extracted.isPresent()) {
       return reconcile(extracted.get(), orders);
     }
     return buildFallback(orders);
+  }
+
+  private Map<String, Object> recognizeRemotely(String base64Image, String fileName, List<OrderHeader> orders) {
+    AiReceiptRecognitionRequest request = new AiReceiptRecognitionRequest(base64Image, fileName, orders);
+    if (circuitBreakerFactory == null) {
+      try {
+        return extractRemoteResult(request, orders);
+      } catch (Exception ex) {
+        log.warn("Remote AI receipt recognition failed without circuit breaker: {}", ex.getMessage());
+        return buildFallback(orders);
+      }
+    }
+    return circuitBreakerFactory.create("aiService").run(
+        () -> extractRemoteResult(request, orders),
+        throwable -> {
+          log.warn("Remote AI receipt recognition degraded to fallback: {}", throwable.getMessage());
+          return buildFallback(orders);
+        });
+  }
+
+  private Map<String, Object> extractRemoteResult(AiReceiptRecognitionRequest request, List<OrderHeader> orders) {
+    ApiResponse<Map<String, Object>> response = aiReceiptRecognitionClient.recognizeReceipt(request);
+    if (response == null || response.getData() == null || response.getData().isEmpty()) {
+      return buildFallback(orders);
+    }
+    return response.getData();
   }
 
   private Optional<AiReceiptExtraction> extractWithAi(String base64Image, String fileName) {
