@@ -2,9 +2,12 @@ package com.bobbuy.service;
 
 import com.bobbuy.model.ChatMessage;
 import com.bobbuy.repository.ChatMessageRepository;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -14,15 +17,19 @@ import java.util.Map;
 public class ChatService {
     private static final DateTimeFormatter ISO_LOCAL_DATETIME = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private final ChatMessageRepository chatMessageRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public ChatService(ChatMessageRepository chatMessageRepository) {
+    public ChatService(ChatMessageRepository chatMessageRepository, SimpMessagingTemplate messagingTemplate) {
         this.chatMessageRepository = chatMessageRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Transactional
     public ChatMessage sendMessage(ChatMessage message) {
         message.setMetadata(normalizeMetadata(message));
-        return chatMessageRepository.save(message);
+        ChatMessage savedMessage = chatMessageRepository.save(message);
+        messagingTemplate.convertAndSend(resolveDestination(savedMessage), savedMessage);
+        return savedMessage;
     }
 
     public List<ChatMessage> getOrderConversation(Long orderId) {
@@ -76,5 +83,26 @@ public class ChatService {
             return "ORDER";
         }
         return "PRIVATE";
+    }
+
+    private String resolveDestination(ChatMessage message) {
+        String conversationType = resolveConversationType(message);
+        if ("TRIP".equals(conversationType) && message.getTripId() != null) {
+            return "/topic/trip/" + message.getTripId();
+        }
+        if ("ORDER".equals(conversationType) && message.getOrderId() != null) {
+            return "/topic/order/" + message.getOrderId();
+        }
+        String senderId = message.getSenderId();
+        String recipientId = message.getRecipientId();
+        if (senderId.compareTo(recipientId) > 0) {
+            String temp = senderId;
+            senderId = recipientId;
+            recipientId = temp;
+        }
+        return "/topic/private/"
+            + UriUtils.encodePathSegment(senderId, StandardCharsets.UTF_8)
+            + "/"
+            + UriUtils.encodePathSegment(recipientId, StandardCharsets.UTF_8);
     }
 }

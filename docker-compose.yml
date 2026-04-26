@@ -66,6 +66,9 @@ services:
     image: rabbitmq:3-management-alpine
     container_name: bobbuy-rabbitmq
     restart: always
+    command: >
+      sh -c "rabbitmq-plugins enable --offline rabbitmq_stomp &&
+      rabbitmq-server"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-bobbuy}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-bobbuypassword}
@@ -100,6 +103,10 @@ services:
       - BOBBUY_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-bobbuypassword}
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_DEFAULT_USER:-bobbuy}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_DEFAULT_PASS:-bobbuypassword}
+      - BOBBUY_WEBSOCKET_BROKER_RELAY_PORT=61613
       - BOBBUY_SEED_ENABLED=${BOBBUY_SEED_ENABLED:-false}
       - BOBBUY_AI_LLM_MAIN_URL=${BOBBUY_AI_LLM_MAIN_URL}
       - BOBBUY_AI_LLM_EDGE_URL=${BOBBUY_AI_LLM_EDGE_URL}

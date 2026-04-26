@@ -38,6 +38,11 @@ export default defineConfig({
           'Origin': 'http://localhost:8080',
           'Referer': 'http://localhost:8080/'
         }
+      },
+      '/ws': {
+        target: 'ws://localhost:8080',
+        ws: true,
+        changeOrigin: true
       }
     }
   }

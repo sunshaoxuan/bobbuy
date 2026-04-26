@@ -11,6 +11,8 @@ const apiMocks = vi.hoisted(() => ({
   patchProduct: vi.fn()
 }));
 
+const useChatWebSocketMock = vi.fn();
+
 vi.mock('../api', () => ({
   api: {
     getTripChat: apiMocks.getTripChat,
@@ -21,6 +23,10 @@ vi.mock('../api', () => ({
     sendChatMessage: apiMocks.sendChatMessage,
     patchProduct: apiMocks.patchProduct
   }
+}));
+
+vi.mock('../hooks/useChatWebSocket', () => ({
+  useChatWebSocket: (options: unknown) => useChatWebSocketMock(options)
 }));
 
 const renderWidget = () =>
@@ -42,6 +48,7 @@ describe('ChatWidget', () => {
     apiMocks.onboardConfirm.mockReset();
     apiMocks.sendChatMessage.mockReset();
     apiMocks.patchProduct.mockReset();
+    useChatWebSocketMock.mockReset();
 
     class MockFileReader {
       public result: string | ArrayBuffer | null = 'data:image/png;base64,abc';
@@ -187,5 +194,45 @@ describe('ChatWidget', () => {
 
     expect(await screen.findByText('Refresh failed. Showing the last successful message snapshot.')).toBeInTheDocument();
     expect(screen.getByText('hello')).toBeInTheDocument();
+  });
+
+  it('reloads the conversation when websocket messages arrive', async () => {
+    messages = [
+      {
+        id: 1,
+        senderId: 'PURCHASER',
+        recipientId: 'DEMO-CUST',
+        content: 'hello',
+        type: 'TEXT',
+        createdAt: '2026-04-20T22:00:00'
+      }
+    ];
+
+    renderWidget();
+
+    const websocketOptions = useChatWebSocketMock.mock.calls[0]?.[0] as {
+      onConnect?: (event: { reconnected: boolean }) => void;
+      onMessage?: () => void;
+    };
+
+    websocketOptions.onConnect?.({ reconnected: false });
+    fireEvent.click(screen.getByRole('button', { name: 'Open chat' }));
+    expect(await screen.findByText('hello')).toBeInTheDocument();
+
+    messages = [
+      ...messages,
+      {
+        id: 2,
+        senderId: 'DEMO-CUST',
+        recipientId: 'PURCHASER',
+        content: 'new message',
+        type: 'TEXT',
+        createdAt: '2026-04-20T22:01:00'
+      }
+    ];
+
+    websocketOptions.onMessage?.();
+
+    expect(await screen.findByText('new message')).toBeInTheDocument();
   });
 });

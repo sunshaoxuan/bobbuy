@@ -34,6 +34,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/health/**").permitAll()
+                .requestMatchers("/ws", "/ws/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/procurement/*/ledger").hasAnyRole("CUSTOMER", "AGENT")
                 .requestMatchers(HttpMethod.POST, "/api/procurement/*/ledger/*/confirm").hasAnyRole("CUSTOMER", "AGENT")
                 .requestMatchers("/api/procurement/**").hasRole("AGENT")
