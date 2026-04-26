@@ -24,8 +24,8 @@ import {
   UserOutlined
 } from '@ant-design/icons';
 import { api, type AiOnboardingSuggestion, type ChatMessage } from '../api';
+import { useChatWebSocket } from '../hooks/useChatWebSocket';
 import { useI18n } from '../i18n';
-import { usePollingTask } from '../hooks/usePollingTask';
 
 const { Text, Paragraph } = Typography;
 
@@ -105,7 +105,11 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   }, [orderId, recipientId, senderId, tripId]);
 
   const loadMessages = useCallback(
-    async ({ silent = false, showFeedback = false }: { silent?: boolean; showFeedback?: boolean } = {}) => {
+    async ({
+      silent = false,
+      showFeedback = false,
+      baseline = false
+    }: { silent?: boolean; showFeedback?: boolean; baseline?: boolean } = {}) => {
       if (loadingMessagesRef.current) {
         return;
       }
@@ -116,7 +120,10 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
       try {
         const nextMessages = await fetchConversation();
         const nextKeys = nextMessages.map(messageKey);
-        if (!open) {
+        if (baseline) {
+          knownMessageKeysRef.current = new Set(nextKeys);
+          setUnreadCount(0);
+        } else if (!open) {
           const unseen = nextKeys.filter((key) => !knownMessageKeysRef.current.has(key)).length;
           if (unseen > 0) {
             setUnreadCount((current) => current + unseen);
@@ -148,16 +155,31 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     [fetchConversation, messages.length, open, t]
   );
 
+  const websocketDestination = useMemo(
+    () => buildConversationDestination({ conversationType, orderId, tripId, senderId, recipientId }),
+    [conversationType, orderId, recipientId, senderId, tripId]
+  );
+
+  useChatWebSocket({
+    enabled: Boolean(senderId && recipientId && (hasScopedConversation || open)),
+    destination: websocketDestination,
+    onConnect: ({ reconnected }) => {
+      void loadMessages({ silent: true, baseline: !reconnected && !open });
+    },
+    onMessage: () => {
+      void loadMessages({ silent: true });
+    }
+  });
+
+  useEffect(() => {
+    void loadMessages({ silent: !open, baseline: !open });
+  }, [loadMessages, open, websocketDestination]);
+
   useEffect(() => {
     if (open) {
       void loadMessages();
     }
   }, [loadMessages, open]);
-
-  usePollingTask(() => loadMessages({ silent: true }), {
-    enabled: Boolean(senderId && recipientId && (hasScopedConversation || open)),
-    intervalMs: 15000
-  });
 
   useEffect(() => {
     if (!open) {
@@ -792,4 +814,29 @@ function formatChatTime(value?: string, options?: { withSeconds?: boolean }) {
     second: options?.withSeconds ? '2-digit' : undefined,
     hour12: false
   });
+}
+
+function buildConversationDestination({
+  conversationType,
+  orderId,
+  tripId,
+  senderId,
+  recipientId
+}: {
+  conversationType: ConversationType;
+  orderId?: number;
+  tripId?: number;
+  senderId: string;
+  recipientId: string;
+}) {
+  if (conversationType === 'TRIP' && tripId) {
+    return `/topic/trip/${tripId}`;
+  }
+  if (conversationType === 'ORDER' && orderId) {
+    return `/topic/order/${orderId}`;
+  }
+  const [firstParticipant, secondParticipant] = [senderId, recipientId]
+    .map((participant) => encodeURIComponent(participant))
+    .sort((left, right) => left.localeCompare(right));
+  return `/topic/private/${firstParticipant}/${secondParticipant}`;
 }

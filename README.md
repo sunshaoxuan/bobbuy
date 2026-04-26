@@ -1,6 +1,6 @@
 # BOBBuy
 
-BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + REST 持久化 + 轮询** 为基础的代购协作系统。
+BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(STOMP) 实时聊天** 为基础的代购协作系统。
 
 ## 当前真实能力
 - **订单 / 行程管理**：行程、订单、批量状态流转、客户侧订单查询。
@@ -13,11 +13,10 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + REST 持久
 - **账本精算修正**：历史余额排除取消单、未生效单、未来无效单；线下收款方式后端强校验为 `CASH / BANK_TRANSFER / OTHER`。
 - **配送准备与地址清单**：采购 HUD 与客户端账单展示默认地址摘要；支持待配送客户列表与地址 / 经纬度 CSV 导出。
 - **拣货确认闭环**：`/procurement` 与 `/picking` 共用 reviewed receipt + picking checklist 单一数据源，按 `businessId` 展示 `PENDING_DELIVERY` / `READY_FOR_DELIVERY`，保留 `SHORT_SHIPPED` / `ON_SITE_REPLENISHED` / `SELF_USE` 标签，并在冻结后统一只读。
-- **聊天协作**：聊天仍为 REST 持久化消息 + 15s 轮询；客户侧聊天已切换为“订单上下文优先，Trip 次级筛选”。
+- **聊天协作**：聊天已升级为 REST 持久化 + WebSocket(STOMP) 实时推送；客户侧聊天保持“订单上下文优先，Trip 次级筛选”。
 
 ## 当前未实现 / 不宣称
-- WebSocket 实时推送
-- 消息队列驱动的聊天闭环
+- 消息队列驱动的非聊天业务闭环
 - 真实第三方支付网关
 - 社交 OAuth 登录
 - 真实地图路径规划 / 实时配送追踪
