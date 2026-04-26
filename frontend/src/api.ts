@@ -413,6 +413,15 @@ export type ChatMessageMetadata = {
     candidateSummary?: ChatCandidateSummary;
     candidateReason?: string;
     candidateReasons?: string[];
+    clientMessageId?: string;
+    deliveryState?: 'PENDING' | 'QUEUED' | 'FAILED';
+    productSnapshot?: {
+        productId?: string;
+        productName?: string;
+        itemNumber?: string;
+        visibilityStatus?: string;
+        summary?: string;
+    };
     [key: string]: any;
 };
 
@@ -426,6 +435,12 @@ export type ChatMessage = {
     type: 'TEXT' | 'IMAGE' | 'SYSTEM';
     metadata?: ChatMessageMetadata;
     createdAt?: string;
+};
+
+export type ChatConversationSlice = {
+    messages: ChatMessage[];
+    nextCursor: number | null;
+    hasMore: boolean;
 };
 
 export type AiProductCandidate = {
@@ -1090,10 +1105,39 @@ export const api = {
         fetchJson<ProcurementItemResponse[]>(`/api/trips/${tripId}/procurement-list`, []),
     sendChatMessage: (message: ChatMessage) =>
         postJson<ChatMessage, ChatMessage>('/api/chat/send', message),
+    getOrderChatCursor: (orderId: number, params?: { beforeId?: number; limit?: number }) =>
+        fetchJson<ChatConversationSlice>(
+            `/api/chat/orders/${orderId}/cursor${buildChatCursorQuery(params)}`,
+            { messages: [], nextCursor: null, hasMore: false }
+        ),
     getOrderChat: (orderId: number) =>
         fetchJson<ChatMessage[]>(`/api/chat/orders/${orderId}`, []),
+    getTripChatCursor: (tripId: number, params?: { beforeId?: number; limit?: number }) =>
+        fetchJson<ChatConversationSlice>(
+            `/api/chat/trips/${tripId}/cursor${buildChatCursorQuery(params)}`,
+            { messages: [], nextCursor: null, hasMore: false }
+        ),
     getTripChat: (tripId: number) =>
         fetchJson<ChatMessage[]>(`/api/chat/trips/${tripId}`, []),
+    getPrivateChatCursor: (userA: string, userB: string, params?: { beforeId?: number; limit?: number }) =>
+        fetchJson<ChatConversationSlice>(
+            `/api/chat/private/cursor?userA=${encodeURIComponent(userA)}&userB=${encodeURIComponent(userB)}${buildChatCursorQuery(params, true)}`,
+            { messages: [], nextCursor: null, hasMore: false }
+        ),
     getPrivateChat: (userA: string, userB: string) =>
         fetchJson<ChatMessage[]>(`/api/chat/private?userA=${userA}&userB=${userB}`, [])
 };
+
+function buildChatCursorQuery(params?: { beforeId?: number; limit?: number }, hasExistingQuery = false) {
+    if (!params?.beforeId && !params?.limit) {
+        return '';
+    }
+    const search = new URLSearchParams();
+    if (params.beforeId) {
+        search.set('beforeId', String(params.beforeId));
+    }
+    if (params.limit) {
+        search.set('limit', String(params.limit));
+    }
+    return `${hasExistingQuery ? '&' : '?'}${search.toString()}`;
+}

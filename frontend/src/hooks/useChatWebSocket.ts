@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 
 type ConnectionEvent = {
@@ -13,6 +13,14 @@ interface UseChatWebSocketOptions {
 }
 
 export function useChatWebSocket({ enabled, destination, onConnect, onMessage }: UseChatWebSocketOptions) {
+  const onConnectRef = useRef(onConnect);
+  const onMessageRef = useRef(onMessage);
+
+  useEffect(() => {
+    onConnectRef.current = onConnect;
+    onMessageRef.current = onMessage;
+  }, [onConnect, onMessage]);
+
   useEffect(() => {
     if (!enabled || !destination || typeof window === 'undefined' || !isChatWebSocketAllowed()) {
       return;
@@ -20,25 +28,50 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
 
     let subscription: ReturnType<Client['subscribe']> | undefined;
     let hasConnected = false;
+    let reconnectDelay = 1000;
     const client = new Client({
       brokerURL: buildWebSocketUrl(),
-      reconnectDelay: 5000,
-      heartbeatIncoming: 10000,
-      heartbeatOutgoing: 10000,
+      reconnectDelay,
+      heartbeatIncoming: 5000,
+      heartbeatOutgoing: 5000,
       debug: () => undefined,
       onConnect: () => {
         subscription?.unsubscribe();
         subscription = client.subscribe(destination, () => {
-          onMessage?.();
+          onMessageRef.current?.();
         });
-        onConnect?.({ reconnected: hasConnected });
+        reconnectDelay = 1000;
+        client.configure({ reconnectDelay });
+        onConnectRef.current?.({ reconnected: hasConnected });
         hasConnected = true;
+      },
+      onWebSocketClose: () => {
+        reconnectDelay = Math.min(reconnectDelay * 2, 5000);
+        client.configure({ reconnectDelay });
       }
     });
 
+    const handleOnline = () => {
+      reconnectDelay = 250;
+      client.configure({ reconnectDelay });
+      if (client.active) {
+        void client.deactivate().finally(() => client.activate());
+        return;
+      }
+      client.activate();
+    };
+
+    const handleOffline = () => {
+      void client.deactivate();
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
     client.activate();
 
     return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
       subscription?.unsubscribe();
       void client.deactivate();
     };

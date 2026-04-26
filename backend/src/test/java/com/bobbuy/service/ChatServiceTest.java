@@ -13,8 +13,11 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Map;
+import java.util.stream.LongStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
@@ -63,7 +66,10 @@ class ChatServiceTest {
         assertEquals(2000L, saved.getMetadata().get("relatedTripId"));
         assertEquals("https://img.example/matcha.png", saved.getMetadata().get("attachmentUrl"));
         assertEquals("PENDING_CONFIRMATION", saved.getMetadata().get("imageFlowStatus"));
+        assertEquals("prd-1", ((Map<?, ?>) saved.getMetadata().get("productSnapshot")).get("productId"));
+        assertEquals("抹茶礼盒", ((Map<?, ?>) saved.getMetadata().get("productSnapshot")).get("summary"));
         verify(messagingTemplate).convertAndSend(eq("/topic/trip/2000"), eq(saved));
+        assertPersistedMessageCount(1);
     }
 
     @Test
@@ -77,6 +83,50 @@ class ChatServiceTest {
         ChatMessage saved = chatService.sendMessage(message);
 
         assertEquals("PRIVATE", saved.getMetadata().get("conversationType"));
+        assertNotNull(saved.getMetadata().get("clientMessageId"));
         verify(messagingTemplate).convertAndSend(eq("/topic/private/AAA/ZZZ"), eq(saved));
+        assertPersistedMessageCount(1);
+    }
+
+    @Test
+    void getTripConversationSliceUsesIdCursorPagination() {
+        LongStream.rangeClosed(1, 4).forEach(index -> {
+            ChatMessage message = new ChatMessage();
+            message.setTripId(3000L);
+            message.setSenderId("PURCHASER");
+            message.setRecipientId("DEMO-CUST");
+            message.setContent("message-" + index);
+            message.setType("TEXT");
+            chatMessageRepository.save(message);
+        });
+
+        ChatConversationSlice firstSlice = chatService.getTripConversationSlice(3000L, null, 2);
+
+        assertEquals(2, firstSlice.messages().size());
+        assertTrue(firstSlice.hasMore());
+        assertEquals("message-3", firstSlice.messages().get(0).getContent());
+        assertEquals("message-4", firstSlice.messages().get(1).getContent());
+
+        ChatConversationSlice secondSlice = chatService.getTripConversationSlice(3000L, firstSlice.nextCursor(), 2);
+
+        assertEquals(2, secondSlice.messages().size());
+        assertEquals("message-1", secondSlice.messages().get(0).getContent());
+        assertEquals("message-2", secondSlice.messages().get(1).getContent());
+        assertTrue(!secondSlice.hasMore());
+    }
+
+    private void assertPersistedMessageCount(int expectedCount) {
+        for (int attempt = 0; attempt < 20; attempt++) {
+            if (chatMessageRepository.count() == expectedCount) {
+                return;
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        assertEquals(expectedCount, chatMessageRepository.count());
     }
 }

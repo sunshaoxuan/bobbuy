@@ -2,6 +2,7 @@ package com.bobbuy.api;
 
 import com.bobbuy.api.response.ApiResponse;
 import com.bobbuy.model.ChatMessage;
+import com.bobbuy.service.ChatConversationSlice;
 import com.bobbuy.service.ChatService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,13 +34,41 @@ public class ChatController {
         return ResponseEntity.ok(ApiResponse.success(chatService.getOrderConversation(orderId)));
     }
 
+    @GetMapping("/orders/{orderId}/cursor")
+    public ResponseEntity<ApiResponse<ChatConversationSlice>> getOrderChatCursor(
+        @PathVariable Long orderId,
+        @RequestParam(required = false) Long beforeId,
+        @RequestParam(required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(chatService.getOrderConversationSlice(orderId, beforeId, limit)));
+    }
+
     @GetMapping("/trips/{tripId}")
     public ResponseEntity<ApiResponse<List<ChatMessage>>> getTripChat(@PathVariable Long tripId) {
         return ResponseEntity.ok(ApiResponse.success(chatService.getTripConversation(tripId)));
     }
 
+    @GetMapping("/trips/{tripId}/cursor")
+    public ResponseEntity<ApiResponse<ChatConversationSlice>> getTripChatCursor(
+        @PathVariable Long tripId,
+        @RequestParam(required = false) Long beforeId,
+        @RequestParam(required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(chatService.getTripConversationSlice(tripId, beforeId, limit)));
+    }
+
     @GetMapping("/private")
     public ResponseEntity<ApiResponse<List<ChatMessage>>> getPrivateChat(@RequestParam String userA, @RequestParam String userB) {
         return ResponseEntity.ok(ApiResponse.success(chatService.getPrivateConversation(userA, userB)));
+    }
+
+    @GetMapping("/private/cursor")
+    public ResponseEntity<ApiResponse<ChatConversationSlice>> getPrivateChatCursor(
+        @RequestParam String userA,
+        @RequestParam String userB,
+        @RequestParam(required = false) Long beforeId,
+        @RequestParam(required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(chatService.getPrivateConversationSlice(userA, userB, beforeId, limit)));
     }
 }
