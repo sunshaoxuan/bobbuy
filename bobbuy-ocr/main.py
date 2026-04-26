@@ -11,7 +11,7 @@ app = FastAPI(title="BOBBuy OCR Service")
 
 # Initialize PaddleOCR with Japanese support
 # We use CPU by default to keep it compatible with most environments
-ocr = PaddleOCR(lang='japan', device='cpu', enable_mkldnn=False, show_log=False)
+ocr = PaddleOCR(lang='japan', device='cpu', enable_mkldnn=False)
 
 class OCRRequest(BaseModel):
     image: str  # base64 encoded image

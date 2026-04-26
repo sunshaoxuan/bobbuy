@@ -33,19 +33,16 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
     }
   }, [visible]);
 
-  const handleUpload = async (file: RcFile) => {
+  const handleUpload = (file: RcFile) => {
     setLoading(true);
-    setCurrentStep(1); 
+    setCurrentStep(1);
 
-    try {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = async () => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
         const base64 = reader.result as string;
-        
-        setCurrentStep(1);
-        const result = await api.onboardScan(base64, file.name);
         // Inject the original photo into the suggestion
+        const result = await api.onboardScan(base64, file.name);
         setSuggestion({ ...result, originalPhotoBase64: base64 });
         
         setCurrentStep(2);
@@ -54,15 +51,26 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
         setCurrentStep(3);
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        setCurrentStep(4); 
+        setCurrentStep(4);
         setLoading(false);
-      };
-    } catch (error) {
+      } catch (error) {
+        logError(error);
+        setLoading(false);
+        setCurrentStep(0);
+        message.error(t('stock.ai_quick_add.failed'));
+      }
+    };
+    reader.onerror = () => {
       setLoading(false);
       setCurrentStep(0);
       message.error(t('stock.ai_quick_add.failed'));
-    }
-    return false;
+    };
+    reader.readAsDataURL(file);
+    return false; // Prevent automatic upload
+  };
+
+  const logError = (err: any) => {
+    console.error('AI Onboarding Error:', err);
   };
 
   const handleFinish = () => {
@@ -150,7 +158,12 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
             <Spin size="large" />
             <div style={{ marginTop: 24 }}>
               <Text strong style={{ fontSize: 18 }}>
-                {currentStep === 1 && t('stock.ai_quick_add.scanning_msg')}
+                {currentStep === 1 && (
+                  <span>
+                    <FileSearchOutlined style={{ marginRight: 8 }} />
+                    OCR提取文本並由AI進行整理中...
+                  </span>
+                )}
                 {currentStep === 2 && t('stock.ai_quick_add.researching_msg')}
                 {currentStep === 3 && t('stock.ai_quick_add.enriching_msg')}
               </Text>
