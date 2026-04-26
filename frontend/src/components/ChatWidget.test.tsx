@@ -4,6 +4,7 @@ import { I18nProvider } from '../i18n';
 import ChatWidget from './ChatWidget';
 
 const apiMocks = vi.hoisted(() => ({
+  getTripChatCursor: vi.fn(),
   getTripChat: vi.fn(),
   onboardScan: vi.fn(),
   onboardConfirm: vi.fn(),
@@ -15,8 +16,11 @@ const useChatWebSocketMock = vi.fn();
 
 vi.mock('../api', () => ({
   api: {
+    getTripChatCursor: apiMocks.getTripChatCursor,
     getTripChat: apiMocks.getTripChat,
+    getOrderChatCursor: vi.fn(),
     getOrderChat: vi.fn(),
+    getPrivateChatCursor: vi.fn(),
     getPrivateChat: vi.fn(),
     onboardScan: apiMocks.onboardScan,
     onboardConfirm: apiMocks.onboardConfirm,
@@ -42,6 +46,10 @@ describe('ChatWidget', () => {
   beforeEach(() => {
     window.localStorage.setItem('bobbuy_locale', 'en-US');
     messages = [];
+    apiMocks.getTripChatCursor.mockReset();
+    apiMocks.getTripChatCursor.mockImplementation(() =>
+      Promise.resolve({ messages: [...messages], nextCursor: null, hasMore: false })
+    );
     apiMocks.getTripChat.mockReset();
     apiMocks.getTripChat.mockImplementation(() => Promise.resolve([...messages]));
     apiMocks.onboardScan.mockReset();
@@ -122,6 +130,7 @@ describe('ChatWidget', () => {
           createdAt: '2026-04-20T22:00:00'
         }
       ];
+      apiMocks.getTripChatCursor.mockResolvedValue({ messages: [...messages], nextCursor: null, hasMore: false });
       return payload;
     });
     apiMocks.patchProduct.mockResolvedValue({
@@ -189,6 +198,7 @@ describe('ChatWidget', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open chat' }));
 
     expect(await screen.findByText('hello')).toBeInTheDocument();
+    apiMocks.getTripChatCursor.mockRejectedValue(new Error('refresh failed'));
     apiMocks.getTripChat.mockRejectedValue(new Error('refresh failed'));
     fireEvent.click(screen.getByRole('button', { name: 'Refresh chat' }));
 
@@ -207,6 +217,7 @@ describe('ChatWidget', () => {
         createdAt: '2026-04-20T22:00:00'
       }
     ];
+    apiMocks.getTripChatCursor.mockResolvedValue({ messages: [...messages], nextCursor: null, hasMore: false });
 
     renderWidget();
 
@@ -230,9 +241,24 @@ describe('ChatWidget', () => {
         createdAt: '2026-04-20T22:01:00'
       }
     ];
+    apiMocks.getTripChatCursor.mockResolvedValue({ messages: [...messages], nextCursor: null, hasMore: false });
 
     websocketOptions.onMessage?.();
 
     expect(await screen.findByText('new message')).toBeInTheDocument();
+  });
+
+  it('queues optimistic messages offline and keeps them in local storage', async () => {
+    vi.stubGlobal('navigator', { ...window.navigator, onLine: false });
+    renderWidget();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open chat' }));
+    fireEvent.change(screen.getByPlaceholderText('Type a message...'), { target: { value: 'offline hello' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+
+    expect(await screen.findByText('offline hello')).toBeInTheDocument();
+    expect(await screen.findByText('Queued offline')).toBeInTheDocument();
+    expect(apiMocks.sendChatMessage).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('bobbuy_chat_trip-2000')).toContain('offline hello');
   });
 });

@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Index;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -13,7 +14,14 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @Entity
-@Table(name = "bb_chat_message")
+@Table(
+    name = "bb_chat_message",
+    indexes = {
+        @Index(name = "idx_chat_message_order_id_id", columnList = "orderId,id"),
+        @Index(name = "idx_chat_message_trip_id_id", columnList = "tripId,id"),
+        @Index(name = "idx_chat_message_sender_recipient_id", columnList = "senderId,recipientId,id")
+    }
+)
 public class ChatMessage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

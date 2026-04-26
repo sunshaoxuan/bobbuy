@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Avatar,
@@ -23,11 +23,14 @@ import {
   ShopOutlined,
   UserOutlined
 } from '@ant-design/icons';
-import { api, type AiOnboardingSuggestion, type ChatMessage } from '../api';
+import { api, type AiOnboardingSuggestion, type ChatConversationSlice, type ChatMessage } from '../api';
+import { useChatPersistence } from '../hooks/useChatPersistence';
 import { useChatWebSocket } from '../hooks/useChatWebSocket';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useI18n } from '../i18n';
 
 const { Text, Paragraph } = Typography;
+const CHAT_PAGE_SIZE = 50;
 
 interface ChatWidgetProps {
   orderId?: number;
@@ -44,19 +47,18 @@ type RetryableImageDraft = {
 
 const messageKey = (chatMessage: ChatMessage) =>
   String(
-    chatMessage.id ??
+    chatMessage.metadata?.clientMessageId ??
+      chatMessage.id ??
       `${chatMessage.tripId ?? ''}-${chatMessage.orderId ?? ''}-${chatMessage.createdAt ?? ''}-${chatMessage.senderId}-${chatMessage.recipientId}-${chatMessage.type}-${String(chatMessage.metadata?.url ?? '').slice(-32)}`
   );
 
 export default function ChatWidget({ orderId, tripId, senderId, recipientId }: ChatWidgetProps) {
   const { t } = useI18n();
+  const { isOnline } = useNetworkStatus();
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string>();
-  const [unreadCount, setUnreadCount] = useState(0);
   const [pendingSuggestion, setPendingSuggestion] = useState<AiOnboardingSuggestion | null>(null);
   const [pendingImagePreview, setPendingImagePreview] = useState<string>();
   const [pendingAttachmentName, setPendingAttachmentName] = useState<string>();
@@ -65,15 +67,39 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>();
   const [retryableImageDraft, setRetryableImageDraft] = useState<RetryableImageDraft | null>(null);
   const [publishingMessageId, setPublishingMessageId] = useState<string>();
-  const [lastSuccessfulSyncAt, setLastSuccessfulSyncAt] = useState<string>();
   const [confirmError, setConfirmError] = useState<string>();
+  const [hasMoreHistory, setHasMoreHistory] = useState(false);
+  const [nextCursor, setNextCursor] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const knownMessageKeysRef = useRef<Set<string>>(new Set());
   const loadingMessagesRef = useRef(false);
+  const flushingPendingRef = useRef(false);
   const hasScopedConversation = Boolean(tripId || orderId);
 
   const conversationType: ConversationType = tripId ? 'TRIP' : orderId ? 'ORDER' : 'PRIVATE';
+  const conversationKey = useMemo(
+    () => buildConversationStorageKey({ conversationType, orderId, tripId, senderId, recipientId }),
+    [conversationType, orderId, tripId, senderId, recipientId]
+  );
+  const {
+    persistedState,
+    setMessages,
+    setPendingMessages,
+    setInputValue,
+    setUnreadCount,
+    setLastSuccessfulSyncAt
+  } = useChatPersistence(conversationKey);
+  const messages = persistedState.messages;
+  const pendingMessages = persistedState.pendingMessages;
+  const inputValue = persistedState.inputValue;
+  const unreadCount = persistedState.unreadCount;
+  const lastSuccessfulSyncAt = persistedState.lastSuccessfulSyncAt;
+
+  useEffect(() => {
+    knownMessageKeysRef.current = new Set(messages.map(messageKey));
+  }, [messages]);
+
   const conversationTypeLabel = useMemo(() => {
     if (conversationType === 'TRIP') {
       return t('chat.scope.trip');
@@ -94,22 +120,62 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     return t('chat.scope.private_hint');
   }, [conversationType, t]);
 
-  const fetchConversation = useCallback(async () => {
-    if (tripId) {
-      return api.getTripChat(tripId);
-    }
-    if (orderId) {
-      return api.getOrderChat(orderId);
-    }
-    return api.getPrivateChat(senderId, recipientId);
-  }, [orderId, recipientId, senderId, tripId]);
+  const fetchConversationPage = useCallback(
+    async (beforeId?: number): Promise<ChatConversationSlice> => {
+      const params = { beforeId, limit: CHAT_PAGE_SIZE };
+      if (tripId) {
+        return api.getTripChatCursor(tripId, params);
+      }
+      if (orderId) {
+        return api.getOrderChatCursor(orderId, params);
+      }
+      return api.getPrivateChatCursor(senderId, recipientId, params);
+    },
+    [orderId, recipientId, senderId, tripId]
+  );
+
+  const syncFromSlice = useCallback(
+    (slice: ChatConversationSlice, options?: { appendHistory?: boolean; baseline?: boolean }) => {
+      const baseMessages = options?.appendHistory
+        ? [...messages, ...slice.messages]
+        : preserveOlderMessages(messages, nextCursor, slice.messages);
+      const mergedMessages = mergeChatMessages(baseMessages, pendingMessages);
+      const nextKeys = mergedMessages.map(messageKey);
+      if (options?.baseline) {
+        knownMessageKeysRef.current = new Set(nextKeys);
+        setUnreadCount(0);
+      } else if (!open) {
+        const unseen = nextKeys.filter((key) => !knownMessageKeysRef.current.has(key)).length;
+        if (unseen > 0) {
+          setUnreadCount((current) => current + unseen);
+        }
+      } else {
+        setUnreadCount(0);
+      }
+      knownMessageKeysRef.current = new Set(nextKeys);
+      setMessages(mergedMessages);
+      setHasMoreHistory(slice.hasMore);
+      setNextCursor(slice.nextCursor);
+      setLoadError(undefined);
+      setLastSuccessfulSyncAt(new Date().toISOString());
+    },
+    [messages, nextCursor, open, pendingMessages, setLastSuccessfulSyncAt, setMessages, setUnreadCount]
+  );
 
   const loadMessages = useCallback(
     async ({
       silent = false,
       showFeedback = false,
-      baseline = false
-    }: { silent?: boolean; showFeedback?: boolean; baseline?: boolean } = {}) => {
+      baseline = false,
+      beforeId,
+      appendHistory = false
+    }: {
+      silent?: boolean;
+      showFeedback?: boolean;
+      baseline?: boolean;
+      beforeId?: number;
+      appendHistory?: boolean;
+    } = {}) => {
       if (loadingMessagesRef.current) {
         return;
       }
@@ -118,23 +184,8 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
         setRefreshing(true);
       }
       try {
-        const nextMessages = await fetchConversation();
-        const nextKeys = nextMessages.map(messageKey);
-        if (baseline) {
-          knownMessageKeysRef.current = new Set(nextKeys);
-          setUnreadCount(0);
-        } else if (!open) {
-          const unseen = nextKeys.filter((key) => !knownMessageKeysRef.current.has(key)).length;
-          if (unseen > 0) {
-            setUnreadCount((current) => current + unseen);
-          }
-        } else {
-          setUnreadCount(0);
-        }
-        knownMessageKeysRef.current = new Set(nextKeys);
-        setMessages(nextMessages);
-        setLoadError(undefined);
-        setLastSuccessfulSyncAt(new Date().toISOString());
+        const slice = await fetchConversationPage(beforeId);
+        syncFromSlice(slice, { appendHistory, baseline });
         if (showFeedback) {
           message.success(t('chat.refresh_success'));
         }
@@ -152,7 +203,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
         }
       }
     },
-    [fetchConversation, messages.length, open, t]
+    [fetchConversationPage, messages.length, open, syncFromSlice, t]
   );
 
   const websocketDestination = useMemo(
@@ -160,13 +211,83 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     [conversationType, orderId, recipientId, senderId, tripId]
   );
 
+  const sendQueuedMessage = useCallback(
+    async (queuedMessage: ChatMessage, fromReconnect = false) => {
+      const key = messageKey(queuedMessage);
+      try {
+        await api.sendChatMessage(stripLocalDeliveryState(queuedMessage));
+        setPendingMessages((current) => current.filter((entry) => messageKey(entry) !== key));
+        setMessages((current) =>
+          current.map((entry) =>
+            messageKey(entry) === key
+              ? {
+                  ...entry,
+                  metadata: {
+                    ...entry.metadata,
+                    deliveryState: 'PENDING'
+                  }
+                }
+              : entry
+          )
+        );
+        if (!fromReconnect) {
+          void loadMessages({ silent: true });
+        }
+        return true;
+      } catch {
+        setPendingMessages((current) => current.filter((entry) => messageKey(entry) !== key));
+        setMessages((current) =>
+          current.map((entry) =>
+            messageKey(entry) === key
+              ? {
+                  ...entry,
+                  metadata: {
+                    ...entry.metadata,
+                    deliveryState: isOnline ? 'FAILED' : 'QUEUED'
+                  }
+                }
+              : entry
+          )
+        );
+        if (isOnline) {
+          message.error(t('errors.request_failed'));
+        }
+        return false;
+      }
+    },
+    [isOnline, loadMessages, setMessages, setPendingMessages, t]
+  );
+
+  const flushPendingMessages = useCallback(async () => {
+    if (!isOnline || flushingPendingRef.current) {
+      return;
+    }
+    const queuedItems = pendingMessages.filter((entry) => entry.metadata?.deliveryState === 'QUEUED');
+    if (queuedItems.length === 0) {
+      return;
+    }
+    flushingPendingRef.current = true;
+    try {
+      for (const queuedItem of queuedItems) {
+        const sent = await sendQueuedMessage(queuedItem, true);
+        if (!sent) {
+          break;
+        }
+      }
+      await loadMessages({ silent: true });
+    } finally {
+      flushingPendingRef.current = false;
+    }
+  }, [isOnline, loadMessages, pendingMessages, sendQueuedMessage]);
+
   useChatWebSocket({
-    enabled: Boolean(senderId && recipientId && (hasScopedConversation || open)),
+    enabled: Boolean(senderId && recipientId && (hasScopedConversation || open || pendingMessages.length > 0)),
     destination: websocketDestination,
     onConnect: ({ reconnected }) => {
       if (reconnected) {
         void loadMessages({ silent: true });
       }
+      void flushPendingMessages();
     },
     onMessage: () => {
       void loadMessages({ silent: true });
@@ -175,7 +296,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
 
   useEffect(() => {
     void loadMessages({ silent: !open, baseline: !open });
-  }, [loadMessages, open, websocketDestination]);
+  }, [conversationKey, loadMessages, open]);
 
   useEffect(() => {
     if (open) {
@@ -189,7 +310,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     }
     setUnreadCount(0);
     knownMessageKeysRef.current = new Set(messages.map(messageKey));
-  }, [messages, open]);
+  }, [messages, open, setUnreadCount]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -197,31 +318,43 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     }
   }, [messages]);
 
+  useEffect(() => {
+    void flushPendingMessages();
+  }, [flushPendingMessages]);
+
   const handleSend = async () => {
     if (!inputValue.trim() || sendingMessage) {
       return;
     }
+    const optimisticMessage = buildOptimisticTextMessage({
+      orderId,
+      tripId,
+      senderId,
+      recipientId,
+      content: inputValue.trim(),
+      conversationType,
+      isOnline
+    });
+    setInputValue('');
+    setMessages((current) => mergeChatMessages(current, [optimisticMessage]));
+    if (!isOnline) {
+      setPendingMessages((current) => mergeChatMessages(current, [optimisticMessage]));
+      message.info(t('chat.offline_queue_notice'));
+      return;
+    }
     setSendingMessage(true);
     try {
-      await api.sendChatMessage({
-        orderId,
-        tripId,
-        senderId,
-        recipientId,
-        content: inputValue.trim(),
-        type: 'TEXT',
-        metadata: { conversationType }
-      });
-      setInputValue('');
-      await loadMessages();
-    } catch {
-      message.error(t('errors.request_failed'));
+      await sendQueuedMessage(optimisticMessage);
     } finally {
       setSendingMessage(false);
     }
   };
 
   const handleSelectImage = () => {
+    if (!isOnline) {
+      message.info(t('chat.offline_image_notice'));
+      return;
+    }
     fileInputRef.current?.click();
   };
 
@@ -247,7 +380,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
     [t]
   );
 
-  const handleImagePicked = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImagePicked = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
       return;
@@ -477,6 +610,14 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
               {conversationHint}
             </Text>
           </div>
+          {!isOnline ? (
+            <Alert
+              type="info"
+              showIcon
+              message={t('chat.offline_banner')}
+              style={{ margin: 12, marginBottom: 0 }}
+            />
+          ) : null}
           {loadError ? (
             <Alert
               type="warning"
@@ -505,6 +646,13 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
             />
           ) : null}
           <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', background: '#fafafa' }}>
+            {hasMoreHistory && nextCursor ? (
+              <div style={{ marginBottom: 12, textAlign: 'center' }}>
+                <Button size="small" onClick={() => void loadMessages({ beforeId: nextCursor, appendHistory: true })}>
+                  {t('chat.load_older')}
+                </Button>
+              </div>
+            ) : null}
             <List
               locale={{ emptyText: refreshing ? t('chat.loading') : t('chat.empty') }}
               dataSource={messages}
@@ -513,6 +661,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                 const canPublish = msg.metadata?.isTemporary && msg.metadata?.visibilityStatus === 'DRAFTER_ONLY';
                 const statusLabel = getImageFlowStatusLabel(msg, t);
                 const recoveryActionLabel = getRecoveryActionLabel(msg, t);
+                const deliveryStateLabel = getDeliveryStateLabel(msg, t);
                 return (
                   <div
                     style={{
@@ -529,7 +678,8 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                         background: msg.senderId === senderId ? 'var(--zen-brand)' : 'white',
                         color: msg.senderId === senderId ? 'white' : 'black',
                         boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                        border: msg.senderId === senderId ? 'none' : 'var(--zen-line)'
+                        border: msg.senderId === senderId ? 'none' : 'var(--zen-line)',
+                        opacity: msg.metadata?.deliveryState === 'FAILED' ? 0.7 : 1
                       }}
                     >
                       {msg.type === 'IMAGE' ? (
@@ -546,6 +696,11 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                             {msg.metadata?.itemNumber ? (
                               <div>
                                 <Text style={{ color: 'inherit', opacity: 0.8 }}>SKU: {msg.metadata.itemNumber}</Text>
+                              </div>
+                            ) : null}
+                            {msg.metadata?.productSnapshot?.summary ? (
+                              <div>
+                                <Text style={{ color: 'inherit', opacity: 0.8 }}>{msg.metadata.productSnapshot.summary}</Text>
                               </div>
                             ) : null}
                             <Space wrap size={4} style={{ marginTop: 6 }}>
@@ -622,9 +777,14 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                       ) : (
                         <Text style={{ color: 'inherit' }}>{msg.content}</Text>
                       )}
-                        <div style={{ fontSize: '10px', opacity: 0.6, textAlign: 'right', marginTop: 4 }}>
-                          {formatChatTime(msg.createdAt)}
+                      {deliveryStateLabel ? (
+                        <div style={{ marginTop: 6 }}>
+                          <Text style={{ color: 'inherit', opacity: 0.75 }}>{deliveryStateLabel}</Text>
                         </div>
+                      ) : null}
+                      <div style={{ fontSize: '10px', opacity: 0.6, textAlign: 'right', marginTop: 4 }}>
+                        {formatChatTime(msg.createdAt)}
+                      </div>
                     </div>
                   </div>
                 );
@@ -646,9 +806,9 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
                 placeholder={t('chat.placeholder')}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onPressEnter={handleSend}
+                onPressEnter={() => void handleSend()}
               />
-              <Button aria-label="Send message" type="primary" icon={<SendOutlined />} onClick={handleSend} loading={sendingMessage} />
+              <Button aria-label="Send message" type="primary" icon={<SendOutlined />} onClick={() => void handleSend()} loading={sendingMessage} />
             </Space.Compact>
           </div>
         </div>
@@ -802,6 +962,14 @@ function getRecoveryActionLabel(msg: ChatMessage, t: (key: string) => string) {
   return t(`chat.recovery.${recoveryAction}`);
 }
 
+function getDeliveryStateLabel(msg: ChatMessage, t: (key: string) => string) {
+  const deliveryState = msg.metadata?.deliveryState;
+  if (!deliveryState) {
+    return undefined;
+  }
+  return t(`chat.delivery.${deliveryState}`);
+}
+
 function formatChatTime(value?: string, options?: { withSeconds?: boolean }) {
   if (!value) {
     return '--:--';
@@ -840,4 +1008,115 @@ function buildConversationDestination({
   const [firstParticipant, secondParticipant] = [senderId, recipientId]
     .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
   return `/topic/private/${encodeURIComponent(firstParticipant)}/${encodeURIComponent(secondParticipant)}`;
+}
+
+function buildConversationStorageKey({
+  conversationType,
+  orderId,
+  tripId,
+  senderId,
+  recipientId
+}: {
+  conversationType: ConversationType;
+  orderId?: number;
+  tripId?: number;
+  senderId: string;
+  recipientId: string;
+}) {
+  if (conversationType === 'TRIP' && tripId) {
+    return `trip-${tripId}`;
+  }
+  if (conversationType === 'ORDER' && orderId) {
+    return `order-${orderId}`;
+  }
+  const [firstParticipant, secondParticipant] = [senderId, recipientId]
+    .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
+  return `private-${firstParticipant}-${secondParticipant}`;
+}
+
+function buildOptimisticTextMessage({
+  orderId,
+  tripId,
+  senderId,
+  recipientId,
+  content,
+  conversationType,
+  isOnline
+}: {
+  orderId?: number;
+  tripId?: number;
+  senderId: string;
+  recipientId: string;
+  content: string;
+  conversationType: ConversationType;
+  isOnline: boolean;
+}): ChatMessage {
+  return {
+    orderId,
+    tripId,
+    senderId,
+    recipientId,
+    content,
+    type: 'TEXT',
+    createdAt: new Date().toISOString(),
+    metadata: {
+      conversationType,
+      source: 'CHAT_WIDGET',
+      clientMessageId: `client-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      deliveryState: isOnline ? 'PENDING' : 'QUEUED'
+    }
+  };
+}
+
+function stripLocalDeliveryState(message: ChatMessage): ChatMessage {
+  if (!message.metadata) {
+    return message;
+  }
+  const { deliveryState, ...metadata } = message.metadata;
+  return {
+    ...message,
+    metadata
+  };
+}
+
+function mergeChatMessages(baseMessages: ChatMessage[], pendingMessages: ChatMessage[]) {
+  const ordered = [...baseMessages, ...pendingMessages];
+  const byKey = new Map<string, ChatMessage>();
+  for (const entry of ordered) {
+    const key = messageKey(entry);
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, entry);
+      continue;
+    }
+    byKey.set(key, preferSyncedMessage(existing, entry));
+  }
+  return [...byKey.values()].sort(compareChatMessages);
+}
+
+function preserveOlderMessages(currentMessages: ChatMessage[], previousCursor: number | null, latestMessages: ChatMessage[]) {
+  if (!previousCursor) {
+    return latestMessages;
+  }
+  const olderMessages = currentMessages.filter((entry) => typeof entry.id === 'number' && entry.id < previousCursor);
+  return [...olderMessages, ...latestMessages];
+}
+
+function preferSyncedMessage(left: ChatMessage, right: ChatMessage) {
+  const preferred = left.id && !right.id ? left : right.id && !left.id ? right : right;
+  const fallback = preferred === left ? right : left;
+  const metadata = { ...fallback.metadata, ...preferred.metadata };
+  if (preferred.id && !fallback.id && (preferred.metadata?.deliveryState === null || preferred.metadata?.deliveryState === undefined)) {
+    delete metadata.deliveryState;
+  }
+  return { ...fallback, ...preferred, metadata };
+}
+
+function compareChatMessages(left: ChatMessage, right: ChatMessage) {
+  const leftTime = left.createdAt ? new Date(left.createdAt).getTime() : 0;
+  const rightTime = right.createdAt ? new Date(right.createdAt).getTime() : 0;
+  if (leftTime !== rightTime) {
+    return leftTime - rightTime;
+  }
+  return Number(left.id ?? 0) - Number(right.id ?? 0);
 }

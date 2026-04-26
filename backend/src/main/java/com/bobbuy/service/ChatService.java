@@ -2,34 +2,48 @@ package com.bobbuy.service;
 
 import com.bobbuy.model.ChatMessage;
 import com.bobbuy.repository.ChatMessageRepository;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.util.UriUtils;
 
-import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class ChatService {
+    private static final int DEFAULT_CURSOR_LIMIT = 50;
+    private static final int MAX_CURSOR_LIMIT = 100;
     private static final DateTimeFormatter ISO_LOCAL_DATETIME = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private final ChatMessageRepository chatMessageRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final ChatDestinationResolver destinationResolver;
+    private final ChatRealtimePublisher chatRealtimePublisher;
+    private final ChatPersistenceWorker chatPersistenceWorker;
 
-    public ChatService(ChatMessageRepository chatMessageRepository, SimpMessagingTemplate messagingTemplate) {
+    public ChatService(
+        ChatMessageRepository chatMessageRepository,
+        ChatDestinationResolver destinationResolver,
+        ChatRealtimePublisher chatRealtimePublisher,
+        ChatPersistenceWorker chatPersistenceWorker
+    ) {
         this.chatMessageRepository = chatMessageRepository;
-        this.messagingTemplate = messagingTemplate;
+        this.destinationResolver = destinationResolver;
+        this.chatRealtimePublisher = chatRealtimePublisher;
+        this.chatPersistenceWorker = chatPersistenceWorker;
     }
 
-    @Transactional
     public ChatMessage sendMessage(ChatMessage message) {
+        if (message.getCreatedAt() == null) {
+            message.setCreatedAt(LocalDateTime.now());
+        }
         message.setMetadata(normalizeMetadata(message));
-        ChatMessage savedMessage = chatMessageRepository.save(message);
-        messagingTemplate.convertAndSend(resolveDestination(savedMessage), savedMessage);
-        return savedMessage;
+        chatRealtimePublisher.publish(message);
+        chatPersistenceWorker.persistAsync(message);
+        return message;
     }
 
     public List<ChatMessage> getOrderConversation(Long orderId) {
@@ -44,6 +58,30 @@ public class ChatService {
         return chatMessageRepository.findConversation(userA, userB);
     }
 
+    public ChatConversationSlice getOrderConversationSlice(Long orderId, Long beforeId, Integer limit) {
+        return buildSlice(beforeId, limit,
+            normalizedLimit -> beforeId == null
+                ? chatMessageRepository.findByOrderIdOrderByIdDesc(orderId, PageRequest.of(0, normalizedLimit + 1))
+                : chatMessageRepository.findByOrderIdAndIdLessThanOrderByIdDesc(orderId, beforeId, PageRequest.of(0, normalizedLimit + 1))
+        );
+    }
+
+    public ChatConversationSlice getTripConversationSlice(Long tripId, Long beforeId, Integer limit) {
+        return buildSlice(beforeId, limit,
+            normalizedLimit -> beforeId == null
+                ? chatMessageRepository.findByTripIdOrderByIdDesc(tripId, PageRequest.of(0, normalizedLimit + 1))
+                : chatMessageRepository.findByTripIdAndIdLessThanOrderByIdDesc(tripId, beforeId, PageRequest.of(0, normalizedLimit + 1))
+        );
+    }
+
+    public ChatConversationSlice getPrivateConversationSlice(String userA, String userB, Long beforeId, Integer limit) {
+        return buildSlice(beforeId, limit,
+            normalizedLimit -> beforeId == null
+                ? chatMessageRepository.findConversationPage(userA, userB, PageRequest.of(0, normalizedLimit + 1))
+                : chatMessageRepository.findConversationPageBefore(userA, userB, beforeId, PageRequest.of(0, normalizedLimit + 1))
+        );
+    }
+
     private Map<String, Object> normalizeMetadata(ChatMessage message) {
         Map<String, Object> metadata = message.getMetadata() == null
             ? new HashMap<>()
@@ -51,11 +89,12 @@ public class ChatService {
         metadata.putIfAbsent("source", "CHAT_WIDGET");
         metadata.putIfAbsent("auditVersion", "V14");
         metadata.putIfAbsent("operatorId", message.getSenderId());
-        metadata.putIfAbsent("conversationType", resolveConversationType(message));
+        metadata.putIfAbsent("conversationType", destinationResolver.resolveConversationType(message));
         metadata.putIfAbsent("orderId", message.getOrderId());
         metadata.putIfAbsent("tripId", message.getTripId());
         metadata.putIfAbsent("relatedOrderId", message.getOrderId());
         metadata.putIfAbsent("relatedTripId", message.getTripId());
+        metadata.putIfAbsent("clientMessageId", UUID.randomUUID().toString());
         if ("IMAGE".equalsIgnoreCase(message.getType())) {
             Object primaryUrl = metadata.get("attachmentUrl");
             if (primaryUrl == null && metadata.get("url") != null) {
@@ -72,37 +111,63 @@ public class ChatService {
                 metadata.putIfAbsent("publishedAt", ISO_LOCAL_DATETIME.format(message.getCreatedAt()));
             }
         }
+        addProductSnapshot(metadata, message);
         return metadata;
     }
 
-    private String resolveConversationType(ChatMessage message) {
-        if (message.getTripId() != null) {
-            return "TRIP";
+    private void addProductSnapshot(Map<String, Object> metadata, ChatMessage message) {
+        Object productId = metadata.get("productId");
+        Object productName = metadata.get("productName");
+        Object itemNumber = metadata.get("itemNumber");
+        Object visibilityStatus = metadata.get("visibilityStatus");
+        if (productId == null && productName == null && itemNumber == null) {
+            return;
         }
-        if (message.getOrderId() != null) {
-            return "ORDER";
-        }
-        return "PRIVATE";
+        String resolvedProductName = productName == null ? message.getContent() : String.valueOf(productName);
+        Map<String, Object> snapshot = new HashMap<>();
+        snapshot.put("productId", productId);
+        snapshot.put("productName", resolvedProductName);
+        snapshot.put("itemNumber", itemNumber);
+        snapshot.put("visibilityStatus", visibilityStatus);
+        snapshot.put("summary", buildProductSummary(resolvedProductName, itemNumber, visibilityStatus));
+        metadata.putIfAbsent("productSnapshot", snapshot);
     }
 
-    private String resolveDestination(ChatMessage message) {
-        String conversationType = resolveConversationType(message);
-        if ("TRIP".equals(conversationType) && message.getTripId() != null) {
-            return "/topic/trip/" + message.getTripId();
+    private String buildProductSummary(String productName, Object itemNumber, Object visibilityStatus) {
+        List<String> parts = new ArrayList<>();
+        if (productName != null && !productName.isBlank()) {
+            parts.add(productName);
         }
-        if ("ORDER".equals(conversationType) && message.getOrderId() != null) {
-            return "/topic/order/" + message.getOrderId();
+        if (itemNumber != null) {
+            parts.add("SKU " + itemNumber);
         }
-        String senderId = message.getSenderId();
-        String recipientId = message.getRecipientId();
-        if (senderId.compareTo(recipientId) > 0) {
-            String temp = senderId;
-            senderId = recipientId;
-            recipientId = temp;
+        if (visibilityStatus != null) {
+            parts.add(String.valueOf(visibilityStatus));
         }
-        return "/topic/private/"
-            + UriUtils.encodePathSegment(senderId, StandardCharsets.UTF_8)
-            + "/"
-            + UriUtils.encodePathSegment(recipientId, StandardCharsets.UTF_8);
+        return String.join(" · ", parts);
+    }
+
+    private ChatConversationSlice buildSlice(Long beforeId, Integer limit, CursorQuery cursorQuery) {
+        int normalizedLimit = normalizeLimit(limit);
+        List<ChatMessage> descendingMessages = cursorQuery.fetch(normalizedLimit);
+        boolean hasMore = descendingMessages.size() > normalizedLimit;
+        List<ChatMessage> page = hasMore
+            ? new ArrayList<>(descendingMessages.subList(0, normalizedLimit))
+            : new ArrayList<>(descendingMessages);
+        Collections.reverse(page);
+        Long nextCursor = hasMore && !page.isEmpty() ? page.get(0).getId() : null;
+        return new ChatConversationSlice(page, nextCursor, hasMore);
+    }
+
+    private int normalizeLimit(Integer limit) {
+        if (limit == null || limit < 1) {
+            return DEFAULT_CURSOR_LIMIT;
+        }
+        return Math.min(limit, MAX_CURSOR_LIMIT);
+    }
+
+    @FunctionalInterface
+    private interface CursorQuery {
+        List<ChatMessage> fetch(int normalizedLimit);
     }
 }
