@@ -11,7 +11,7 @@ app = FastAPI(title="BOBBuy OCR Service")
 
 # Initialize PaddleOCR with Japanese support
 # We use CPU by default to keep it compatible with most environments
-ocr = PaddleOCR(lang='japan', device='cpu', enable_mkldnn=False)
+ocr = PaddleOCR(lang='japan', device='cpu', enable_mkldnn=False, use_angle_cls=False, ocr_version='PP-OCRv3')
 
 class OCRRequest(BaseModel):
     image: str  # base64 encoded image
@@ -20,7 +20,11 @@ class OCRRequest(BaseModel):
 async def perform_ocr(request: OCRRequest):
     try:
         # Decode base64 image
-        image_data = base64.b64decode(request.image)
+        try:
+            image_data = base64.b64decode(request.image)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid base64: {str(e)}")
+
         image = Image.open(io.BytesIO(image_data)).convert('RGB')
         img_np = np.array(image)
         
@@ -30,20 +34,35 @@ async def perform_ocr(request: OCRRequest):
         # Format results
         output = []
         if result:
-            for res in result:
-                if res is None: continue
-                # In PaddleOCR 3.x/Paddlex, result might be a list of dicts
-                if isinstance(res, dict):
-                    texts = res.get('rec_texts', [])
-                    scores = res.get('rec_scores', [])
-                    for t, s in zip(texts, scores):
-                        output.append({"text": t, "confidence": float(s)})
-                else:
-                    # Legacy list-based result structure
-                    for line in res:
-                        text = line[1][0]
-                        conf = line[1][1]
-                        output.append({"text": text, "confidence": float(conf)})
+            if isinstance(result, list):
+                for res in result:
+                    if res is None: continue
+                    # Handle Paddlex OCRResult object or dict-like object
+                    if hasattr(res, 'get') or isinstance(res, dict) or 'paddlex' in str(type(res)).lower():
+                        res_dict = res if isinstance(res, dict) else (res.json() if hasattr(res, 'json') else vars(res))
+                        texts = res_dict.get('rec_texts', [])
+                        scores = res_dict.get('rec_scores', [])
+                        # Fallback for alternative structures
+                        if not texts and 'rec_res' in res_dict:
+                            texts = [item.get('text') for item in res_dict['rec_res']]
+                            scores = [item.get('score') for item in res_dict['rec_res']]
+                        
+                        for t, s in zip(texts, scores):
+                            output.append({"text": t, "confidence": float(s)})
+                    elif isinstance(res, list):
+                        # Legacy list-based result structure [[[box], [text, score]], ...]
+                        for line in res:
+                            if isinstance(line, (list, tuple)) and len(line) > 1:
+                                try:
+                                    text = line[1][0]
+                                    conf = line[1][1]
+                                    output.append({"text": text, "confidence": float(conf)})
+                                except: pass
+            elif isinstance(result, dict):
+                texts = result.get('rec_texts', [])
+                scores = result.get('rec_scores', [])
+                for t, s in zip(texts, scores):
+                    output.append({"text": t, "confidence": float(s)})
         
         return {"results": output}
     except Exception as e:

@@ -146,9 +146,11 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
               </p>
               <p className="ant-upload-text">{t('stock.ai_quick_add.drag_tip')}</p>
               <p className="ant-upload-hint">{t('stock.ai_quick_add.hint')}</p>
-              <Button type="primary" icon={<UploadOutlined />} style={{ marginTop: 16 }}>
-                {t('stock.ai_quick_add.select_btn')}
-              </Button>
+              <div style={{ pointerEvents: 'none' }}>
+                <Button type="primary" icon={<UploadOutlined />} style={{ marginTop: 16 }}>
+                  {t('stock.ai_quick_add.select_btn')}
+                </Button>
+              </div>
             </Upload.Dragger>
           </div>
         )}
@@ -161,7 +163,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
                 {currentStep === 1 && (
                   <span>
                     <FileSearchOutlined style={{ marginRight: 8 }} />
-                    OCR提取文本並由AI進行整理中...
+                    {t('stock.ai_quick_add.scanning_msg')}
                   </span>
                 )}
                 {currentStep === 2 && t('stock.ai_quick_add.researching_msg')}

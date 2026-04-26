@@ -54,23 +54,32 @@ public class LlmGateway {
         }
 
         try {
+            log.info("Calling OCR service at {}...", ocrUrl);
             Map<String, String> payload = Map.of("image", base64Image);
-            Map<String, Object> response = RestClient.create(ocrUrl)
+            
+            // Use a fresh RestClient and explicit URI
+            Map<String, Object> response = RestClient.builder()
+                    .baseUrl(ocrUrl)
+                    .build()
                     .post()
+                    .uri("/ocr")
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(payload)
                     .retrieve()
-                    .body(new ParameterizedTypeReference<>() {});
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() {});
 
             if (response != null && response.get("results") instanceof List<?> results) {
+                log.info("OCR service returned {} lines.", results.size());
                 return results.stream()
                         .filter(Map.class::isInstance)
                         .map(m -> (Map<String, Object>) m)
                         .map(m -> (String) m.get("text"))
                         .toList();
+            } else {
+                log.warn("OCR service returned invalid response format: {}", response);
             }
         } catch (Exception e) {
-            log.error("OCR Service call failed: {}", e.getMessage());
+            log.error("OCR Service call failed: {}", e.getMessage(), e);
         }
         return List.of();
     }

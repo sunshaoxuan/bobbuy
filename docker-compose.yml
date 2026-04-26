@@ -211,7 +211,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 4G
     networks:
       - bobbuy-net
 
