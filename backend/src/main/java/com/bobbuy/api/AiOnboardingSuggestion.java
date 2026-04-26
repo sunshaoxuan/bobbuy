@@ -31,6 +31,10 @@ public record AiOnboardingSuggestion(
     List<String> sourceDomains,
     List<String> rejectedSourceDomains,
     String sourcePolicyVersion,
-    AiOnboardingTrace trace
+    AiOnboardingTrace trace,
+    Double matchScore,
+    String semanticReasoning,
+    List<AiFieldDiff> fieldDiffs,
+    AiVerificationTarget verificationTarget
 ) {
 }

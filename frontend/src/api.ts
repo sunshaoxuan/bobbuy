@@ -852,6 +852,21 @@ export type AiOnboardingSuggestion = {
         resultDecision?: string;
         finalProductId?: string;
     };
+    matchScore?: number;
+    semanticReasoning?: string;
+    fieldDiffs?: {
+        field: string;
+        label: string;
+        oldValue?: string;
+        newValue?: string;
+        different: boolean;
+        identityField: boolean;
+    }[];
+    verificationTarget?: {
+        productId: string;
+        displayName: string;
+        mediaGallery?: { url: string; title?: Record<string, string>; type: string; visible?: boolean; sourceUrl?: string; sourceDomain?: string; sourceType?: string }[];
+    };
 };
 
 export const api = {
