@@ -117,44 +117,55 @@ public class AiProductOnboardingService {
             log.warn("Onboarding failed [VALIDATION]: image data is blank after normalization.");
             throw new AiOnboardingPipelineException("VALIDATION", "error.ai.invalid_image", "Image data is blank after normalization");
         }
-        // 1. Vision Extract (Edge Node - configured vision model)
-        log.info("Phase 1: Dispatching to configured vision model...");
-        String prompt = """
-            你是一个专业的全球商品AI识别助手。请仔细分析这张商品图片（可能包含商品本身、价格标签、货架标签等），提取关键商品信息，并以JSON格式输出。
-            
-            === 提取原则 ===
-            1. 【商品名称】(name): 提取图片中最显著的商品名称。如果有多语言（如英文、日文等），请尽量全部提取并完整保留。
-            2. 【品牌】(brand): 提取商品的品牌名称、产地或制造商名称（如未标明可留空）。
-            3. 【货号/SKU】(itemNumber): 提取用于库存追踪的内部商品编码（如 Item, SKU, 品番等标示的数字或字母组合）。
-               ⚠️ 警告：绝对不能把商品的重量（如 705g）、容量（如 500ml）、尺寸、条形码（通常为13位）等物理属性数值误认为货号！如果图片上没有明确标示类似于SKU/Item Number的编码，请留空。
-            4. 【价格】(basePrice): 提取商品的标准零售总价，只需输出纯数字（如有多币种或多个价格，取最显著的最终结算总价）。
-            5. 【规格/净含量】(netWeight): 提取商品的重量、容量、尺寸或包装数量（如 705g, 1.5L, 2-pack）。
-            6. 【单价/单位价格】(pricePerUnit): 如果标签上标明了每单位的单价（如 498円/100g, $5/lb），请提取。
-            
-            === 输出格式 ===
-            {
-              "name": "完整商品名",
-              "brand": "品牌名",
-              "itemNumber": "货号/SKU字符串（如未明确标明，必须留空字符串）",
-              "basePrice": 价格数字,
-              "pricePerUnit": "单价字符串",
-              "netWeight": "规格字符串",
-              "priceTiers": []
-            }
-            
-            只输出JSON对象，不要有任何多余的解释文字。
-            """;
-
-
-        Optional<String> visionResponse = llmGateway.generate(prompt, null, List.of(normalizedBase64Image));
-        if (visionResponse.isEmpty()) {
-            log.error("Onboarding failed [AI_RECOGNITION]: vision model returned empty response.");
-            throw new AiOnboardingPipelineException("AI_RECOGNITION", "error.ai.recognition_failed", "Vision model returned empty response");
+        // 1. OCR Extract (Local Python Service)
+        log.info("Phase 1: Dispatching to PaddleOCR service...");
+        List<String> ocrLines = llmGateway.performOcr(normalizedBase64Image);
+        
+        if (ocrLines.isEmpty()) {
+            log.error("Onboarding failed [OCR_FAILURE]: OCR service returned no text.");
+            throw new AiOnboardingPipelineException("OCR_FAILURE", "error.ai.ocr_failed", "Failed to extract text from image");
         }
-        log.info("Phase 1 Success: Vision extraction complete. Raw JSON length: {}", visionResponse.get().length());
+        
+        String rawOcrText = String.join("\n", ocrLines);
+        log.info("Phase 1 Success: OCR complete. Extracted {} lines.", ocrLines.size());
+
+        // 2. LLM Logical Mapping (High Reasoning Model - e.g. Qwen3)
+        log.info("Phase 2: Dispatching raw text to LLM for entity mapping...");
+        String prompt = String.format("""
+            你是一個專業的商品數據分析助手。請分析以下從商品圖片中提取的原始OCR文本，並將其整理成結構化JSON。
+
+            === 原始OCR文本 ===
+            %s
+
+            === 提取原則 ===
+            1. 【商品名稱】(name): 提取最顯著的完整商品名稱。
+            2. 【品牌】(brand): 提取品牌、商標或製造商。
+            3. 【貨號/SKU】(itemNumber): 尋找如 "品番", "Item No", "SKU", "Part No" 等標識後的編碼。
+               ⚠️ 警告：嚴禁將重量（如 705g）、容量、條形碼或價格誤認位貨號。若無明確貨號標識，請留空字符串。
+            4. 【價格】(basePrice): 提取最終結算總價，僅輸出數字。
+            5. 【規格/淨含量】(netWeight): 提取重量、容量或包裝規格（如 705g, 500ml, 2支裝）。
+            6. 【單價】(pricePerUnit): 提取每單位價格（如 498円/100g）。
+
+            === 輸出格式 ===
+            只輸出JSON對象，不要有任何解釋。格式：
+            {
+              "name": "...",
+              "brand": "...",
+              "itemNumber": "...",
+              "basePrice": 0.0,
+              "pricePerUnit": "...",
+              "netWeight": "..."
+            }
+            """, rawOcrText);
+
+        Optional<String> llmResponse = llmGateway.generate(prompt, null, null);
+        if (llmResponse.isEmpty()) {
+            log.error("Onboarding failed [AI_RECOGNITION]: LLM returned empty response.");
+            throw new AiOnboardingPipelineException("AI_RECOGNITION", "error.ai.recognition_failed", "LLM failed to map entities");
+        }
 
         try {
-            String rawResponse = visionResponse.get();
+            String rawResponse = llmResponse.get();
             // Strip <think>...</think> from reasoning models (e.g. qwen3)
             rawResponse = rawResponse.replaceAll("(?s)<think>.*?</think>", "").trim();
             // Ollama sometimes returns HTML error pages (e.g. 502/503) for very large images

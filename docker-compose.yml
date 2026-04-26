@@ -175,6 +175,7 @@ services:
       BOBBUY_AI_LLM_EDGE_URL: ${BOBBUY_AI_LLM_EDGE_URL}
       BOBBUY_AI_LLM_MAIN_MODEL: ${BOBBUY_AI_LLM_MAIN_MODEL}
       BOBBUY_AI_LLM_EDGE_MODEL: ${BOBBUY_AI_LLM_EDGE_MODEL}
+      BOBBUY_OCR_URL: ${BOBBUY_OCR_URL}
     depends_on:
       postgres:
         condition: service_healthy
@@ -197,6 +198,20 @@ services:
       resources:
         limits:
           memory: 1G
+    networks:
+      - bobbuy-net
+
+  ocr-service:
+    build:
+      context: ./bobbuy-ocr
+    container_name: bobbuy-ocr-service
+    restart: always
+    environment:
+      PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK: "True"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     networks:
       - bobbuy-net
 

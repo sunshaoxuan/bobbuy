@@ -28,17 +28,51 @@ public class LlmGateway {
     // Edge Node (Local) - Low latency, Vision/OCR
     private final String edgeUrl;
     private final String edgeModel;
+    private final String ocrUrl;
 
     public LlmGateway(ObjectMapper objectMapper,
                       @Value("${bobbuy.ai.llm.main.url:}") String mainUrl,
                       @Value("${bobbuy.ai.llm.main.model:qwen3:14b}") String mainModel,
                       @Value("${bobbuy.ai.llm.edge.url:}") String edgeUrl,
-                      @Value("${bobbuy.ai.llm.edge.model:llava}") String edgeModel) {
+                      @Value("${bobbuy.ai.llm.edge.model:llava}") String edgeModel,
+                      @Value("${bobbuy.ocr.url:}") String ocrUrl) {
         this.objectMapper = objectMapper;
         this.mainUrl = mainUrl;
         this.mainModel = mainModel;
         this.edgeUrl = edgeUrl;
         this.edgeModel = edgeModel;
+        this.ocrUrl = ocrUrl;
+    }
+
+    /**
+     * Calls the dedicated Python OCR service.
+     */
+    public List<String> performOcr(String base64Image) {
+        if (ocrUrl == null || ocrUrl.isBlank()) {
+            log.warn("OCR service URL is not configured.");
+            return List.of();
+        }
+
+        try {
+            Map<String, String> payload = Map.of("image", base64Image);
+            Map<String, Object> response = RestClient.create(ocrUrl)
+                    .post()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(payload)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<>() {});
+
+            if (response != null && response.get("results") instanceof List<?> results) {
+                return results.stream()
+                        .filter(Map.class::isInstance)
+                        .map(m -> (Map<String, Object>) m)
+                        .map(m -> (String) m.get("text"))
+                        .toList();
+            }
+        } catch (Exception e) {
+            log.error("OCR Service call failed: {}", e.getMessage());
+        }
+        return List.of();
     }
 
     public Optional<List<Map<String, Object>>> parseItems(String text) {
