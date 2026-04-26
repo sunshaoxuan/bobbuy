@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.stream.LongStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
@@ -112,7 +113,7 @@ class ChatServiceTest {
         assertEquals(2, secondSlice.messages().size());
         assertEquals("message-1", secondSlice.messages().get(0).getContent());
         assertEquals("message-2", secondSlice.messages().get(1).getContent());
-        assertTrue(!secondSlice.hasMore());
+        assertFalse(secondSlice.hasMore());
     }
 
     private void assertPersistedMessageCount(int expectedCount) {

@@ -55,6 +55,7 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
       reconnectDelay = 250;
       client.configure({ reconnectDelay });
       if (client.active) {
+        // Network switches often leave the existing socket half-open, so force a fresh STOMP session.
         void client.deactivate().finally(() => client.activate());
         return;
       }

@@ -1103,13 +1103,13 @@ function preserveOlderMessages(currentMessages: ChatMessage[], previousCursor: n
 }
 
 function preferSyncedMessage(left: ChatMessage, right: ChatMessage) {
-  if (left.id && !right.id) {
-    return { ...right, ...left, metadata: { ...right.metadata, ...left.metadata } };
+  const preferred = left.id && !right.id ? left : right.id && !left.id ? right : right;
+  const fallback = preferred === left ? right : left;
+  const metadata = { ...fallback.metadata, ...preferred.metadata };
+  if (preferred.id && !fallback.id && preferred.metadata?.deliveryState == null) {
+    delete metadata.deliveryState;
   }
-  if (right.id && !left.id) {
-    return { ...left, ...right, metadata: { ...left.metadata, ...right.metadata } };
-  }
-  return { ...left, ...right, metadata: { ...left.metadata, ...right.metadata } };
+  return { ...fallback, ...preferred, metadata };
 }
 
 function compareChatMessages(left: ChatMessage, right: ChatMessage) {
