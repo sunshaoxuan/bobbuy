@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ChatMessage } from '../api';
 
+const PERSISTENCE_DEBOUNCE_MS = 300;
+
 type PersistedChatState = {
   messages: ChatMessage[];
   pendingMessages: ChatMessage[];
@@ -27,7 +29,7 @@ export function useChatPersistence(conversationKey: string) {
   useEffect(() => {
     const handle = window.setTimeout(() => {
       window.localStorage.setItem(storageKey, JSON.stringify(state));
-    }, 300);
+    }, PERSISTENCE_DEBOUNCE_MS);
     return () => window.clearTimeout(handle);
   }, [state, storageKey]);
 

@@ -1106,7 +1106,7 @@ function preferSyncedMessage(left: ChatMessage, right: ChatMessage) {
   const preferred = left.id && !right.id ? left : right.id && !left.id ? right : right;
   const fallback = preferred === left ? right : left;
   const metadata = { ...fallback.metadata, ...preferred.metadata };
-  if (preferred.id && !fallback.id && preferred.metadata?.deliveryState == null) {
+  if (preferred.id && !fallback.id && (preferred.metadata?.deliveryState === null || preferred.metadata?.deliveryState === undefined)) {
     delete metadata.deliveryState;
   }
   return { ...fallback, ...preferred, metadata };

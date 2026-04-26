@@ -19,6 +19,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final String brokerRelayPasscode;
     private final long heartbeatSendIntervalMs;
     private final long heartbeatReceiveIntervalMs;
+    private final TaskScheduler chatMessageBrokerTaskScheduler;
 
     public WebSocketConfig(
         @Value("${bobbuy.websocket.broker-relay.enabled:false}") boolean brokerRelayEnabled,
@@ -36,6 +37,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         this.brokerRelayPasscode = brokerRelayPasscode;
         this.heartbeatSendIntervalMs = heartbeatSendIntervalMs;
         this.heartbeatReceiveIntervalMs = heartbeatReceiveIntervalMs;
+        this.chatMessageBrokerTaskScheduler = createMessageBrokerTaskScheduler();
     }
 
     @Override
@@ -55,7 +57,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         }
         registry.enableSimpleBroker("/topic", "/queue")
             .setHeartbeatValue(new long[]{heartbeatSendIntervalMs, heartbeatReceiveIntervalMs})
-            .setTaskScheduler(messageBrokerTaskScheduler());
+            .setTaskScheduler(chatMessageBrokerTaskScheduler);
     }
 
     @Override
@@ -63,7 +65,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws").setAllowedOriginPatterns("*");
     }
 
-    private TaskScheduler messageBrokerTaskScheduler() {
+    private TaskScheduler createMessageBrokerTaskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.setPoolSize(1);
         scheduler.setThreadNamePrefix("chat-ws-heartbeat-");

@@ -123,12 +123,13 @@ public class ChatService {
         if (productId == null && productName == null && itemNumber == null) {
             return;
         }
+        String resolvedProductName = productName == null ? message.getContent() : String.valueOf(productName);
         Map<String, Object> snapshot = new HashMap<>();
         snapshot.put("productId", productId);
-        snapshot.put("productName", productName == null ? message.getContent() : productName);
+        snapshot.put("productName", resolvedProductName);
         snapshot.put("itemNumber", itemNumber);
         snapshot.put("visibilityStatus", visibilityStatus);
-        snapshot.put("summary", buildProductSummary(productName == null ? message.getContent() : String.valueOf(productName), itemNumber, visibilityStatus));
+        snapshot.put("summary", buildProductSummary(resolvedProductName, itemNumber, visibilityStatus));
         metadata.putIfAbsent("productSnapshot", snapshot);
     }
 

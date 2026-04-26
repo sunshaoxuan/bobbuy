@@ -13,6 +13,7 @@ interface UseChatWebSocketOptions {
 }
 
 export function useChatWebSocket({ enabled, destination, onConnect, onMessage }: UseChatWebSocketOptions) {
+  const INITIAL_RECONNECT_DELAY_MS = 1000;
   const onConnectRef = useRef(onConnect);
   const onMessageRef = useRef(onMessage);
 
@@ -28,10 +29,10 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
 
     let subscription: ReturnType<Client['subscribe']> | undefined;
     let hasConnected = false;
-    let reconnectDelay = 1000;
+    let currentReconnectDelay = INITIAL_RECONNECT_DELAY_MS;
     const client = new Client({
       brokerURL: buildWebSocketUrl(),
-      reconnectDelay,
+      reconnectDelay: currentReconnectDelay,
       heartbeatIncoming: 5000,
       heartbeatOutgoing: 5000,
       debug: () => undefined,
@@ -40,20 +41,20 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
         subscription = client.subscribe(destination, () => {
           onMessageRef.current?.();
         });
-        reconnectDelay = 1000;
-        client.configure({ reconnectDelay });
+        currentReconnectDelay = INITIAL_RECONNECT_DELAY_MS;
+        client.configure({ reconnectDelay: currentReconnectDelay });
         onConnectRef.current?.({ reconnected: hasConnected });
         hasConnected = true;
       },
       onWebSocketClose: () => {
-        reconnectDelay = Math.min(reconnectDelay * 2, 5000);
-        client.configure({ reconnectDelay });
+        currentReconnectDelay = Math.min(currentReconnectDelay * 2, 5000);
+        client.configure({ reconnectDelay: currentReconnectDelay });
       }
     });
 
     const handleOnline = () => {
-      reconnectDelay = 250;
-      client.configure({ reconnectDelay });
+      currentReconnectDelay = 250;
+      client.configure({ reconnectDelay: currentReconnectDelay });
       if (client.active) {
         // Network switches often leave the existing socket half-open, so force a fresh STOMP session.
         void client.deactivate().finally(() => client.activate());
