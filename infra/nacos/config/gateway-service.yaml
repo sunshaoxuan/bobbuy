@@ -1,6 +1,31 @@
 spring:
   cloud:
     gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: auth-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**
+        - id: ai-route
+          uri: lb://ai-service
+          predicates:
+            - Path=/api/ai/**
+        - id: im-route
+          uri: lb://im-service
+          predicates:
+            - Path=/api/im/**, /api/chat/**
+        - id: core-route
+          uri: lb://core-service
+          predicates:
+            - Path=/api/**
+        - id: ws-route
+          uri: lb://im-service
+          predicates:
+            - Path=/ws/**
       httpclient:
         connect-timeout: 5000
-        response-timeout: 10s
+        response-timeout: 30s
