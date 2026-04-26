@@ -24,6 +24,15 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
   const lowConfidence = (suggestion?.matchScore ?? 100) < 70;
   const historicalImage = suggestion?.verificationTarget?.mediaGallery?.find((item) => item.type === 'IMAGE' || item.type === 'image')?.url;
 
+  React.useEffect(() => {
+    if (visible) {
+      setCurrentStep(0);
+      setLoading(false);
+      setFileList([]);
+      setSuggestion(null);
+    }
+  }, [visible]);
+
   const handleUpload = async (file: RcFile) => {
     setLoading(true);
     setCurrentStep(1); 

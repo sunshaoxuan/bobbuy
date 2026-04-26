@@ -1,9 +1,15 @@
 server:
   port: ${SERVER_PORT:8082}
+  tomcat:
+    max-http-form-post-size: 50MB
 
 spring:
   application:
     name: ai-service
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   config:
     import: optional:nacos:bobbuy-infra.yaml,optional:nacos:ai-service.yaml
   cloud:
