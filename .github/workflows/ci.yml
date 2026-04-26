@@ -19,7 +19,6 @@ jobs:
       - name: Lint Markdown
         run: |
           echo "Checking documentation standards compliant with STD-02..."
-          # 这里未来可以集成 markdown-lint
           
   backend-build:
     runs-on: ubuntu-latest
@@ -33,6 +32,8 @@ jobs:
           cache: maven
       - name: Build backend
         run: mvn -B package --file backend/pom.xml
+      - name: Docker Build Backend (Validation)
+        run: docker build backend -t bobbuy-backend-test
 
   frontend-build:
     runs-on: ubuntu-latest
@@ -46,3 +47,5 @@ jobs:
         run: npm install --prefix frontend
       - name: Build frontend
         run: npm run build --prefix frontend
+      - name: Docker Build Frontend (Validation)
+        run: docker build frontend -t bobbuy-frontend-test
