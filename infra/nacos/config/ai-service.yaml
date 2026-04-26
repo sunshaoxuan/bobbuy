@@ -1,0 +1,17 @@
+bobbuy:
+  ai:
+    remote:
+      enabled: false
+    llm:
+      main:
+        url: ${BOBBUY_AI_LLM_MAIN_URL:http://ccnode.briconbric.com:22545}
+      edge:
+        url: ${BOBBUY_AI_LLM_EDGE_URL:http://192.168.20.218:11434}
+  persistence:
+    schema: public
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        default_schema: public

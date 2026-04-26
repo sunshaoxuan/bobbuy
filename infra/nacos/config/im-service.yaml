@@ -1,0 +1,16 @@
+bobbuy:
+  websocket:
+    broker-relay:
+      enabled: true
+      host: rabbitmq
+      port: 61613
+      login: bobbuy
+      passcode: bobbuypassword
+  persistence:
+    schema: public
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        default_schema: public

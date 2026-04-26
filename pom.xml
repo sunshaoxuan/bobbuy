@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.2.4</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.bobbuy</groupId>
+  <artifactId>bobbuy-parent</artifactId>
+  <version>0.1.0</version>
+  <packaging>pom</packaging>
+  <name>BOBBuy Parent</name>
+  <description>Multi-module Spring Cloud build for BOBBuy.</description>
+
+  <modules>
+    <module>bobbuy-common</module>
+    <module>bobbuy-core</module>
+    <module>bobbuy-ai</module>
+    <module>bobbuy-im</module>
+    <module>bobbuy-auth</module>
+    <module>bobbuy-gateway</module>
+  </modules>
+
+  <properties>
+    <java.version>17</java.version>
+    <spring-cloud.version>2023.0.1</spring-cloud.version>
+    <spring-cloud-alibaba.version>2023.0.1.0</spring-cloud-alibaba.version>
+    <resilience4j.version>2.2.0</resilience4j.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${spring-cloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.alibaba.cloud</groupId>
+        <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+        <version>${spring-cloud-alibaba.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.github.resilience4j</groupId>
+        <artifactId>resilience4j-bom</artifactId>
+        <version>${resilience4j.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>

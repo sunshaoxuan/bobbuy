@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/bobbuy
+    username: bobbuy
+    password: bobbuypassword
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+  data:
+    redis:
+      host: redis
+      port: 6379
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: bobbuy
+    password: bobbuypassword
+
+bobbuy:
+  minio:
+    endpoint: http://minio:9000
+    accessKey: bobbuyadmin
+    secretKey: bobbuypassword
+    bucket: bobbuy-media
+  security:
+    default-role: CUSTOMER
+
+logging:
+  level:
+    com.bobbuy: INFO
+    org.springframework: WARN
