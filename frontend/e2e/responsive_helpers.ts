@@ -43,6 +43,7 @@ export async function setCustomerContext(page: Page) {
     window.localStorage.setItem('bobbuy_user_role', 'CUSTOMER');
     window.localStorage.setItem('bobbuy_test_role', 'CUSTOMER');
     window.localStorage.setItem('bobbuy_test_user', '1001');
+    window.localStorage.setItem('bobbuy_disable_chat_websocket', 'true');
   });
 }
 
@@ -52,6 +53,7 @@ export async function setAgentContext(page: Page) {
     window.localStorage.setItem('bobbuy_user_role', 'AGENT');
     window.localStorage.setItem('bobbuy_test_role', 'AGENT');
     window.localStorage.setItem('bobbuy_test_user', '1000');
+    window.localStorage.setItem('bobbuy_disable_chat_websocket', 'true');
   });
 }
 

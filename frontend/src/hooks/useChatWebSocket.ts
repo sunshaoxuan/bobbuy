@@ -14,7 +14,7 @@ interface UseChatWebSocketOptions {
 
 export function useChatWebSocket({ enabled, destination, onConnect, onMessage }: UseChatWebSocketOptions) {
   useEffect(() => {
-    if (!enabled || !destination || typeof window === 'undefined') {
+    if (!enabled || !destination || typeof window === 'undefined' || !isChatWebSocketAllowed()) {
       return;
     }
 
@@ -48,4 +48,8 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
 function buildWebSocketUrl() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${window.location.host}/ws`;
+}
+
+function isChatWebSocketAllowed() {
+  return window.localStorage.getItem('bobbuy_disable_chat_websocket') !== 'true';
 }
