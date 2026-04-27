@@ -140,6 +140,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
               beforeUpload={handleUpload}
               showUploadList={false}
               multiple={false}
+              disabled={loading}
             >
               <p className="ant-upload-drag-icon">
                 <CameraOutlined style={{ fontSize: 48, color: '#1890ff' }} />

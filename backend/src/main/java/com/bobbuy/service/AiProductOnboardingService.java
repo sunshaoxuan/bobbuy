@@ -127,7 +127,7 @@ public class AiProductOnboardingService {
         }
         
         String rawOcrText = String.join("\n", ocrLines);
-        log.info("Phase 1 Success: OCR complete. Extracted {} lines.", ocrLines.size());
+        log.info("Phase 1 Success: OCR complete. Extracted {} lines. Raw text: {}", ocrLines.size(), rawOcrText);
 
         // 2. LLM Logical Mapping (High Reasoning Model - e.g. Qwen3)
         log.info("Phase 2: Dispatching raw text to LLM for entity mapping...");
@@ -326,11 +326,6 @@ public class AiProductOnboardingService {
                         ));
                     }
                 }
-            }
-
-            log.info("Final Synthesis: Suggestion generated successfully for product: '{}'", name);
-            if (detectedTiers.size() > 0) {
-                log.info("Price Tiers Extracted: {} tiers found.", detectedTiers.size());
             }
 
             String resultDecision = existingFound ? "EXISTING_PRODUCT" : "NEW_PRODUCT";

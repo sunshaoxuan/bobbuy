@@ -134,7 +134,12 @@ services:
     environment:
       SERVER_PORT: 8081
       NACOS_SERVER_ADDR: nacos:8848
-      BOBBUY_SEED_ENABLED: ${BOBBUY_SEED_ENABLED:-false}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bobbuy
+      SPRING_DATASOURCE_USERNAME: bobbuy
+      SPRING_DATASOURCE_PASSWORD: bobbuypassword
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      BOBBUY_SEED_ENABLED: "false"
     depends_on:
       postgres:
         condition: service_healthy
@@ -171,6 +176,12 @@ services:
     environment:
       SERVER_PORT: 8082
       NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bobbuy
+      SPRING_DATASOURCE_USERNAME: bobbuy
+      SPRING_DATASOURCE_PASSWORD: bobbuypassword
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      BOBBUY_SEED_ENABLED: "false"
       BOBBUY_AI_LLM_MAIN_URL: ${BOBBUY_AI_LLM_MAIN_URL}
       BOBBUY_AI_LLM_EDGE_URL: ${BOBBUY_AI_LLM_EDGE_URL}
       BOBBUY_AI_LLM_MAIN_MODEL: ${BOBBUY_AI_LLM_MAIN_MODEL}
@@ -226,6 +237,12 @@ services:
     environment:
       SERVER_PORT: 8083
       NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bobbuy
+      SPRING_DATASOURCE_USERNAME: bobbuy
+      SPRING_DATASOURCE_PASSWORD: bobbuypassword
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      BOBBUY_SEED_ENABLED: "false"
     depends_on:
       postgres:
         condition: service_healthy
@@ -258,6 +275,12 @@ services:
     environment:
       SERVER_PORT: 8084
       NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bobbuy
+      SPRING_DATASOURCE_USERNAME: bobbuy
+      SPRING_DATASOURCE_PASSWORD: bobbuypassword
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      BOBBUY_SEED_ENABLED: "false"
     depends_on:
       nacos:
         condition: service_healthy
