@@ -57,6 +57,14 @@ public class MobileProductController {
         return ResponseEntity.ok(ApiResponse.success(toResponse(updated, locale)));
     }
 
+    @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
+        if (store.deleteProduct(id)) {
+            return ResponseEntity.ok(ApiResponse.success(null));
+        }
+        throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.product.not_found");
+    }
+
     private MobileProductResponse toResponse(Product product, Locale locale) {
         if (product == null) return null;
         String displayName = localizedJsonbReaderService.read(product.getName() != null ? product.getName() : java.util.Collections.emptyMap(), locale);

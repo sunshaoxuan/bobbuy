@@ -88,17 +88,20 @@ public class AiProductOnboardingService {
     private final AiSearchService aiSearchService;
     private final WebSearchService webSearchService;
     private final ProductRepository productRepository;
+    private final com.bobbuy.repository.SupplierRepository supplierRepository;
     private final ObjectMapper objectMapper;
 
     public AiProductOnboardingService(LlmGateway llmGateway,
                                      AiSearchService aiSearchService,
                                      WebSearchService webSearchService,
                                      ProductRepository productRepository,
+                                     com.bobbuy.repository.SupplierRepository supplierRepository,
                                      ObjectMapper objectMapper) {
         this.llmGateway = llmGateway;
         this.aiSearchService = aiSearchService;
         this.webSearchService = webSearchService;
         this.productRepository = productRepository;
+        this.supplierRepository = supplierRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -120,14 +123,50 @@ public class AiProductOnboardingService {
         // 1. OCR Extract (Local Python Service)
         log.info("Phase 1: Dispatching to PaddleOCR service...");
         List<String> ocrLines = llmGateway.performOcr(normalizedBase64Image);
-        
+
         if (ocrLines.isEmpty()) {
             log.error("Onboarding failed [OCR_FAILURE]: OCR service returned no text.");
             throw new AiOnboardingPipelineException("OCR_FAILURE", "error.ai.ocr_failed", "Failed to extract text from image");
         }
-        
+
         String rawOcrText = String.join("\n", ocrLines);
         log.info("Phase 1 Success: OCR complete. Extracted {} lines. Raw text: {}", ocrLines.size(), rawOcrText);
+
+        // Pre-scan OCR for known item numbers (Costco 5-6 digits)
+        List<Product> ocrMatchedProducts = new ArrayList<>();
+        Pattern itemPattern = Pattern.compile("\\b(\\d{5,6})\\b");
+        for (String line : ocrLines) {
+            Matcher m = itemPattern.matcher(line);
+            while (m.find()) {
+                String candidate = m.group(1);
+                productRepository.findByItemNumber(candidate).ifPresent(ocrMatchedProducts::add);
+            }
+        }
+
+        String historicalContext = ocrMatchedProducts.stream()
+            .map(p -> String.format("歷史檔案：货号 %s, 名称 %s, 品牌 %s",
+                p.getItemNumber(),
+                p.getName().getOrDefault("zh-CN", p.getId()),
+                p.getBrand()))
+            .distinct()
+            .collect(Collectors.joining("\n"));
+
+        if (!historicalContext.isEmpty()) {
+            log.info("Phase 1.5: Found {} potential historical matches in OCR text.", ocrMatchedProducts.size());
+        }
+
+        // Fetch all merchant-specific rules
+        String merchantRules = supplierRepository.findAll().stream()
+            .map(s -> {
+                String name = s.getName().getOrDefault("zh-CN", s.getId());
+                Map<String, Object> rules = s.getOnboardingRules();
+                if (rules == null || rules.isEmpty()) return null;
+                return String.format("【%s】規則：%s", name, rules.toString());
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining("\n"));
+
+        log.info("Phase 2: Active Merchant Rules: \n{}", merchantRules);
 
         // 2. LLM Logical Mapping (High Reasoning Model - e.g. Qwen3)
         log.info("Phase 2: Dispatching raw text to LLM for entity mapping...");
@@ -137,13 +176,21 @@ public class AiProductOnboardingService {
             === 原始OCR文本 ===
             %s
 
+            === 商家規範 (優先執行) ===
+            %s
+
+            === 歷史檔案 (供匹配參考) ===
+            %s
+
             === 提取原則 ===
             1. 【商品名稱】(name): 提取最顯著的完整商品名稱。
             2. 【品牌】(brand): 提取品牌、商標或製造商。
-            3. 【貨號/SKU】(itemNumber): 尋找如 "品番", "Item No", "SKU", "Part No" 等標識後的編碼。
-               ⚠️ 警告：嚴禁將重量（如 705g）、容量、條形碼或價格誤認位貨號。若無明確貨號標識，請留空字符串。
+            3. 【貨號/品番】(itemNumber): 優先根據【商家規範】識別。如果沒有明確標籤，請在文本中尋找符合規範格式的編號。對於Costco商品，品番通常是5位或6位數字。
+               - 優先尋找 "品番", "Item No", "SKU", "Part No" 等標識後的編碼。
+               - 若標識缺失，請參考上面的 [商家規範] 和 [歷史檔案] 進行判斷。
+               - ⚠️ 警告：嚴禁將重量（如 705g）、單價（如 498/100g）或條形碼誤認為貨號。
             4. 【價格】(basePrice): 提取最終結算總價，僅輸出數字。
-            5. 【規格/淨含量】(netWeight): 提取重量、容量或包裝規格（如 705g, 500ml, 2支裝）。
+            5. 【規格/淨含量】(netWeight): 提取重量、容量或包裝規格（如 705g, 500ml, 支裝）。
             6. 【單價】(pricePerUnit): 提取每單位價格（如 498円/100g）。
 
             === 輸出格式 ===
@@ -154,9 +201,10 @@ public class AiProductOnboardingService {
               "itemNumber": "...",
               "basePrice": 0.0,
               "pricePerUnit": "...",
-              "netWeight": "..."
+              "netWeight": "...",
+              "description": "簡短描述，包含你發現的關鍵特徵（如貨號、品牌、價格等）"
             }
-            """, rawOcrText);
+            """, rawOcrText, merchantRules, historicalContext);
 
         Optional<String> llmResponse = llmGateway.generate(prompt, null, null);
         if (llmResponse.isEmpty()) {
@@ -196,13 +244,14 @@ public class AiProductOnboardingService {
             String name = stringValue(extracted.getOrDefault("name", "Unknown Product"));
             String brand = stringValue(extracted.get("brand"));
             String itemNumber = stringValue(extracted.get("itemNumber"));
+            String description = stringValue(extracted.get("description"));
             String categoryHint = firstNonBlank(stringValue(extracted.get("categoryId")), stringValue(extracted.get("category")));
             Double basePrice = extracted.get("basePrice") instanceof Number n ? n.doubleValue()
                     : extracted.get("price") instanceof Number n2 ? n2.doubleValue() : null;
             Map<String, String> extractedAttributes = extractStructuredAttributes(
                 extracted,
                 name,
-                firstNonBlank((String) extracted.get("description"), ""),
+                description,
                 categoryHint
             );
 
@@ -224,6 +273,34 @@ public class AiProductOnboardingService {
             } else {
                 log.info("Phase 2: Skipping incremental match (no itemNumber detected).");
             }
+
+            // ItemNumber Recovery Logic
+            if (itemNumber == null || itemNumber.isBlank() || itemNumber.length() < 5) {
+                // 1. Try to find in description (synthesized by LLM/Web)
+                if (description != null && !description.isBlank()) {
+                    Pattern p = Pattern.compile("(?:编号|货号|SKU|品番|Item No)[:：\\s]*(\\d{5,8})", Pattern.CASE_INSENSITIVE);
+                    Matcher m = p.matcher(description);
+                    if (m.find()) {
+                        itemNumber = m.group(1);
+                        log.info("Phase 4: Recovered itemNumber from description: {}", itemNumber);
+                    }
+                }
+                // 2. Try to find in OCR raw text (5-6 digit rule for Costco/Sam's)
+                if (itemNumber == null || itemNumber.isBlank() || itemNumber.length() < 5) {
+                    Pattern p = Pattern.compile("\\b(\\d{5,6})\\b");
+                    Matcher m = p.matcher(rawOcrText);
+                    while (m.find()) {
+                        String candidate = m.group(1);
+                        // Skip if it looks like price
+                        if (basePrice == null || !candidate.equals(String.valueOf(basePrice.intValue()))) {
+                            itemNumber = candidate;
+                            log.info("Phase 4: Recovered itemNumber from raw OCR (5-6 digit fallback): {}", itemNumber);
+                            break;
+                        }
+                    }
+                }
+            }
+
             if (verificationProduct == null) {
                 SimilarProductSelection similarSelection = findSimilarCandidates(name, brand, itemNumber, categoryHint);
                 similarCandidates = similarSelection.candidates();
@@ -287,12 +364,23 @@ public class AiProductOnboardingService {
             }
 
             // 4. Knowledge Synthesis (Cloud Core - Qwen)
-            String description = synthesize(name, brand, basePrice, rawResponse, researchSnippet);
+            String finalDescription = synthesize(name, brand, basePrice, rawResponse, researchSnippet);
+
+            // Final ItemNumber Mapping Recovery (from synthesis)
+            if (itemNumber == null || itemNumber.isBlank()) {
+                Pattern p = Pattern.compile("(?:编号|货号|SKU|品番|Item No)[:：\\s]*(\\d{5,8})", Pattern.CASE_INSENSITIVE);
+                Matcher m = p.matcher(finalDescription);
+                if (m.find()) {
+                    itemNumber = m.group(1);
+                    log.info("Phase 4: Recovered itemNumber from final synthesis: {}", itemNumber);
+                }
+            }
+
             VerificationAssessment verificationAssessment = verifyAgainstExistingProduct(
                 verificationProduct,
                 name,
                 brand,
-                description,
+                finalDescription,
                 categoryHint,
                 itemNumber,
                 basePrice,
@@ -306,7 +394,7 @@ public class AiProductOnboardingService {
                 verificationProduct,
                 name,
                 brand,
-                description,
+                finalDescription,
                 categoryHint,
                 itemNumber,
                 basePrice,
@@ -336,10 +424,11 @@ public class AiProductOnboardingService {
                 resultDecision,
                 null
             );
+
             return Optional.of(new AiOnboardingSuggestion(
                 name,
                 brand,
-                description,
+                finalDescription,
                 basePrice,
                 categoryHint,
                 itemNumber,

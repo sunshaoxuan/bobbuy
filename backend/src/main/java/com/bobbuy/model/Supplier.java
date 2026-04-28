@@ -28,6 +28,10 @@ public class Supplier {
 
     private String contactInfo;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> onboardingRules = new HashMap<>();
+
     public Supplier() {
     }
 
@@ -68,5 +72,13 @@ public class Supplier {
 
     public void setContactInfo(String contactInfo) {
         this.contactInfo = contactInfo;
+    }
+
+    public Map<String, Object> getOnboardingRules() {
+        return onboardingRules;
+    }
+
+    public void setOnboardingRules(Map<String, Object> onboardingRules) {
+        this.onboardingRules = onboardingRules;
     }
 }

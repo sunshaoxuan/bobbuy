@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Upload, Button, Steps, Result, Spin, message, Space, Typography, Alert, Card, Divider, Progress } from 'antd';
+import { Modal, Upload, Button, Steps, Result, Spin, message, Space, Typography, Alert, Card, Divider, Progress, Form, Input, InputNumber, Row, Col } from 'antd';
 import type { RcFile } from 'antd/es/upload';
 import { CameraOutlined, UploadOutlined, FileSearchOutlined, GlobalOutlined, CheckCircleOutlined, PictureOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { api, type AiOnboardingSuggestion } from '../api';
@@ -21,6 +21,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
   const [fileList, setFileList] = useState<any[]>([]);
 
   const [suggestion, setSuggestion] = useState<AiOnboardingSuggestion | null>(null);
+  const [form] = Form.useForm();
   const lowConfidence = (suggestion?.matchScore ?? 100) < 70;
   const historicalImage = suggestion?.verificationTarget?.mediaGallery?.find((item) => item.type === 'IMAGE' || item.type === 'image')?.url;
 
@@ -30,8 +31,9 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
       setLoading(false);
       setFileList([]);
       setSuggestion(null);
+      form.resetFields();
     }
-  }, [visible]);
+  }, [visible, form]);
 
   const handleUpload = (file: RcFile) => {
     setLoading(true);
@@ -44,6 +46,12 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
         // Inject the original photo into the suggestion
         const result = await api.onboardScan(base64, file.name);
         setSuggestion({ ...result, originalPhotoBase64: base64 });
+        form.setFieldsValue({
+          name: result.name,
+          brand: result.brand,
+          itemNumber: result.itemNumber,
+          price: result.price
+        });
         
         setCurrentStep(2);
         await new Promise(resolve => setTimeout(resolve, 800));
@@ -74,19 +82,26 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
   };
 
   const handleFinish = () => {
-    if (suggestion) {
-      onSuccess(suggestion);
-    }
+    form.validateFields().then((values) => {
+      if (suggestion) {
+        onSuccess({
+          ...suggestion,
+          ...values
+        });
+      }
+    });
   };
 
   const handleSaveAsNew = () => {
-    if (!suggestion) {
-      return;
-    }
-    onSuccess({
-      ...suggestion,
-      existingProductFound: false,
-      existingProductId: undefined,
+    form.validateFields().then((values) => {
+      if (suggestion) {
+        onSuccess({
+          ...suggestion,
+          ...values,
+          existingProductFound: false,
+          existingProductId: undefined,
+        });
+      }
     });
   };
 
@@ -116,7 +131,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
           onClick={handleFinish}
           disabled={Boolean(suggestion?.verificationTarget) && lowConfidence}
         >
-          {t('stock.master.edit_detail')}
+          {t('stock.master.publish')}
         </Button>
       ].filter(Boolean) : null}
       width={880}
@@ -268,17 +283,37 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
                 <Paragraph style={{ marginBottom: 0 }}>{suggestion.semanticReasoning}</Paragraph>
               </Card>
             ) : null}
+
+            <Card size="small" title={t('stock.ai_quick_add.identified_info')} style={{ marginBottom: 16 }}>
+              <Form form={form} layout="vertical">
+                <Row gutter={16}>
+                  <Col span={14}>
+                    <Form.Item name="name" label={t('stock.item.name')} rules={[{ required: true }]}>
+                      <Input placeholder={t('stock.item.name_input_placeholder')} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={10}>
+                    <Form.Item name="brand" label={t('stock.item.brand')}>
+                      <Input placeholder={t('stock.item.brand_placeholder')} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item name="itemNumber" label={t('stock.item.sku')}>
+                      <Input placeholder={t('stock.item.sku_placeholder')} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item name="price" label={t('stock.item.price')}>
+                      <InputNumber prefix="$" style={{ width: '100%' }} placeholder="0.00" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Form>
+            </Card>
+
             <Divider />
-            <Result
-              data-testid="ai-onboarding-result"
-              subTitle={
-                <span data-testid="ai-onboarding-result-subtitle" data-ai-status="SUCCESS">
-                  {t('stock.ai_quick_add.success_subtitle')}
-                </span>
-              }
-              status="success"
-              title={t('stock.ai_quick_add.success_title')}
-            />
           </>
         )}
       </div>

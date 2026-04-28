@@ -13,6 +13,7 @@ const DESKTOP_SIDER_EXPANDED_WIDTH = '14.5rem';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Trips = lazy(() => import('./pages/Trips'));
 const Users = lazy(() => import('./pages/Users'));
+const Suppliers = lazy(() => import('./pages/Suppliers'));
 const Orders = lazy(() => import('./pages/Orders'));
 const OrderDesk = lazy(() => import('./pages/OrderDesk'));
 const ProcurementHUD = lazy(() => import('./pages/ProcurementHUD'));
@@ -45,6 +46,7 @@ export default function App() {
         { key: '/procurement', label: <NavLink to="/procurement">{t('nav.procurement')}</NavLink> },
         { key: '/picking', label: <NavLink to="/picking">{t('nav.picking')}</NavLink> },
         { key: '/stock-master', label: <NavLink to="/stock-master">{t('nav.stock_master')}</NavLink> },
+        { key: '/suppliers', label: <NavLink to="/suppliers">{t('nav.suppliers')}</NavLink> },
         { key: '/users', label: <NavLink to="/users">{t('nav.users')}</NavLink> },
         { key: '/client/chat', label: <NavLink to="/client/chat">{t('nav.client_chat')}</NavLink> }
       ];
@@ -87,6 +89,7 @@ export default function App() {
       '/procurement': t('nav.procurement'),
       '/picking': t('nav.picking'),
       '/stock-master': t('nav.stock_master'),
+      '/suppliers': t('nav.suppliers'),
       '/users': t('nav.users')
     }),
     [t]
@@ -220,6 +223,14 @@ export default function App() {
                   element={
                     <ProtectedRoute allowedRoles={['AGENT']}>
                       <StockMaster />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/suppliers"
+                  element={
+                    <ProtectedRoute allowedRoles={['AGENT']}>
+                      <Suppliers />
                     </ProtectedRoute>
                   }
                 />

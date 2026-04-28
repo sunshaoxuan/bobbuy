@@ -123,6 +123,7 @@ export type MobileSupplier = {
     name: Record<string, string>;
     description?: Record<string, string>;
     contactInfo?: string;
+    onboardingRules?: Record<string, any>;
 };
 
 export type MobileProductResponse = {
@@ -914,6 +915,10 @@ export const api = {
         patchJson<Order[], { targetStatus: string }>(`/api/trips/${tripId}/orders/bulk-status`, { targetStatus }),
     stockCategories: () => fetchJson<MobileCategory[]>('/api/mobile/categories', fallback.stockCategories),
     suppliers: () => fetchJson<MobileSupplier[]>('/api/mobile/suppliers', []),
+    createSupplier: (supplier: MobileSupplier) =>
+        postJson<MobileSupplier, MobileSupplier>('/api/mobile/suppliers', supplier),
+    updateSupplier: (id: string, supplier: MobileSupplier) =>
+        putJson<MobileSupplier, MobileSupplier>(`/api/mobile/suppliers/${id}`, supplier),
     translate: (text: string, targetLocale: string) =>
         postJson<AiTranslateResponse, { text: string; targetLocale: string }>('/api/ai/translate', {
             text,
@@ -1125,7 +1130,14 @@ export const api = {
             { messages: [], nextCursor: null, hasMore: false }
         ),
     getPrivateChat: (userA: string, userB: string) =>
-        fetchJson<ChatMessage[]>(`/api/chat/private?userA=${userA}&userB=${userB}`, [])
+        fetchJson<ChatMessage[]>(`/api/chat/private?userA=${userA}&userB=${userB}`, []),
+    deleteProduct: (id: string) =>
+        fetch(`/api/mobile/products/${id}`, {
+            method: 'DELETE',
+            headers: createRequestHeaders()
+        }).then(res => {
+            if (!res.ok) throw new Error('Delete failed');
+        })
 };
 
 function buildChatCursorQuery(params?: { beforeId?: number; limit?: number }, hasExistingQuery = false) {

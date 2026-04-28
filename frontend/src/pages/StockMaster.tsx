@@ -310,8 +310,15 @@ export default function StockMaster() {
     setDataSource([...dataSource, newData]);
   };
 
-  const handleDelete = (key: string) => {
-    setDataSource(dataSource.filter((item) => item.key !== key));
+  const handleDelete = async (key: string) => {
+    try {
+      await api.deleteProduct(key);
+      setDataSource(dataSource.filter((item) => item.key !== key));
+      message.success(t('stock.msg.deleted'));
+    } catch (err) {
+      console.error('Delete failed:', err);
+      message.error(t('stock.msg.delete_failed'));
+    }
   };
 
   const handleFieldChange = (key: string, field: keyof StockItem, value: any) => {

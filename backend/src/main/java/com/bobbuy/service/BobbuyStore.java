@@ -36,6 +36,8 @@ import com.bobbuy.repository.TripLogisticsTrackingRepository;
 import com.bobbuy.repository.TripProfitShareConfigRepository;
 import com.bobbuy.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +60,7 @@ import org.springframework.security.core.Authentication;
 
 @Service
 public class BobbuyStore {
+    private static final Logger log = LoggerFactory.getLogger(BobbuyStore.class);
     private static final Long SYSTEM_USER_ID = 0L;
 
     private final UserRepository userRepository;
@@ -118,6 +121,10 @@ public class BobbuyStore {
 
     @Transactional
     public void seed() {
+        if (productRepository.count() > 0) {
+            log.info("Database already contains data, skipping seed.");
+            return;
+        }
         merchantSkuRepository.deleteAll();
         productRepository.deleteAll();
         supplierRepository.deleteAll();
@@ -463,6 +470,16 @@ public class BobbuyStore {
         return Optional.of(productRepository.save(existing));
     }
 
+    @Transactional
+    public boolean deleteProduct(String id) {
+        if (!productRepository.existsById(id)) {
+            return false;
+        }
+        merchantSkuRepository.deleteByProductId(id);
+        productRepository.deleteById(id);
+        return true;
+    }
+
     public List<Category> listCategories() {
         return categoryRepository.findAll();
     }
@@ -477,6 +494,22 @@ public class BobbuyStore {
 
     public Optional<Supplier> getSupplier(String id) {
         return supplierRepository.findById(id);
+    }
+
+    @Transactional
+    public Supplier saveSupplier(Supplier supplier) {
+        return supplierRepository.save(supplier);
+    }
+
+    @Transactional
+    public Optional<Supplier> updateSupplier(String id, Supplier supplier) {
+        return supplierRepository.findById(id).map(existing -> {
+            existing.setName(supplier.getName());
+            existing.setDescription(supplier.getDescription());
+            existing.setContactInfo(supplier.getContactInfo());
+            existing.setOnboardingRules(supplier.getOnboardingRules());
+            return supplierRepository.save(existing);
+        });
     }
 
     public List<MerchantSku> listMerchantSkus() {
