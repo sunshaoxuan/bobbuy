@@ -308,7 +308,6 @@ public class BobbuyStore {
         orderHeaderRepository.deleteAll();
         tripRepository.deleteAll();
         userRepository.deleteAll();
-        orderIdentity.set(3000L);
     }
 
     @PostConstruct

@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -290,12 +291,12 @@ public class AiProductOnboardingServiceTest {
           "category": "Food"
         }
         """;
-    String[] capturedPrompt = new String[1];
+    AtomicReference<String> capturedPrompt = new AtomicReference<>();
     when(llmGateway.performOcr(anyString())).thenReturn(List.of("Nestle Matcha KitKat SKU-123"));
     when(llmGateway.generate(anyString(), isNull(), isNull())).thenAnswer(invocation -> {
       String prompt = invocation.getArgument(0, String.class);
       if (prompt.contains("=== 原始OCR文本 ===")) {
-        capturedPrompt[0] = prompt;
+        capturedPrompt.set(prompt);
         return Optional.of(extractionJson);
       }
       if (prompt.contains("商品信息整合助手")) {
@@ -314,10 +315,10 @@ public class AiProductOnboardingServiceTest {
     AiOnboardingSuggestion suggestion = onboardingService.onboardFromPhoto("fake-base64").orElseThrow();
 
     assertEquals("SKU-123", suggestion.itemNumber());
-    assertNotNull(capturedPrompt[0]);
-    assertTrue(capturedPrompt[0].contains("itemNumberPattern"));
-    assertTrue(capturedPrompt[0].contains("SKU-\\d{3}"));
-    assertTrue(capturedPrompt[0].contains("preferredBrand"));
+    assertNotNull(capturedPrompt.get());
+    assertTrue(capturedPrompt.get().contains("itemNumberPattern"));
+    assertTrue(capturedPrompt.get().contains("SKU-\\d{3}"));
+    assertTrue(capturedPrompt.get().contains("preferredBrand"));
   }
 
   private void mockPipeline(List<String> ocrLines,
