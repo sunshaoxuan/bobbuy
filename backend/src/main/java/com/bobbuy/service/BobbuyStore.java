@@ -24,9 +24,12 @@ import com.bobbuy.model.Trip;
 import com.bobbuy.model.TripStatus;
 import com.bobbuy.model.User;
 import com.bobbuy.repository.CategoryRepository;
+import com.bobbuy.repository.CustomerPaymentLedgerRepository;
+import com.bobbuy.repository.ExperienceMappingRepository;
 import com.bobbuy.repository.FinancialAuditLogRepository;
 import com.bobbuy.repository.MerchantSkuRepository;
 import com.bobbuy.repository.OrderHeaderRepository;
+import com.bobbuy.repository.PartnerWalletRepository;
 import com.bobbuy.repository.ProcurementReceiptRepository;
 import com.bobbuy.repository.ProductRepository;
 import com.bobbuy.repository.SupplierRepository;
@@ -35,6 +38,7 @@ import com.bobbuy.repository.TripExpenseRepository;
 import com.bobbuy.repository.TripLogisticsTrackingRepository;
 import com.bobbuy.repository.TripProfitShareConfigRepository;
 import com.bobbuy.repository.UserRepository;
+import com.bobbuy.repository.WalletTransactionRepository;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +79,10 @@ public class BobbuyStore {
     private final TripLogisticsTrackingRepository tripLogisticsTrackingRepository;
     private final TripProfitShareConfigRepository tripProfitShareConfigRepository;
     private final FinancialAuditLogRepository financialAuditLogRepository;
+    private final CustomerPaymentLedgerRepository customerPaymentLedgerRepository;
+    private final PartnerWalletRepository partnerWalletRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
+    private final ExperienceMappingRepository experienceMappingRepository;
     private final AuditLogService auditLogService;
     private final CustomerIdentityResolver customerIdentityResolver;
     private final double unitWeight;
@@ -84,6 +92,9 @@ public class BobbuyStore {
     @Value("${bobbuy.seed.enabled:false}")
     private boolean seedEnabled;
 
+    @Value("${bobbuy.seed.force-reset-on-invoke:false}")
+    private boolean forceResetOnSeedInvoke;
+
     public BobbuyStore(
             UserRepository userRepository,
             TripRepository tripRepository,
@@ -92,14 +103,18 @@ public class BobbuyStore {
             CategoryRepository categoryRepository,
             SupplierRepository supplierRepository,
             MerchantSkuRepository merchantSkuRepository,
-            TripExpenseRepository tripExpenseRepository,
-            ProcurementReceiptRepository procurementReceiptRepository,
-            TripLogisticsTrackingRepository tripLogisticsTrackingRepository,
-            TripProfitShareConfigRepository tripProfitShareConfigRepository,
-            FinancialAuditLogRepository financialAuditLogRepository,
-            AuditLogService auditLogService,
-            CustomerIdentityResolver customerIdentityResolver,
-            @Value("${bobbuy.trip.unit-weight:1.0}") double unitWeight,
+             TripExpenseRepository tripExpenseRepository,
+             ProcurementReceiptRepository procurementReceiptRepository,
+             TripLogisticsTrackingRepository tripLogisticsTrackingRepository,
+             TripProfitShareConfigRepository tripProfitShareConfigRepository,
+             FinancialAuditLogRepository financialAuditLogRepository,
+             CustomerPaymentLedgerRepository customerPaymentLedgerRepository,
+             PartnerWalletRepository partnerWalletRepository,
+             WalletTransactionRepository walletTransactionRepository,
+             ExperienceMappingRepository experienceMappingRepository,
+             AuditLogService auditLogService,
+             CustomerIdentityResolver customerIdentityResolver,
+             @Value("${bobbuy.trip.unit-weight:1.0}") double unitWeight,
             @Value("${bobbuy.trip.unit-volume:1.0}") double unitVolume) {
         this.userRepository = userRepository;
         this.tripRepository = tripRepository;
@@ -113,6 +128,10 @@ public class BobbuyStore {
         this.tripLogisticsTrackingRepository = tripLogisticsTrackingRepository;
         this.tripProfitShareConfigRepository = tripProfitShareConfigRepository;
         this.financialAuditLogRepository = financialAuditLogRepository;
+        this.customerPaymentLedgerRepository = customerPaymentLedgerRepository;
+        this.partnerWalletRepository = partnerWalletRepository;
+        this.walletTransactionRepository = walletTransactionRepository;
+        this.experienceMappingRepository = experienceMappingRepository;
         this.auditLogService = auditLogService;
         this.customerIdentityResolver = customerIdentityResolver;
         this.unitWeight = unitWeight;
@@ -121,23 +140,14 @@ public class BobbuyStore {
 
     @Transactional
     public void seed() {
-        if (productRepository.count() > 0) {
+        if (forceResetOnSeedInvoke) {
+            log.info("Force-resetting persisted data before reseeding.");
+            clearSeedData();
+        } else if (productRepository.count() > 0) {
             log.info("Database already contains data, skipping seed.");
             return;
         }
-        merchantSkuRepository.deleteAll();
-        productRepository.deleteAll();
-        supplierRepository.deleteAll();
-        categoryRepository.deleteAll();
-        financialAuditLogRepository.deleteAll();
-        tripLogisticsTrackingRepository.deleteAll();
-        tripProfitShareConfigRepository.deleteAll();
-        tripExpenseRepository.deleteAll();
-        procurementReceiptRepository.deleteAll();
-        orderHeaderRepository.deleteAll();
-        tripRepository.deleteAll();
-        userRepository.deleteAll();
-
+        clearSeedData();
         User agent = new User(1000L, "Aiko Tan", Role.AGENT, 4.8);
         User customer = new User(1001L, "Chen Li", Role.CUSTOMER, 4.6);
         agent.setPhone("+81-90-1000-0000");
@@ -279,6 +289,25 @@ public class BobbuyStore {
                 StockStatus.IN_STOCK);
         merchantSkuRepository.save(muffinSku);
         orderIdentity.set(3000L);
+    }
+
+    private void clearSeedData() {
+        walletTransactionRepository.deleteAll();
+        partnerWalletRepository.deleteAll();
+        customerPaymentLedgerRepository.deleteAll();
+        experienceMappingRepository.deleteAll();
+        merchantSkuRepository.deleteAll();
+        productRepository.deleteAll();
+        supplierRepository.deleteAll();
+        categoryRepository.deleteAll();
+        financialAuditLogRepository.deleteAll();
+        tripLogisticsTrackingRepository.deleteAll();
+        tripProfitShareConfigRepository.deleteAll();
+        tripExpenseRepository.deleteAll();
+        procurementReceiptRepository.deleteAll();
+        orderHeaderRepository.deleteAll();
+        tripRepository.deleteAll();
+        userRepository.deleteAll();
     }
 
     @PostConstruct
