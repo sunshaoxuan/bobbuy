@@ -3,7 +3,9 @@ package com.bobbuy.api;
 import com.bobbuy.api.AiOnboardingSuggestion;
 import com.bobbuy.model.Product;
 import com.bobbuy.model.ProductVisibility;
+import com.bobbuy.model.Supplier;
 import com.bobbuy.repository.ProductRepository;
+import com.bobbuy.repository.SupplierRepository;
 import com.bobbuy.service.AiOnboardingPipelineException;
 import com.bobbuy.service.AiProductOnboardingService;
 import com.bobbuy.service.AiSearchService;
@@ -23,6 +25,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,14 +48,17 @@ public class AiProductOnboardingServiceTest {
   @Autowired
   private ProductRepository productRepository;
 
+  @Autowired
+  private SupplierRepository supplierRepository;
+
   @BeforeEach
   void setUp() {
     productRepository.deleteAll();
+    supplierRepository.deleteAll();
   }
 
   @Test
   public void testOnboardFromPhotoSuccess() {
-    // Mock VLM extraction
     String mockJsonResponse = """
         {
           "name": "Matcha KitKat",
@@ -61,10 +67,12 @@ public class AiProductOnboardingServiceTest {
           "category": "Food"
         }
         """;
-    when(llmGateway.generate(anyString(), isNull(), anyList()))
-        .thenReturn(Optional.of(mockJsonResponse));
-
-    // Mock Web Research
+    mockPipeline(
+        List.of("Nestle Matcha KitKat", "Price 15.5"),
+        mockJsonResponse,
+        "Deep research snippet description",
+        null
+    );
     when(webSearchService.search(contains("Matcha KitKat")))
         .thenReturn(List.of(new WebSearchService.SearchResult(
             "Matcha KitKat Original",
@@ -93,15 +101,18 @@ public class AiProductOnboardingServiceTest {
 
   @Test
   public void testOnboardFromPhotoStripsDataUrlPrefixBeforeVisionCall() {
-    String mockJsonResponse = """
-        {
-          "name": "Milk",
-          "brand": "Test",
-          "price": 12.0
-        }
-        """;
-    when(llmGateway.generate(anyString(), isNull(), anyList()))
-        .thenReturn(Optional.of(mockJsonResponse));
+    mockPipeline(
+        List.of("Milk", "Test", "12.0"),
+        """
+            {
+              "name": "Milk",
+              "brand": "Test",
+              "price": 12.0
+            }
+            """,
+        "trusted source",
+        null
+    );
     when(webSearchService.search(anyString()))
         .thenReturn(List.of(new WebSearchService.SearchResult(
             "Trusted Retail",
@@ -112,7 +123,7 @@ public class AiProductOnboardingServiceTest {
 
     onboardingService.onboardFromPhoto("data:image/jpeg;base64,ZmFrZS1pbWFnZQ==");
 
-    verify(llmGateway).generate(anyString(), isNull(), eq(List.of("ZmFrZS1pbWFnZQ==")));
+    verify(llmGateway).performOcr("ZmFrZS1pbWFnZQ==");
   }
 
   @Test
@@ -144,8 +155,12 @@ public class AiProductOnboardingServiceTest {
           "categoryId": "tea"
         }
         """;
-    when(llmGateway.generate(anyString(), isNull(), anyList()))
-        .thenReturn(Optional.of(mockJsonResponse));
+    mockPipeline(
+        List.of("BOBBuy 抹茶礼盒 SKU-998"),
+        mockJsonResponse,
+        "trusted source",
+        "{\"matchScore\":55,\"reasoning\":\"同品牌同类目，货号片段接近。\"}"
+    );
     when(webSearchService.search(anyString()))
         .thenReturn(List.of(new WebSearchService.SearchResult(
             "Trusted Retail",
@@ -169,15 +184,18 @@ public class AiProductOnboardingServiceTest {
 
   @Test
   public void testOnboardFromPhotoRejectsDeniedSources() {
-    String mockJsonResponse = """
-        {
-          "name": "Milk",
-          "brand": "Test",
-          "price": 12.0
-        }
-        """;
-    when(llmGateway.generate(anyString(), isNull(), anyList()))
-        .thenReturn(Optional.of(mockJsonResponse));
+    mockPipeline(
+        List.of("Milk", "Test", "12.0"),
+        """
+            {
+              "name": "Milk",
+              "brand": "Test",
+              "price": 12.0
+            }
+            """,
+        "bad",
+        null
+    );
     when(webSearchService.search(anyString()))
         .thenReturn(List.of(new WebSearchService.SearchResult(
             "Bad Source",
@@ -212,8 +230,12 @@ public class AiProductOnboardingServiceTest {
           "category": "Food"
         }
         """;
-    when(llmGateway.generate(anyString(), isNull(), anyList()))
-        .thenReturn(Optional.of(mockJsonResponse));
+    mockPipeline(
+        List.of("Acme Chips 120g", "Acme", "12"),
+        mockJsonResponse,
+        "Acme 薯片 120g 新包装，规格从 100g 调整到 120g。",
+        "{\"matchScore\":82,\"reasoning\":\"同品牌同品名，主要差异是净含量从100g升级到120g。\"}"
+    );
     when(webSearchService.search(anyString()))
         .thenReturn(List.of(new WebSearchService.SearchResult(
             "Trusted Retail",
@@ -236,5 +258,85 @@ public class AiProductOnboardingServiceTest {
             && "100g".equalsIgnoreCase(diff.oldValue())
             && "120g".equalsIgnoreCase(diff.newValue())
             && diff.different()));
+  }
+
+  @Test
+  public void testOnboardFromPhotoReportsOcrFailureWithoutCallingLlm() {
+    when(llmGateway.performOcr(anyString())).thenReturn(List.of());
+
+    AiOnboardingPipelineException ex = assertThrows(AiOnboardingPipelineException.class,
+        () -> onboardingService.onboardFromPhoto("fake-base64"));
+
+    assertEquals("OCR_FAILURE", ex.getStage());
+    assertEquals("error.ai.ocr_failed", ex.getMessageKey());
+    assertEquals(0, productRepository.count());
+    verify(llmGateway, never()).generate(anyString(), any(), any());
+  }
+
+  @Test
+  public void testSupplierRulesAreInjectedIntoOcrFirstPrompt() {
+    Supplier supplier = new Supplier();
+    supplier.setId("sup-rule");
+    supplier.setName(Map.of("zh-CN", "规则供货商"));
+    supplier.setOnboardingRules(Map.of("itemNumberPattern", "SKU-\\d{3}", "preferredBrand", "Nestle"));
+    supplierRepository.save(supplier);
+
+    String extractionJson = """
+        {
+          "name": "Matcha KitKat",
+          "brand": "Nestle",
+          "itemNumber": "SKU-123",
+          "price": 15.5,
+          "category": "Food"
+        }
+        """;
+    String[] capturedPrompt = new String[1];
+    when(llmGateway.performOcr(anyString())).thenReturn(List.of("Nestle Matcha KitKat SKU-123"));
+    when(llmGateway.generate(anyString(), isNull(), isNull())).thenAnswer(invocation -> {
+      String prompt = invocation.getArgument(0, String.class);
+      if (prompt.contains("=== 原始OCR文本 ===")) {
+        capturedPrompt[0] = prompt;
+        return Optional.of(extractionJson);
+      }
+      if (prompt.contains("商品信息整合助手")) {
+        return Optional.of("trusted source");
+      }
+      return Optional.empty();
+    });
+    when(webSearchService.search(anyString()))
+        .thenReturn(List.of(new WebSearchService.SearchResult(
+            "Trusted Retail",
+            "https://www.costco.com/matcha-kitkat",
+            "trusted source",
+            List.of("https://images.costco-static.com/matcha/hd.jpg")
+        )));
+
+    AiOnboardingSuggestion suggestion = onboardingService.onboardFromPhoto("fake-base64").orElseThrow();
+
+    assertEquals("SKU-123", suggestion.itemNumber());
+    assertNotNull(capturedPrompt[0]);
+    assertTrue(capturedPrompt[0].contains("itemNumberPattern"));
+    assertTrue(capturedPrompt[0].contains("SKU-\\d{3}"));
+    assertTrue(capturedPrompt[0].contains("preferredBrand"));
+  }
+
+  private void mockPipeline(List<String> ocrLines,
+                            String extractionJson,
+                            String synthesisText,
+                            String verificationJson) {
+    when(llmGateway.performOcr(anyString())).thenReturn(ocrLines);
+    when(llmGateway.generate(anyString(), isNull(), isNull())).thenAnswer(invocation -> {
+      String prompt = invocation.getArgument(0, String.class);
+      if (prompt.contains("=== 原始OCR文本 ===")) {
+        return Optional.of(extractionJson);
+      }
+      if (prompt.contains("商品信息整合助手")) {
+        return Optional.of(synthesisText);
+      }
+      if (prompt.contains("\"matchScore\": 0-100 的数字")) {
+        return verificationJson == null ? Optional.empty() : Optional.of(verificationJson);
+      }
+      return Optional.empty();
+    });
   }
 }
