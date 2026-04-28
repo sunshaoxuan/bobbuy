@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ChatMessage } from '../api';
 
 const PERSISTENCE_DEBOUNCE_MS = 300;
@@ -33,30 +33,55 @@ export function useChatPersistence(conversationKey: string) {
     return () => window.clearTimeout(handle);
   }, [state, storageKey]);
 
-  return {
-    persistedState: state,
-    setMessages: (messages: ChatMessage[] | ((value: ChatMessage[]) => ChatMessage[])) =>
+  const setMessages = useCallback(
+    (messages: ChatMessage[] | ((value: ChatMessage[]) => ChatMessage[])) =>
       setState((current) => ({
         ...current,
         messages: typeof messages === 'function' ? messages(current.messages) : messages
       })),
-    setPendingMessages: (pendingMessages: ChatMessage[] | ((value: ChatMessage[]) => ChatMessage[])) =>
+    []
+  );
+
+  const setPendingMessages = useCallback(
+    (pendingMessages: ChatMessage[] | ((value: ChatMessage[]) => ChatMessage[])) =>
       setState((current) => ({
         ...current,
         pendingMessages: typeof pendingMessages === 'function' ? pendingMessages(current.pendingMessages) : pendingMessages
       })),
-    setInputValue: (inputValue: string | ((value: string) => string)) =>
+    []
+  );
+
+  const setInputValue = useCallback(
+    (inputValue: string | ((value: string) => string)) =>
       setState((current) => ({
         ...current,
         inputValue: typeof inputValue === 'function' ? inputValue(current.inputValue) : inputValue
       })),
-    setUnreadCount: (unreadCount: number | ((value: number) => number)) =>
+    []
+  );
+
+  const setUnreadCount = useCallback(
+    (unreadCount: number | ((value: number) => number)) =>
       setState((current) => ({
         ...current,
         unreadCount: typeof unreadCount === 'function' ? unreadCount(current.unreadCount) : unreadCount
       })),
-    setLastSuccessfulSyncAt: (lastSuccessfulSyncAt?: string) =>
-      setState((current) => ({ ...current, lastSuccessfulSyncAt }))
+    []
+  );
+
+  const setLastSuccessfulSyncAt = useCallback(
+    (lastSuccessfulSyncAt?: string) =>
+      setState((current) => ({ ...current, lastSuccessfulSyncAt })),
+    []
+  );
+
+  return {
+    persistedState: state,
+    setMessages,
+    setPendingMessages,
+    setInputValue,
+    setUnreadCount,
+    setLastSuccessfulSyncAt
   };
 }
 

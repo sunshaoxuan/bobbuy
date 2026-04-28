@@ -79,9 +79,31 @@ describe('AiQuickAddModal', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /另存为新产品|Save as New Product/i }));
 
-    expect(onSuccess).toHaveBeenCalledWith(expect.objectContaining({
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledWith(expect.objectContaining({
       existingProductFound: false,
       existingProductId: undefined,
-    }));
+    })));
+  });
+
+  it('submits user-edited field values instead of raw AI values on confirm', async () => {
+    const onSuccess = vi.fn();
+    renderModal(onSuccess);
+    const input = document.querySelector('.ant-upload-wrapper input[type="file"], input[type="file"]') as HTMLInputElement | null;
+    expect(input).not.toBeNull();
+    fireEvent.change(input!, { target: { files: [new File(['x'], 'product.png', { type: 'image/png' })] } });
+
+    // Wait for the form to appear at step 4
+    const nameInput = await screen.findByPlaceholderText(/例如：富士苹果|product name/i, {}, { timeout: 4000 });
+    // Override the AI-suggested name with a user-edited value
+    fireEvent.change(nameInput, { target: { value: 'User Edited Name' } });
+
+    // The OK/publish button is disabled (low confidence), so use "Save as New"
+    fireEvent.click(screen.getByRole('button', { name: /另存为新产品|Save as New Product/i }));
+
+    await waitFor(() =>
+      expect(onSuccess).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'User Edited Name' })
+      )
+    );
   });
 });

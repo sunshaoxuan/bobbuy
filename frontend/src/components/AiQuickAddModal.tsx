@@ -46,13 +46,6 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
         // Inject the original photo into the suggestion
         const result = await api.onboardScan(base64, file.name);
         setSuggestion({ ...result, originalPhotoBase64: base64 });
-        form.setFieldsValue({
-          name: result.name,
-          brand: result.brand,
-          itemNumber: result.itemNumber,
-          price: result.price
-        });
-        
         setCurrentStep(2);
         await new Promise(resolve => setTimeout(resolve, 800));
         
@@ -60,6 +53,12 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
         await new Promise(resolve => setTimeout(resolve, 500));
 
         setCurrentStep(4);
+        form.setFieldsValue({
+          name: result.name,
+          brand: result.brand,
+          itemNumber: result.itemNumber,
+          price: result.price
+        });
         setLoading(false);
       } catch (error) {
         logError(error);

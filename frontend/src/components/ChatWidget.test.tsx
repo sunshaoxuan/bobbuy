@@ -259,6 +259,8 @@ describe('ChatWidget', () => {
     expect(await screen.findByText('offline hello')).toBeInTheDocument();
     expect(await screen.findByText('Queued offline')).toBeInTheDocument();
     expect(apiMocks.sendChatMessage).not.toHaveBeenCalled();
-    expect(window.localStorage.getItem('bobbuy_chat_trip-2000')).toContain('offline hello');
+    await waitFor(() => {
+      expect(window.localStorage.getItem('bobbuy_chat_trip-2000')).toContain('offline hello');
+    });
   });
 });
