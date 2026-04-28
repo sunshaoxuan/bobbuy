@@ -2,19 +2,26 @@ package com.bobbuy.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class LlmGateway {
@@ -24,6 +31,11 @@ public class LlmGateway {
     // Main Node (Cloud Core) - High performance reasoning
     private final String mainUrl;
     private final String mainModel;
+    private final String mainProvider;
+    private final String codexCommand;
+    private final Duration codexTimeout;
+    private final Duration ollamaHealthTimeout;
+    private volatile String activeMainProvider;
 
     // Edge Node (Local) - Low latency, Vision/OCR
     private final String edgeUrl;
@@ -33,15 +45,34 @@ public class LlmGateway {
     public LlmGateway(ObjectMapper objectMapper,
                       @Value("${bobbuy.ai.llm.main.url:}") String mainUrl,
                       @Value("${bobbuy.ai.llm.main.model:qwen3:14b}") String mainModel,
+                      @Value("${bobbuy.ai.llm.main.provider:auto}") String mainProvider,
+                      @Value("${bobbuy.ai.llm.codex.command:codex}") String codexCommand,
+                      @Value("${bobbuy.ai.llm.codex.timeout-seconds:120}") long codexTimeoutSeconds,
+                      @Value("${bobbuy.ai.llm.ollama.health-timeout-seconds:3}") long ollamaHealthTimeoutSeconds,
                       @Value("${bobbuy.ai.llm.edge.url:}") String edgeUrl,
                       @Value("${bobbuy.ai.llm.edge.model:llava}") String edgeModel,
                       @Value("${bobbuy.ocr.url:}") String ocrUrl) {
         this.objectMapper = objectMapper;
         this.mainUrl = mainUrl;
         this.mainModel = mainModel;
+        this.mainProvider = mainProvider == null || mainProvider.isBlank() ? "auto" : mainProvider.trim().toLowerCase();
+        this.codexCommand = codexCommand;
+        this.codexTimeout = Duration.ofSeconds(Math.max(1, codexTimeoutSeconds));
+        this.ollamaHealthTimeout = Duration.ofSeconds(Math.max(1, ollamaHealthTimeoutSeconds));
         this.edgeUrl = edgeUrl;
         this.edgeModel = edgeModel;
         this.ocrUrl = ocrUrl;
+    }
+
+    @PostConstruct
+    public void initializeMainProvider() {
+        if ("codex".equals(mainProvider)) {
+            activeMainProvider = "codex";
+        } else {
+            activeMainProvider = isOllamaAvailable(mainUrl) ? "ollama" : "codex";
+        }
+        log.info("AI main LLM provider initialized: configured={}, active={}, ollamaUrl={}, codexCommand={}",
+                mainProvider, activeMainProvider, blankToUnset(mainUrl), blankToUnset(codexCommand));
     }
 
     /**
@@ -85,7 +116,7 @@ public class LlmGateway {
     }
 
     public Optional<List<Map<String, Object>>> parseItems(String text) {
-        if (text == null || text.isBlank() || mainUrl.isBlank()) {
+        if (text == null || text.isBlank() || !isMainLlmConfigured()) {
             return Optional.empty();
         }
 
@@ -102,7 +133,7 @@ public class LlmGateway {
     }
 
     public Optional<String> translate(String text, String targetLocale) {
-        if (text == null || text.isBlank() || mainUrl.isBlank()) {
+        if (text == null || text.isBlank() || !isMainLlmConfigured()) {
             return Optional.empty();
         }
 
@@ -117,9 +148,13 @@ public class LlmGateway {
      */
     public Optional<String> generate(String prompt, String targetModel, List<String> base64Images) {
         boolean isVision = (base64Images != null && !base64Images.isEmpty()) || (targetModel != null && targetModel.contains("llava"));
+
+        if (!isVision && "codex".equals(resolveActiveMainProvider())) {
+            return generateWithCodex(prompt);
+        }
         
         String url = isVision ? edgeUrl : mainUrl;
-        String model = targetModel != null ? targetModel : (isVision ? edgeModel : mainModel);
+        String model = targetModel != null && !targetModel.isBlank() ? targetModel : (isVision ? edgeModel : mainModel);
 
         if (url == null || url.isBlank()) {
             log.warn("Target LLM URL is not configured (isVision: {})", isVision);
@@ -153,12 +188,107 @@ public class LlmGateway {
             return Optional.of(response);
         } catch (Exception e) {
             log.error("LLM Gateway error at {}: {}", url, e.getMessage());
-            // Failover: if edge failed, try main (if not vision). If main failed, try edge (as last resort).
-            if (!isVision && url.equals(mainUrl) && !edgeUrl.isBlank()) {
-                log.info("Attempting failover to Edge Node...");
-                return generate(prompt, edgeModel, base64Images);
+            if (!isVision && !"codex".equals(activeMainProvider) && isCodexConfigured()) {
+                activeMainProvider = "codex";
+                log.info("Ollama main node failed; switching active main LLM provider to Codex.");
+                return generateWithCodex(prompt);
             }
             return Optional.empty();
+        }
+    }
+
+    private boolean isMainLlmConfigured() {
+        if ("codex".equals(resolveActiveMainProvider())) {
+            return isCodexConfigured();
+        }
+        return mainUrl != null && !mainUrl.isBlank();
+    }
+
+    private String resolveActiveMainProvider() {
+        if (activeMainProvider == null || activeMainProvider.isBlank()) {
+            initializeMainProvider();
+        }
+        return activeMainProvider;
+    }
+
+    private boolean isOllamaAvailable(String url) {
+        if (url == null || url.isBlank()) {
+            return false;
+        }
+        try {
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+            requestFactory.setConnectTimeout(ollamaHealthTimeout);
+            requestFactory.setReadTimeout(ollamaHealthTimeout);
+            Map<String, Object> raw = RestClient.builder()
+                    .baseUrl(url)
+                    .requestFactory(requestFactory)
+                    .build()
+                    .get()
+                    .uri("/api/tags")
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() {});
+            return raw != null;
+        } catch (Exception e) {
+            log.warn("Ollama main node is unavailable at {}: {}", url, e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean isCodexConfigured() {
+        return codexCommand != null && !codexCommand.isBlank();
+    }
+
+    private String blankToUnset(String value) {
+        return value == null || value.isBlank() ? "<unset>" : value;
+    }
+
+    private Optional<String> generateWithCodex(String prompt) {
+        if (codexCommand == null || codexCommand.isBlank()) {
+            log.warn("Codex command is not configured.");
+            return Optional.empty();
+        }
+
+        List<String> command = new ArrayList<>();
+        command.add(codexCommand);
+        command.add("exec");
+        command.add("--skip-git-repo-check");
+        command.add(prompt);
+
+        Path outputFile = null;
+        try {
+            outputFile = Files.createTempFile("bobbuy-codex-", ".out");
+            log.info("Dispatching LLM task to Codex subscription via {}", codexCommand);
+            Process process = new ProcessBuilder(command)
+                    .redirectOutput(outputFile.toFile())
+                    .redirectErrorStream(true)
+                    .start();
+
+            boolean finished = process.waitFor(codexTimeout.toSeconds(), TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                log.error("Codex command timed out after {} seconds.", codexTimeout.toSeconds());
+                return Optional.empty();
+            }
+
+            String output = Files.readString(outputFile, StandardCharsets.UTF_8).trim();
+
+            if (process.exitValue() != 0) {
+                log.error("Codex command failed with exit code {}: {}", process.exitValue(), output);
+                return Optional.empty();
+            }
+
+            return output.isBlank() ? Optional.empty() : Optional.of(output);
+        } catch (Exception e) {
+            log.error("Codex Gateway error: {}", e.getMessage(), e);
+            return Optional.empty();
+        } finally {
+            if (outputFile != null) {
+                try {
+                    Files.deleteIfExists(outputFile);
+                } catch (Exception ignored) {
+                    // Best-effort cleanup for transient command output.
+                }
+            }
         }
     }
 }
