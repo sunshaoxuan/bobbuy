@@ -293,7 +293,8 @@ public class AiProductOnboardingServiceTest {
         """;
     AtomicReference<String> capturedPrompt = new AtomicReference<>();
     when(llmGateway.performOcr(anyString())).thenReturn(List.of("Nestle Matcha KitKat SKU-123"));
-    when(llmGateway.generate(anyString(), isNull(), isNull())).thenAnswer(invocation -> {
+    when(llmGateway.generate(anyString(), org.mockito.ArgumentMatchers.<String>isNull(), org.mockito.ArgumentMatchers.<List<String>>isNull()))
+        .thenAnswer(invocation -> {
       String prompt = invocation.getArgument(0, String.class);
       if (prompt.contains("=== 原始OCR文本 ===")) {
         capturedPrompt.set(prompt);
@@ -326,7 +327,9 @@ public class AiProductOnboardingServiceTest {
                             String synthesisText,
                             String verificationJson) {
     when(llmGateway.performOcr(anyString())).thenReturn(ocrLines);
-    when(llmGateway.generate(anyString(), isNull(), isNull())).thenAnswer(invocation -> {
+    // OCR-first default tests only exercise text prompts, so targetModel and image payload stay null.
+    when(llmGateway.generate(anyString(), org.mockito.ArgumentMatchers.<String>isNull(), org.mockito.ArgumentMatchers.<List<String>>isNull()))
+        .thenAnswer(invocation -> {
       String prompt = invocation.getArgument(0, String.class);
       if (prompt.contains("=== 原始OCR文本 ===")) {
         return Optional.of(extractionJson);
