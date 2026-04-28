@@ -1,6 +1,8 @@
 # BOBBuy
 
-BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(STOMP) 实时聊天** 为基础的代购协作系统。
+BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(STOMP) 实时聊天 + AI/OCR 辅助识别** 为基础的代购协作系统。
+
+当前实现基线以 [CURRENT-STATE-2026-04-28](docs/reports/CURRENT-STATE-2026-04-28.md) 为准；旧 Release / Plan 文档若与该基线冲突，以当前基线为准。
 
 ## 当前真实能力
 - **订单 / 行程管理**：行程、订单、批量状态流转、客户侧订单查询。
@@ -14,6 +16,8 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - **配送准备与地址清单**：采购 HUD 与客户端账单展示默认地址摘要；支持待配送客户列表与地址 / 经纬度 CSV 导出。
 - **拣货确认闭环**：`/procurement` 与 `/picking` 共用 reviewed receipt + picking checklist 单一数据源，按 `businessId` 展示 `PENDING_DELIVERY` / `READY_FOR_DELIVERY`，保留 `SHORT_SHIPPED` / `ON_SITE_REPLENISHED` / `SELF_USE` 标签，并在冻结后统一只读。
 - **聊天协作**：聊天已升级为 REST 持久化 + WebSocket(STOMP) 实时推送；客户侧聊天保持“订单上下文优先，Trip 次级筛选”。
+- **AI 商品上架**：支持 OCR-first 识别、LLM 结构化、供应商规则、来源治理、既有商品匹配与人工确认。
+- **LLM 兜底**：主文本 LLM 支持 `auto` 路由，优先 Ollama，不可用时可切换到 Codex CLI；服务器生产环境不假定 Codex CLI 可用。
 
 ## 当前未实现 / 不宣称
 - 消息队列驱动的非聊天业务闭环
@@ -21,6 +25,8 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - 社交 OAuth 登录
 - 真实地图路径规划 / 实时配送追踪
 - 无人值守 AI 小票识别
+- 公网生产级认证（当前仍是试运行级 header 角色注入）
+- 数据库迁移治理（尚未引入 Flyway / Liquibase）
 
 ## 技术栈
 - **Backend**: Spring Boot 3 / Spring Cloud / Nacos / OpenFeign / Resilience4j / Spring Security / Spring Data JPA
@@ -51,9 +57,14 @@ docker-compose -p bobbuy up -d
 - `/ws` / `/ws/**` → `im-service`
 - 其余 `/api/**` → `core-service`
 
-## 验收命令
+## 验收命令与当前状态
 - `cd frontend && npm run build`
 - `cd frontend && npm test`
 - `cd frontend && npm run e2e`
 - `mvn -pl bobbuy-common test`
 - `mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am package -DskipTests`
+
+最近本地验证：
+- `cd backend && mvn -DskipTests compile`：通过。
+- `cd frontend && npm run build`：通过。
+- `cd backend && mvn test`：当前未通过，测试基线修复列为 P0。

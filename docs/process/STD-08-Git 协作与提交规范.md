@@ -12,6 +12,7 @@
 
 - ✅ **立即同步**: 所有的代码、文档修改在验证通过后，必须立即进行 Git 提交并推送到远程仓库。
 - ✅ **立即清理**: 任务结束时必须清理所有的临时文件、垃圾文件或调试产物，严禁将“垃圾”提交入库。
+- ✅ **文档同速**: 任何改变系统能力边界、部署方式、测试口径、AI/LLM 路由、认证/权限、核心业务流程的代码提交，必须同步更新 README、`docs/reports/CURRENT-STATE-*` 或对应 Release/Plan/Architecture 文档。文档不得慢于代码。
 
 ## 2. 提交消息格式
 
@@ -51,6 +52,24 @@
 4. **Push**: 提交后立即推送至远程。
 5. **CI Check**: 登录 GitHub 观察 Actions 流水线，如遇失败必须立即原地修复并再次推送，直至 **✅ Passed**。
 6. **Clean**: 确认工作环境无残留临时文件。
+
+## 6. 文档同步检查
+
+提交前必须判断本次改动是否触及以下任一主题：
+
+- 系统目标或当前能力边界。
+- 前后端路由、API、角色权限。
+- Docker Compose、Nacos、环境变量、部署拓扑。
+- AI/OCR/LLM provider、模型 fallback、供应商规则。
+- 测试命令、CI、验收口径。
+
+若触及，至少更新一个当前事实入口：
+
+- `README.md`
+- `docs/reports/CURRENT-STATE-*.md`
+- 对应 `docs/architecture/ARCH-*.md`
+- 对应 `docs/plans/PLAN-*.md`
+- 对应 `docs/reports/RELEASE-*.md`
 
 ---
 **良好的代码管理习惯与自动化的 CI 流水线是项目质量的生命线。**
