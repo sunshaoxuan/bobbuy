@@ -24,7 +24,7 @@ const supplierWithRules = {
   name: { 'zh-CN': 'Costco', 'en-US': 'Costco Wholesale' },
   description: { 'zh-CN': 'Costco description' },
   contactInfo: 'contact@costco.com',
-  onboardingRules: { itemNumberPattern: '5-6 digits only', preferredLanguage: 'JP' }
+  onboardingRules: { itemNumberPattern: '5-6 digits only', preferredLanguage: 'ja' }
 };
 
 const supplierWithoutRules = {

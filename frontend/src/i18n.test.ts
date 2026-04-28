@@ -4,7 +4,7 @@ import enUS from './locales/en-US';
 import jaJP from './locales/ja-JP';
 import { translate } from './i18n';
 
-const RAW_KEY_PATTERN = /^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)+$/;
+const BARE_KEY_REGEX = /^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)+$/;
 
 describe('i18n locale coverage', () => {
   const zhKeys = Object.keys(zhCN);
@@ -34,7 +34,7 @@ describe('i18n locale coverage', () => {
     }
     const result = translate('en-US', zhOnlyKey);
     expect(result).toBe(zhCN[zhOnlyKey]);
-    expect(result).not.toMatch(RAW_KEY_PATTERN);
+    expect(result).not.toMatch(BARE_KEY_REGEX);
   });
 
   it('translate() falls back to zh-CN for keys missing in ja-JP', () => {
@@ -44,7 +44,7 @@ describe('i18n locale coverage', () => {
     }
     const result = translate('ja-JP', zhOnlyKey);
     expect(result).toBe(zhCN[zhOnlyKey]);
-    expect(result).not.toMatch(RAW_KEY_PATTERN);
+    expect(result).not.toMatch(BARE_KEY_REGEX);
   });
 
   it('translate() returns the key itself only when the key is not in any locale', () => {
@@ -69,7 +69,7 @@ describe('i18n locale coverage', () => {
   it('translate() zh-CN never returns a raw dot-separated key for known keys', () => {
     const rawKeys = zhKeys.filter((k) => {
       const translated = translate('zh-CN', k);
-      return RAW_KEY_PATTERN.test(translated);
+      return BARE_KEY_REGEX.test(translated);
     });
     expect(rawKeys).toEqual([]);
   });
@@ -77,7 +77,7 @@ describe('i18n locale coverage', () => {
   it('translate() en-US never returns a raw dot-separated key for known zh-CN keys', () => {
     const rawKeys = zhKeys.filter((k) => {
       const translated = translate('en-US', k);
-      return RAW_KEY_PATTERN.test(translated);
+      return BARE_KEY_REGEX.test(translated);
     });
     expect(rawKeys).toEqual([]);
   });
