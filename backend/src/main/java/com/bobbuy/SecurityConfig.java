@@ -1,6 +1,7 @@
 package com.bobbuy;
 
 import com.bobbuy.security.RoleInjectionFilter;
+import com.bobbuy.security.InternalServiceTokenFilter;
 import com.bobbuy.security.TokenAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,10 +25,14 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+    private final InternalServiceTokenFilter internalServiceTokenFilter;
     private final TokenAuthenticationFilter tokenAuthenticationFilter;
     private final RoleInjectionFilter roleInjectionFilter;
 
-    public SecurityConfig(TokenAuthenticationFilter tokenAuthenticationFilter, RoleInjectionFilter roleInjectionFilter) {
+    public SecurityConfig(InternalServiceTokenFilter internalServiceTokenFilter,
+                          TokenAuthenticationFilter tokenAuthenticationFilter,
+                          RoleInjectionFilter roleInjectionFilter) {
+        this.internalServiceTokenFilter = internalServiceTokenFilter;
         this.tokenAuthenticationFilter = tokenAuthenticationFilter;
         this.roleInjectionFilter = roleInjectionFilter;
     }
@@ -44,11 +49,13 @@ public class SecurityConfig {
                 .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 .accessDeniedHandler((request, response, accessDeniedException) -> response.sendError(HttpStatus.FORBIDDEN.value()))
             )
-            .addFilterBefore(tokenAuthenticationFilter, AnonymousAuthenticationFilter.class)
+            .addFilterBefore(internalServiceTokenFilter, AnonymousAuthenticationFilter.class)
+            .addFilterAfter(tokenAuthenticationFilter, InternalServiceTokenFilter.class)
             .addFilterAfter(roleInjectionFilter, TokenAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/health/**").permitAll()
+                .requestMatchers("/internal/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers("/ws", "/ws/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/procurement/*/ledger").hasAnyRole("CUSTOMER", "AGENT")
