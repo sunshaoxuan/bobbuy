@@ -7,6 +7,7 @@ import { useI18n } from '../i18n';
 import AttributeDiffTable from './AttributeDiffTable';
 
 const { Text, Title, Paragraph } = Typography;
+const FINAL_STEP = 4;
 
 interface AiQuickAddModalProps {
   visible: boolean;
@@ -56,7 +57,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
         setCurrentStep(3);
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        setCurrentStep(4);
+        setCurrentStep(FINAL_STEP);
         form.setFieldsValue({
           name: result.name,
           brand: result.brand,
@@ -153,7 +154,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
       title={t('stock.ai_quick_add.title')}
       open={visible}
       onCancel={onCancel}
-        footer={currentStep === 4 ? [
+        footer={currentStep === FINAL_STEP ? [
         suggestion?.verificationTarget || manualEntryMode ? (
           <Button key="save-as-new" onClick={handleSaveAsNew}>
             {t('stock.ai_quick_add.save_as_new')}
@@ -226,7 +227,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
           </div>
         )}
 
-        {currentStep === 4 && (
+        {currentStep === FINAL_STEP && (
           <>
             {suggestion?.verificationTarget && (
               <Alert

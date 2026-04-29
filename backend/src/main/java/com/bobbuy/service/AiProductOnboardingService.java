@@ -241,7 +241,7 @@ public class AiProductOnboardingService {
             llmGateway.getMainModel(),
             "LLM_STRUCTURING",
             structuringLatencyMs,
-            llmResponse.isEmpty() ? "AI_RECOGNITION" : null,
+            llmResponse.isEmpty() ? "LLM_EMPTY_RESPONSE" : null,
             llmResponse.isEmpty() ? "LLM returned empty response." : null,
             null,
             0,
