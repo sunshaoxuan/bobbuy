@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Client } from '@stomp/stompjs';
+import { getStoredAccessToken, subscribeToAuthChanges } from '../authStorage';
 
 type ConnectionEvent = {
   reconnected: boolean;
@@ -16,6 +17,7 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
   const INITIAL_RECONNECT_DELAY_MS = 1000;
   const onConnectRef = useRef(onConnect);
   const onMessageRef = useRef(onMessage);
+  const accessToken = useSyncExternalStore(subscribeToAuthChanges, getStoredAccessToken, () => null);
 
   useEffect(() => {
     onConnectRef.current = onConnect;
@@ -23,20 +25,25 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
   }, [onConnect, onMessage]);
 
   useEffect(() => {
-    if (!enabled || !destination || typeof window === 'undefined' || !isChatWebSocketAllowed()) {
+    if (!enabled || !destination || !accessToken || typeof window === 'undefined' || !isChatWebSocketAllowed()) {
       return;
     }
 
     let subscription: ReturnType<Client['subscribe']> | undefined;
     let hasConnected = false;
+    let authRejected = false;
     let currentReconnectDelay = INITIAL_RECONNECT_DELAY_MS;
     const client = new Client({
       brokerURL: buildWebSocketUrl(),
+      connectHeaders: {
+        Authorization: `Bearer ${accessToken}`
+      },
       reconnectDelay: currentReconnectDelay,
       heartbeatIncoming: 5000,
       heartbeatOutgoing: 5000,
       debug: () => undefined,
       onConnect: () => {
+        authRejected = false;
         subscription?.unsubscribe();
         subscription = client.subscribe(destination, () => {
           onMessageRef.current?.();
@@ -46,7 +53,14 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
         onConnectRef.current?.({ reconnected: hasConnected });
         hasConnected = true;
       },
+      onStompError: () => {
+        authRejected = true;
+        void client.deactivate();
+      },
       onWebSocketClose: () => {
+        if (authRejected) {
+          return;
+        }
         currentReconnectDelay = Math.min(currentReconnectDelay * 2, 5000);
         client.configure({ reconnectDelay: currentReconnectDelay });
       }
@@ -77,7 +91,7 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
       subscription?.unsubscribe();
       void client.deactivate();
     };
-  }, [destination, enabled, onConnect, onMessage]);
+  }, [accessToken, destination, enabled, onConnect, onMessage]);
 }
 
 function buildWebSocketUrl() {

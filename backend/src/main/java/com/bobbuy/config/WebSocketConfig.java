@@ -2,6 +2,7 @@ package com.bobbuy.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -20,8 +21,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final long heartbeatSendIntervalMs;
     private final long heartbeatReceiveIntervalMs;
     private final TaskScheduler chatMessageBrokerTaskScheduler;
+    private final WebSocketAuthenticationChannelInterceptor webSocketAuthenticationChannelInterceptor;
 
     public WebSocketConfig(
+        WebSocketAuthenticationChannelInterceptor webSocketAuthenticationChannelInterceptor,
         @Value("${bobbuy.websocket.broker-relay.enabled:false}") boolean brokerRelayEnabled,
         @Value("${bobbuy.websocket.broker-relay.host:${spring.rabbitmq.host:localhost}}") String brokerRelayHost,
         @Value("${bobbuy.websocket.broker-relay.port:61613}") int brokerRelayPort,
@@ -37,6 +40,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         this.brokerRelayPasscode = brokerRelayPasscode;
         this.heartbeatSendIntervalMs = heartbeatSendIntervalMs;
         this.heartbeatReceiveIntervalMs = heartbeatReceiveIntervalMs;
+        this.webSocketAuthenticationChannelInterceptor = webSocketAuthenticationChannelInterceptor;
         this.chatMessageBrokerTaskScheduler = createMessageBrokerTaskScheduler();
     }
 
@@ -63,6 +67,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws").setAllowedOriginPatterns("*");
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(webSocketAuthenticationChannelInterceptor);
     }
 
     private TaskScheduler createMessageBrokerTaskScheduler() {

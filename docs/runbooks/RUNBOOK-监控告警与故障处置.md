@@ -89,6 +89,7 @@ docker compose logs -f postgres minio rabbitmq nacos redis ocr-service
 禁止写入日志：
 
 - JWT / Bearer token
+- STOMP `CONNECT` header 中的 Bearer token
 - 用户密码
 - `MINIO_ROOT_PASSWORD` / 数据库密码 / 真实 secret
 - 完整小票图片 base64
@@ -170,7 +171,7 @@ curl -fsS -H "Authorization: Bearer <agent-token>" http://127.0.0.1/api/metrics
 | PostgreSQL 连接失败 | 日志 | 搜索 `core-service` / `ai-service` / `im-service` / `auth-service` 中 datasource / connection error |
 | MinIO 上传失败 | 日志 | 搜索 `ImageStorageService` / `MinIO` error |
 | RabbitMQ 连接失败 | 日志 | 搜索 AMQP / STOMP connection error |
-| WebSocket 连接 / 断开异常 | `im-service` 日志 | 搜索 websocket / stomp / broker relay error |
+| WebSocket 连接 / 断开异常 | `im-service` / `core-service` 日志 | 搜索 websocket / stomp / broker relay / chat forbidden / invalid websocket access token |
 
 > 当前不强行引入 Prometheus；AI/OCR、RabbitMQ、Redis、Nacos 仍以日志 + Runbook 巡检为主。
 
@@ -202,6 +203,7 @@ curl -fsS -H "Authorization: Bearer <agent-token>" http://127.0.0.1/api/metrics
   grep -n "BOBBUY_SECURITY_JWT_SECRET" /home/runner/work/bobbuy/bobbuy/.env
   ```
 - **缓解动作**: 检查 JWT secret、时间漂移、header auth 是否被误开、网关路由是否正常
+- **补充说明**: WebSocket `/ws` 已改为依赖同一 access token；若只有聊天实时能力异常，也按登录链路检查 token 过期与 STOMP 鉴权失败
 - **升级条件**: 所有角色均无法登录，或 token 验证持续失败超过 10 分钟
 
 ### 5.3 订单 / 账单 / 钱包 5xx
@@ -260,6 +262,7 @@ curl -fsS -H "Authorization: Bearer <agent-token>" http://127.0.0.1/api/metrics
   docker compose logs --tail=200 rabbitmq im-service
   ```
 - **缓解动作**: 重启 broker 或 `im-service`，确认 STOMP 插件与凭据
+- **补充说明**: 若 broker 正常但只有部分用户收不到实时消息，继续检查 JWT 过期、`chat forbidden` 与错误重连是否已被前端降级为 REST 刷新
 - **升级条件**: 聊天消息丢失、持续堆积、或 gateway / im-service 同时异常
 
 ---
@@ -305,6 +308,18 @@ curl -fsS -H "Authorization: Bearer <agent-token>" http://127.0.0.1/api/metrics
 - **缓解步骤**: 立即改为 `false` 并重启服务
 - **回滚 / 恢复**: 恢复上一个已验证配置
 - **事后记录**: 记录暴露窗口与审计检查结果
+
+### 6.4A WebSocket 鉴权被拒绝
+
+- **现象**: 页面可打开聊天，但实时消息不更新；日志出现 websocket auth 失败 / `chat forbidden`
+- **首查命令**:
+  ```bash
+  docker compose logs --tail=200 im-service core-service
+  ```
+- **常见原因**: access token 过期、前端未重新登录、customer 订阅了非本人订单/行程上下文
+- **缓解步骤**: 重新登录刷新 access token；确认当前账号只访问本人订单/行程聊天；不要开启 header auth 或改用 query token 绕过
+- **回滚 / 恢复**: 保持 REST 刷新路径可用，必要时临时按既有手工刷新路径运行
+- **事后记录**: 记录受影响账号、具体上下文、是否因 token 过期或权限越界导致
 
 ### 6.5 PostgreSQL 不可用
 
