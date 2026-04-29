@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Client } from '@stomp/stompjs';
-import { getStoredAccessToken } from '../authStorage';
+import { getStoredAccessToken, subscribeToAuthChanges } from '../authStorage';
 
 type ConnectionEvent = {
   reconnected: boolean;
@@ -17,7 +17,7 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
   const INITIAL_RECONNECT_DELAY_MS = 1000;
   const onConnectRef = useRef(onConnect);
   const onMessageRef = useRef(onMessage);
-  const accessToken = getStoredAccessToken();
+  const accessToken = useSyncExternalStore(subscribeToAuthChanges, getStoredAccessToken, () => null);
 
   useEffect(() => {
     onConnectRef.current = onConnect;

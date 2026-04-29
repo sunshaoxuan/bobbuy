@@ -45,7 +45,7 @@ public class WebSocketAuthenticationChannelInterceptor implements ChannelInterce
     }
 
     private Authentication authenticate(StompHeaderAccessor accessor) {
-        String header = firstNonBlankHeader(accessor, HttpHeaders.AUTHORIZATION, "authorization");
+        String header = firstNonBlankHeader(accessor, HttpHeaders.AUTHORIZATION);
         if (header == null || !header.startsWith(BEARER_PREFIX)) {
             throw new AuthenticationCredentialsNotFoundException("Missing websocket bearer token");
         }

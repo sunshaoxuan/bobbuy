@@ -101,8 +101,7 @@ public class ChatAuthorizationService {
             return false;
         }
         if (tripId != null) {
-            return orderHeaderRepository.findByTripId(tripId).stream()
-                .anyMatch(order -> customerId.equals(order.getCustomerId()));
+            return orderHeaderRepository.existsByTripIdAndCustomerId(tripId, customerId);
         }
         if (orderId != null) {
             return orderHeaderRepository.findById(orderId)
