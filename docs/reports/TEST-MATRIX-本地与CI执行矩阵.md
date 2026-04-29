@@ -57,7 +57,11 @@
 - [x] `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`
-- [ ] 按 `docs/runbooks/RUNBOOK-备份恢复演练.md` 执行本地恢复演练
+- [x] 按 `docs/runbooks/RUNBOOK-备份恢复演练.md` 执行一次本地基础设施级恢复演练
+  - PostgreSQL：`pg_dump` -> 新库 `bobbuy_restore_verify` 恢复校验通过
+  - MinIO：恢复验证 bucket `bobbuy-media-restore-verify` 中存在 `probe.txt`
+  - Nacos：`infra/nacos/config` 已归档为 `/tmp/plan33/backup/nacos-config-restore-drill.tgz`
+  - 未执行完整应用栈登录 / 页面预览验收，后续需在专门试运行窗口继续补全
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e`
   - 本次实际执行：`44 passed / 2 failed / 2 skipped`
   - 失败用例：`chat_publish_flow.spec.ts`、`client_role_gate.spec.ts`

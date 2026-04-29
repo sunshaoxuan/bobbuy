@@ -78,19 +78,65 @@
 
 - `cd /home/runner/work/bobbuy/bobbuy && docker compose config`：通过
 - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn test`：通过
-- `cd /home/runner/work/bobbuy/bobbuy/frontend && npm ci && npm test`：通过
+- `cd /home/runner/work/bobbuy/bobbuy/frontend && npm test`：通过（依赖已先执行 `npm ci`）
 - `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run build`：通过
 
 备份恢复演练：
 
-- PostgreSQL / MinIO / Nacos 本地演练：见本报告后续更新结果
+- PostgreSQL / MinIO / Nacos 本地演练：已执行，详见下节
 
 ---
 
 ## 4. 备份恢复演练结果
 
-- **状态**: 待执行 / 待补充
-- **说明**: 本任务要求先提供可执行 Runbook；若本地容器环境允许，再补本地演练结果与命令。
+**状态**: 已完成一次本地基础设施级演练
+
+**环境**:
+
+- 时间：2026-04-29
+- 方式：`docker compose --env-file /tmp/plan33/.env up -d postgres minio`
+- 目标：验证 PostgreSQL 逻辑备份 + 新库恢复、MinIO bucket 备份 + 独立 bucket 恢复、Nacos 配置归档
+
+**实际命令摘要**:
+
+```bash
+cd /home/runner/work/bobbuy/bobbuy
+docker compose --env-file /tmp/plan33/.env up -d postgres minio
+
+cd backend
+mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy \
+  -Dflyway.user=bobbuy \
+  -Dflyway.password=plan33-password \
+  flyway:migrate
+
+docker compose --env-file /tmp/plan33/.env exec -T postgres pg_dump \
+  -U bobbuy -d bobbuy --clean --if-exists --no-owner --no-privileges \
+  > /tmp/plan33/backup/bobbuy-restore-drill.sql
+
+cat /tmp/plan33/backup/bobbuy-restore-drill.sql | docker compose --env-file /tmp/plan33/.env exec -T postgres psql \
+  -U bobbuy -d bobbuy_restore_verify
+
+docker run --rm --network host -v /tmp/plan33/minio-source:/work \
+  --entrypoint /bin/sh minio/mc -c '...mc mirror...'
+
+tar -czf /tmp/plan33/backup/nacos-config-restore-drill.tgz \
+  -C /home/runner/work/bobbuy/bobbuy infra/nacos/config
+```
+
+**结果**:
+
+- PostgreSQL：恢复库 `bobbuy_restore_verify` 验证通过  
+  - `bb_user=2`
+  - `bb_order_header=1`
+  - `bb_customer_payment_ledger=2`
+- MinIO：`bobbuy-media-restore-verify/probe.txt` 恢复验证通过
+- Nacos：`/tmp/plan33/backup/nacos-config-restore-drill.tgz` 归档成功
+
+**本次未执行的验收项**:
+
+- 未在该演练中拉起完整应用栈验证“服务可启动 / 登录可用 / 页面级图片预览”
+- 原因：本次演练聚焦备份恢复链路本身，使用的是基础设施子集而非完整试运行编排
+- 已提供完整应用验收命令与步骤，后续应在专门试运行窗口按 Runbook 做一次全链路恢复演练
 
 ---
 
