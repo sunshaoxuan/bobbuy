@@ -170,9 +170,13 @@ export async function setupCommonMocks(page: Page) {
     const session = resolveSessionFromRequest(route.request().headers());
     const csrfHeader = route.request().headers()['x-bobbuy-csrf-token'];
     const cookieHeader = route.request().headers().cookie ?? '';
-    const csrfCookie = CSRF_TOKEN_BY_ROLE[session?.user.role as MockRole];
-    const refreshCookie = REFRESH_TOKEN_BY_ROLE[session?.user.role as MockRole];
-    if (!session || !csrfHeader || csrfHeader !== csrfCookie || !cookieHeader.includes(`bobbuy_refresh_token=${refreshCookie}`)) {
+    if (!session) {
+      await route.fulfill({ status: 401, body: JSON.stringify({ status: 'error', message: 'Unauthorized' }) });
+      return;
+    }
+    const csrfCookie = CSRF_TOKEN_BY_ROLE[session.user.role];
+    const refreshCookie = REFRESH_TOKEN_BY_ROLE[session.user.role];
+    if (!csrfHeader || csrfHeader !== csrfCookie || !cookieHeader.includes(`bobbuy_refresh_token=${refreshCookie}`)) {
       await route.fulfill({ status: 403, body: JSON.stringify({ status: 'error', message: 'Invalid CSRF token' }) });
       return;
     }
@@ -197,9 +201,13 @@ export async function setupCommonMocks(page: Page) {
     const session = resolveSessionFromRequest(route.request().headers());
     const csrfHeader = route.request().headers()['x-bobbuy-csrf-token'];
     const cookieHeader = route.request().headers().cookie ?? '';
-    const csrfCookie = CSRF_TOKEN_BY_ROLE[session?.user.role as MockRole];
-    const refreshCookie = REFRESH_TOKEN_BY_ROLE[session?.user.role as MockRole];
-    if (!session || !csrfHeader || csrfHeader !== csrfCookie || !cookieHeader.includes(`bobbuy_refresh_token=${refreshCookie}`)) {
+    if (!session) {
+      await route.fulfill({ status: 401, body: JSON.stringify({ status: 'error', message: 'Unauthorized' }) });
+      return;
+    }
+    const csrfCookie = CSRF_TOKEN_BY_ROLE[session.user.role];
+    const refreshCookie = REFRESH_TOKEN_BY_ROLE[session.user.role];
+    if (!csrfHeader || csrfHeader !== csrfCookie || !cookieHeader.includes(`bobbuy_refresh_token=${refreshCookie}`)) {
       await route.fulfill({ status: 403, body: JSON.stringify({ status: 'error', message: 'Invalid CSRF token' }) });
       return;
     }
