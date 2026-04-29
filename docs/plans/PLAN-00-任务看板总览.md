@@ -41,6 +41,7 @@
 | [PLAN-35](PLAN-35-P2-服务间鉴权与服务壳Smoke测试开发提示词.md) | P2 服务间鉴权与服务壳 Smoke 测试提示词 | ⏳ 待评审 | 0% | 建立内部调用最小信任边界与服务壳启动门禁 | 全栈团队 |
 | [PLAN-36](PLAN-36-P2-RefreshToken与会话生命周期治理开发提示词.md) | P2 Refresh Token 与会话生命周期治理提示词 | ⏳ 待评审 | 0% | 补齐 access token 刷新、登出撤销、轮换复用检测与前端会话恢复 | 全栈团队 |
 | [PLAN-37](PLAN-37-P2-浏览器Token防护与Refresh并发硬化开发提示词.md) | P2 浏览器 Token 防护与 Refresh 并发硬化提示词 | ⏳ 待评审 | 0% | 迁移 HttpOnly refresh cookie、补 CSRF、收口 refresh 并发轮换边界 | 全栈团队 |
+| [PLAN-38](PLAN-38-P2-Playwright端到端试运行验收开发提示词.md) | P2 Playwright 端到端试运行验收提示词 | ⏳ 待评审 | 0% | 固化真实浏览器 smoke、角色门禁、聊天与核心业务试运行验收 | 全栈团队 |
 | CURRENT | 当前 P0 收口 | 🔄 进行中 | 35% | 测试基线恢复、文档事实同步、认证/迁移生产化规划 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
