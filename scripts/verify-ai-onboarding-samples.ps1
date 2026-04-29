@@ -4,10 +4,37 @@ param(
     [string]$ScanEndpoint = "http://localhost/api/ai/onboard/scan",
     [string]$JsonReportPath = "/tmp/ai-onboarding-sample-report.json",
     [string]$MarkdownReportPath = "/tmp/ai-onboarding-sample-report.md",
-    [switch]$IncludeNeedsHumanGolden
+    [switch]$IncludeNeedsHumanGolden,
+    [string]$MockScanResponsePath,
+    [string[]]$SampleIds
 )
 
 $ErrorActionPreference = "Stop"
+$ActualFieldAliasMap = @{
+    "basePrice" = "price"
+}
+
+function Normalize-FieldPath {
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return $Path
+    }
+    if ($Path.StartsWith("expected.")) {
+        return $Path.Substring("expected.".Length)
+    }
+    return $Path
+}
+
+function Resolve-ActualFieldPath {
+    param([string]$ExpectedPath)
+
+    $normalizedExpectedPath = Normalize-FieldPath $ExpectedPath
+    if ($ActualFieldAliasMap.ContainsKey($normalizedExpectedPath)) {
+        return $ActualFieldAliasMap[$normalizedExpectedPath]
+    }
+    return $normalizedExpectedPath
+}
 
 function Get-NestedValue {
     param(
@@ -48,25 +75,105 @@ function Normalize-ComparableValue {
     return ([string]$Value).Trim()
 }
 
+function Test-IsMissingValue {
+    param([object]$Value)
+
+    if ($null -eq $Value) {
+        return $true
+    }
+    return ($Value -is [string]) -and [string]::IsNullOrWhiteSpace($Value)
+}
+
+function Get-NormalizedOptionalFields {
+    param($Tolerance)
+
+    return @(
+        @($Tolerance.optionalFields) |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+            ForEach-Object { Normalize-FieldPath $_ }
+    )
+}
+
+function Get-NormalizedSynonyms {
+    param($Tolerance)
+
+    $normalized = @{}
+    if ($null -eq $Tolerance -or $null -eq $Tolerance.synonyms) {
+        return $normalized
+    }
+
+    foreach ($property in $Tolerance.synonyms.PSObject.Properties) {
+        $normalized[(Normalize-FieldPath $property.Name)] = @($property.Value)
+    }
+    return $normalized
+}
+
+function Convert-ToReportCellValue {
+    param([object]$Value)
+
+    if ($null -eq $Value) {
+        return ""
+    }
+    if ($Value -is [string] -or $Value -is [ValueType]) {
+        return ([string]$Value) -replace '\r?\n', '<br/>' -replace '\|', '\|'
+    }
+    return (($Value | ConvertTo-Json -Depth 10 -Compress) -replace '\r?\n', '<br/>') -replace '\|', '\|'
+}
+
+function Get-MockScanResponse {
+    param(
+        [Parameter(Mandatory = $true)] $Responses,
+        [Parameter(Mandatory = $true)][string] $SampleId
+    )
+
+    if ($Responses -is [System.Collections.IDictionary]) {
+        return $Responses[$SampleId]
+    }
+
+    $property = $Responses.PSObject.Properties[$SampleId]
+    if ($null -eq $property) {
+        return $null
+    }
+    return $property.Value
+}
+
 function Test-FieldMatch {
     param(
-        [string]$Path,
+        [string]$ExpectedPath,
+        [string]$ActualPath,
         [object]$Expected,
         [object]$Actual,
         $Tolerance
     )
 
-    $optionalFields = @($Tolerance.optionalFields)
-    $synonyms = $Tolerance.synonyms
+    $expectedPath = Normalize-FieldPath $ExpectedPath
+    $resolvedActualPath = if ([string]::IsNullOrWhiteSpace($ActualPath)) { Resolve-ActualFieldPath $expectedPath } else { $ActualPath }
+    $optionalFields = Get-NormalizedOptionalFields $Tolerance
+    $synonyms = Get-NormalizedSynonyms $Tolerance
     $priceTolerance = if ($null -ne $Tolerance.priceTolerance) { [double]$Tolerance.priceTolerance } else { 0.0 }
 
     if ($null -eq $Expected) {
+        $passed = $optionalFields -contains $expectedPath
         return [pscustomobject]@{
-            field = $Path
+            field = $expectedPath
+            expectedPath = $expectedPath
+            actualPath = $resolvedActualPath
             expected = $Expected
             actual = $Actual
-            passed = ($optionalFields -contains $Path)
-            reason = if ($optionalFields -contains $Path) { "optional-null" } else { "expected-null" }
+            passed = $passed
+            reason = if ($passed) { "optional-null" } else { "expected-null" }
+        }
+    }
+
+    if (($optionalFields -contains $expectedPath) -and (Test-IsMissingValue $Actual)) {
+        return [pscustomobject]@{
+            field = $expectedPath
+            expectedPath = $expectedPath
+            actualPath = $resolvedActualPath
+            expected = $Expected
+            actual = $Actual
+            passed = $true
+            reason = "optional-missing"
         }
     }
 
@@ -76,7 +183,9 @@ function Test-FieldMatch {
     if ($normalizedExpected -is [double] -and $normalizedActual -is [double]) {
         $passed = [math]::Abs($normalizedExpected - $normalizedActual) -le $priceTolerance
         return [pscustomobject]@{
-            field = $Path
+            field = $expectedPath
+            expectedPath = $expectedPath
+            actualPath = $resolvedActualPath
             expected = $normalizedExpected
             actual = $normalizedActual
             passed = $passed
@@ -85,13 +194,15 @@ function Test-FieldMatch {
     }
 
     $candidateValues = @("$normalizedExpected")
-    if ($synonyms -and $synonyms.PSObject.Properties[$Path]) {
-        $candidateValues += @($synonyms.PSObject.Properties[$Path].Value)
+    if ($synonyms.ContainsKey($expectedPath)) {
+        $candidateValues += @($synonyms[$expectedPath])
     }
 
     $passed = $candidateValues | Where-Object { "$_" -eq "$normalizedActual" } | Select-Object -First 1
     return [pscustomobject]@{
-        field = $Path
+        field = $expectedPath
+        expectedPath = $expectedPath
+        actualPath = $resolvedActualPath
         expected = $normalizedExpected
         actual = $normalizedActual
         passed = [bool]$passed
@@ -119,11 +230,21 @@ function Expand-ExpectedFields {
 }
 
 $goldenEntries = Get-Content -Raw -Path $GoldenPath | ConvertFrom-Json
+$selectedSampleIds = @($SampleIds | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+if ($selectedSampleIds.Count -gt 0) {
+    $goldenEntries = @($goldenEntries | Where-Object { $selectedSampleIds -contains $_.sampleId })
+}
+
+$mockScanResponses = $null
+if (-not [string]::IsNullOrWhiteSpace($MockScanResponsePath)) {
+    $mockScanResponses = Get-Content -Raw -Path $MockScanResponsePath | ConvertFrom-Json
+}
+
 $results = @()
 
 foreach ($entry in $goldenEntries) {
     $samplePath = Join-Path $SampleDir $entry.sampleId
-    if (-not (Test-Path $samplePath)) {
+    if ($null -eq $mockScanResponses -and -not (Test-Path $samplePath)) {
         $results += [pscustomobject]@{
             sampleId = $entry.sampleId
             status = "MISSING_FILE"
@@ -145,21 +266,30 @@ foreach ($entry in $goldenEntries) {
         continue
     }
 
-    $bytes = [System.IO.File]::ReadAllBytes($samplePath)
-    $body = @{
-        base64Image = "data:image/jpeg;base64,$([Convert]::ToBase64String($bytes))"
-        sampleId = $entry.sampleId
-    } | ConvertTo-Json -Depth 10
-
     try {
-        $scanResponse = Invoke-RestMethod -Uri $ScanEndpoint -Method Post -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 180
-        if ($scanResponse.status -ne "success") {
+        if ($null -ne $mockScanResponses) {
+            $scanResponse = Get-MockScanResponse -Responses $mockScanResponses -SampleId $entry.sampleId
+            if ($null -eq $scanResponse) {
+                throw "Mock response not found for sample: $($entry.sampleId)"
+            }
+        } else {
+            $bytes = [System.IO.File]::ReadAllBytes($samplePath)
+            $body = @{
+                base64Image = "data:image/jpeg;base64,$([Convert]::ToBase64String($bytes))"
+                sampleId = $entry.sampleId
+            } | ConvertTo-Json -Depth 10
+            $scanResponse = Invoke-RestMethod -Uri $ScanEndpoint -Method Post -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 180
+        }
+
+        if ($scanResponse.status -and $scanResponse.status -ne "success") {
             throw "Non-success response: $($scanResponse | ConvertTo-Json -Depth 10 -Compress)"
         }
-        $actual = $scanResponse.data
+        $actual = if ($null -ne $scanResponse.data) { $scanResponse.data } else { $scanResponse }
         $fieldResults = @()
         foreach ($field in (Expand-ExpectedFields -Expected $entry.expected)) {
-            $fieldResults += Test-FieldMatch -Path $field.path -Expected $field.value -Actual (Get-NestedValue -Object $actual -Path $field.path) -Tolerance $entry.tolerance
+            $expectedPath = Normalize-FieldPath $field.path
+            $actualPath = Resolve-ActualFieldPath $expectedPath
+            $fieldResults += Test-FieldMatch -ExpectedPath $expectedPath -ActualPath $actualPath -Expected $field.value -Actual (Get-NestedValue -Object $actual -Path $actualPath) -Tolerance $entry.tolerance
         }
 
         $failedCount = @($fieldResults | Where-Object { -not $_.passed }).Count
@@ -220,10 +350,10 @@ foreach ($result in $results) {
     $markdown += "- 说明：$($result.detail)"
     if ($result.fieldResults.Count -gt 0) {
         $markdown += ""
-        $markdown += "| 字段 | 期望 | 实际 | 结果 | 原因 |"
-        $markdown += "| :-- | :-- | :-- | :-- | :-- |"
+        $markdown += "| 字段 | 实际读取路径 | 期望 | 实际 | 结果 | 原因 |"
+        $markdown += "| :-- | :-- | :-- | :-- | :-- | :-- |"
         foreach ($fieldResult in $result.fieldResults) {
-            $markdown += "| $($fieldResult.field) | $($fieldResult.expected) | $($fieldResult.actual) | $(if ($fieldResult.passed) { 'PASS' } else { 'FAIL' }) | $($fieldResult.reason) |"
+            $markdown += "| $($fieldResult.expectedPath) | $($fieldResult.actualPath) | $(Convert-ToReportCellValue $fieldResult.expected) | $(Convert-ToReportCellValue $fieldResult.actual) | $(if ($fieldResult.passed) { 'PASS' } else { 'FAIL' }) | $($fieldResult.reason) |"
         }
         $markdown += ""
     }
