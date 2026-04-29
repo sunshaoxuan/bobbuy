@@ -115,9 +115,9 @@ function Convert-ToReportCellValue {
         return ""
     }
     if ($Value -is [string] -or $Value -is [ValueType]) {
-        return ([string]$Value) -replace '\r?\n', '<br/>' -replace '\|', '\|'
+        return ([string]$Value) -replace '\r?\n', '<br/>' -replace '\|', '\\|'
     }
-    return (($Value | ConvertTo-Json -Depth 10 -Compress) -replace '\r?\n', '<br/>') -replace '\|', '\|'
+    return (($Value | ConvertTo-Json -Depth 10 -Compress) -replace '\r?\n', '<br/>') -replace '\|', '\\|'
 }
 
 function Get-MockScanResponse {
