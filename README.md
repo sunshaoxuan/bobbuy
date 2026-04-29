@@ -43,6 +43,13 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - **后续拆分候选**：`ai-service`、`im-service`、`auth-service`；在服务间鉴权、独立 schema、Tracing、SLO、独立 CI/CD 到位前，不继续深拆。
 - 当前默认 Compose 仍保留 `ai-service` / `im-service` / `auth-service`，因为网关路由与启动回归测试尚未准备好安全降级为 optional/profile。
 
+## 试运行运维入口
+
+- 试运行部署：[`docs/runbooks/RUNBOOK-试运行部署.md`](docs/runbooks/RUNBOOK-试运行部署.md)
+- 监控告警与故障处置：[`docs/runbooks/RUNBOOK-监控告警与故障处置.md`](docs/runbooks/RUNBOOK-监控告警与故障处置.md)
+- 备份恢复演练：[`docs/runbooks/RUNBOOK-备份恢复演练.md`](docs/runbooks/RUNBOOK-备份恢复演练.md)
+- 本次运维基线执行报告：[`docs/reports/REPORT-02-生产运维基础执行报告.md`](docs/reports/REPORT-02-生产运维基础执行报告.md)
+
 ## 模块 / 服务定位
 
 | 模块 | 当前定位 | 试运行职责 |
@@ -157,6 +164,14 @@ AI / OCR 默认测试边界：
 - CodeQL / 安全扫描
 - 依赖审计
 - 若本次 PR / Release 未执行，必须明确登记为风险项，不得写成“已通过”。
+
+## 试运行最小运维基线
+
+- 日志：统一使用 `docker compose logs` + `X-Trace-Id` + 应用请求日志排障；关键字段包含 `method/path/status/cost/trace_id/user/role`
+- 指标：`/api/metrics` 提供轻量 endpoint 请求次数、`p95/p99`、`4xx/5xx`、登录失败次数与全局 `5xx` 比率
+- AI / OCR：继续以 trace、`fallbackReason`、`FAILED_RECOGNITION`、`PENDING_MANUAL_REVIEW` 为主，不在本阶段强行引入 Prometheus
+- 告警 / 故障处置：统一见 `RUNBOOK-监控告警与故障处置.md`
+- 备份恢复：统一见 `RUNBOOK-备份恢复演练.md`；恢复验证必须先在新库 / 独立 bucket / 独立目录完成
 
 最近本地验证：
 - `cd /home/runner/work/bobbuy/bobbuy && docker compose config`：通过。

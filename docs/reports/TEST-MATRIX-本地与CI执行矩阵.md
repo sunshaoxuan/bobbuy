@@ -20,6 +20,7 @@
 | Playwright 页面回归 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e` | `workflow_dispatch` + `playwright-e2e` job（输入 `run_playwright_e2e=true`） | 否 | GitHub Hosted Runner 可执行；常规用例走前端共享 mock，不依赖真实 AI / MinIO |
 | AI 真实视觉链路 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai` | 不纳入默认 Hosted CI；仅在专用环境手动执行并单独记录结果 | 否 | 必须提供 `RUN_AI_VISION_E2E=1`、`SPRING_PROFILES_ACTIVE=dev,ai-hermes`、可访问的 AI 模型、MinIO、seed 数据与样本图片 |
 | Compose 配置渲染 | `cd /home/runner/work/bobbuy/bobbuy && docker compose config` | 当前未纳入默认 CI；作为试运行部署前置校验执行 | 否 | 要求 `.env` / 默认变量可成功渲染 Compose，且不得依赖未声明变量 |
+| 备份恢复演练 | 见 `docs/runbooks/RUNBOOK-备份恢复演练.md` | 不纳入默认 CI；按试运行变更窗口手工执行并记录结果 | 否 | 需要 Docker / PostgreSQL / MinIO / Nacos 可访问，且恢复验证必须在新库 / 独立 bucket / 独立目录进行 |
 
 ## 3. 风险登记 / 独立安全门禁
 
@@ -39,6 +40,7 @@
 - AI/OCR 可靠性用例（provider unconfigured、OCR/LLM 失败、fallback、人工复核、重试）必须继续保留在默认 mock 测试中，禁止切换到真实外部服务。
 - 后端 `mvn test` 现同时覆盖 JWT 登录、`/api/auth/me`、401/403、customer 本人数据隔离，以及 `bobbuy.security.header-auth.enabled=false` 时伪造 header 不得提权。
 - `core-service` / `ai-service` / `im-service` / `auth-service` / `gateway-service` 当前无独立模块级测试；若后续要把服务外壳降级为 optional/profile 或继续拆分，必须先补模块启动 smoke test、服务间鉴权与拆分后 CI/CD。
+- 运维基线当前按“默认门禁 + 手工 Runbook 校验”执行：`docker compose config`、健康检查、日志巡检、备份恢复演练不进入默认 Hosted CI。
 - 当前已知前端测试噪声：
   - Ant Design `useForm` 未连接 warning。
   - 预期失败路径中的 `Delete failed: Error: Server error` console 输出。
@@ -55,6 +57,7 @@
 - [x] `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`
+- [ ] 按 `docs/runbooks/RUNBOOK-备份恢复演练.md` 执行本地恢复演练
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e`
   - 本次实际执行：`44 passed / 2 failed / 2 skipped`
   - 失败用例：`chat_publish_flow.spec.ts`、`client_role_gate.spec.ts`
