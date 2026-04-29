@@ -43,6 +43,7 @@ test.describe('AI Vision Onboarding E2E', () => {
         const scanData = await extractData<any>(await scanResponsePromise);
         expect(scanData.existingProductFound).toBeFalsy();
         expect(scanData.name).toBeTruthy();
+        expect(scanData.brand).toBeTruthy();
         expect(scanData.itemNumber).toBeTruthy();
         expect(scanData.price).toBeGreaterThan(0);
         expect(scanData.description).toBeTruthy();
