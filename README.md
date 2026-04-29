@@ -17,6 +17,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - **拣货确认闭环**：`/procurement` 与 `/picking` 共用 reviewed receipt + picking checklist 单一数据源，按 `businessId` 展示 `PENDING_DELIVERY` / `READY_FOR_DELIVERY`，保留 `SHORT_SHIPPED` / `ON_SITE_REPLENISHED` / `SELF_USE` 标签，并在冻结后统一只读。
 - **聊天协作**：聊天已升级为 REST 持久化 + WebSocket(STOMP) 实时推送；客户侧聊天保持“订单上下文优先，Trip 次级筛选”。
 - **AI 商品上架**：支持 OCR-first 识别、LLM 结构化、供应商规则、来源治理、既有商品匹配与人工确认。
+- **数据库迁移治理**：已引入 Flyway；`backend/src/main/resources/db/migration` 提供 PostgreSQL 基线 schema，`backend` / `core-service` 通过 migration 初始化空库，生产/试运行不再依赖 Hibernate `ddl-auto=update`。
 - **LLM 兜底**：主文本 LLM 支持 `auto` 路由，优先 Ollama，不可用时可切换到 Codex CLI；服务器生产环境不假定 Codex CLI 可用。
 
 ## 当前未实现 / 不宣称
@@ -26,7 +27,6 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - 真实地图路径规划 / 实时配送追踪
 - 无人值守 AI 小票识别
 - refresh token / OAuth / WebSocket 鉴权（当前仍未实现）
-- 数据库迁移治理（尚未引入 Flyway / Liquibase）
 
 ## 技术栈
 - **Backend**: Spring Boot 3 / Spring Cloud / Nacos / OpenFeign / Resilience4j / Spring Security / Spring Data JPA
@@ -51,6 +51,16 @@ docker-compose -p bobbuy up -d
 - MinIO Console: http://localhost:9001
 - Nacos Console: http://localhost:8848/nacos
 
+### 数据库迁移
+- Flyway migration 目录：`backend/src/main/resources/db/migration`
+- 空库初始化（本地 PostgreSQL / Docker Compose `postgres`）：
+  ```bash
+  cd backend
+  mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword flyway:migrate
+  ```
+- 现有非空库首次纳管前必须先备份；仅在确认库结构与 `V1__baseline_schema.sql` 对齐后，才可显式设置 `BOBBUY_FLYWAY_BASELINE_ON_MIGRATE=true` 做一次性基线登记。
+- Docker / Nacos 短期约定由 `core-service` 负责执行 migration，避免多服务并发迁移竞态。
+
 ### 网关路由
 - `/api/chat/**` → `im-service`
 - `/api/ai/**` → `ai-service`
@@ -64,7 +74,7 @@ docker-compose -p bobbuy up -d
 - **本地演示账号**：seed 数据默认提供 `agent / agent-pass`、`customer / customer-pass`。
 - **兼容策略**：`X-BOBBUY-ROLE` / `X-BOBBUY-USER` 仅在显式开启 `bobbuy.security.header-auth.enabled=true` 时可用，默认仅供 dev/test 过渡。
 - **生产要求**：公网部署必须配置 `BOBBUY_SECURITY_JWT_SECRET`，且不得开启 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=true`。
-- **当前安全边界**：暂未实现 refresh token、第三方 OAuth/SSO、WebSocket `/ws` 鉴权；数据库凭据迁移仍待后续引入 Flyway/Liquibase。
+- **当前安全边界**：暂未实现 refresh token、第三方 OAuth/SSO、WebSocket `/ws` 鉴权；旧库升级仍需按 Flyway 基线/备份流程执行。
 
 ## 验收门禁
 
@@ -76,6 +86,7 @@ docker-compose -p bobbuy up -d
 - `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
 
 专用环境门禁（不进入默认 Hosted CI）：
+- `cd backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`
 - `cd frontend && npm run e2e`
 - `cd frontend && npm run e2e:ai`
 
@@ -88,5 +99,6 @@ docker-compose -p bobbuy up -d
 - `cd backend && mvn test`：通过。
 - `cd frontend && npm test`：通过。
 - `cd frontend && npm run build`：通过。
+- `cd backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`：通过。
 
 详细矩阵见 [docs/reports/TEST-MATRIX-本地与CI执行矩阵.md](docs/reports/TEST-MATRIX-本地与CI执行矩阵.md)。
