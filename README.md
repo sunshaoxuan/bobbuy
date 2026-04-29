@@ -116,7 +116,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 
 默认门禁（每个 PR / `main` push 必跑）：
 - `cd backend && mvn test`
-- `cd frontend && npm test`
+- `cd frontend && npm ci && npm test`
 - `cd frontend && npm run build`
 - `cd backend && mvn -DskipTests package && cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
 - `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
@@ -132,9 +132,13 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - 若本次 PR / Release 未执行，必须明确登记为风险项，不得写成“已通过”。
 
 最近本地验证：
+- `cd /home/runner/work/bobbuy/bobbuy && docker compose config`：通过。
 - `cd backend && mvn test`：通过。
-- `cd frontend && npm test`：通过。
+- `cd frontend && npm ci && npm test`：通过。
 - `cd frontend && npm run build`：通过。
+- `cd backend && mvn -DskipTests package`：通过。
+- `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`：通过。
+- `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`：通过。
 - `cd backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`：通过。
 
 详细矩阵见 [docs/reports/TEST-MATRIX-本地与CI执行矩阵.md](docs/reports/TEST-MATRIX-本地与CI执行矩阵.md)。

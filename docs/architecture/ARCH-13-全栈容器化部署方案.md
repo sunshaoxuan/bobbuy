@@ -15,28 +15,28 @@
 
 | 服务名 | 镜像 | 外部端口 | 内部端口 | 职责 |
 | :--- | :--- | :--- | :--- | :--- |
-| `gateway` | `nginx:alpine` | `80` | `80` | 对外入口，转发前端与 API |
+| `gateway` | `nginx:alpine` | `127.0.0.1:80` | `80` | 对外入口，转发前端与 API |
 | `frontend` | 项目 Dockerfile | - | `80` | 提供静态资源 |
 | `gateway-service` | `Dockerfile.service` | - | `8080` | Spring Cloud Gateway 路由 |
 | `core-service` | `Dockerfile.service` | - | `8081` | 订单、行程、采购、财务核心业务 |
 | `ai-service` | `Dockerfile.service` | - | `8082` | AI 解析、翻译、商品上架、小票识别入口 |
 | `im-service` | `Dockerfile.service` | - | `8083` | 聊天 REST 与 WebSocket(STOMP) |
 | `auth-service` | `Dockerfile.service` | - | `8084` | 认证服务预留节点 |
-| `ocr-service` | `bobbuy-ocr` | `8000` | `8000` | Python OCR 服务 |
-| `postgres` | `postgres:18-alpine` | `5432` | `5432` | 核心业务数据持久化 |
-| `minio` | `minio/minio` | `9000/9001` | `9000/9001` | 证据图与非结构化数据存储 |
+| `ocr-service` | `bobbuy-ocr` | `127.0.0.1:8000` | `8000` | Python OCR 服务 |
+| `postgres` | `postgres:15-alpine` | `127.0.0.1:5432` | `5432` | 核心业务数据持久化 |
+| `minio` | `minio/minio` | `127.0.0.1:9000/9001` | `9000/9001` | 证据图与非结构化数据存储 |
 | `redis` | `redis:alpine` | `6379` | `6379` | 缓存与 Session 管理 |
 | `rabbitmq` | `rabbitmq:3-management-alpine` | 内网 | `5672/61613` | AMQP / STOMP broker relay |
-| `nacos` | `nacos/nacos-server:v2.3.2-slim` | 内网 | `8848` | 服务发现与配置 |
+| `nacos` | `nacos/nacos-server:v2.3.2-slim` | `127.0.0.1:8848` | `8848` | 服务发现与配置 |
 
 ## 3. 持久化策略 (Persistence)
 
 通过 Docker Volumes 确保数据在容器销毁后依然保留：
 
-- `./data/postgres_v18` -> `/var/lib/postgresql`
-- `bobbuy_minio_data` -> `/data`
-- `bobbuy_redis_data` -> `/data`
-- `bobbuy_rabbitmq_data` -> `/var/lib/rabbitmq`
+- `./data/postgres` -> `/var/lib/postgresql/data`
+- `./data/minio` -> `/data`
+- `./data/redis` -> `/data`
+- `./data/rabbitmq` -> `/var/lib/rabbitmq`
 
 ## 4. 关键环境变量配置
 
@@ -47,21 +47,23 @@ SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bobbuy
 SPRING_DATA_REDIS_HOST: redis
 SPRING_RABBITMQ_HOST: rabbitmq
 BOBBUY_MINIO_ENDPOINT: http://minio:9000
+SPRING_PROFILES_ACTIVE: prod
+SPRING_FLYWAY_ENABLED: true (仅 core-service)
 BOBBUY_AI_LLM_MAIN_PROVIDER: auto
-BOBBUY_AI_LLM_MAIN_URL: http://ccnode.briconbric.com:22545
-BOBBUY_AI_LLM_CODEX_COMMAND: codex
+BOBBUY_AI_LLM_MAIN_URL: <显式填写>
+BOBBUY_AI_LLM_CODEX_COMMAND: <默认留空，仅本地桌面场景启用>
 ```
 
 ## 6. 当前部署边界
 
 - 当前 Compose 更接近集成/试运行部署，不等同于生产高可用方案。
 - Codex CLI 兜底只适合本地或私有 gateway；Linux 容器内不应假定存在 Codex 登录态。
-- 尚未引入 Flyway/Liquibase，生产前需要补数据库迁移治理。
-- Nacos、RabbitMQ、MinIO、数据库密码与网络暴露策略仍需按生产安全标准加固。
+- 当前已引入 Flyway；Compose 仅允许 `core-service` 执行 migration，其余服务默认禁用。
+- Nacos、RabbitMQ、MinIO、数据库密码与网络暴露策略已收敛到 `.env.template` + Compose，但 Secret Manager / TLS / HA / 监控告警仍需后续加固。
 
 ## 5. 安全性考量
 
-- **内部网络保护**：数据库和中间件端口虽开放于宿主机，但核心业务通信均走容器内网空间。
+- **内部网络保护**：宿主机端口默认仅绑定 `127.0.0.1`，核心业务通信走容器内网空间。
 - **MinIO 策略**：默认情况下，`bobbuy` 存储桶启用预览权限以便前端展示，但建议在生产环境配置 CDN 或反向代理鉴权。
 
 ---

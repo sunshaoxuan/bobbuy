@@ -4,9 +4,3 @@ server:
 spring:
   application:
     name: bobbuy-backend
-
-bobbuy:
-  ai:
-    ollama:
-      url: http://ccnode.briconbric.com:22545
-      model: qwen2.5:7b
