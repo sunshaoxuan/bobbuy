@@ -27,7 +27,7 @@
 | [PLAN-21](PLAN-21-参与者档案与线下结算增强-VNext+1.md) | 参与者档案与线下结算增强 | ✅ 已完成 | 100% | 地址/社交档案、线下收款、差额结转 | 全栈团队 |
 | [PLAN-22](PLAN-22-账本精算与配送履约闭环.md) | 账本精算与配送履约闭环 | ✅ 已完成 | 100% | 余额口径、待配送、拣货确认 | 全栈团队 |
 | [PLAN-23](PLAN-23-冻结门禁与履约视图统一.md) | 冻结门禁与履约视图统一 | ✅ 已完成 | 100% | 冻结只读、拣货单一事实源 | 全栈团队 |
-| [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) | 稳定上线差距收口优先级 | 🔄 执行中 | 85% | 默认门禁、认证、迁移、部署、AI/OCR、服务边界、运维与 E2E 已收口；剩余为专用环境和架构长期项 | 全栈团队 |
+| [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) | 稳定上线差距收口优先级 | 🔄 执行中 | 88% | 默认门禁、认证、迁移、部署、AI/OCR、服务边界、运维、E2E 与 sample 字段级上架闭环已收口；剩余为专用环境和架构长期项 | 全栈团队 |
 | [PLAN-25](PLAN-25-P0后端测试基线恢复开发提示词.md) | P0 后端测试基线恢复提示词 | ✅ 已完成 | 100% | `backend mvn test` 已恢复稳定全绿 | 全栈团队 |
 | [PLAN-26](PLAN-26-P0前端测试基线恢复开发提示词.md) | P0 前端测试基线恢复提示词 | ✅ 已完成 | 100% | `frontend npm test` 已恢复稳定完成 | 全栈团队 |
 | [PLAN-27](PLAN-27-P0上线验收矩阵与CI固化开发提示词.md) | P0 上线验收矩阵与 CI 固化提示词 | ✅ 已完成 | 100% | 默认 CI 与手动/专用门禁分层已对齐 | 全栈团队 |
@@ -42,8 +42,8 @@
 | [PLAN-36](PLAN-36-P2-RefreshToken与会话生命周期治理开发提示词.md) | P2 Refresh Token 与会话生命周期治理提示词 | ✅ 已完成 | 100% | access token 刷新、登出撤销、轮换复用检测与前端会话恢复已完成 | 全栈团队 |
 | [PLAN-37](PLAN-37-P2-浏览器Token防护与Refresh并发硬化开发提示词.md) | P2 浏览器 Token 防护与 Refresh 并发硬化提示词 | ✅ 已完成 | 100% | HttpOnly refresh cookie、CSRF、refresh 并发轮换边界已收口 | 全栈团队 |
 | [PLAN-38](PLAN-38-P2-Playwright端到端试运行验收开发提示词.md) | P2 Playwright 端到端试运行验收提示词 | ✅ 已完成 | 100% | 浏览器 smoke、角色门禁、聊天与核心业务试运行验收已稳定 | 全栈团队 |
-| [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) | P1 Sample 图片 AI 商品字段识别与档案落库优化提示词 | ⏳ 待评审 | 0% | 建立 sample golden、字段级识别、结构化落库与 AI 专用验收闭环 | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 82% | 默认质量门禁已稳定；下一优先级为 sample 图片 AI 字段级识别与商品档案落库修复 | 全栈团队 |
+| [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) | P1 Sample 图片 AI 商品字段识别与档案落库优化提示词 | ✅ 已完成 | 100% | 已建立 sample golden、Product.attributes 落库、字段级验证脚本与 AI 专用验收口径 | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 88% | 默认质量门禁、Playwright smoke 与 AI 商品字段级落库链路已稳定；下一优先级为专用环境真实 AI/OCR 实扫与安全/架构独立门禁 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |
@@ -249,8 +249,8 @@
 
 ### 技术债务清偿进度
 
-> 2026-04-29 修正：PLAN-25 到 PLAN-38 已完成，默认后端/前端测试、前端构建、Docker 构建、Compose 渲染、服务壳 smoke 与 Playwright smoke 均有明确门禁口径。当前剩余风险不再是 P0 测试基线，而是专用环境、安全扫描与长期架构项。
-- **已解决**: 8/8（100%）
+> 2026-04-29 修正：PLAN-25 到 PLAN-39 已完成，默认后端/前端测试、前端构建、Docker 构建、Compose 渲染、服务壳 smoke、Playwright smoke 与 AI 商品字段级落库均有明确门禁口径。当前剩余风险不再是 P0 测试基线，而是专用环境、安全扫描与长期架构项。
+- **已解决**: 9/9（100%）
   - ✅ 前端提交逻辑
   - ✅ I18n 支持
   - ✅ 审计日志与追溯 (`trace_id`)
@@ -259,9 +259,11 @@
   - ✅ 并发控制安全性
   - ✅ Controller 集成测试
   - ✅ Playwright smoke 试运行验收
+  - ✅ AI 商品字段级识别、结构化落库与 sample golden 验证脚本
 
 - **仍需风险登记**:
   - `npm run e2e:ai` AI 真实视觉链路未在当前环境执行，需专用环境。
+  - `scripts/verify-ai-onboarding-samples.ps1` 已建立，但真实 `/api/ai/onboard/scan` 实扫仍需可达服务、真实 AI/OCR 与 seed 数据。
   - CodeQL / 依赖审计未固化为默认 CI 门禁。
   - OAuth/SSO、mTLS/service mesh、独立 schema、契约测试、拆分后独立 CI/CD 仍属于后续架构任务。
 
@@ -274,9 +276,10 @@
 1. **试运行前手动门禁**:
    - [x] 后端：`cd backend && mvn test`
    - [x] 前端：`cd frontend && npm test && npm run build`
-   - [x] 浏览器 smoke：`cd frontend && npm run e2e`，当前口径 `46 passed / 2 skipped`
+   - [x] 浏览器 smoke：`cd frontend && npm run e2e`，当前口径 `45 passed / 2 skipped / 1 flaky retry`
    - [x] Compose 配置渲染：`docker compose config`
-   - [ ] AI 商品字段级 sample 验证：见 [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md)
+   - [x] AI 商品字段级 sample golden、结构化落库与验证脚本：见 [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) 与 [REPORT-03](../reports/REPORT-03-AI商品字段识别样例验证报告.md)
+   - [ ] AI sample 专用实扫：`pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`，需可达 `/api/ai/onboard/scan` 与真实 AI/OCR/seed 环境
    - [ ] AI 真实视觉：`cd frontend && npm run e2e:ai`，需 `RUN_AI_VISION_E2E=1` 与专用 AI/OCR/seed 环境
 
 2. **风险登记 / 独立门禁**:
