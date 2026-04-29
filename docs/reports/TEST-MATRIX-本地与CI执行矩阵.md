@@ -1,6 +1,6 @@
 # 本地 / CI 测试执行矩阵
 
-> 2026-04-29 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build` 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 做配置渲染校验；Flyway PostgreSQL migration 验证、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`core-service` / `ai-service` / `im-service` / `auth-service` 当前仍复用 `backend` 共享代码，因此默认门禁不把它们当作已经拥有独立测试边界的微服务。
+> 2026-04-29 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build` 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 做配置渲染校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`core-service` / `ai-service` / `im-service` / `auth-service` 当前仍复用 `backend` 共享代码，因此这些 smoke test 只验证启动边界，不等同于已拥有独立微服务测试边界。
 
 ## 1. 默认门禁（每个 PR / `main` push 必跑）
 
@@ -17,6 +17,7 @@
 | 验证项 | 本地命令 | CI 触发方式 | 默认门禁 | 环境要求 |
 | :-- | :-- | :-- | :-- | :-- |
 | PostgreSQL 空库 migration | `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate` | `workflow_dispatch` + `postgres-migration-verify` job（输入 `run_postgres_migration_verify=true`） | 否 | 需要可写 PostgreSQL 空库；默认由 Flyway 插件验证 `backend/src/main/resources/db/migration` |
+| 服务壳 smoke test | `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test` | 当前仅本地 / 手动执行 | 否 | 使用 H2 与关闭 Nacos 的测试配置，验证 `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` 最小启动以及 gateway 内部 header 清理 |
 | Playwright 页面回归 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e` | `workflow_dispatch` + `playwright-e2e` job（输入 `run_playwright_e2e=true`） | 否 | GitHub Hosted Runner 可执行；常规用例走前端共享 mock，不依赖真实 AI / MinIO |
 | AI 真实视觉链路 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai` | 不纳入默认 Hosted CI；仅在专用环境手动执行并单独记录结果 | 否 | 必须提供 `RUN_AI_VISION_E2E=1`、`SPRING_PROFILES_ACTIVE=dev,ai-hermes`、可访问的 AI 模型、MinIO、seed 数据与样本图片 |
 | Compose 配置渲染 | `cd /home/runner/work/bobbuy/bobbuy && docker compose config` | 当前未纳入默认 CI；作为试运行部署前置校验执行 | 否 | 要求 `.env` / 默认变量可成功渲染 Compose，且不得依赖未声明变量 |
@@ -40,7 +41,7 @@
 - AI/OCR 可靠性用例（provider unconfigured、OCR/LLM 失败、fallback、人工复核、重试）必须继续保留在默认 mock 测试中，禁止切换到真实外部服务。
 - 后端 `mvn test` 现同时覆盖 JWT 登录、`/api/auth/me`、401/403、customer 本人数据隔离、WebSocket STOMP `CONNECT` 鉴权与聊天上下文授权，以及 `bobbuy.security.header-auth.enabled=false` 时伪造 header 不得提权。
 - 前端单测已覆盖 WebSocket STOMP 连接携带 Bearer token、token 缺失时静默降级为 REST 路径、鉴权失败时停止重连。
-- `core-service` / `ai-service` / `im-service` / `auth-service` / `gateway-service` 当前无独立模块级测试；若后续要把服务外壳降级为 optional/profile 或继续拆分，必须先补模块启动 smoke test、服务间鉴权与拆分后 CI/CD。
+- `core-service` / `ai-service` / `im-service` / `auth-service` / `gateway-service` 当前已补最小模块启动 smoke test，但尚无契约测试、独立 schema 验证与拆分后 CI/CD；若后续要继续拆分，仍需补齐这些门禁。
 - 运维基线当前按“默认门禁 + 手工 Runbook 校验”执行：`docker compose config`、健康检查、日志巡检、备份恢复演练不进入默认 Hosted CI。
 - 当前已知前端测试噪声：
   - Ant Design `useForm` 未连接 warning。
@@ -60,6 +61,7 @@
 - [x] `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`
+- [x] `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test`
 - [x] 按 `docs/runbooks/RUNBOOK-备份恢复演练.md` 执行一次本地基础设施级恢复演练
   - PostgreSQL：`pg_dump` -> 新库 `bobbuy_restore_verify` 恢复校验通过
   - MinIO：恢复验证 bucket `bobbuy-media-restore-verify` 中存在 `probe.txt`
@@ -70,4 +72,4 @@
   - 失败用例：`chat_publish_flow.spec.ts`、`client_role_gate.spec.ts`
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai`
 - [ ] CodeQL / 依赖审计（未纳入默认门禁，需单独执行或在 PR / Release 中登记）
-- [ ] 独立服务间 service token / mTLS 验证（本阶段未实现，仅登记风险）
+- [ ] mTLS / service mesh / 契约测试（本阶段未实现，需继续登记风险）

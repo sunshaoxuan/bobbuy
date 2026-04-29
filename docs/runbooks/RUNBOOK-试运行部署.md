@@ -72,12 +72,14 @@
    cp .env.template .env
    ```
 2. 至少修改以下项目后再部署：
-   - `BOBBUY_SECURITY_JWT_SECRET`
-   - `POSTGRES_PASSWORD`
-   - `MINIO_ROOT_PASSWORD`
-   - `RABBITMQ_DEFAULT_PASS`
-   - 可用 `openssl rand -base64 32` 生成 `BOBBUY_SECURITY_JWT_SECRET`
-   - 若 `BOBBUY_SECURITY_JWT_SECRET` 为空，后端会在启动阶段直接失败，不会以空 secret 进入试运行
+    - `BOBBUY_SECURITY_JWT_SECRET`
+    - `BOBBUY_SECURITY_SERVICE_TOKEN`
+    - `POSTGRES_PASSWORD`
+    - `MINIO_ROOT_PASSWORD`
+    - `RABBITMQ_DEFAULT_PASS`
+    - 可用 `openssl rand -base64 32` 生成 `BOBBUY_SECURITY_JWT_SECRET`
+    - 可用第二次 `openssl rand -base64 32` 生成 `BOBBUY_SECURITY_SERVICE_TOKEN`
+    - 若 `BOBBUY_SECURITY_JWT_SECRET` 为空，后端会在启动阶段直接失败，不会以空 secret 进入试运行
 3. 按实际环境选择 AI 路径：
    - **Ollama / 私有兼容 gateway**：填写 `BOBBUY_AI_LLM_MAIN_URL`
    - **视觉 / edge 模型**：填写 `BOBBUY_AI_LLM_EDGE_URL`；只有 edge 节点模型名与默认 `llama3.2-vision:11b` 不一致时才覆盖 `BOBBUY_AI_LLM_EDGE_MODEL`
@@ -93,8 +95,10 @@
    - 不使用 query token，避免 access token 出现在 URL / 访问日志
    - token 失效后前端会停止 WebSocket 重连并退回 REST 刷新；运维需按正常重新登录流程处理
 6. 服务间鉴权约束：
-   - 当前 `core-service` / `ai-service` / `im-service` / `auth-service` 仍依赖 Docker 内网边界与共享 JWT 配置
-   - 尚未提供独立 service token / mTLS；在补齐前不得继续真实微服务深拆或暴露服务壳直连公网
+   - gateway-service 会清理外部伪造的 `X-BOBBUY-SERVICE-TOKEN` / `X-BOBBUY-INTERNAL-SERVICE`，并在配置 `BOBBUY_SECURITY_SERVICE_TOKEN` 后向下游附带可信内部身份
+   - 后端仅对 `/internal/**` 信任 service token；普通业务接口仍需用户 JWT 或显式允许的匿名访问
+   - service token 只表达内部服务身份，不等同于最终用户身份；如需用户上下文，仍必须携带并校验用户 JWT
+   - mTLS / service mesh 仍未实现；在补齐前不得继续真实微服务深拆或暴露服务壳直连公网
 
 ---
 
@@ -121,11 +125,17 @@ docker compose ps
 docker compose logs -f core-service ai-service gateway-service
 ```
 
-鉴权 smoke：
+鉴权 / 服务壳 smoke：
 
 ```bash
 curl -i http://127.0.0.1:${GATEWAY_HOST_PORT:-80}/api/auth/me
 # 预期 401
+
+cd /home/runner/work/bobbuy/bobbuy
+mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am \
+  -Dsurefire.failIfNoSpecifiedTests=false \
+  -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test
+# 预期通过：5 个服务壳最小启动 + gateway 内部 header 清理
 ```
 
 Flyway 验证点：
@@ -162,6 +172,7 @@ Flyway 验证点：
 - `ai-service`：AI/OCR 服务外壳
 - `im-service`：聊天 / WebSocket 服务外壳
 - `gateway-service`：路由层，不写业务库
+- `gateway-service` 同时负责向下游附带最小内部 service token；nginx 入口会先清空外部伪造的内部 header
 
 ---
 
@@ -210,7 +221,7 @@ docker compose logs -f nacos
 
 最小日志字段口径：
 
-- HTTP：`method/path/status/cost/trace_id/user/role`
+- HTTP：`method/path/status/cost/trace_id/user/role/internal_service`
 - AI / OCR：`provider/activeProvider/model/stage/latencyMs/errorCode/fallbackReason`
 - 排障优先级：先看 `gateway` / `gateway-service`，再看对应业务服务与基础设施
 
@@ -220,6 +231,10 @@ docker compose logs -f nacos
      - 确认 `BOBBUY_SECURITY_JWT_SECRET` 非空
      - 确认 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=false`
      - 若只表现为聊天实时消息失效，补查 WebSocket token 是否过期并重新登录
+  1.1 **内部接口 401**
+     - 确认 `BOBBUY_SECURITY_SERVICE_TOKEN` 已在 `.env`、Compose 与 Nacos 渲染生效
+     - 确认请求没有直接伪造 `X-BOBBUY-SERVICE-TOKEN` / `X-BOBBUY-INTERNAL-SERVICE`
+     - `/internal/**` 只接受可信 service token，不接受浏览器直连
 2. **服务起不来**
    - 先看 `docker compose ps`
    - 再看对应服务 readiness 日志
@@ -289,7 +304,7 @@ docker compose logs -f nacos
 - Secret Manager
 - 真实监控 / 告警平台
 - 自动化备份恢复演练
-- 独立服务间 service token / mTLS
+- mTLS / service mesh / 契约测试
 - refresh token 生命周期治理
 
 备份与恢复演练命令、恢复验收与记录模板见 [`RUNBOOK-备份恢复演练.md`](RUNBOOK-备份恢复演练.md)。

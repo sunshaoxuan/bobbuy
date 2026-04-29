@@ -50,8 +50,8 @@ public class SecurityConfig {
                 .accessDeniedHandler((request, response, accessDeniedException) -> response.sendError(HttpStatus.FORBIDDEN.value()))
             )
             .addFilterBefore(internalServiceTokenFilter, AnonymousAuthenticationFilter.class)
-            .addFilterAfter(tokenAuthenticationFilter, InternalServiceTokenFilter.class)
-            .addFilterAfter(roleInjectionFilter, TokenAuthenticationFilter.class)
+            .addFilterBefore(tokenAuthenticationFilter, AnonymousAuthenticationFilter.class)
+            .addFilterBefore(roleInjectionFilter, AnonymousAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/health/**").permitAll()

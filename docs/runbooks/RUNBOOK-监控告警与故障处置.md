@@ -51,6 +51,7 @@ docker compose logs -f postgres minio rabbitmq nacos redis ocr-service
 - `trace_id`
 - `user`
 - `role`
+- `internal_service`
 
 当前来源：
 
@@ -60,7 +61,7 @@ docker compose logs -f postgres minio rabbitmq nacos redis ocr-service
 示例口径：
 
 ```text
-[INFO] POST /api/orders status=201 cost=42ms trace_id=... user=agent role=AGENT
+[INFO] POST /api/orders status=201 cost=42ms trace_id=... user=agent role=AGENT internal_service=-
 ```
 
 #### AI / OCR
@@ -89,6 +90,7 @@ docker compose logs -f postgres minio rabbitmq nacos redis ocr-service
 禁止写入日志：
 
 - JWT / Bearer token
+- `X-BOBBUY-SERVICE-TOKEN`
 - STOMP `CONNECT` header 中的 Bearer token
 - 用户密码
 - `MINIO_ROOT_PASSWORD` / 数据库密码 / 真实 secret
@@ -125,11 +127,11 @@ curl -fsS http://127.0.0.1:${OCR_HOST_PORT:-8000}/docs >/dev/null
 | 对象 | 健康口径 | 首查命令 |
 | :-- | :-- | :-- |
 | gateway nginx | `http://127.0.0.1/health` / `docker compose ps` | `docker compose logs --tail=100 gateway` |
-| gateway-service | `/actuator/health/readiness` | `docker compose logs --tail=100 gateway-service` |
-| core-service | `/actuator/health/readiness` | `docker compose logs --tail=100 core-service` |
-| ai-service | `/actuator/health/readiness` | `docker compose logs --tail=100 ai-service` |
-| im-service | `/actuator/health/readiness` | `docker compose logs --tail=100 im-service` |
-| auth-service | `/actuator/health/readiness` | `docker compose logs --tail=100 auth-service` |
+| gateway-service | `/actuator/health/readiness` + `GatewayServiceSmokeTest` | `docker compose logs --tail=100 gateway-service` |
+| core-service | `/actuator/health/readiness` + `CoreServiceSmokeTest` | `docker compose logs --tail=100 core-service` |
+| ai-service | `/actuator/health/readiness` + `AiServiceSmokeTest` | `docker compose logs --tail=100 ai-service` |
+| im-service | `/actuator/health/readiness` + `ImServiceSmokeTest` | `docker compose logs --tail=100 im-service` |
+| auth-service | `/actuator/health/readiness` + `AuthServiceSmokeTest` | `docker compose logs --tail=100 auth-service` |
 | postgres | `pg_isready` | `docker compose logs --tail=100 postgres` |
 | minio | `/minio/health/live` | `docker compose logs --tail=100 minio` |
 | rabbitmq | `rabbitmq-diagnostics -q check_running` | `docker compose logs --tail=100 rabbitmq` |
@@ -172,6 +174,7 @@ curl -fsS -H "Authorization: Bearer <agent-token>" http://127.0.0.1/api/metrics
 | MinIO 上传失败 | 日志 | 搜索 `ImageStorageService` / `MinIO` error |
 | RabbitMQ 连接失败 | 日志 | 搜索 AMQP / STOMP connection error |
 | WebSocket 连接 / 断开异常 | `im-service` / `core-service` 日志 | 搜索 websocket / stomp / broker relay / chat forbidden / invalid websocket access token |
+| `/internal/**` 401 | gateway-service / 对应服务日志 | 搜索 internal service token / forged internal header / unauthorized internal endpoint |
 
 > 当前不强行引入 Prometheus；AI/OCR、RabbitMQ、Redis、Nacos 仍以日志 + Runbook 巡检为主。
 
@@ -204,6 +207,7 @@ curl -fsS -H "Authorization: Bearer <agent-token>" http://127.0.0.1/api/metrics
   ```
 - **缓解动作**: 检查 JWT secret、时间漂移、header auth 是否被误开、网关路由是否正常
 - **补充说明**: WebSocket `/ws` 已改为依赖同一 access token；若只有聊天实时能力异常，也按登录链路检查 token 过期与 STOMP 鉴权失败
+- **补充说明**: 若只影响 `/internal/**` 或 `core-service -> ai-service` 这类内部调用，还需同步检查 `BOBBUY_SECURITY_SERVICE_TOKEN` 是否在 gateway-service 与下游服务一致
 - **升级条件**: 所有角色均无法登录，或 token 验证持续失败超过 10 分钟
 
 ### 5.3 订单 / 账单 / 钱包 5xx
