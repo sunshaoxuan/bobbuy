@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:18-alpine
+    image: postgres:15-alpine
     container_name: bobbuy-postgres
     restart: always
     environment:
@@ -8,9 +8,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-bobbuy}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bobbuypassword}
     volumes:
-      - ./data/postgres_v18:/var/lib/postgresql
+      - ./data/postgres:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${BOBBUY_BIND_HOST:-127.0.0.1}:${POSTGRES_HOST_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bobbuy} -d ${POSTGRES_DB:-bobbuy}"]
       interval: 10s
@@ -33,6 +33,9 @@ services:
     volumes:
       - ./data/minio:/data
     command: server /data --console-address ":9001"
+    ports:
+      - "${BOBBUY_BIND_HOST:-127.0.0.1}:${MINIO_API_HOST_PORT:-9000}:9000"
+      - "${BOBBUY_BIND_HOST:-127.0.0.1}:${MINIO_CONSOLE_HOST_PORT:-9001}:9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -97,6 +100,8 @@ services:
       NACOS_AUTH_ENABLE: "false"
       JVM_XMS: 256m
       JVM_XMX: 256m
+    ports:
+      - "${BOBBUY_BIND_HOST:-127.0.0.1}:${NACOS_HOST_PORT:-8848}:8848"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8848/nacos/v1/console/health/readiness"]
       interval: 10s
@@ -135,14 +140,29 @@ services:
     restart: always
     environment:
       SERVER_PORT: 8081
-      NACOS_SERVER_ADDR: nacos:8848
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bobbuy
-      SPRING_DATASOURCE_USERNAME: bobbuy
-      SPRING_DATASOURCE_PASSWORD: bobbuypassword
+      SPRING_PROFILES_ACTIVE: prod
+      NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR:-nacos:8848}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-bobbuy}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-bobbuy}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-bobbuypassword}
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_FLYWAY_ENABLED: "true"
       BOBBUY_FLYWAY_BASELINE_ON_MIGRATE: ${BOBBUY_FLYWAY_BASELINE_ON_MIGRATE:-false}
-      BOBBUY_SEED_ENABLED: "false"
+      BOBBUY_SEED_ENABLED: ${BOBBUY_SEED_ENABLED:-false}
+      BOBBUY_SECURITY_JWT_SECRET: ${BOBBUY_SECURITY_JWT_SECRET:-}
+      BOBBUY_SECURITY_JWT_TTL_SECONDS: ${BOBBUY_SECURITY_JWT_TTL_SECONDS:-3600}
+      BOBBUY_SECURITY_HEADER_AUTH_ENABLED: ${BOBBUY_SECURITY_HEADER_AUTH_ENABLED:-false}
+      BOBBUY_MINIO_ENDPOINT: http://minio:9000
+      BOBBUY_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-bobbuyadmin}
+      BOBBUY_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-bobbuypassword}
+      BOBBUY_MINIO_BUCKET: ${BOBBUY_MINIO_BUCKET:-bobbuy-media}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-bobbuy}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-bobbuypassword}
     depends_on:
       postgres:
         condition: service_healthy
@@ -178,23 +198,38 @@ services:
     restart: always
     environment:
       SERVER_PORT: 8082
-      NACOS_SERVER_ADDR: nacos:8848
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bobbuy
-      SPRING_DATASOURCE_USERNAME: bobbuy
-      SPRING_DATASOURCE_PASSWORD: bobbuypassword
+      SPRING_PROFILES_ACTIVE: prod
+      NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR:-nacos:8848}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-bobbuy}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-bobbuy}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-bobbuypassword}
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_FLYWAY_ENABLED: "false"
       BOBBUY_FLYWAY_BASELINE_ON_MIGRATE: ${BOBBUY_FLYWAY_BASELINE_ON_MIGRATE:-false}
-      BOBBUY_SEED_ENABLED: "false"
+      BOBBUY_SEED_ENABLED: ${BOBBUY_SEED_ENABLED:-false}
+      BOBBUY_SECURITY_JWT_SECRET: ${BOBBUY_SECURITY_JWT_SECRET:-}
+      BOBBUY_SECURITY_JWT_TTL_SECONDS: ${BOBBUY_SECURITY_JWT_TTL_SECONDS:-3600}
+      BOBBUY_SECURITY_HEADER_AUTH_ENABLED: ${BOBBUY_SECURITY_HEADER_AUTH_ENABLED:-false}
+      BOBBUY_MINIO_ENDPOINT: http://minio:9000
+      BOBBUY_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-bobbuyadmin}
+      BOBBUY_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-bobbuypassword}
+      BOBBUY_MINIO_BUCKET: ${BOBBUY_MINIO_BUCKET:-bobbuy-media}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-bobbuy}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-bobbuypassword}
       BOBBUY_AI_LLM_MAIN_PROVIDER: ${BOBBUY_AI_LLM_MAIN_PROVIDER:-auto}
-      BOBBUY_AI_LLM_MAIN_URL: ${BOBBUY_AI_LLM_MAIN_URL}
-      BOBBUY_AI_LLM_EDGE_URL: ${BOBBUY_AI_LLM_EDGE_URL}
-      BOBBUY_AI_LLM_MAIN_MODEL: ${BOBBUY_AI_LLM_MAIN_MODEL}
-      BOBBUY_AI_LLM_EDGE_MODEL: ${BOBBUY_AI_LLM_EDGE_MODEL}
-      BOBBUY_AI_LLM_CODEX_COMMAND: ${BOBBUY_AI_LLM_CODEX_COMMAND:-codex}
+      BOBBUY_AI_LLM_MAIN_URL: ${BOBBUY_AI_LLM_MAIN_URL:-}
+      BOBBUY_AI_LLM_EDGE_URL: ${BOBBUY_AI_LLM_EDGE_URL:-}
+      BOBBUY_AI_LLM_MAIN_MODEL: ${BOBBUY_AI_LLM_MAIN_MODEL:-qwen2.5:7b}
+      BOBBUY_AI_LLM_EDGE_MODEL: ${BOBBUY_AI_LLM_EDGE_MODEL:-llama3.2-vision:11b}
+      BOBBUY_AI_LLM_CODEX_COMMAND: ${BOBBUY_AI_LLM_CODEX_COMMAND:-}
       BOBBUY_AI_LLM_CODEX_TIMEOUT_SECONDS: ${BOBBUY_AI_LLM_CODEX_TIMEOUT_SECONDS:-120}
       BOBBUY_AI_LLM_OLLAMA_HEALTH_TIMEOUT_SECONDS: ${BOBBUY_AI_LLM_OLLAMA_HEALTH_TIMEOUT_SECONDS:-3}
-      BOBBUY_OCR_URL: ${BOBBUY_OCR_URL}
+      BOBBUY_OCR_URL: ${BOBBUY_OCR_URL:-http://ocr-service:8000}
     depends_on:
       postgres:
         condition: service_healthy
@@ -226,7 +261,7 @@ services:
     container_name: bobbuy-ocr-service
     restart: always
     ports:
-      - "8000:8000"
+      - "${BOBBUY_BIND_HOST:-127.0.0.1}:${OCR_HOST_PORT:-8000}:8000"
     environment:
       PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK: "True"
     deploy:
@@ -246,14 +281,25 @@ services:
     restart: always
     environment:
       SERVER_PORT: 8083
-      NACOS_SERVER_ADDR: nacos:8848
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bobbuy
-      SPRING_DATASOURCE_USERNAME: bobbuy
-      SPRING_DATASOURCE_PASSWORD: bobbuypassword
+      SPRING_PROFILES_ACTIVE: prod
+      NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR:-nacos:8848}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-bobbuy}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-bobbuy}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-bobbuypassword}
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_FLYWAY_ENABLED: "false"
       BOBBUY_FLYWAY_BASELINE_ON_MIGRATE: ${BOBBUY_FLYWAY_BASELINE_ON_MIGRATE:-false}
-      BOBBUY_SEED_ENABLED: "false"
+      BOBBUY_SEED_ENABLED: ${BOBBUY_SEED_ENABLED:-false}
+      BOBBUY_SECURITY_JWT_SECRET: ${BOBBUY_SECURITY_JWT_SECRET:-}
+      BOBBUY_SECURITY_JWT_TTL_SECONDS: ${BOBBUY_SECURITY_JWT_TTL_SECONDS:-3600}
+      BOBBUY_SECURITY_HEADER_AUTH_ENABLED: ${BOBBUY_SECURITY_HEADER_AUTH_ENABLED:-false}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-bobbuy}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-bobbuypassword}
     depends_on:
       postgres:
         condition: service_healthy
@@ -285,14 +331,19 @@ services:
     restart: always
     environment:
       SERVER_PORT: 8084
-      NACOS_SERVER_ADDR: nacos:8848
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bobbuy
-      SPRING_DATASOURCE_USERNAME: bobbuy
-      SPRING_DATASOURCE_PASSWORD: bobbuypassword
+      SPRING_PROFILES_ACTIVE: prod
+      NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR:-nacos:8848}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-bobbuy}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-bobbuy}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-bobbuypassword}
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_FLYWAY_ENABLED: "false"
       BOBBUY_FLYWAY_BASELINE_ON_MIGRATE: ${BOBBUY_FLYWAY_BASELINE_ON_MIGRATE:-false}
-      BOBBUY_SEED_ENABLED: "false"
+      BOBBUY_SEED_ENABLED: ${BOBBUY_SEED_ENABLED:-false}
+      BOBBUY_SECURITY_JWT_SECRET: ${BOBBUY_SECURITY_JWT_SECRET:-}
+      BOBBUY_SECURITY_JWT_TTL_SECONDS: ${BOBBUY_SECURITY_JWT_TTL_SECONDS:-3600}
+      BOBBUY_SECURITY_HEADER_AUTH_ENABLED: ${BOBBUY_SECURITY_HEADER_AUTH_ENABLED:-false}
     depends_on:
       nacos:
         condition: service_healthy
@@ -338,7 +389,8 @@ services:
     restart: always
     environment:
       SERVER_PORT: 8080
-      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_PROFILES_ACTIVE: prod
+      NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR:-nacos:8848}
     depends_on:
       nacos:
         condition: service_healthy
@@ -367,7 +419,7 @@ services:
     container_name: bobbuy-gateway
     restart: always
     ports:
-      - "80:80"
+      - "${BOBBUY_BIND_HOST:-127.0.0.1}:${GATEWAY_HOST_PORT:-80}:80"
     volumes:
       - ./infra/nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
       - ./data/logs/gateway:/var/log/nginx

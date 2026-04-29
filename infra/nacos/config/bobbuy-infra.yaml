@@ -1,34 +1,34 @@
 spring:
   datasource:
-    url: jdbc:postgresql://postgres:5432/bobbuy
-    username: bobbuy
-    password: bobbuypassword
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/bobbuy}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:bobbuy}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:bobbuypassword}}
     driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: none
   flyway:
-    enabled: false
+    enabled: ${SPRING_FLYWAY_ENABLED:false}
     locations: classpath:db/migration
     clean-disabled: true
     baseline-on-migrate: ${BOBBUY_FLYWAY_BASELINE_ON_MIGRATE:false}
   data:
     redis:
-      host: redis
-      port: 6379
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
   rabbitmq:
-    host: rabbitmq
-    port: 5672
-    username: bobbuy
-    password: bobbuypassword
+    host: ${SPRING_RABBITMQ_HOST:rabbitmq}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:${RABBITMQ_DEFAULT_USER:bobbuy}}
+    password: ${SPRING_RABBITMQ_PASSWORD:${RABBITMQ_DEFAULT_PASS:bobbuypassword}}
 
 bobbuy:
   minio:
-    endpoint: http://minio:9000
-    accessKey: bobbuyadmin
-    secretKey: bobbuypassword
-    bucket: bobbuy-media
+    endpoint: ${BOBBUY_MINIO_ENDPOINT:http://minio:9000}
+    accessKey: ${BOBBUY_MINIO_ACCESS_KEY:${MINIO_ROOT_USER:bobbuyadmin}}
+    secretKey: ${BOBBUY_MINIO_SECRET_KEY:${MINIO_ROOT_PASSWORD:bobbuypassword}}
+    bucket: ${BOBBUY_MINIO_BUCKET:bobbuy-media}
   security:
     default-role: CUSTOMER
 

@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:18-alpine
+        image: postgres:15-alpine
         env:
           POSTGRES_DB: bobbuy
           POSTGRES_USER: bobbuy
