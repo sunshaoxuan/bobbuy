@@ -7,7 +7,12 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+    clean-disabled: true
+    baseline-on-migrate: ${BOBBUY_FLYWAY_BASELINE_ON_MIGRATE:false}
   data:
     redis:
       host: redis

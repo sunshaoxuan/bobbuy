@@ -12,6 +12,11 @@ on:
         required: false
         default: false
         type: boolean
+      run_postgres_migration_verify:
+        description: "Run the PostgreSQL Flyway migration verification gate."
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -79,6 +84,43 @@ jobs:
 
       - name: Build frontend image
         run: docker build frontend -t bobbuy-frontend-test
+
+  postgres-migration-verify:
+    name: postgres-migration-verify
+    if: github.event_name == 'workflow_dispatch' && inputs.run_postgres_migration_verify
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: bobbuy
+          POSTGRES_USER: bobbuy
+          POSTGRES_PASSWORD: bobbuypassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bobbuy -d bobbuy"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run Flyway migration verification
+        run: >-
+          mvn -B --file backend/pom.xml
+          -Dflyway.url=jdbc:postgresql://127.0.0.1:5432/bobbuy
+          -Dflyway.user=bobbuy
+          -Dflyway.password=bobbuypassword
+          -Dflyway.cleanDisabled=false
+          flyway:clean flyway:migrate flyway:validate
 
   playwright-e2e:
     name: playwright-e2e

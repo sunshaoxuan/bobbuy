@@ -141,6 +141,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: bobbuypassword
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      BOBBUY_FLYWAY_BASELINE_ON_MIGRATE: ${BOBBUY_FLYWAY_BASELINE_ON_MIGRATE:-false}
       BOBBUY_SEED_ENABLED: "false"
     depends_on:
       postgres:
@@ -183,6 +184,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: bobbuypassword
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      BOBBUY_FLYWAY_BASELINE_ON_MIGRATE: ${BOBBUY_FLYWAY_BASELINE_ON_MIGRATE:-false}
       BOBBUY_SEED_ENABLED: "false"
       BOBBUY_AI_LLM_MAIN_PROVIDER: ${BOBBUY_AI_LLM_MAIN_PROVIDER:-auto}
       BOBBUY_AI_LLM_MAIN_URL: ${BOBBUY_AI_LLM_MAIN_URL}
@@ -250,6 +252,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: bobbuypassword
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      BOBBUY_FLYWAY_BASELINE_ON_MIGRATE: ${BOBBUY_FLYWAY_BASELINE_ON_MIGRATE:-false}
       BOBBUY_SEED_ENABLED: "false"
     depends_on:
       postgres:
@@ -288,6 +291,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: bobbuypassword
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      BOBBUY_FLYWAY_BASELINE_ON_MIGRATE: ${BOBBUY_FLYWAY_BASELINE_ON_MIGRATE:-false}
       BOBBUY_SEED_ENABLED: "false"
     depends_on:
       nacos:

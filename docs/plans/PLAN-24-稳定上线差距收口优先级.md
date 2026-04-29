@@ -26,7 +26,7 @@
 | 2 | P0 | 恢复前端测试基线 | `npm test` 本地执行超时，无法确认组件回归 | 前端改动缺少可靠门禁 | `frontend npm test` 可稳定完成 |
 | 3 | P0 | 固化上线验收矩阵 | 文档已有矩阵，但 CI/本地状态与实际不完全一致 | 上线决策无统一门槛 | build/test/e2e/AI 专项分层明确 |
 | 4 | P1 | 认证与权限生产化 | 当前依赖可伪造 header 角色注入 | 不适合公网或非可信网络 | JWT/session + 角色绑定 + 服务间鉴权方案落地 |
-| 5 | P1 | 数据库迁移治理 | 仍依赖 Hibernate `ddl-auto` 路径 | 数据结构变更不可审计，升级风险高 | Flyway/Liquibase 管理 schema |
+| 5 | P1 | 数据库迁移治理 | 已补 Flyway 基线与空库验证，旧库 adoption/回滚策略仍未完全固化 | 数据结构升级仍需变更审查与备份流程 | Flyway 基线稳定运行，旧库升级手册补齐 |
 | 6 | P1 | 部署与配置收口 | `.env`、Nacos、Compose、backend profile 有重复配置；Codex CLI 只适合本地 | 部署漂移与环境误判 | 试运行配置模板和生产禁用项明确 |
 | 7 | P1 | AI/OCR 可靠性治理 | AI 上架/小票识别依赖多服务，fallback 多但观测不足 | 业务可用性和人工复核压力不稳定 | 可观测、可重试、可人工接管 |
 | 8 | P2 | 微服务边界决策 | 单体 backend 与多模块服务壳并存 | 长期维护成本和部署边界不清 | 明确“先单体稳定”或“继续服务拆分” |
@@ -116,20 +116,20 @@
 
 **问题**
 
-当前 schema 变更依赖 Hibernate `ddl-auto`，上线升级不可审计。
+当前空库 schema 已改为 Flyway 基线 migration，但旧库 adoption、回滚与数据修复策略仍需继续收口。
 
 **执行任务**
 
-1. 选择 Flyway 或 Liquibase。
-2. 从当前实体生成基线 migration。
-3. 关闭生产 `ddl-auto=update`。
-4. 为 JSONB、枚举、索引、唯一约束建立显式迁移。
+1. 固化 Flyway 基线 migration 与 `backend/src/main/resources/db/migration` 目录。
+2. 保持 `backend` / `core-service` 为 migration 执行入口，避免多服务并发迁移。
+3. 继续补旧库 adoption / 备份 / baseline-on-migrate 操作手册。
+4. 继续评估回滚策略与数据修复脚本边界。
 
 **验收标准**
 
 - 空库可通过 migration 初始化。
-- 老库可通过 migration 升级。
-- 生产 profile 不依赖 Hibernate 自动改表。
+- `core-service` / `backend` 不再依赖 Hibernate `ddl-auto=update`。
+- 旧库升级流程、回滚与数据修复要求已在文档中明确风险边界。
 
 ### 4.3 部署与配置收口
 
