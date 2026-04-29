@@ -152,7 +152,7 @@ create table bb_procurement_receipt (
     processing_status varchar(255),
     uploaded_at timestamp(6),
     updated_at timestamp(6),
-    source_image_base64 varchar(200000),
+    source_image_base64 text,
     reconciliation_result jsonb,
     raw_recognition_result jsonb,
     manual_reconciliation_result jsonb,

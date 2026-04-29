@@ -52,10 +52,10 @@ docker-compose -p bobbuy up -d
 - Nacos Console: http://localhost:8848/nacos
 
 ### 数据库迁移
-- Flyway migration 目录：`/home/runner/work/bobbuy/bobbuy/backend/src/main/resources/db/migration`
+- Flyway migration 目录：`backend/src/main/resources/db/migration`
 - 空库初始化（本地 PostgreSQL / Docker Compose `postgres`）：
   ```bash
-  cd /home/runner/work/bobbuy/bobbuy/backend
+  cd backend
   mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword flyway:migrate
   ```
 - 现有非空库首次纳管前必须先备份；仅在确认库结构与 `V1__baseline_schema.sql` 对齐后，才可显式设置 `BOBBUY_FLYWAY_BASELINE_ON_MIGRATE=true` 做一次性基线登记。
