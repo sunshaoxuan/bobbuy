@@ -1,58 +1,134 @@
-import React, { createContext, useContext, useState } from 'react';
-
-export type UserRole = 'CUSTOMER' | 'AGENT' | 'MERCHANT';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { api } from '../api';
+import {
+  clearAuthSession,
+  getStoredAccessToken,
+  getStoredUser,
+  getTestInjectedRole,
+  getTestInjectedUser,
+  storeAuthSession,
+  subscribeToAuthChanges,
+  type AuthenticatedUser,
+  type UserRole
+} from '../authStorage';
 
 interface UserRoleContextValue {
   role: UserRole;
-  setRole: (role: UserRole) => void;
+  user: AuthenticatedUser | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  login: (username: string, password: string) => Promise<AuthenticatedUser>;
+  logout: () => void;
   isPurchaser: boolean;
   isCustomer: boolean;
   isMerchant: boolean;
 }
 
-const STORAGE_KEY = 'bobbuy_user_role';
-const TEST_INJECT_KEY = 'bobbuy_test_role';
 const DEFAULT_ROLE: UserRole = 'CUSTOMER';
 
 const UserRoleContext = createContext<UserRoleContextValue | undefined>(undefined);
 
+function getInjectedUser(role: UserRole): AuthenticatedUser {
+  const injectedUser = getTestInjectedUser();
+  const fallbackId = role === 'AGENT' ? 1000 : role === 'CUSTOMER' ? 1001 : 1002;
+  return {
+    id: Number(injectedUser) || fallbackId,
+    username: injectedUser ?? `test-${role.toLowerCase()}`,
+    name: injectedUser ?? `Test ${role.toLowerCase()}`,
+    role
+  };
+}
+
+function readSessionUser(): AuthenticatedUser | null {
+  const storedUser = getStoredUser();
+  if (storedUser && getStoredAccessToken()) {
+    return storedUser;
+  }
+  const injectedRole = getTestInjectedRole();
+  return injectedRole ? getInjectedUser(injectedRole) : null;
+}
+
 export function UserRoleProvider({ children }: { children: React.ReactNode }) {
-  const resolveInitialRole = (): UserRole => {
-    if (typeof window === 'undefined') {
-      return DEFAULT_ROLE;
-    }
-    const params = new URLSearchParams(window.location.search);
-    const queryRole = params.get('role');
-    if (queryRole === 'CUSTOMER' || queryRole === 'AGENT' || queryRole === 'MERCHANT') {
-      return queryRole;
-    }
-    const injected = localStorage.getItem(TEST_INJECT_KEY);
-    if (injected === 'CUSTOMER' || injected === 'AGENT' || injected === 'MERCHANT') {
-      return injected;
-    }
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'CUSTOMER' || stored === 'AGENT' || stored === 'MERCHANT') {
-      return stored;
-    }
-    return DEFAULT_ROLE;
-  };
+  const [user, setUser] = useState<AuthenticatedUser | null>(() => readSessionUser());
+  const [loading, setLoading] = useState(() => Boolean(getStoredAccessToken()));
 
-  const [role, setRoleState] = useState<UserRole>(() => {
-    return resolveInitialRole();
-  });
+  const syncFromStorage = useCallback(() => {
+    setUser(readSessionUser());
+  }, []);
 
-  const setRole = (newRole: UserRole) => {
-    setRoleState(newRole);
-    localStorage.setItem(STORAGE_KEY, newRole);
-  };
+  useEffect(() => {
+    syncFromStorage();
+    return subscribeToAuthChanges(syncFromStorage);
+  }, [syncFromStorage]);
 
-  const value = {
-    role,
-    setRole,
-    isPurchaser: role === 'AGENT',
-    isCustomer: role === 'CUSTOMER',
-    isMerchant: role === 'MERCHANT',
-  };
+  useEffect(() => {
+    const accessToken = getStoredAccessToken();
+    if (!accessToken) {
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    api.auth
+      .me()
+      .then((currentUser) => {
+        if (!active) {
+          return;
+        }
+        storeAuthSession(accessToken, currentUser);
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+        clearAuthSession();
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const login = useCallback(async (username: string, password: string) => {
+    setLoading(true);
+    try {
+      const loginResult = await api.auth.login({ username, password });
+      storeAuthSession(loginResult.accessToken, loginResult.user);
+      const currentUser = await api.auth.me();
+      storeAuthSession(loginResult.accessToken, currentUser);
+      return currentUser;
+    } catch (error) {
+      clearAuthSession();
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const logout = useCallback(() => {
+    clearAuthSession();
+  }, []);
+
+  const role = user?.role ?? DEFAULT_ROLE;
+  const isAuthenticated = user !== null;
+  const value = useMemo(
+    () => ({
+      role,
+      user,
+      isAuthenticated,
+      loading,
+      login,
+      logout,
+      isPurchaser: role === 'AGENT',
+      isCustomer: role === 'CUSTOMER',
+      isMerchant: role === 'MERCHANT'
+    }),
+    [isAuthenticated, loading, login, logout, role, user]
+  );
 
   return <UserRoleContext.Provider value={value}>{children}</UserRoleContext.Provider>;
 }
@@ -64,3 +140,5 @@ export function useUserRole() {
   }
   return context;
 }
+
+export type { UserRole };

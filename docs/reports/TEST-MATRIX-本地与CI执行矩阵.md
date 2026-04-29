@@ -31,6 +31,7 @@
 - `frontend-quality` job 通过一次 `npm ci --prefix frontend` 复用同一份依赖，避免测试与构建重复安装。
 - `playwright-e2e` 继续复用 `npm run e2e:prepare` 的浏览器探测逻辑，仅在缺失 Chromium 时安装。
 - 后端默认测试必须继续使用 H2 / fake/mock 资源，禁止默认门禁外连真实 Ollama、Codex CLI、MinIO 或公网服务。
+- 后端 `mvn test` 现同时覆盖 JWT 登录、`/api/auth/me`、401/403、customer 本人数据隔离，以及 `bobbuy.security.header-auth.enabled=false` 时伪造 header 不得提权。
 - 当前已知前端测试噪声：
   - Ant Design `useForm` 未连接 warning。
   - 预期失败路径中的 `Delete failed: Error: Server error` console 输出。

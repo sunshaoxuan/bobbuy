@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useUserRole, type UserRole } from '../context/UserRoleContext';
 
 interface ProtectedRouteProps {
@@ -9,7 +9,16 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, allowedRoles, redirectTo }: ProtectedRouteProps) {
-  const { role } = useUserRole();
+  const location = useLocation();
+  const { role, isAuthenticated, loading } = useUserRole();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
 
   if (!allowedRoles.includes(role)) {
     const defaultRedirect = role === 'AGENT' ? '/dashboard' : '/';

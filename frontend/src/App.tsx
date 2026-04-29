@@ -24,11 +24,12 @@ const ZenAuditView = lazy(() => import('./pages/ZenAuditView'));
 const ClientOrders = lazy(() => import('./pages/ClientOrders'));
 const ClientBilling = lazy(() => import('./pages/ClientBilling'));
 const ClientChat = lazy(() => import('./pages/ClientChat'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
 
 export default function App() {
   const location = useLocation();
   const { locale, setLocale, t } = useI18n();
-  const { role, isPurchaser } = useUserRole();
+  const { role, isPurchaser, isAuthenticated, loading, user, logout } = useUserRole();
   const isAgentRole = role === 'AGENT';
   const screens = Grid.useBreakpoint();
   const isMobile = screens.md !== true;
@@ -38,6 +39,9 @@ export default function App() {
   const contentPadding = isMobile ? '0.5rem' : isTablet ? '1rem' : '1.5rem';
 
   const menuItems = useMemo(() => {
+    if (!isAuthenticated) {
+      return [];
+    }
     if (isPurchaser) {
       return [
         { key: '/dashboard', label: <NavLink to="/dashboard">{t('nav.dashboard')}</NavLink> },
@@ -58,9 +62,12 @@ export default function App() {
       { key: '/client/billing', label: <NavLink to="/client/billing">{t('nav.client_billing')}</NavLink> },
       { key: '/client/chat', label: <NavLink to="/client/chat">{t('nav.client_chat')}</NavLink> }
     ];
-  }, [isPurchaser, t]);
+  }, [isAuthenticated, isPurchaser, t]);
 
   const mobileQuickNavItems = useMemo(() => {
+    if (!isAuthenticated) {
+      return [];
+    }
     if (isPurchaser) {
       return [
         { key: '/dashboard', icon: <AppstoreOutlined />, label: t('nav.dashboard') },
@@ -74,7 +81,7 @@ export default function App() {
       { key: '/client/billing', icon: <AppstoreOutlined />, label: t('nav.client_billing') },
       { key: '/client/chat', icon: <QrcodeOutlined />, label: t('nav.client_chat') }
     ];
-  }, [isPurchaser, t]);
+  }, [isAuthenticated, isPurchaser, t]);
 
   const pageTitles: Record<string, string> = useMemo(
     () => ({
@@ -85,6 +92,7 @@ export default function App() {
       '/client/orders': t('nav.client_orders'),
       '/client/billing': t('nav.client_billing'),
       '/client/chat': t('nav.client_chat'),
+      '/login': t('auth.login_title'),
       '/order-desk': t('nav.order_desk'),
       '/procurement': t('nav.procurement'),
       '/picking': t('nav.picking'),
@@ -136,7 +144,14 @@ export default function App() {
               </Title>
             </Space>
             <Space size="small">
-              <Text type="secondary">{t(`enum.role.${role}`)}</Text>
+              {isAuthenticated ? (
+                <>
+                  <Text type="secondary">{user?.name}</Text>
+                  <Text type="secondary">{t(`enum.role.${role}`)}</Text>
+                </>
+              ) : (
+                <Text type="secondary">{t('auth.login_title')}</Text>
+              )}
               {!isMobile ? <Text type="secondary">{t('language.label')}</Text> : null}
               <Select
                 popupMatchSelectWidth={false}
@@ -151,8 +166,13 @@ export default function App() {
                       : value === 'ja-JP'
                       ? t('language.ja')
                       : t('language.en')
-                }))}
+                  }))}
               />
+              {isAuthenticated ? (
+                <Button size="small" onClick={logout}>
+                  {t('auth.logout')}
+                </Button>
+              ) : null}
             </Space>
           </div>
         </Header>
@@ -161,9 +181,21 @@ export default function App() {
             <Suspense fallback={<div style={{ padding: '2rem 1rem' }}>{t('chat.loading')}</div>}>
               <Routes>
                 <Route
+                  path="/login"
+                  element={
+                    loading ? null : isAuthenticated ? (
+                      <Navigate to={isAgentRole ? '/dashboard' : '/'} replace />
+                    ) : (
+                      <LoginPage />
+                    )
+                  }
+                />
+                <Route
                   path="/"
                   element={
-                    isPurchaser ? (
+                    !isAuthenticated ? (
+                      <Navigate to="/login" replace />
+                    ) : isPurchaser ? (
                       <Navigate to="/dashboard" replace />
                     ) : (
                       <ClientHomeV2 />
@@ -274,14 +306,14 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
-                <Route path="*" element={<Navigate to={isAgentRole ? '/dashboard' : '/'} replace />} />
+                <Route path="*" element={<Navigate to={isAuthenticated ? (isAgentRole ? '/dashboard' : '/') : '/login'} replace />} />
               </Routes>
             </Suspense>
           </div>
         </Content>
       </Layout>
 
-      {isMobile ? (
+      {isMobile && isAuthenticated ? (
         <>
           <Drawer
             placement="left"
