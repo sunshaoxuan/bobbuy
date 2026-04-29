@@ -21,6 +21,20 @@
 - `BOBBUY_SECURITY_HEADER_AUTH_ENABLED` 默认且必须保持为 `false`。
 - Compose 仅允许 `core-service` 执行 Flyway migration，其余服务固定 `SPRING_FLYWAY_ENABLED=false`。
 
+## 1.1 试运行服务边界
+
+- **主业务入口**：`backend`（源码、测试、Flyway migration 目录）
+- **事实源**：`core-service`（试运行部署中的核心业务事实源与 Flyway 执行者）
+- **服务外壳**：`ai-service`、`im-service`、`auth-service`
+- **可选服务**：`ocr-service` 为 AI/OCR 增强能力依赖，不是核心业务事实源
+- **后续拆分候选**：`ai-service`、`im-service`、`auth-service`
+
+当前约束：
+
+1. `ai-service`、`im-service`、`auth-service` 继续复用 `backend` 共享代码、共享 PostgreSQL schema 与共享安全配置。
+2. 这些服务当前不是独立事实源，不得在试运行中宣称已经完成独立业务拆分。
+3. 当前默认 Compose 仍保留这些服务外壳，因为网关路由与回归测试尚未准备好安全降级为 optional/profile。
+
 ---
 
 ## 2. 环境准备
@@ -121,6 +135,14 @@ Flyway 验证点：
 - `nacos`: `/nacos/v1/console/health/readiness`
 - `core-service` / `ai-service` / `im-service` / `auth-service` / `gateway-service`: `/actuator/health/readiness`
 
+角色说明：
+
+- `core-service`：核心业务事实源与 Flyway 执行者
+- `auth-service`：登录 / JWT 服务外壳
+- `ai-service`：AI/OCR 服务外壳
+- `im-service`：聊天 / WebSocket 服务外壳
+- `gateway-service`：路由层，不写业务库
+
 ---
 
 ## 6. 登录账号策略
@@ -169,8 +191,8 @@ docker compose logs -f nacos
 重点排查项：
 
 1. **登录失败 / 401**
-   - 确认 `BOBBUY_SECURITY_JWT_SECRET` 非空
-   - 确认 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=false`
+    - 确认 `BOBBUY_SECURITY_JWT_SECRET` 非空
+    - 确认 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=false`
 2. **服务起不来**
    - 先看 `docker compose ps`
    - 再看对应服务 readiness 日志
@@ -178,12 +200,15 @@ docker compose logs -f nacos
    - 确认只有 `core-service` 启用了 Flyway
    - 旧库先备份，再评估是否允许 `baseline-on-migrate`
 4. **AI 无响应**
-   - 检查 `BOBBUY_AI_LLM_MAIN_URL` / `BOBBUY_AI_LLM_EDGE_URL`
-   - 服务器不要默认依赖 Codex CLI
-   - 前端若出现 `unconfigured` / `FAILED_RECOGNITION` / `PENDING_MANUAL_REVIEW`，按页面提示走重试或人工补录/复核
+    - 检查 `BOBBUY_AI_LLM_MAIN_URL` / `BOBBUY_AI_LLM_EDGE_URL`
+    - 服务器不要默认依赖 Codex CLI
+    - 确认 `ai-service` 作为服务外壳已启动，且不要把它误判为独立业务事实源
+    - 前端若出现 `unconfigured` / `FAILED_RECOGNITION` / `PENDING_MANUAL_REVIEW`，按页面提示走重试或人工补录/复核
 5. **MinIO 上传失败**
-   - 检查 `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`
-   - 检查 `BOBBUY_MINIO_BUCKET`
+    - 检查 `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`
+    - 检查 `BOBBUY_MINIO_BUCKET`
+6. **边界误判**
+   - 若发现文档、Runbook 或排障流程把 `ai-service` / `im-service` / `auth-service` 写成“独立微服务事实源”，应以 `ADR-01` 与当前 Runbook 为准进行修正
 
 人工处理流程：
 1. 商品 AI 上架失败时，前端会显示失败原因并允许人工补录后保存草稿；默认保持 `DRAFTER_ONLY`。
