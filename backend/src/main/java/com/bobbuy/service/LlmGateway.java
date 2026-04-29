@@ -67,9 +67,11 @@ public class LlmGateway {
     @PostConstruct
     public void initializeMainProvider() {
         if ("codex".equals(mainProvider)) {
-            activeMainProvider = "codex";
+            activeMainProvider = isCodexConfigured() ? "codex" : "unconfigured";
+        } else if (mainUrl == null || mainUrl.isBlank()) {
+            activeMainProvider = isCodexConfigured() ? "codex" : "unconfigured";
         } else {
-            activeMainProvider = isOllamaAvailable(mainUrl) ? "ollama" : "codex";
+            activeMainProvider = isOllamaAvailable(mainUrl) ? "ollama" : (isCodexConfigured() ? "codex" : "unconfigured");
         }
         log.info("AI main LLM provider initialized: configured={}, active={}, ollamaUrl={}, codexCommand={}",
                 mainProvider, activeMainProvider, blankToUnset(mainUrl), blankToUnset(codexCommand));
@@ -200,6 +202,9 @@ public class LlmGateway {
     private boolean isMainLlmConfigured() {
         if ("codex".equals(resolveActiveMainProvider())) {
             return isCodexConfigured();
+        }
+        if ("unconfigured".equals(resolveActiveMainProvider())) {
+            return false;
         }
         return mainUrl != null && !mainUrl.isBlank();
     }

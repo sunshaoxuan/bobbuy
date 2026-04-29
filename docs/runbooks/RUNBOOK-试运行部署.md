@@ -40,6 +40,7 @@
 - 试运行 Compose 固定使用 `postgres:15-alpine`。
 - 原因：避免继续承受 PostgreSQL 18 与 Flyway 10.15.2 的“高于已验证范围”提示风险。
 - 如后续要升级 PostgreSQL 大版本，需先单独验证 Flyway 兼容性并更新本文档。
+- 若旧环境已有 `./data/postgres_v18` 数据目录，切换到当前 Compose 前必须先停服务并把数据迁移/备份到 `./data/postgres`，不要在未迁移数据目录的情况下直接覆盖启动。
 
 ---
 
@@ -55,6 +56,7 @@
    - `POSTGRES_PASSWORD`
    - `MINIO_ROOT_PASSWORD`
    - `RABBITMQ_DEFAULT_PASS`
+   - 可用 `openssl rand -base64 32` 生成 `BOBBUY_SECURITY_JWT_SECRET`
 3. 按实际环境选择 AI 路径：
    - **Ollama / 私有兼容 gateway**：填写 `BOBBUY_AI_LLM_MAIN_URL`
    - **视觉 / edge 模型**：填写 `BOBBUY_AI_LLM_EDGE_URL`
@@ -145,6 +147,7 @@ Flyway 验证点：
 运行时口径：
 
 - `LlmGateway` 启动日志会输出 configured provider、active provider、Ollama URL、Codex command。
+- 当 `BOBBUY_AI_LLM_MAIN_URL` 与 `BOBBUY_AI_LLM_CODEX_COMMAND` 都为空时，active provider 会显示为 `unconfigured`，AI 功能按现有 fallback/人工流程降级。
 - AI / OCR 不可用时，系统允许回落到现有 fallback 路径；本任务不把 AI 不可用写成“已恢复”。
 
 ---
