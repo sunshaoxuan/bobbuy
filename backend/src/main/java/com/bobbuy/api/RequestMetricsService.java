@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.LongAdder;
 @Service
 public class RequestMetricsService {
   private static final int MAX_SAMPLES = 200;
+  private static final String LOGIN_ENDPOINT = "POST /api/auth/login";
   private final Map<String, Deque<Long>> latencySamples = new ConcurrentHashMap<>();
   private final Map<String, LongAdder> requestCounts = new ConcurrentHashMap<>();
   private final Map<String, LongAdder> statusCounts = new ConcurrentHashMap<>();
@@ -88,7 +89,7 @@ public class RequestMetricsService {
 
   public long loginFailureCount() {
     return fourHundredsByEndpoint.entrySet().stream()
-        .filter(entry -> entry.getKey().startsWith("POST /api/auth/login"))
+        .filter(entry -> entry.getKey().startsWith(LOGIN_ENDPOINT))
         .mapToLong(entry -> entry.getValue().sum())
         .sum();
   }

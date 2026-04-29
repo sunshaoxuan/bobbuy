@@ -65,7 +65,7 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
 
   private String resolveUser(HttpServletRequest request, Authentication authentication) {
     String userId = request.getHeader(USER_HEADER);
-    if (userId != null && !userId.isBlank()) {
+    if (hasText(userId)) {
       return userId.trim();
     }
     if (authentication == null) {
@@ -73,15 +73,15 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
     }
     Object principal = authentication.getPrincipal();
     if (principal instanceof BobbuyAuthenticatedUser authenticatedUser) {
-      if (authenticatedUser.username() != null && !authenticatedUser.username().isBlank()) {
+      if (hasText(authenticatedUser.username())) {
         return authenticatedUser.username();
       }
       return fallbackPrincipalName(authenticatedUser);
     }
-    if (principal instanceof Principal namedPrincipal && namedPrincipal.getName() != null && !namedPrincipal.getName().isBlank()) {
+    if (principal instanceof Principal namedPrincipal && hasText(namedPrincipal.getName())) {
       return namedPrincipal.getName();
     }
-    return authentication.getName() != null && !authentication.getName().isBlank() ? authentication.getName() : "anonymous";
+    return hasText(authentication.getName()) ? authentication.getName() : "anonymous";
   }
 
   private String resolveRole(Authentication authentication) {
@@ -97,9 +97,13 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
   }
 
   private String fallbackPrincipalName(BobbuyAuthenticatedUser authenticatedUser) {
-    if (authenticatedUser.getName() != null && !authenticatedUser.getName().isBlank()) {
+    if (hasText(authenticatedUser.getName())) {
       return authenticatedUser.getName();
     }
     return "anonymous";
+  }
+
+  private boolean hasText(String value) {
+    return value != null && !value.isBlank();
   }
 }
