@@ -1,4 +1,5 @@
 import { message } from 'antd';
+import { clearAuthSession, getStoredAccessToken, getTestInjectedRole, getTestInjectedUser, type AuthenticatedUser } from './authStorage';
 import { getStoredLocale, translate } from './i18n';
 
 export type Metrics = {
@@ -661,64 +662,33 @@ type ApiErrorResponse = {
     message?: string;
 };
 
+export type AuthLoginResponse = {
+    accessToken: string;
+    user: AuthenticatedUser;
+};
+
 const genericErrorMessage = () => translate(getStoredLocale(), 'errors.request_failed');
 
 const isMockApiEnabled = () =>
     typeof window !== 'undefined' && window.localStorage.getItem('bobbuy_enable_mock_api') === 'true';
-
-type ApiRole = 'CUSTOMER' | 'AGENT' | 'MERCHANT';
-const ROLE_STORAGE_KEY = 'bobbuy_user_role';
-const ROLE_TEST_INJECT_KEY = 'bobbuy_test_role';
-const USER_STORAGE_KEY = 'bobbuy_user_id';
-const USER_TEST_INJECT_KEY = 'bobbuy_test_user';
-
-function getEffectiveRole(): ApiRole {
-    if (typeof window === 'undefined') {
-        return 'CUSTOMER';
-    }
-    const queryRole = new URLSearchParams(window.location.search).get('role');
-    if (queryRole === 'CUSTOMER' || queryRole === 'AGENT' || queryRole === 'MERCHANT') {
-        return queryRole;
-    }
-    const injectedRole = window.localStorage.getItem(ROLE_TEST_INJECT_KEY);
-    if (injectedRole === 'CUSTOMER' || injectedRole === 'AGENT' || injectedRole === 'MERCHANT') {
-        return injectedRole;
-    }
-    const storedRole = window.localStorage.getItem(ROLE_STORAGE_KEY);
-    if (storedRole === 'CUSTOMER' || storedRole === 'AGENT' || storedRole === 'MERCHANT') {
-        return storedRole;
-    }
-    return 'CUSTOMER';
-}
-
-function getEffectiveUser(): string | null {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-    const queryUser = new URLSearchParams(window.location.search).get('user');
-    if (queryUser && queryUser.trim()) {
-        return queryUser.trim();
-    }
-    const injectedUser = window.localStorage.getItem(USER_TEST_INJECT_KEY);
-    if (injectedUser && injectedUser.trim()) {
-        return injectedUser.trim();
-    }
-    const storedUser = window.localStorage.getItem(USER_STORAGE_KEY);
-    if (storedUser && storedUser.trim()) {
-        return storedUser.trim();
-    }
-    return null;
-}
 
 function createRequestHeaders(initHeaders?: HeadersInit, withJsonContentType = false): Headers {
     const headers = new Headers(initHeaders);
     if (!headers.has('Accept-Language')) {
         headers.set('Accept-Language', getStoredLocale());
     }
-    headers.set('X-BOBBUY-ROLE', getEffectiveRole());
-    const user = getEffectiveUser();
-    if (user) {
-        headers.set('X-BOBBUY-USER', user);
+    const accessToken = getStoredAccessToken();
+    if (accessToken && !headers.has('Authorization')) {
+        headers.set('Authorization', `Bearer ${accessToken}`);
+    } else if (!accessToken) {
+        const injectedRole = getTestInjectedRole();
+        if (injectedRole) {
+            headers.set('X-BOBBUY-ROLE', injectedRole);
+        }
+        const injectedUser = getTestInjectedUser();
+        if (injectedUser) {
+            headers.set('X-BOBBUY-USER', injectedUser);
+        }
     }
     if (withJsonContentType && !headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json');
@@ -745,6 +715,9 @@ async function fetchJson<T>(url: string, fallbackValue: T, init?: RequestInit): 
             headers: createRequestHeaders(init?.headers)
         });
         if (!response.ok) {
+            if (response.status === 401) {
+                clearAuthSession();
+            }
             const errorMessage = await parseErrorMessage(response);
             message.error(errorMessage);
             if (isMockApiEnabled()) {
@@ -782,6 +755,9 @@ async function postJson<TResponse, TBody>(url: string, body: TBody): Promise<TRe
         body: JSON.stringify(body)
     });
     if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthSession();
+        }
         console.error(`[API ERROR] POST failure at ${url} (Status: ${response.status})`);
         const errorMessage = await parseErrorMessage(response);
         message.error(errorMessage);
@@ -801,6 +777,9 @@ async function patchJson<TResponse, TBody>(url: string, body: TBody): Promise<TR
         body: JSON.stringify(body)
     });
     if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthSession();
+        }
         const errorMessage = await parseErrorMessage(response);
         message.error(errorMessage);
         throw new Error(errorMessage);
@@ -819,6 +798,9 @@ async function putJson<TResponse, TBody>(url: string, body: TBody): Promise<TRes
         body: JSON.stringify(body)
     });
     if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthSession();
+        }
         const errorMessage = await parseErrorMessage(response);
         message.error(errorMessage);
         throw new Error(errorMessage);
@@ -886,6 +868,17 @@ export type AiOnboardingSuggestion = {
 };
 
 export const api = {
+    auth: {
+        login: (payload: { username: string; password: string }) =>
+            postJson<AuthLoginResponse, { username: string; password: string }>('/api/auth/login', payload),
+        me: () =>
+            fetchJson<AuthenticatedUser>('/api/auth/me', {
+                id: 0,
+                username: '',
+                name: '',
+                role: 'CUSTOMER'
+            })
+    },
     metrics: () => fetchJson<Metrics>('/api/metrics', fallback.metrics),
     trips: () => fetchJson<Trip[]>('/api/trips', fallback.trips),
     orders: (tripId?: number) =>

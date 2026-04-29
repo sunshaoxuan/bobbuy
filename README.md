@@ -25,7 +25,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - 社交 OAuth 登录
 - 真实地图路径规划 / 实时配送追踪
 - 无人值守 AI 小票识别
-- 公网生产级认证（当前仍是试运行级 header 角色注入）
+- refresh token / OAuth / WebSocket 鉴权（当前仍未实现）
 - 数据库迁移治理（尚未引入 Flyway / Liquibase）
 
 ## 技术栈
@@ -56,6 +56,15 @@ docker-compose -p bobbuy up -d
 - `/api/ai/**` → `ai-service`
 - `/ws` / `/ws/**` → `im-service`
 - 其余 `/api/**` → `core-service`
+
+## 当前认证方案
+
+- **登录模型**：后端提供 `POST /api/auth/login` 与 `GET /api/auth/me`，使用用户名/密码登录并返回 HMAC JWT access token。
+- **前端登录态**：前端统一保存 Bearer token，并按 `/api/auth/me` 返回的真实角色驱动路由与菜单。
+- **本地演示账号**：seed 数据默认提供 `agent / agent-pass`、`customer / customer-pass`。
+- **兼容策略**：`X-BOBBUY-ROLE` / `X-BOBBUY-USER` 仅在显式开启 `bobbuy.security.header-auth.enabled=true` 时可用，默认仅供 dev/test 过渡。
+- **生产要求**：公网部署必须配置 `BOBBUY_SECURITY_JWT_SECRET`，且不得开启 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=true`。
+- **当前安全边界**：暂未实现 refresh token、第三方 OAuth/SSO、WebSocket `/ws` 鉴权；数据库凭据迁移仍待后续引入 Flyway/Liquibase。
 
 ## 验收门禁
 

@@ -67,6 +67,7 @@ public class GlobalExceptionHandler {
     return switch (errorCode) {
       case RESOURCE_NOT_FOUND -> 404;
       case CAPACITY_NOT_ENOUGH -> 409;
+      case UNAUTHORIZED -> 401;
       case INVALID_REQUEST, INVALID_STATUS -> 400;
       default -> 500;
     };
