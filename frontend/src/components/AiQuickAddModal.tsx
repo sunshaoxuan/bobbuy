@@ -44,8 +44,8 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
 
     const reader = new FileReader();
     reader.onload = async () => {
+      const base64 = reader.result as string;
       try {
-        const base64 = reader.result as string;
         setScanError(null);
         // Inject the original photo into the suggestion
         const result = await api.onboardScan(base64, file.name);

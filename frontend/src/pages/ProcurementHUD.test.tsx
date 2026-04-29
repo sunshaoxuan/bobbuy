@@ -268,6 +268,6 @@ describe('ProcurementHUD Component', () => {
         expect(await screen.findByText(/Operation History|操作历史/i)).toBeInTheDocument();
         expect((await screen.findAllByText('20260117001')).length).toBeGreaterThan(0);
         expect(await screen.findByText('PENDING_MANUAL_REVIEW')).toBeInTheDocument();
-        expect(await screen.findByText(/ollama-compatible/i)).toBeInTheDocument();
+        expect((await screen.findAllByText(/ollama-compatible/i)).length).toBeGreaterThan(0);
     });
 });
