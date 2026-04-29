@@ -769,12 +769,14 @@ public class AiProductOnboardingService {
                                                             String itemNumber,
                                                             Double basePrice,
                                                             Map<String, String> extractedAttributes) {
-        Map<String, String> existingAttributes = extractStructuredAttributes(
-            Map.of(),
-            selectProductName(verificationProduct),
-            firstNonBlank(selectProductDescription(verificationProduct), ""),
-            verificationProduct.getCategoryId()
-        );
+        Map<String, String> existingAttributes = verificationProduct.getAttributes() == null || verificationProduct.getAttributes().isEmpty()
+            ? extractStructuredAttributes(
+                Map.of(),
+                selectProductName(verificationProduct),
+                firstNonBlank(selectProductDescription(verificationProduct), ""),
+                verificationProduct.getCategoryId()
+            )
+            : verificationProduct.getAttributes();
         double score = 0d;
         List<String> reasons = new ArrayList<>();
         String existingName = selectProductName(verificationProduct);
@@ -863,12 +865,14 @@ public class AiProductOnboardingService {
         if (verificationProduct == null) {
             return List.of();
         }
-        Map<String, String> existingAttributes = extractStructuredAttributes(
-            Map.of(),
-            selectProductName(verificationProduct),
-            firstNonBlank(selectProductDescription(verificationProduct), ""),
-            verificationProduct.getCategoryId()
-        );
+        Map<String, String> existingAttributes = verificationProduct.getAttributes() == null || verificationProduct.getAttributes().isEmpty()
+            ? extractStructuredAttributes(
+                Map.of(),
+                selectProductName(verificationProduct),
+                firstNonBlank(selectProductDescription(verificationProduct), ""),
+                verificationProduct.getCategoryId()
+            )
+            : verificationProduct.getAttributes();
         List<AiFieldDiff> diffs = new ArrayList<>();
         diffs.add(toFieldDiff("name", "商品名称", selectProductName(verificationProduct), name, false));
         diffs.add(toFieldDiff("brand", "品牌", verificationProduct.getBrand(), brand, false));
@@ -971,6 +975,9 @@ public class AiProductOnboardingService {
         String normalized = firstNonBlank(categoryHint, "").trim().toLowerCase(Locale.ROOT);
         if (normalized.isBlank()) {
             return false;
+        }
+        if ("cat-1000".equals(normalized)) {
+            return true;
         }
         return FOOD_CATEGORY_HINTS.stream().anyMatch(normalized::contains);
     }
@@ -1104,12 +1111,12 @@ public class AiProductOnboardingService {
             .replace("¥", "")
             .replace("$", "")
             .replace("￥", "");
-        Matcher matcher = PRICE_NUMBER_PATTERN.matcher(raw);
-        if (!matcher.find()) {
+        String normalized = raw.replaceAll("[^\\d,.-]", "");
+        if (normalized.isBlank()) {
             return null;
         }
         try {
-            return Double.parseDouble(matcher.group(1).replace(",", ""));
+            return Double.parseDouble(normalized.replace(",", ""));
         } catch (NumberFormatException ex) {
             return null;
         }
@@ -1132,7 +1139,7 @@ public class AiProductOnboardingService {
         if (normalized.isBlank()) {
             return "";
         }
-        return categoryRepository.findAll().stream()
+        String mapped = categoryRepository.findAll().stream()
             .filter(category -> category != null && category.getId() != null)
             .filter(category -> category.getId().equalsIgnoreCase(normalized)
                 || (category.getName() != null && category.getName().values().stream()
@@ -1140,7 +1147,14 @@ public class AiProductOnboardingService {
                     .anyMatch(name -> name.equalsIgnoreCase(normalized) || normalized.equalsIgnoreCase(name))))
             .map(category -> category.getId())
             .findFirst()
-            .orElse(normalized);
+            .orElse("");
+        if (!mapped.isBlank()) {
+            return mapped;
+        }
+        if (isFoodCategory(normalized)) {
+            return "cat-1000";
+        }
+        return normalized;
     }
 
     private String normalizeItemNumber(String rawItemNumber, Double basePrice, Map<String, String> attributes) {

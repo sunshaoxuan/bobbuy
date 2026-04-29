@@ -41,7 +41,7 @@ class AiAgentControllerTest {
             StorageCondition.AMBIENT,
             OrderMethod.DIRECT_BUY,
             List.of(),
-            Map.of(),
+            Map.of("netContent", "1kg", "packSize", "1pack"),
             true,
             "prd-1000",
             List.of(),
@@ -67,6 +67,7 @@ class AiAgentControllerTest {
         assertThat(response.getProduct().getId()).isNotEqualTo("prd-1000");
         assertThat(response.getOnboardingTrace().resultDecision()).isEqualTo("NEW_PRODUCT");
         assertThat(response.getProduct().getVisibilityStatus()).isEqualTo(ProductVisibility.DRAFTER_ONLY);
+        assertThat(response.getProduct().getAttributes()).containsEntry("netContent", "1kg");
     }
 
     @Test
@@ -90,7 +91,7 @@ class AiAgentControllerTest {
             StorageCondition.AMBIENT,
             OrderMethod.DIRECT_BUY,
             List.of(),
-            Map.of(),
+            Map.of("netContent", "900g", "packSize", "1pack"),
             false,
             null,
             List.of(),
@@ -115,5 +116,6 @@ class AiAgentControllerTest {
 
         assertThat(response.getProduct().getId()).isEqualTo(existing.getId());
         assertThat(response.getOnboardingTrace().resultDecision()).isEqualTo("EXISTING_PRODUCT");
+        assertThat(response.getProduct().getAttributes()).containsEntry("netContent", "900g");
     }
 }
