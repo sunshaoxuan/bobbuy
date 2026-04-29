@@ -20,9 +20,12 @@ public class RoleInjectionFilter extends OncePerRequestFilter {
     public static final String ROLE_HEADER = "X-BOBBUY-ROLE";
     public static final String USER_HEADER = "X-BOBBUY-USER";
     private static final List<String> VALID_ROLES = List.of("CUSTOMER", "AGENT", "MERCHANT");
+    private final boolean enabled;
     private final String defaultRole;
 
-    public RoleInjectionFilter(@Value("${bobbuy.security.default-role:CUSTOMER}") String defaultRole) {
+    public RoleInjectionFilter(@Value("${bobbuy.security.header-auth.enabled:false}") boolean enabled,
+                               @Value("${bobbuy.security.default-role:CUSTOMER}") String defaultRole) {
+        this.enabled = enabled;
         this.defaultRole = defaultRole == null ? "CUSTOMER" : defaultRole.toUpperCase(Locale.ROOT);
     }
 
@@ -30,6 +33,10 @@ public class RoleInjectionFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        if (!enabled || SecurityContextHolder.getContext().getAuthentication() != null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         String role = request.getHeader(ROLE_HEADER);
         if (role == null || role.isBlank()) {
             role = defaultRole;
@@ -45,6 +52,11 @@ public class RoleInjectionFilter extends OncePerRequestFilter {
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return !enabled;
     }
 
     private String resolvePrincipal(HttpServletRequest request, String role) {

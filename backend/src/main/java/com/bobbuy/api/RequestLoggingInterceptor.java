@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -46,7 +48,10 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
     String traceId = String.valueOf(request.getAttribute(TRACE_HEADER));
     String userId = request.getHeader(USER_HEADER);
     if (userId == null || userId.isBlank()) {
-      userId = "anonymous";
+      Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+      userId = authentication != null && authentication.getName() != null && !authentication.getName().isBlank()
+          ? authentication.getName()
+          : "anonymous";
     }
     requestMetricsService.record(request.getMethod(), request.getRequestURI(), costMs);
     log.info("[INFO] {} {} status={} cost={}ms trace_id={} user={}",

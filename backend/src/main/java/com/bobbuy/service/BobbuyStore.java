@@ -61,6 +61,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class BobbuyStore {
@@ -85,6 +86,7 @@ public class BobbuyStore {
     private final ExperienceMappingRepository experienceMappingRepository;
     private final AuditLogService auditLogService;
     private final CustomerIdentityResolver customerIdentityResolver;
+    private final PasswordEncoder passwordEncoder;
     private final double unitWeight;
     private final double unitVolume;
     private final AtomicLong orderIdentity = new AtomicLong(3000L);
@@ -111,11 +113,12 @@ public class BobbuyStore {
              CustomerPaymentLedgerRepository customerPaymentLedgerRepository,
              PartnerWalletRepository partnerWalletRepository,
              WalletTransactionRepository walletTransactionRepository,
-             ExperienceMappingRepository experienceMappingRepository,
-             AuditLogService auditLogService,
-             CustomerIdentityResolver customerIdentityResolver,
-             @Value("${bobbuy.trip.unit-weight:1.0}") double unitWeight,
-            @Value("${bobbuy.trip.unit-volume:1.0}") double unitVolume) {
+              ExperienceMappingRepository experienceMappingRepository,
+              AuditLogService auditLogService,
+              CustomerIdentityResolver customerIdentityResolver,
+              PasswordEncoder passwordEncoder,
+              @Value("${bobbuy.trip.unit-weight:1.0}") double unitWeight,
+             @Value("${bobbuy.trip.unit-volume:1.0}") double unitVolume) {
         this.userRepository = userRepository;
         this.tripRepository = tripRepository;
         this.orderHeaderRepository = orderHeaderRepository;
@@ -134,6 +137,7 @@ public class BobbuyStore {
         this.experienceMappingRepository = experienceMappingRepository;
         this.auditLogService = auditLogService;
         this.customerIdentityResolver = customerIdentityResolver;
+        this.passwordEncoder = passwordEncoder;
         this.unitWeight = unitWeight;
         this.unitVolume = unitVolume;
     }
@@ -150,6 +154,12 @@ public class BobbuyStore {
         clearSeedData();
         User agent = new User(1000L, "Aiko Tan", Role.AGENT, 4.8);
         User customer = new User(1001L, "Chen Li", Role.CUSTOMER, 4.6);
+        agent.setUsername("agent");
+        agent.setPasswordHash(passwordEncoder.encode("agent-pass"));
+        agent.setEnabled(true);
+        customer.setUsername("customer");
+        customer.setPasswordHash(passwordEncoder.encode("customer-pass"));
+        customer.setEnabled(true);
         agent.setPhone("+81-90-1000-0000");
         agent.setEmail("aiko@bobbuy.test");
         agent.setNote("Primary procurement coordinator");
