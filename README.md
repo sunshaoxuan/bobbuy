@@ -42,16 +42,52 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - `bobbuy-gateway`：Spring Cloud Gateway 路由层
 
 ## 快速开始
-```bash
-docker-compose -p bobbuy up -d
-```
 
-- Frontend: http://localhost
-- Gateway API: http://localhost/api
-- MinIO Console: http://localhost:9001
-- Nacos Console: http://localhost:8848/nacos
+1. 复制部署模板并填写必改项：
+   ```bash
+   cd /home/runner/work/bobbuy/bobbuy
+   cp .env.template .env
+   ```
+2. 至少修改：
+   - `BOBBUY_SECURITY_JWT_SECRET`
+   - `POSTGRES_PASSWORD`
+   - `MINIO_ROOT_PASSWORD`
+   - `RABBITMQ_DEFAULT_PASS`
+3. 校验并启动：
+   ```bash
+   cd /home/runner/work/bobbuy/bobbuy
+   docker compose config
+   docker compose up -d --build
+   ```
+
+默认仅绑定到宿主机 `127.0.0.1`：
+
+- Gateway / Frontend: `http://127.0.0.1`
+- Gateway API: `http://127.0.0.1/api`
+- MinIO Console: `http://127.0.0.1:9001`
+- Nacos Console: `http://127.0.0.1:8848/nacos`
+
+详细试运行步骤见 [docs/runbooks/RUNBOOK-试运行部署.md](docs/runbooks/RUNBOOK-试运行部署.md)。
+
+### 配置优先级
+
+1. 容器环境变量（`docker compose` / `.env`）
+2. Nacos 配置
+3. `application-{profile}.properties`
+4. `application.properties`
+
+### 试运行安全默认值
+
+- Compose 服务固定 `SPRING_PROFILES_ACTIVE=prod`。
+- `BOBBUY_SECURITY_JWT_SECRET` 必须显式填写，模板不再提供可直接上线的默认值。
+- `BOBBUY_SECURITY_HEADER_AUTH_ENABLED` 默认 `false`，公网 / 共享部署不得开启。
+- `BOBBUY_SEED_ENABLED` 默认 `false`；demo 账号仅限本地演示。
+- `core-service` 为唯一 Flyway migration 执行者，其余服务固定禁用 Flyway。
+- 服务器部署推荐 Ollama / 私有兼容 gateway；不要把个人 Codex CLI 当默认服务器方案。
 
 ### 数据库迁移
+
+- Compose 试运行固定使用 PostgreSQL 15，避免继续承受 PostgreSQL 18 与 Flyway 10.15.2 的兼容性提示风险。
 - Flyway migration 目录：`backend/src/main/resources/db/migration`
 - 空库初始化（本地 PostgreSQL / Docker Compose `postgres`）：
   ```bash
@@ -71,7 +107,7 @@ docker-compose -p bobbuy up -d
 
 - **登录模型**：后端提供 `POST /api/auth/login` 与 `GET /api/auth/me`，使用用户名/密码登录并返回 HMAC JWT access token。
 - **前端登录态**：前端统一保存 Bearer token，并按 `/api/auth/me` 返回的真实角色驱动路由与菜单。
-- **本地演示账号**：seed 数据默认提供 `agent / agent-pass`、`customer / customer-pass`。
+- **本地演示账号**：仅在显式开启 `BOBBUY_SEED_ENABLED=true` 时提供 `agent / agent-pass`、`customer / customer-pass`。
 - **兼容策略**：`X-BOBBUY-ROLE` / `X-BOBBUY-USER` 仅在显式开启 `bobbuy.security.header-auth.enabled=true` 时可用，默认仅供 dev/test 过渡。
 - **生产要求**：公网部署必须配置 `BOBBUY_SECURITY_JWT_SECRET`，且不得开启 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=true`。
 - **当前安全边界**：暂未实现 refresh token、第三方 OAuth/SSO、WebSocket `/ws` 鉴权；旧库升级仍需按 Flyway 基线/备份流程执行。
@@ -80,7 +116,7 @@ docker-compose -p bobbuy up -d
 
 默认门禁（每个 PR / `main` push 必跑）：
 - `cd backend && mvn test`
-- `cd frontend && npm test`
+- `cd frontend && npm ci && npm test`
 - `cd frontend && npm run build`
 - `cd backend && mvn -DskipTests package && cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
 - `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
@@ -96,9 +132,13 @@ docker-compose -p bobbuy up -d
 - 若本次 PR / Release 未执行，必须明确登记为风险项，不得写成“已通过”。
 
 最近本地验证：
+- `cd /home/runner/work/bobbuy/bobbuy && docker compose config`：通过。
 - `cd backend && mvn test`：通过。
-- `cd frontend && npm test`：通过。
+- `cd frontend && npm ci && npm test`：通过。
 - `cd frontend && npm run build`：通过。
+- `cd backend && mvn -DskipTests package`：通过。
+- `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`：通过。
+- `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`：通过。
 - `cd backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`：通过。
 
 详细矩阵见 [docs/reports/TEST-MATRIX-本地与CI执行矩阵.md](docs/reports/TEST-MATRIX-本地与CI执行矩阵.md)。

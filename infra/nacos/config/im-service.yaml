@@ -2,10 +2,10 @@ bobbuy:
   websocket:
     broker-relay:
       enabled: true
-      host: rabbitmq
-      port: 61613
-      login: bobbuy
-      passcode: bobbuypassword
+      host: ${SPRING_RABBITMQ_HOST:rabbitmq}
+      port: ${BOBBUY_WEBSOCKET_BROKER_RELAY_PORT:61613}
+      login: ${SPRING_RABBITMQ_USERNAME:${RABBITMQ_DEFAULT_USER:bobbuy}}
+      passcode: ${SPRING_RABBITMQ_PASSWORD:${RABBITMQ_DEFAULT_PASS:bobbuypassword}}
   persistence:
     schema: public
 

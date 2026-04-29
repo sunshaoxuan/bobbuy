@@ -5,15 +5,16 @@ bobbuy:
     llm:
       main:
         provider: ${BOBBUY_AI_LLM_MAIN_PROVIDER:auto}
-        url: ${BOBBUY_AI_LLM_MAIN_URL:http://ccnode.briconbric.com:22545}
+        url: ${BOBBUY_AI_LLM_MAIN_URL:}
         model: ${BOBBUY_AI_LLM_MAIN_MODEL:qwen2.5:7b}
       codex:
-        command: ${BOBBUY_AI_LLM_CODEX_COMMAND:codex}
+        command: ${BOBBUY_AI_LLM_CODEX_COMMAND:}
         timeout-seconds: ${BOBBUY_AI_LLM_CODEX_TIMEOUT_SECONDS:120}
       ollama:
         health-timeout-seconds: ${BOBBUY_AI_LLM_OLLAMA_HEALTH_TIMEOUT_SECONDS:3}
       edge:
-        url: ${BOBBUY_AI_LLM_EDGE_URL:http://192.168.20.218:11434}
+        url: ${BOBBUY_AI_LLM_EDGE_URL:}
+        model: ${BOBBUY_AI_LLM_EDGE_MODEL:llama3.2-vision:11b}
   persistence:
     schema: public
 
