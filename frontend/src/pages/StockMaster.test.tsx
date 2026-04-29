@@ -32,6 +32,7 @@ vi.mock('../api', () => ({
           categoryId: 'cat-1000',
           basePrice: 12.99,
           itemNumber: 'SKU-20934',
+          attributes: { netContent: '1L', packSize: '1pack' },
           mediaGallery: []
         },
         displayName: 'Organic Milk',
@@ -52,7 +53,7 @@ vi.mock('../api', () => ({
     ]),
     translate: () => Promise.resolve({ translatedText: '' }),
     deleteProduct: vi.fn().mockResolvedValue(undefined),
-    onboardConfirm: () => Promise.resolve({
+    onboardConfirm: vi.fn().mockResolvedValue({
       product: { id: 'prd-new', name: { 'zh-CN': 'X' }, basePrice: 1 },
       displayName: 'X',
       displayDescription: 'X',

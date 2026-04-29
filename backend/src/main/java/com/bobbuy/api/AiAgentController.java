@@ -120,6 +120,20 @@ public class AiAgentController {
 
       if (allowOverwrite) {
         ProductPatch patch = new ProductPatch();
+        if (suggestion.name() != null && !suggestion.name().isBlank()) {
+          Map<String, String> nameMap = new HashMap<>();
+          nameMap.put("zh-CN", suggestion.name());
+          nameMap.put("ja-JP", suggestion.name());
+          nameMap.put("en-US", suggestion.name());
+          patch.setName(nameMap);
+        }
+        if (suggestion.description() != null && !suggestion.description().isBlank()) {
+          Map<String, String> descMap = new HashMap<>();
+          descMap.put("zh-CN", suggestion.description());
+          descMap.put("ja-JP", suggestion.description());
+          descMap.put("en-US", suggestion.description());
+          patch.setDescription(descMap);
+        }
         if (suggestion.price() != null) {
           patch.setBasePrice(suggestion.price());
         }
@@ -138,6 +152,21 @@ public class AiAgentController {
 
         if (suggestion.brand() != null) {
           patch.setBrand(suggestion.brand());
+        }
+        if (suggestion.categoryId() != null && !suggestion.categoryId().isBlank()) {
+          patch.setCategoryId(suggestion.categoryId());
+        }
+        if (suggestion.itemNumber() != null && !suggestion.itemNumber().isBlank()) {
+          patch.setItemNumber(suggestion.itemNumber());
+        }
+        if (suggestion.storageCondition() != null) {
+          patch.setStorageCondition(suggestion.storageCondition());
+        }
+        if (suggestion.orderMethod() != null) {
+          patch.setOrderMethod(suggestion.orderMethod());
+        }
+        if (suggestion.attributes() != null) {
+          patch.setAttributes(suggestion.attributes());
         }
         result = store.patchProduct(targetProductId, patch)
             .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.product.not_found"));
@@ -174,6 +203,7 @@ public class AiAgentController {
         newProduct.setVisibilityStatus(targetVisibility != null ? targetVisibility : ProductVisibility.DRAFTER_ONLY);
         newProduct.setRecommended(false);
         newProduct.setMerchantSkus(new HashMap<>());
+        newProduct.setAttributes(suggestion.attributes());
         if (suggestion.detectedPriceTiers() != null) {
           newProduct.setPriceTiers(suggestion.detectedPriceTiers());
         }

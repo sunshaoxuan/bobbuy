@@ -15,6 +15,8 @@ public class ProductPatch {
     private OrderMethod orderMethod;
     private String categoryId;
     private Map<String, String> merchantSkus;
+    private Map<String, String> attributes;
+    private String itemNumber;
     private List<PriceTier> priceTiers;
     private Boolean isRecommended;
     private Boolean isTemporary;
@@ -106,6 +108,22 @@ public class ProductPatch {
 
     public void setMerchantSkus(Map<String, String> merchantSkus) {
         this.merchantSkus = merchantSkus;
+    }
+
+    public Map<String, String> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, String> attributes) {
+        this.attributes = attributes;
+    }
+
+    public String getItemNumber() {
+        return itemNumber;
+    }
+
+    public void setItemNumber(String itemNumber) {
+        this.itemNumber = itemNumber;
     }
 
     public List<PriceTier> getPriceTiers() {

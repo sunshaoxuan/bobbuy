@@ -62,7 +62,14 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
           name: result.name,
           brand: result.brand,
           itemNumber: result.itemNumber,
-          price: result.price
+          price: result.price,
+          categoryId: result.categoryId,
+          attributes: {
+            netContent: result.attributes?.netContent,
+            pricePerUnit: result.attributes?.pricePerUnit,
+            packSize: result.attributes?.packSize,
+            storageHint: result.attributes?.storageHint
+          }
         });
         setLoading(false);
       } catch (error) {
@@ -96,7 +103,14 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
           name: '',
           brand: '',
           itemNumber: '',
-          price: undefined
+          price: undefined,
+          categoryId: '',
+          attributes: {
+            netContent: '',
+            pricePerUnit: '',
+            packSize: '',
+            storageHint: ''
+          }
         });
         setCurrentStep(4);
         message.warning(errorMessage);
@@ -118,9 +132,14 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
   const handleFinish = () => {
     form.validateFields().then((values) => {
       if (suggestion) {
+        const nextAttributes = Object.fromEntries(
+          Object.entries({ ...suggestion.attributes, ...values.attributes })
+            .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
+        );
         onSuccess({
           ...suggestion,
-          ...values
+          ...values,
+          attributes: nextAttributes
         });
       }
     });
@@ -129,9 +148,14 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
   const handleSaveAsNew = () => {
     form.validateFields().then((values) => {
       if (suggestion) {
+        const nextAttributes = Object.fromEntries(
+          Object.entries({ ...suggestion.attributes, ...values.attributes })
+            .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
+        );
         onSuccess({
           ...suggestion,
           ...values,
+          attributes: nextAttributes,
           existingProductFound: false,
           existingProductId: undefined,
           visibilityStatus: 'DRAFTER_ONLY',
@@ -355,6 +379,18 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
                 </Row>
                 <Row gutter={16}>
                   <Col span={12}>
+                    <Form.Item name="categoryId" label={t('stock.item.category')}>
+                      <Input placeholder={t('stock.item.category_input_placeholder')} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item name={['attributes', 'netContent']} label={t('stock.item.net_content')}>
+                      <Input placeholder={t('stock.item.net_content_placeholder')} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Row gutter={16}>
+                  <Col span={12}>
                     <Form.Item name="itemNumber" label={t('stock.item.sku')}>
                       <Input placeholder={t('stock.item.sku_placeholder')} />
                     </Form.Item>
@@ -362,6 +398,25 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
                   <Col span={12}>
                     <Form.Item name="price" label={t('stock.item.price')}>
                       <InputNumber prefix="$" style={{ width: '100%' }} placeholder="0.00" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item name={['attributes', 'pricePerUnit']} label={t('stock.item.price_per_unit')}>
+                      <Input placeholder={t('stock.item.price_per_unit_placeholder')} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item name={['attributes', 'packSize']} label={t('stock.item.pack_size')}>
+                      <Input placeholder={t('stock.item.pack_size_placeholder')} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Row gutter={16}>
+                  <Col span={24}>
+                    <Form.Item name={['attributes', 'storageHint']} label={t('stock.item.storage_hint')}>
+                      <Input placeholder={t('stock.item.storage_hint_placeholder')} />
                     </Form.Item>
                   </Col>
                 </Row>

@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -224,6 +225,7 @@ public class AiProductOnboardingServiceTest {
     existing.setBrand("Acme");
     existing.setCategoryId("Food");
     existing.setBasePrice(10.0);
+    existing.setAttributes(Map.of("netContent", "100g"));
     existing.setVisibilityStatus(ProductVisibility.PUBLIC);
     productRepository.save(existing);
 
@@ -324,6 +326,49 @@ public class AiProductOnboardingServiceTest {
     assertTrue(capturedPrompt.get().contains("itemNumberPattern"));
     assertTrue(capturedPrompt.get().contains("SKU-\\d{3}"));
     assertTrue(capturedPrompt.get().contains("preferredBrand"));
+  }
+
+  @Test
+  public void testOnboardFromPhotoNormalizesAliasesIntoStructuredFields() {
+    String extractionJson = """
+        {
+          "name": "Seafood Mix",
+          "brand": "Costco",
+          "itemNumber": "705g",
+          "price": "¥2,698",
+          "category": "Food",
+          "attributes": {
+            "netWeight": "705 g",
+            "pricePerUnit": "498 円 / 100g",
+            "size": "2 pack",
+            "storageHint": "Keep Refrigerated"
+          }
+        }
+        """;
+    mockPipeline(
+        List.of("Seafood Mix", "Item No 53432", "705 g", "498円/100g", "¥2,698"),
+        extractionJson,
+        "trusted source",
+        null
+    );
+    when(webSearchService.search(anyString()))
+        .thenReturn(List.of(new WebSearchService.SearchResult(
+            "Trusted Retail",
+            "https://www.costco.com/seafood-mix",
+            "trusted source",
+            List.of("https://images.costco-static.com/seafood/hd.jpg")
+        )));
+
+    AiOnboardingSuggestion suggestion = onboardingService.onboardFromPhoto("fake-base64").orElseThrow();
+
+    assertEquals(2698.0, suggestion.price());
+    assertEquals("cat-1000", suggestion.categoryId());
+    assertEquals("53432", suggestion.itemNumber());
+    assertThat(suggestion.attributes())
+        .containsEntry("netContent", "705g")
+        .containsEntry("pricePerUnit", "498円/100g")
+        .containsEntry("packSize", "2pack")
+        .containsEntry("storageHint", "Keep Refrigerated");
   }
 
   private void mockPipeline(List<String> ocrLines,

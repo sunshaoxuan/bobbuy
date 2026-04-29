@@ -1,0 +1,99 @@
+[
+  {
+    "sampleId": "IMG_1484.jpg",
+    "scenario": "new-product",
+    "description": "Costco seafood label sample used for new-product AI onboarding verification.",
+    "needsHumanGolden": false,
+    "expected": {
+      "name": "Mixed Seafood",
+      "brand": null,
+      "itemNumber": "53432",
+      "basePrice": 2698,
+      "categoryId": "cat-1000",
+      "storageCondition": "AMBIENT",
+      "orderMethod": "DIRECT_BUY",
+      "attributes": {
+        "netContent": null,
+        "pricePerUnit": "498円/100g",
+        "packSize": null
+      }
+    },
+    "tolerance": {
+      "priceTolerance": 1,
+      "optionalFields": [
+        "brand",
+        "attributes.netContent",
+        "attributes.packSize"
+      ],
+      "synonyms": {
+        "name": [
+          "Seafood Mix",
+          "Mixed Seafood"
+        ],
+        "attributes.pricePerUnit": [
+          "498円/100g",
+          "498¥/100g",
+          "498/100g"
+        ]
+      }
+    }
+  },
+  {
+    "sampleId": "IMG_1638.jpg",
+    "scenario": "existing-product-hit",
+    "description": "Existing-product match sample kept in the dedicated AI E2E suite.",
+    "needsHumanGolden": true,
+    "expected": {
+      "existingProductFound": true,
+      "existingProductId": "prd-1638",
+      "categoryId": "cat-1000",
+      "storageCondition": "AMBIENT",
+      "orderMethod": "DIRECT_BUY",
+      "attributes": {
+        "netContent": null,
+        "pricePerUnit": null,
+        "packSize": null
+      }
+    },
+    "tolerance": {
+      "optionalFields": [
+        "expected.existingProductId",
+        "attributes.netContent",
+        "attributes.pricePerUnit",
+        "attributes.packSize"
+      ]
+    }
+  },
+  {
+    "sampleId": "IMG_1510.jpg",
+    "scenario": "ambiguous-item-number-weight-price",
+    "description": "Reserved ambiguous sample for future manual golden refinement.",
+    "needsHumanGolden": true,
+    "expected": {
+      "name": null,
+      "brand": null,
+      "itemNumber": null,
+      "basePrice": null,
+      "categoryId": null,
+      "storageCondition": "AMBIENT",
+      "orderMethod": "DIRECT_BUY",
+      "attributes": {
+        "netContent": null,
+        "pricePerUnit": null,
+        "packSize": null
+      }
+    },
+    "tolerance": {
+      "optionalFields": [
+        "name",
+        "brand",
+        "itemNumber",
+        "basePrice",
+        "categoryId",
+        "attributes.netContent",
+        "attributes.pricePerUnit",
+        "attributes.packSize"
+      ]
+    }
+  }
+]

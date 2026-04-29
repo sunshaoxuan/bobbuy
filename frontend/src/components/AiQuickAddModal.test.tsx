@@ -37,6 +37,11 @@ describe('AiQuickAddModal', () => {
       brand: 'Acme',
       price: 10,
       matchScore: 45,
+      attributes: {
+        netContent: '1kg',
+        pricePerUnit: '¥10/100g',
+        packSize: '1pack'
+      },
       semanticReasoning: '品名与口味不一致，建议另存为新产品。',
       fieldDiffs: [
         { field: 'flavor', label: '口味', oldValue: 'apple', newValue: 'orange', different: true, identityField: true },
@@ -103,6 +108,30 @@ describe('AiQuickAddModal', () => {
     await waitFor(() =>
       expect(onSuccess).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'User Edited Name' })
+      )
+    );
+  });
+
+  it('submits user-edited structured fields in attributes payload', async () => {
+    const onSuccess = vi.fn();
+    renderModal(onSuccess);
+    const input = document.querySelector('.ant-upload-wrapper input[type="file"], input[type="file"]') as HTMLInputElement | null;
+    expect(input).not.toBeNull();
+    fireEvent.change(input!, { target: { files: [new File(['x'], 'product.png', { type: 'image/png' })] } });
+
+    const netContentInput = await screen.findByPlaceholderText(/705g/i, {}, { timeout: 4000 });
+    fireEvent.change(netContentInput, { target: { value: '900g' } });
+    fireEvent.click(screen.getByRole('button', { name: /另存为新产品|Save as New Product/i }));
+
+    await waitFor(() =>
+      expect(onSuccess).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attributes: expect.objectContaining({
+            netContent: '900g',
+            pricePerUnit: '¥10/100g',
+            packSize: '1pack'
+          })
+        })
       )
     );
   });

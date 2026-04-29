@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import fs from 'fs';
 import path from 'path';
 import { setAgentContext } from './responsive_helpers';
 
@@ -6,6 +7,10 @@ test.skip(!process.env.RUN_AI_VISION_E2E, 'Manual AI onboarding flow requires de
 
 const BANNED_SOURCE_KEYWORDS = ['xiaohongshu', 'xhslink', 'rednote'];
 const TRUSTED_SOURCE_TYPES = ['OFFICIAL_SITE', 'BRAND_SITE', 'OFFICIAL_STORE', 'TRUSTED_RETAIL'];
+const sampleGolden = JSON.parse(
+    fs.readFileSync(path.resolve('..', 'docs', 'fixtures', 'ai-onboarding-sample-golden.json'), 'utf-8')
+) as Array<any>;
+const goldenBySampleId = new Map(sampleGolden.map((entry) => [entry.sampleId, entry]));
 
 const extractData = async <T>(response: any): Promise<T> => {
     const json = await response.json();
@@ -28,6 +33,7 @@ test.describe('AI Vision Onboarding E2E', () => {
     });
 
     test('creates a new product and verifies list consistency + compliant sources (IMG_1484)', async ({ page }) => {
+        const golden = goldenBySampleId.get('IMG_1484.jpg');
         const scanResponsePromise = page.waitForResponse((response) =>
             response.url().includes('/api/ai/onboard/scan') && response.request().method() === 'POST'
         );
@@ -43,6 +49,11 @@ test.describe('AI Vision Onboarding E2E', () => {
         expect(scanData.description).toBeTruthy();
         expect(scanData.sourceDomains?.length ?? 0).toBeGreaterThan(0);
         expect(scanData.mediaGallery?.length ?? 0).toBeGreaterThan(0);
+        expect(scanData.itemNumber).toBe(golden?.expected?.itemNumber);
+        expect(scanData.price).toBeGreaterThanOrEqual((golden?.expected?.basePrice ?? 0) - (golden?.tolerance?.priceTolerance ?? 0));
+        expect(scanData.price).toBeLessThanOrEqual((golden?.expected?.basePrice ?? 0) + (golden?.tolerance?.priceTolerance ?? 0));
+        expect(scanData.categoryId).toBe(golden?.expected?.categoryId);
+        expect(scanData.attributes?.pricePerUnit).toBeTruthy();
 
         const sourceTypes = (scanData.mediaGallery ?? []).map((item: any) => item.sourceType).filter(Boolean);
         expect(sourceTypes.some((type: string) => TRUSTED_SOURCE_TYPES.includes(type))).toBeTruthy();
@@ -78,6 +89,7 @@ test.describe('AI Vision Onboarding E2E', () => {
     });
 
     test('detects existing product and confirms target product remains queryable (IMG_1638)', async ({ page }) => {
+        const golden = goldenBySampleId.get('IMG_1638.jpg');
         const scanResponsePromise = page.waitForResponse((response) =>
             response.url().includes('/api/ai/onboard/scan') && response.request().method() === 'POST'
         );
@@ -86,6 +98,7 @@ test.describe('AI Vision Onboarding E2E', () => {
         const scanData = await extractData<any>(await scanResponsePromise);
         expect(scanData.existingProductFound).toBeTruthy();
         expect(scanData.existingProductId).toBeTruthy();
+        expect(scanData.categoryId).toBe(golden?.expected?.categoryId);
 
         const confirmResponsePromise = page.waitForResponse((response) =>
             response.url().includes('/api/ai/onboard/confirm') && response.request().method() === 'POST'

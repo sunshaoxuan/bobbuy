@@ -12,6 +12,7 @@ import com.bobbuy.model.PriceTier;
 import com.bobbuy.model.Product;
 import com.bobbuy.model.ProductVisibility;
 import com.bobbuy.model.StorageCondition;
+import com.bobbuy.repository.CategoryRepository;
 import com.bobbuy.repository.ProductRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,6 +58,7 @@ public class AiProductOnboardingService {
     private static final String STATUS_PENDING_MANUAL_REVIEW = "PENDING_MANUAL_REVIEW";
     private static final Pattern NET_CONTENT_PATTERN = Pattern.compile("(\\d+(?:\\.\\d+)?)\\s?(kg|g|mg|lb|oz|l|ml)", Pattern.CASE_INSENSITIVE);
     private static final Pattern PACK_PATTERN = Pattern.compile("(\\d+)\\s?(pack|pcs|piece|pieces|bottle|bottles|袋|包|盒|箱)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PRICE_NUMBER_PATTERN = Pattern.compile("(-?\\d{1,3}(?:,\\d{3})*(?:\\.\\d+)?|-?\\d+(?:\\.\\d+)?)");
     private static final Set<String> DENIED_SOURCE_KEYWORDS = Set.of(
         "xiaohongshu.com", "xhslink.com", "rednote", "weibo.com", "watermark"
     );
@@ -90,19 +92,22 @@ public class AiProductOnboardingService {
     private final LlmGateway llmGateway;
     private final AiSearchService aiSearchService;
     private final WebSearchService webSearchService;
+    private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final com.bobbuy.repository.SupplierRepository supplierRepository;
     private final ObjectMapper objectMapper;
 
     public AiProductOnboardingService(LlmGateway llmGateway,
-                                     AiSearchService aiSearchService,
-                                     WebSearchService webSearchService,
-                                     ProductRepository productRepository,
-                                     com.bobbuy.repository.SupplierRepository supplierRepository,
-                                     ObjectMapper objectMapper) {
+                                      AiSearchService aiSearchService,
+                                      WebSearchService webSearchService,
+                                      CategoryRepository categoryRepository,
+                                      ProductRepository productRepository,
+                                      com.bobbuy.repository.SupplierRepository supplierRepository,
+                                      ObjectMapper objectMapper) {
         this.llmGateway = llmGateway;
         this.aiSearchService = aiSearchService;
         this.webSearchService = webSearchService;
+        this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.supplierRepository = supplierRepository;
         this.objectMapper = objectMapper;
@@ -214,9 +219,11 @@ public class AiProductOnboardingService {
                - 優先尋找 "品番", "Item No", "SKU", "Part No" 等標識後的編碼。
                - 若標識缺失，請參考上面的 [商家規範] 和 [歷史檔案] 進行判斷。
                - ⚠️ 警告：嚴禁將重量（如 705g）、單價（如 498/100g）或條形碼誤認為貨號。
-            4. 【價格】(basePrice): 提取最終結算總價，僅輸出數字。
-            5. 【規格/淨含量】(netWeight): 提取重量、容量或包裝規格（如 705g, 500ml, 支裝）。
-            6. 【單價】(pricePerUnit): 提取每單位價格（如 498円/100g）。
+            4. 【價格】(basePrice): 提取最終結算總價，僅輸出數字；去掉千分位、幣種符號與稅前/稅後描述。
+            5. 【類目】(categoryId): 只能輸出現有類目 ID；若只能判斷自然語義，請輸出最接近的既有類目 ID，無法判斷則輸出 null。
+            6. 【結構化屬性】(attributes): 提取淨含量、單位價格、包裝規格、口味、產地、儲存提示。
+            7. 不確定字段請輸出 null，不得編造。
+            8. 每個關鍵字段請給出 confidence.fieldScores 與 evidence.fieldSources，來源只能引用 OCR 行文本片段。
 
             === 輸出格式 ===
             只輸出JSON對象，不要有任何解釋。格式：
@@ -225,9 +232,31 @@ public class AiProductOnboardingService {
               "brand": "...",
               "itemNumber": "...",
               "basePrice": 0.0,
-              "pricePerUnit": "...",
-              "netWeight": "...",
-              "description": "簡短描述，包含你發現的關鍵特徵（如貨號、品牌、價格等）"
+              "currency": "JPY",
+              "categoryId": "cat-1000",
+              "description": "簡短描述，包含你發現的關鍵特徵（如貨號、品牌、價格等）",
+              "attributes": {
+                "netContent": "705g",
+                "pricePerUnit": "498円/100g",
+                "packSize": "2pack",
+                "flavor": null,
+                "origin": null,
+                "storageHint": null
+              },
+              "confidence": {
+                "fieldScores": {
+                  "name": 0.0,
+                  "itemNumber": 0.0,
+                  "basePrice": 0.0
+                }
+              },
+              "evidence": {
+                "fieldSources": {
+                  "name": ["OCR line text"],
+                  "itemNumber": ["OCR line text"],
+                  "basePrice": ["OCR line text"]
+                }
+              }
             }
             """, rawOcrText, merchantRules, historicalContext);
 
@@ -288,17 +317,17 @@ public class AiProductOnboardingService {
             Map<String, Object> extracted = objectMapper.readValue(rawResponse, new TypeReference<>() {});
             String name = stringValue(extracted.getOrDefault("name", "Unknown Product"));
             String brand = stringValue(extracted.get("brand"));
-            String itemNumber = stringValue(extracted.get("itemNumber"));
+            String itemNumber = normalizeItemNumber(stringValue(extracted.get("itemNumber")), null, Map.of());
             String description = stringValue(extracted.get("description"));
-            String categoryHint = firstNonBlank(stringValue(extracted.get("categoryId")), stringValue(extracted.get("category")));
-            Double basePrice = extracted.get("basePrice") instanceof Number n ? n.doubleValue()
-                    : extracted.get("price") instanceof Number n2 ? n2.doubleValue() : null;
+            Double basePrice = parsePriceValue(firstNonBlankObject(extracted.get("basePrice"), extracted.get("price")));
+            String categoryHint = normalizeCategoryId(firstNonBlank(stringValue(extracted.get("categoryId")), stringValue(extracted.get("category"))));
             Map<String, String> extractedAttributes = extractStructuredAttributes(
                 extracted,
                 name,
                 description,
                 categoryHint
             );
+            itemNumber = normalizeItemNumber(stringValue(extracted.get("itemNumber")), basePrice, extractedAttributes);
 
             // 2. Incremental Matching (itemNumber is the unique key)
             boolean existingFound = false;
@@ -324,9 +353,9 @@ public class AiProductOnboardingService {
                 // 1. Try to find in description (synthesized by LLM/Web)
                 if (description != null && !description.isBlank()) {
                     Pattern p = Pattern.compile("(?:编号|货号|SKU|品番|Item No)[:：\\s]*(\\d{5,8})", Pattern.CASE_INSENSITIVE);
-                    Matcher m = p.matcher(description);
-                    if (m.find()) {
-                        itemNumber = m.group(1);
+                        Matcher m = p.matcher(description);
+                        if (m.find()) {
+                        itemNumber = normalizeItemNumber(m.group(1), basePrice, extractedAttributes);
                         log.info("Phase 4: Recovered itemNumber from description: {}", itemNumber);
                     }
                 }
@@ -338,7 +367,7 @@ public class AiProductOnboardingService {
                         String candidate = m.group(1);
                         // Skip if it looks like price
                         if (basePrice == null || !candidate.equals(String.valueOf(basePrice.intValue()))) {
-                            itemNumber = candidate;
+                            itemNumber = normalizeItemNumber(candidate, basePrice, extractedAttributes);
                             log.info("Phase 4: Recovered itemNumber from raw OCR (5-6 digit fallback): {}", itemNumber);
                             break;
                         }
@@ -470,7 +499,7 @@ public class AiProductOnboardingService {
                 Pattern p = Pattern.compile("(?:编号|货号|SKU|品番|Item No)[:：\\s]*(\\d{5,8})", Pattern.CASE_INSENSITIVE);
                 Matcher m = p.matcher(finalDescription);
                 if (m.find()) {
-                    itemNumber = m.group(1);
+                    itemNumber = normalizeItemNumber(m.group(1), basePrice, extractedAttributes);
                     log.info("Phase 4: Recovered itemNumber from final synthesis: {}", itemNumber);
                 }
             }
@@ -573,7 +602,7 @@ public class AiProductOnboardingService {
                 StorageCondition.AMBIENT,
                 OrderMethod.DIRECT_BUY,
                 gallery,
-                new HashMap<>(),
+                extractedAttributes,
                 existingFound,
                 existingId,
                 similarCandidates,
@@ -740,12 +769,14 @@ public class AiProductOnboardingService {
                                                             String itemNumber,
                                                             Double basePrice,
                                                             Map<String, String> extractedAttributes) {
-        Map<String, String> existingAttributes = extractStructuredAttributes(
-            Map.of(),
-            selectProductName(verificationProduct),
-            firstNonBlank(selectProductDescription(verificationProduct), ""),
-            verificationProduct.getCategoryId()
-        );
+        Map<String, String> existingAttributes = verificationProduct.getAttributes() == null || verificationProduct.getAttributes().isEmpty()
+            ? extractStructuredAttributes(
+                Map.of(),
+                selectProductName(verificationProduct),
+                firstNonBlank(selectProductDescription(verificationProduct), ""),
+                verificationProduct.getCategoryId()
+            )
+            : verificationProduct.getAttributes();
         double score = 0d;
         List<String> reasons = new ArrayList<>();
         String existingName = selectProductName(verificationProduct);
@@ -834,12 +865,14 @@ public class AiProductOnboardingService {
         if (verificationProduct == null) {
             return List.of();
         }
-        Map<String, String> existingAttributes = extractStructuredAttributes(
-            Map.of(),
-            selectProductName(verificationProduct),
-            firstNonBlank(selectProductDescription(verificationProduct), ""),
-            verificationProduct.getCategoryId()
-        );
+        Map<String, String> existingAttributes = verificationProduct.getAttributes() == null || verificationProduct.getAttributes().isEmpty()
+            ? extractStructuredAttributes(
+                Map.of(),
+                selectProductName(verificationProduct),
+                firstNonBlank(selectProductDescription(verificationProduct), ""),
+                verificationProduct.getCategoryId()
+            )
+            : verificationProduct.getAttributes();
         List<AiFieldDiff> diffs = new ArrayList<>();
         diffs.add(toFieldDiff("name", "商品名称", selectProductName(verificationProduct), name, false));
         diffs.add(toFieldDiff("brand", "品牌", verificationProduct.getBrand(), brand, false));
@@ -880,17 +913,47 @@ public class AiProductOnboardingService {
 
     private Map<String, String> extractStructuredAttributes(Map<String, Object> extracted, String name, String description, String categoryHint) {
         Map<String, String> attributes = new HashMap<>();
-        putIfPresent(attributes, "netContent", firstNonBlank(stringValue(extracted.get("netWeight")), stringValue(extracted.get("netContent"))));
-        putIfPresent(attributes, "flavor", extracted.get("flavor"));
-        putIfPresent(attributes, "specification", firstNonBlank((String) extracted.get("specification"), (String) extracted.get("size")));
-        String combinedText = joinNonBlank(name, description, stringValue(extracted.get("specification")), stringValue(extracted.get("size")));
+        Map<String, Object> nestedAttributes = mapValue(extracted.get("attributes"));
+        putIfPresent(attributes, "netContent", firstNonBlank(
+            stringValue(nestedAttributes.get("netContent")),
+            stringValue(nestedAttributes.get("netWeight")),
+            stringValue(extracted.get("netWeight")),
+            stringValue(extracted.get("netContent"))));
+        putIfPresent(attributes, "pricePerUnit", firstNonBlank(
+            stringValue(nestedAttributes.get("pricePerUnit")),
+            stringValue(extracted.get("pricePerUnit"))));
+        putIfPresent(attributes, "packSize", firstNonBlank(
+            stringValue(nestedAttributes.get("packSize")),
+            stringValue(nestedAttributes.get("specification")),
+            stringValue(nestedAttributes.get("size")),
+            stringValue(extracted.get("specification")),
+            stringValue(extracted.get("size"))));
+        putIfPresent(attributes, "specification", firstNonBlank(
+            stringValue(nestedAttributes.get("specification")),
+            stringValue(extracted.get("specification")),
+            stringValue(extracted.get("size"))));
+        putIfPresent(attributes, "flavor", firstNonBlank(stringValue(nestedAttributes.get("flavor")), stringValue(extracted.get("flavor"))));
+        putIfPresent(attributes, "origin", firstNonBlank(stringValue(nestedAttributes.get("origin")), stringValue(extracted.get("origin"))));
+        putIfPresent(attributes, "storageHint", firstNonBlank(
+            stringValue(nestedAttributes.get("storageHint")),
+            stringValue(nestedAttributes.get("storageCondition")),
+            stringValue(extracted.get("storageHint")),
+            stringValue(extracted.get("storageCondition"))));
+        String combinedText = joinNonBlank(
+            name,
+            description,
+            stringValue(nestedAttributes.get("specification")),
+            stringValue(nestedAttributes.get("size")),
+            stringValue(extracted.get("specification")),
+            stringValue(extracted.get("size")),
+            stringValue(extracted.get("pricePerUnit")));
         Matcher netContentMatcher = NET_CONTENT_PATTERN.matcher(combinedText);
         if (!attributes.containsKey("netContent") && netContentMatcher.find()) {
-            attributes.put("netContent", (netContentMatcher.group(1) + netContentMatcher.group(2)).toLowerCase(Locale.ROOT));
+            attributes.put("netContent", normalizeAttributeValue("netContent", netContentMatcher.group(1) + netContentMatcher.group(2)));
         }
         Matcher packMatcher = PACK_PATTERN.matcher(combinedText);
         if (!attributes.containsKey("packSize") && packMatcher.find()) {
-            attributes.put("packSize", (packMatcher.group(1) + packMatcher.group(2)).toLowerCase(Locale.ROOT));
+            attributes.put("packSize", normalizeAttributeValue("packSize", packMatcher.group(1) + packMatcher.group(2)));
         }
         if (isFoodCategory(categoryHint) && !attributes.containsKey("flavor")) {
             String flavor = inferFlavorLikeToken(name);
@@ -912,6 +975,9 @@ public class AiProductOnboardingService {
         String normalized = firstNonBlank(categoryHint, "").trim().toLowerCase(Locale.ROOT);
         if (normalized.isBlank()) {
             return false;
+        }
+        if ("cat-1000".equals(normalized)) {
+            return true;
         }
         return FOOD_CATEGORY_HINTS.stream().anyMatch(normalized::contains);
     }
@@ -952,12 +1018,14 @@ public class AiProductOnboardingService {
     }
 
     private String buildExistingSummary(Product product) {
-        Map<String, String> attributes = extractStructuredAttributes(
-            Map.of(),
-            selectProductName(product),
-            firstNonBlank(selectProductDescription(product), ""),
-            product.getCategoryId()
-        );
+        Map<String, String> attributes = product.getAttributes() == null || product.getAttributes().isEmpty()
+            ? extractStructuredAttributes(
+                Map.of(),
+                selectProductName(product),
+                firstNonBlank(selectProductDescription(product), ""),
+                product.getCategoryId()
+            )
+            : product.getAttributes();
         return """
             品名=%s
             品牌=%s
@@ -996,10 +1064,122 @@ public class AiProductOnboardingService {
     }
 
     private void putIfPresent(Map<String, String> attributes, String key, Object value) {
-        String normalized = stringValue(value);
+        String normalized = normalizeAttributeValue(key, stringValue(value));
         if (!normalized.isBlank()) {
             attributes.put(key, normalized);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> mapValue(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
+        }
+        return Map.of();
+    }
+
+    private Object firstNonBlankObject(Object... values) {
+        for (Object value : values) {
+            if (value == null) {
+                continue;
+            }
+            if (value instanceof String text) {
+                if (!text.isBlank()) {
+                    return text;
+                }
+                continue;
+            }
+            return value;
+        }
+        return null;
+    }
+
+    private Double parsePriceValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        String raw = stringValue(value)
+            .replace("税抜", "")
+            .replace("税込", "")
+            .replace("JPY", "")
+            .replace("CNY", "")
+            .replace("USD", "")
+            .replace("円", "")
+            .replace("¥", "")
+            .replace("$", "")
+            .replace("￥", "");
+        String normalized = raw.replaceAll("[^\\d,.-]", "");
+        if (normalized.isBlank()) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(normalized.replace(",", ""));
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private String normalizeAttributeValue(String key, String value) {
+        String normalized = firstNonBlank(value, "").trim();
+        if (normalized.isBlank() || "null".equalsIgnoreCase(normalized)) {
+            return "";
+        }
+        return switch (key) {
+            case "netContent", "packSize", "specification" -> normalized.replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
+            case "pricePerUnit" -> normalized.replaceAll("\\s+", "");
+            default -> normalized;
+        };
+    }
+
+    private String normalizeCategoryId(String rawCategory) {
+        String normalized = firstNonBlank(rawCategory, "").trim();
+        if (normalized.isBlank()) {
+            return "";
+        }
+        String mapped = categoryRepository.findAll().stream()
+            .filter(category -> category != null && category.getId() != null)
+            .filter(category -> category.getId().equalsIgnoreCase(normalized)
+                || (category.getName() != null && category.getName().values().stream()
+                    .filter(Objects::nonNull)
+                    .anyMatch(name -> name.equalsIgnoreCase(normalized) || normalized.equalsIgnoreCase(name))))
+            .map(category -> category.getId())
+            .findFirst()
+            .orElse("");
+        if (!mapped.isBlank()) {
+            return mapped;
+        }
+        if (isFoodCategory(normalized)) {
+            return "cat-1000";
+        }
+        return normalized;
+    }
+
+    private String normalizeItemNumber(String rawItemNumber, Double basePrice, Map<String, String> attributes) {
+        String normalized = firstNonBlank(rawItemNumber, "").trim();
+        if (normalized.isBlank()) {
+            return "";
+        }
+        String compact = normalized.replaceAll("\\s+", "");
+        if (compact.matches("\\d{12,14}")) {
+            return "";
+        }
+        if (compact.matches("(?i).*\\d+(kg|g|mg|lb|oz|l|ml)$")) {
+            return "";
+        }
+        if (basePrice != null) {
+            String priceInt = formatNumericValue(basePrice);
+            if (compact.equals(priceInt)) {
+                return "";
+            }
+        }
+        String pricePerUnit = firstNonBlank(attributes.get("pricePerUnit"), "");
+        if (!pricePerUnit.isBlank() && pricePerUnit.contains(compact)) {
+            return "";
+        }
+        return compact;
     }
 
     private String stringValue(Object value) {

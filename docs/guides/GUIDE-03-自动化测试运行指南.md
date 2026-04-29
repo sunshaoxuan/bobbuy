@@ -83,12 +83,15 @@ npm run e2e:ai:win
 - 外部模型：`bobbuy.ai.llm.edge.*` + `bobbuy.ai.llm.main.*` 可访问
 - 对象存储：MinIO 可访问（`bobbuy.minio.*`）
 - 样本图片：`sample/IMG_1484.jpg`、`sample/IMG_1638.jpg`
+- Sample golden：`docs/fixtures/ai-onboarding-sample-golden.json`
+- Sample 对比脚本：`pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1`
 - 预置数据：启用 `dev` profile 或 `bobbuy.seed.enabled=true`，保证已有商品识别路径可命中
 
 通过标准（真实业务闭环）：
 - `IMG_1484` 触发新商品创建，`/api/ai/onboard/confirm` 返回新 `product.id`
 - 创建后商品列表（`/api/mobile/products`）可查到该 `product.id`，且 `itemNumber/brand/price` 与 AI 最终确认一致
 - `IMG_1638` 命中已有商品，扫描结果 `existingProductFound=true` 且确认返回同一 `existingProductId`
+- 若执行 sample 对比脚本，输出 `/tmp/ai-onboarding-sample-report.json` 与 `/tmp/ai-onboarding-sample-report.md`
 - 抓图来源治理通过：`sourceDomains` 不包含小红书等禁用域名，且至少一张图属于 `OFFICIAL_SITE/BRAND_SITE/OFFICIAL_STORE/TRUSTED_RETAIL`
 
 失败判定（按链路定位）：

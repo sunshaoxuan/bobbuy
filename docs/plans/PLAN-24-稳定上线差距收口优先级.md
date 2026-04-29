@@ -84,6 +84,7 @@
 2. 把 AI 真实链路、E2E、CodeQL 作为分层门禁：默认、专用、风险登记。
 3. 每次 Release 必须记录本地/CI 验证结果。
 4. Playwright 手动门禁必须保留 trace / screenshot / video / HTML report artifact，便于试运行失败复盘。
+5. AI 商品上架专用环境需保留 sample golden 与字段级对比报告，禁止只记录“成功/失败”而不保留关键识别字段。
 
 **验收标准**
 

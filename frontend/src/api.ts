@@ -153,6 +153,7 @@ export type MobileProductResponse = {
             storageCondition?: string;
         orderMethod?: string;
         mediaGallery?: { url: string; title?: Record<string, string>; type: string; sourceUrl?: string; sourceDomain?: string; sourceType?: string }[];
+        attributes?: Record<string, string>;
         priceTiers?: PriceTier[];
     };
     displayName: string;

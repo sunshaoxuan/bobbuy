@@ -147,6 +147,19 @@ const getFieldLabel = (field: CategoryAttributeTemplateField, translate: (key: s
 
 const CATEGORY_FIELD_TYPE_OPTIONS: readonly CategoryAttributeTemplateField['type'][] = ['text', 'number', 'select'];
 
+const normalizeStructuredAttributes = (attributes?: Record<string, string | number | undefined | null>): Record<string, string> =>
+  Object.entries(attributes ?? {}).reduce<Record<string, string>>((acc, [key, value]) => {
+    if (value === undefined || value === null) {
+      return acc;
+    }
+    const normalized = String(value).trim();
+    if (!normalized) {
+      return acc;
+    }
+    acc[key] = normalized;
+    return acc;
+  }, {});
+
 const isValidCategoryFieldType = (value: string): value is CategoryAttributeTemplateField['type'] =>
   CATEGORY_FIELD_TYPE_OPTIONS.includes(value as CategoryAttributeTemplateField['type']);
 
@@ -257,6 +270,7 @@ export default function StockMaster() {
           title: m.title
         })) || [],
         priceTiers: res.product.priceTiers || [],
+        dynamicAttributes: normalizeStructuredAttributes(res.product.attributes),
         isNew: false
       }));
       setDataSource(mapped);
@@ -366,6 +380,7 @@ export default function StockMaster() {
            title: m.title || {}
         })) || []) as MediaItem[],
         priceTiers: product.priceTiers || [],
+        dynamicAttributes: normalizeStructuredAttributes(product.attributes),
         isNew: false // Mark as NOT new (already synced)
       };
       
@@ -398,6 +413,7 @@ export default function StockMaster() {
            visible: true
         })) || []) as MediaItem[],
         priceTiers: suggestion.detectedPriceTiers || [],
+        dynamicAttributes: normalizeStructuredAttributes(suggestion.attributes),
         isNew: true,
         suggestion: suggestion
       };
@@ -419,6 +435,7 @@ export default function StockMaster() {
       categoryId: item.category,
       brand: item.brand,
       description: item.description,
+      attributes: normalizeStructuredAttributes(item.dynamicAttributes),
       // @ts-ignore
       mediaGallery: item.mediaGallery?.map(m => ({ url: m.url, type: m.type, title: m.title, visible: m.visible !== false })),
       detectedPriceTiers: item.priceTiers,
@@ -634,10 +651,12 @@ export default function StockMaster() {
                 <Text strong className="stock-mobile-title">
                   {localizedTitle}
                 </Text>
-                <Space size={8} wrap>
-                  <Tag color={item.isNew ? 'orange' : 'blue'}>{item.isNew ? t('stock.status.new') : t('stock.status.modified')}</Tag>
-                  {item.sku ? <Text type="secondary">{t('stock.item.sku')}: {item.sku}</Text> : null}
-                </Space>
+                  <Space size={8} wrap>
+                    <Tag color={item.isNew ? 'orange' : 'blue'}>{item.isNew ? t('stock.status.new') : t('stock.status.modified')}</Tag>
+                    {item.sku ? <Text type="secondary">{t('stock.item.sku')}: {item.sku}</Text> : null}
+                    {item.dynamicAttributes?.netContent ? <Tag>{`${t('stock.item.net_content')}: ${item.dynamicAttributes.netContent}`}</Tag> : null}
+                    {item.dynamicAttributes?.packSize ? <Tag>{`${t('stock.item.pack_size')}: ${item.dynamicAttributes.packSize}`}</Tag> : null}
+                  </Space>
               </div>
               <div className="stock-mobile-side">
                 <Text className="stock-mobile-metric">
@@ -831,6 +850,31 @@ export default function StockMaster() {
                         ))}
                       </Row>
                     ) : null}
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                      {t('stock.dynamic.ai_section')}
+                    </Text>
+                    <Row gutter={[MOBILE_DYNAMIC_GUTTER, isMobile ? MOBILE_DYNAMIC_GUTTER : DESKTOP_DYNAMIC_GUTTER]}>
+                      <Col key="netContent" xs={24} sm={24} md={12} lg={12}>
+                        <Form.Item name={['dynamicAttributes', 'netContent']} label={t('stock.item.net_content')}>
+                          <Input placeholder={t('stock.item.net_content_placeholder')} />
+                        </Form.Item>
+                      </Col>
+                      <Col key="pricePerUnit" xs={24} sm={24} md={12} lg={12}>
+                        <Form.Item name={['dynamicAttributes', 'pricePerUnit']} label={t('stock.item.price_per_unit')}>
+                          <Input placeholder={t('stock.item.price_per_unit_placeholder')} />
+                        </Form.Item>
+                      </Col>
+                      <Col key="packSize" xs={24} sm={24} md={12} lg={12}>
+                        <Form.Item name={['dynamicAttributes', 'packSize']} label={t('stock.item.pack_size')}>
+                          <Input placeholder={t('stock.item.pack_size_placeholder')} />
+                        </Form.Item>
+                      </Col>
+                      <Col key="storageHint" xs={24} sm={24} md={12} lg={12}>
+                        <Form.Item name={['dynamicAttributes', 'storageHint']} label={t('stock.item.storage_hint')}>
+                          <Input placeholder={t('stock.item.storage_hint_placeholder')} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
                     <Form.Item name="storageCondition" label={t('stock.item.storage_condition')}>
                       <Radio.Group
                         optionType="button"
