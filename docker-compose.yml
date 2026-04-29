@@ -8,6 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-bobbuy}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bobbuypassword}
     volumes:
+      # If you previously used ./data/postgres_v18, migrate/backup it manually before first boot with this path.
       - ./data/postgres:/var/lib/postgresql/data
     ports:
       - "${BOBBUY_BIND_HOST:-127.0.0.1}:${POSTGRES_HOST_PORT:-5432}:5432"
