@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,6 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final Logger log = LoggerFactory.getLogger(TokenAuthenticationFilter.class);
 
     private final JwtTokenService jwtTokenService;
     private final UserRepository userRepository;
@@ -47,6 +50,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 );
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (IllegalArgumentException ex) {
+                log.debug("Rejecting bearer token: {}", ex.getMessage());
                 SecurityContextHolder.clearContext();
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                 return;

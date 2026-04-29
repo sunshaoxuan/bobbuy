@@ -26,6 +26,7 @@ public class JwtTokenService {
     private static final Base64.Decoder URL_DECODER = Base64.getUrlDecoder();
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final String JWT_ALGORITHM = "HS256";
+    private static final long MIN_TTL_SECONDS = 60L;
 
     private final ObjectMapper objectMapper;
     private final String secret;
@@ -36,7 +37,7 @@ public class JwtTokenService {
                            @Value("${bobbuy.security.jwt.ttl-seconds:3600}") long ttlSeconds) {
         this.objectMapper = objectMapper;
         this.secret = secret == null ? "" : secret.trim();
-        this.ttl = Duration.ofSeconds(Math.max(ttlSeconds, 60L));
+        this.ttl = Duration.ofSeconds(Math.max(ttlSeconds, MIN_TTL_SECONDS));
     }
 
     @PostConstruct

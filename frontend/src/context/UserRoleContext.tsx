@@ -25,12 +25,15 @@ interface UserRoleContextValue {
 }
 
 const DEFAULT_ROLE: UserRole = 'CUSTOMER';
+const SEED_AGENT_ID = 1000;
+const SEED_CUSTOMER_ID = 1001;
+const SEED_MERCHANT_ID = 1002;
 
 const UserRoleContext = createContext<UserRoleContextValue | undefined>(undefined);
 
 function getInjectedUser(role: UserRole): AuthenticatedUser {
   const injectedUser = getTestInjectedUser();
-  const fallbackId = role === 'AGENT' ? 1000 : role === 'CUSTOMER' ? 1001 : 1002;
+  const fallbackId = role === 'AGENT' ? SEED_AGENT_ID : role === 'CUSTOMER' ? SEED_CUSTOMER_ID : SEED_MERCHANT_ID;
   return {
     id: Number(injectedUser) || fallbackId,
     username: injectedUser ?? `test-${role.toLowerCase()}`,

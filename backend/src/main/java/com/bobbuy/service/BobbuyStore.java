@@ -151,6 +151,7 @@ public class BobbuyStore {
             log.info("Database already contains data, skipping seed.");
             return;
         }
+        log.warn("Seeding demo accounts with local-only credentials; ensure bobbuy.seed.enabled remains disabled in public deployments.");
         clearSeedData();
         User agent = new User(1000L, "Aiko Tan", Role.AGENT, 4.8);
         User customer = new User(1001L, "Chen Li", Role.CUSTOMER, 4.6);

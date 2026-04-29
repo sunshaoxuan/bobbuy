@@ -2,10 +2,10 @@ import { Alert, Button, Card, Form, Input, Space, Typography } from 'antd';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n';
+import { isLocalAuthOverrideEnabled } from '../authStorage';
 import { useUserRole } from '../context/UserRoleContext';
 
 const { Paragraph, Title, Text } = Typography;
-const showDemoAccounts = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -35,7 +35,7 @@ export default function LoginPage() {
             <Title level={3}>{t('auth.login_title')}</Title>
             <Paragraph type="secondary">{t('auth.login_subtitle')}</Paragraph>
           </div>
-          {showDemoAccounts ? (
+          {isLocalAuthOverrideEnabled() ? (
             <Alert
               type="info"
               showIcon

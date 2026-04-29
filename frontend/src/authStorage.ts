@@ -13,7 +13,7 @@ const TEST_ROLE_KEY = 'bobbuy_test_role';
 const TEST_USER_KEY = 'bobbuy_test_user';
 const AUTH_CHANGED_EVENT = 'bobbuy-auth-changed';
 
-const isAuthOverrideEnabled = () =>
+export const isLocalAuthOverrideEnabled = () =>
   typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
@@ -77,7 +77,7 @@ export function clearAuthSession() {
 }
 
 export function getTestInjectedRole(): UserRole | null {
-  if (typeof window === 'undefined' || !isAuthOverrideEnabled()) {
+  if (typeof window === 'undefined' || !isLocalAuthOverrideEnabled()) {
     return null;
   }
   const injectedRole = window.localStorage.getItem(TEST_ROLE_KEY);
@@ -85,7 +85,7 @@ export function getTestInjectedRole(): UserRole | null {
 }
 
 export function getTestInjectedUser(): string | null {
-  if (typeof window === 'undefined' || !isAuthOverrideEnabled()) {
+  if (typeof window === 'undefined' || !isLocalAuthOverrideEnabled()) {
     return null;
   }
   const injectedUser = window.localStorage.getItem(TEST_USER_KEY);
