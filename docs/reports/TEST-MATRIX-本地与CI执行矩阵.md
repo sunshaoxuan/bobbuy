@@ -1,6 +1,6 @@
 # 本地 / CI 测试执行矩阵
 
-> 2026-04-29 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build` 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 做配置渲染校验；Flyway PostgreSQL migration 验证、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。
+> 2026-04-29 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build` 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 做配置渲染校验；Flyway PostgreSQL migration 验证、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`core-service` / `ai-service` / `im-service` / `auth-service` 当前仍复用 `backend` 共享代码，因此默认门禁不把它们当作已经拥有独立测试边界的微服务。
 
 ## 1. 默认门禁（每个 PR / `main` push 必跑）
 
@@ -38,6 +38,7 @@
 - 后端默认测试必须继续使用 H2 / fake/mock 资源，禁止默认门禁外连真实 Ollama、Codex CLI、MinIO 或公网服务。
 - AI/OCR 可靠性用例（provider unconfigured、OCR/LLM 失败、fallback、人工复核、重试）必须继续保留在默认 mock 测试中，禁止切换到真实外部服务。
 - 后端 `mvn test` 现同时覆盖 JWT 登录、`/api/auth/me`、401/403、customer 本人数据隔离，以及 `bobbuy.security.header-auth.enabled=false` 时伪造 header 不得提权。
+- `core-service` / `ai-service` / `im-service` / `auth-service` / `gateway-service` 当前无独立模块级测试；若后续要把服务外壳降级为 optional/profile 或继续拆分，必须先补模块启动 smoke test、服务间鉴权与拆分后 CI/CD。
 - 当前已知前端测试噪声：
   - Ant Design `useForm` 未连接 warning。
   - 预期失败路径中的 `Delete failed: Error: Server error` console 输出。

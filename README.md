@@ -33,13 +33,29 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - **Frontend**: React 18 / Ant Design / Vite / Vitest / Playwright
 - **Storage**: PostgreSQL 15 / MinIO
 
-## 微服务模块
-- `bobbuy-common`：复用现有后端代码与共享 DTO / 响应模型
-- `bobbuy-core`：订单、行程、采购、财务等核心业务
-- `bobbuy-ai`：AI 解析、翻译、商品引导、收据识别
-- `bobbuy-im`：聊天 REST + WebSocket(STOMP)
-- `bobbuy-auth`：预留认证服务注册节点
-- `bobbuy-gateway`：Spring Cloud Gateway 路由层
+## 试运行阶段服务边界
+
+- 默认路线采用 **主业务单体优先稳定**，详见 [ADR-01-试运行阶段服务边界决策](docs/architecture/ADR-01-试运行阶段服务边界决策.md)。
+- **主业务入口**：`backend`（开发、测试、Flyway migration 源码入口）。
+- **事实源**：试运行部署中由 `core-service` 承载核心业务事实源，并独占 Flyway migration。
+- **服务外壳**：`ai-service`、`im-service`、`auth-service` 当前继续复用 `backend` 共享代码、共享 PostgreSQL schema 与共享安全配置，不是独立业务事实源。
+- **可选服务**：`ocr-service` 属于 AI/OCR 增强能力依赖；不可用时系统按既有 fallback / 人工复核路径降级。
+- **后续拆分候选**：`ai-service`、`im-service`、`auth-service`；在服务间鉴权、独立 schema、Tracing、SLO、独立 CI/CD 到位前，不继续深拆。
+- 当前默认 Compose 仍保留 `ai-service` / `im-service` / `auth-service`，因为网关路由与启动回归测试尚未准备好安全降级为 optional/profile。
+
+## 模块 / 服务定位
+
+| 模块 | 当前定位 | 试运行职责 |
+| :-- | :-- | :-- |
+| `backend` | 主业务入口 | 核心 Controller / Service / Repository / Flyway / 测试 |
+| `bobbuy-common` | 共享依赖层 | 公共依赖、配置、DTO/响应模型 |
+| `bobbuy-core` | 核心业务服务外壳 | `core-service` 部署入口，承载共享核心业务事实源 |
+| `bobbuy-ai` | AI 服务外壳 | `ai-service` 部署入口，承载 AI/OCR 相关接口但不独立持有业务事实 |
+| `bobbuy-im` | IM 服务外壳 | `im-service` 部署入口，承载聊天/WebSocket 相关接口但共享数据库 |
+| `bobbuy-auth` | 认证服务外壳 | `auth-service` 部署入口，承载登录/JWT 相关接口但不独立持有身份事实 |
+| `bobbuy-gateway` | 路由层 | `gateway-service`，只负责路由与健康检查 |
+
+完整职责矩阵、风险与验证记录见 [REPORT-01-试运行服务边界执行报告](docs/reports/REPORT-01-试运行服务边界执行报告.md)。
 
 ## 快速开始
 
@@ -99,10 +115,16 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - Docker / Nacos 短期约定由 `core-service` 负责执行 migration，避免多服务并发迁移竞态。
 
 ### 网关路由
+- `/api/auth/**` → `auth-service`
 - `/api/chat/**` → `im-service`
 - `/api/ai/**` → `ai-service`
 - `/ws` / `/ws/**` → `im-service`
 - 其余 `/api/**` → `core-service`
+
+说明：
+
+- 上述路由目标当前是**服务外壳**，并非已完成独立数据所有权的微服务。
+- `auth-service` 通过专门路由承载 `/api/auth/**`；`core-service` 仍是其余业务 API 的默认事实源。
 
 ## 当前认证方案
 
@@ -147,3 +169,5 @@ AI / OCR 默认测试边界：
 - `cd backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`：通过。
 
 详细矩阵见 [docs/reports/TEST-MATRIX-本地与CI执行矩阵.md](docs/reports/TEST-MATRIX-本地与CI执行矩阵.md)。
+
+当前边界执行摘要见 [docs/reports/REPORT-01-试运行服务边界执行报告.md](docs/reports/REPORT-01-试运行服务边界执行报告.md)。
