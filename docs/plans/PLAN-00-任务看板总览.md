@@ -42,7 +42,8 @@
 | [PLAN-36](PLAN-36-P2-RefreshToken与会话生命周期治理开发提示词.md) | P2 Refresh Token 与会话生命周期治理提示词 | ✅ 已完成 | 100% | access token 刷新、登出撤销、轮换复用检测与前端会话恢复已完成 | 全栈团队 |
 | [PLAN-37](PLAN-37-P2-浏览器Token防护与Refresh并发硬化开发提示词.md) | P2 浏览器 Token 防护与 Refresh 并发硬化提示词 | ✅ 已完成 | 100% | HttpOnly refresh cookie、CSRF、refresh 并发轮换边界已收口 | 全栈团队 |
 | [PLAN-38](PLAN-38-P2-Playwright端到端试运行验收开发提示词.md) | P2 Playwright 端到端试运行验收提示词 | ✅ 已完成 | 100% | 浏览器 smoke、角色门禁、聊天与核心业务试运行验收已稳定 | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 85% | 默认质量门禁已稳定；剩余 AI 真实视觉专用验收、安全扫描、mTLS/service mesh、契约测试与独立 CI/CD | 全栈团队 |
+| [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) | P1 Sample 图片 AI 商品字段识别与档案落库优化提示词 | ⏳ 待评审 | 0% | 建立 sample golden、字段级识别、结构化落库与 AI 专用验收闭环 | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 82% | 默认质量门禁已稳定；下一优先级为 sample 图片 AI 字段级识别与商品档案落库修复 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |
@@ -275,6 +276,7 @@
    - [x] 前端：`cd frontend && npm test && npm run build`
    - [x] 浏览器 smoke：`cd frontend && npm run e2e`，当前口径 `46 passed / 2 skipped`
    - [x] Compose 配置渲染：`docker compose config`
+   - [ ] AI 商品字段级 sample 验证：见 [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md)
    - [ ] AI 真实视觉：`cd frontend && npm run e2e:ai`，需 `RUN_AI_VISION_E2E=1` 与专用 AI/OCR/seed 环境
 
 2. **风险登记 / 独立门禁**:
