@@ -29,8 +29,14 @@ public class MetricsController {
         store.listOrders().size(),
         store.calculateGmv(),
         statusCounts,
+        requestMetricsService.requestCountsByEndpoint(),
+        requestMetricsService.statusCounts(),
         requestMetricsService.p95ByEndpoint(),
         requestMetricsService.p99ByEndpoint(),
+        requestMetricsService.http4xxByEndpoint(),
+        requestMetricsService.http5xxByEndpoint(),
+        requestMetricsService.loginFailureCount(),
+        requestMetricsService.overall5xxRate(),
         requestMetricsService.topSlowEndpoints(3));
     return ApiResponse.success(metrics);
   }
