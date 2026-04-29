@@ -3,6 +3,9 @@ import { api } from '../api';
 import {
   clearAuthSession,
   getStoredAccessToken,
+  getStoredAccessTokenExpiresAt,
+  getStoredRefreshToken,
+  getStoredRefreshTokenExpiresAt,
   getStoredUser,
   getTestInjectedRole,
   getTestInjectedUser,
@@ -18,7 +21,7 @@ interface UserRoleContextValue {
   isAuthenticated: boolean;
   loading: boolean;
   login: (username: string, password: string) => Promise<AuthenticatedUser>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isPurchaser: boolean;
   isCustomer: boolean;
   isMerchant: boolean;
@@ -51,6 +54,20 @@ function readSessionUser(): AuthenticatedUser | null {
   return injectedRole ? getInjectedUser(injectedRole) : null;
 }
 
+function persistCurrentUser(user: AuthenticatedUser) {
+  const accessToken = getStoredAccessToken();
+  if (!accessToken) {
+    return;
+  }
+  storeAuthSession({
+    accessToken,
+    refreshToken: getStoredRefreshToken(),
+    accessTokenExpiresAt: getStoredAccessTokenExpiresAt(),
+    refreshTokenExpiresAt: getStoredRefreshTokenExpiresAt(),
+    user
+  });
+}
+
 export function UserRoleProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthenticatedUser | null>(() => readSessionUser());
   const [loading, setLoading] = useState(() => Boolean(getStoredAccessToken()));
@@ -78,7 +95,7 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
         if (!active) {
           return;
         }
-        storeAuthSession(accessToken, currentUser);
+        persistCurrentUser(currentUser);
       })
       .catch(() => {
         if (!active) {
@@ -100,9 +117,9 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const loginResult = await api.auth.login({ username, password });
-      storeAuthSession(loginResult.accessToken, loginResult.user);
+      storeAuthSession(loginResult);
       const currentUser = await api.auth.me();
-      storeAuthSession(loginResult.accessToken, currentUser);
+      persistCurrentUser(currentUser);
       return currentUser;
     } catch (error) {
       clearAuthSession();
@@ -112,8 +129,17 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    clearAuthSession();
+  const logout = useCallback(async () => {
+    const refreshToken = getStoredRefreshToken();
+    try {
+      if (refreshToken) {
+        await api.auth.logout({ refreshToken });
+      }
+    } catch {
+      // Ignore logout errors and always clear the local session.
+    } finally {
+      clearAuthSession();
+    }
   }, []);
 
   const role = user?.role ?? DEFAULT_ROLE;

@@ -24,7 +24,9 @@
 - 共享 / 服务器部署必须显式设置 `SPRING_PROFILES_ACTIVE=prod`（Compose 已内置）。
 - `BOBBUY_SECURITY_JWT_SECRET` 必须在 `.env` 中显式填写。
 - `BOBBUY_SECURITY_HEADER_AUTH_ENABLED` 默认且必须保持为 `false`。
-- `BOBBUY_SECURITY_JWT_TTL_SECONDS` 控制 HTTP 与 WebSocket 共用的 access token 生命周期；本阶段未启用 refresh token。
+- `BOBBUY_SECURITY_JWT_TTL_SECONDS` 控制 HTTP 与 WebSocket 共用的 access token 生命周期。
+- `BOBBUY_SECURITY_REFRESH_TOKEN_TTL_SECONDS` 控制 refresh token 生命周期，默认 604800 秒（7 天）。
+- `BOBBUY_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED` 默认 `true`；在当前服务端 hash-only refresh token 方案下建议保持开启。
 - Compose 仅允许 `core-service` 执行 Flyway migration，其余服务固定 `SPRING_FLYWAY_ENABLED=false`。
 
 ## 1.1 试运行服务边界
@@ -72,8 +74,9 @@
    cp .env.template .env
    ```
 2. 至少修改以下项目后再部署：
-    - `BOBBUY_SECURITY_JWT_SECRET`
-    - `BOBBUY_SECURITY_SERVICE_TOKEN`
+     - `BOBBUY_SECURITY_JWT_SECRET`
+     - `BOBBUY_SECURITY_REFRESH_TOKEN_TTL_SECONDS`
+     - `BOBBUY_SECURITY_SERVICE_TOKEN`
     - `POSTGRES_PASSWORD`
     - `MINIO_ROOT_PASSWORD`
     - `RABBITMQ_DEFAULT_PASS`
@@ -91,9 +94,10 @@
    - `RABBITMQ_DEFAULT_PASS=bobbuypassword`
     - `BOBBUY_BIND_HOST=127.0.0.1`
 5. WebSocket / 聊天鉴权约束：
-   - 前端只通过 STOMP `CONNECT` header `Authorization: Bearer <access-token>` 连接 `/ws`
-   - 不使用 query token，避免 access token 出现在 URL / 访问日志
-   - token 失效后前端会停止 WebSocket 重连并退回 REST 刷新；运维需按正常重新登录流程处理
+    - 前端只通过 STOMP `CONNECT` header `Authorization: Bearer <access-token>` 连接 `/ws`
+    - 不使用 query token，避免 access token 出现在 URL / 访问日志
+    - access token 失效后前端 HTTP 层会自动 refresh 并重试一次；refresh 失败后会清理本地登录态
+    - WebSocket 鉴权失败时前端会尝试 refresh 一次并用新 access token 重连；refresh 失败后停止重连并需重新登录
 6. 服务间鉴权约束：
    - gateway-service 会清理外部伪造的 `X-BOBBUY-SERVICE-TOKEN` / `X-BOBBUY-INTERNAL-SERVICE`，并在配置 `BOBBUY_SECURITY_SERVICE_TOKEN` 后向下游附带可信内部身份
    - 后端仅对 `/internal/**` 信任 service token；普通业务接口仍需用户 JWT 或显式允许的匿名访问
@@ -229,8 +233,9 @@ docker compose logs -f nacos
 
 1. **登录失败 / 401**
      - 确认 `BOBBUY_SECURITY_JWT_SECRET` 非空
+     - 确认 `BOBBUY_SECURITY_REFRESH_TOKEN_TTL_SECONDS` 与客户端时间未出现异常漂移
      - 确认 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=false`
-     - 若只表现为聊天实时消息失效，补查 WebSocket token 是否过期并重新登录
+     - 若只表现为聊天实时消息失效，补查 refresh 是否成功、WebSocket 是否已携带新 access token 重连
   1.1 **内部接口 401**
      - 确认 `BOBBUY_SECURITY_SERVICE_TOKEN` 已在 `.env`、Compose 与 Nacos 渲染生效
      - 确认请求没有直接伪造 `X-BOBBUY-SERVICE-TOKEN` / `X-BOBBUY-INTERNAL-SERVICE`
@@ -252,9 +257,9 @@ docker compose logs -f nacos
 6. **边界误判**
     - 若发现文档、Runbook 或排障流程把 `ai-service` / `im-service` / `auth-service` 写成“独立微服务事实源”，应以 `ADR-01` 与当前 Runbook 为准进行修正
 7. **WebSocket 鉴权失败**
-    - 前端若能打开聊天但实时消息不更新，先确认 access token 未过期并重新登录
-    - 检查 `im-service` / `core-service` 日志中是否出现 websocket auth / chat forbidden
-    - 不要通过 query token 或重新开启 header auth 绕过问题
+     - 前端若能打开聊天但实时消息不更新，先确认 access token 是否已刷新、refresh token 是否仍有效
+     - 检查 `im-service` / `core-service` 日志中是否出现 websocket auth / chat forbidden
+     - 不要通过 query token 或重新开启 header auth 绕过问题
 
 人工处理流程：
 1. 商品 AI 上架失败时，前端会显示失败原因并允许人工补录后保存草稿；默认保持 `DRAFTER_ONLY`。
@@ -305,6 +310,7 @@ docker compose logs -f nacos
 - 真实监控 / 告警平台
 - 自动化备份恢复演练
 - mTLS / service mesh / 契约测试
-- refresh token 生命周期治理
+- OAuth / SSO
+- 更强的浏览器端 token 防护（如 HttpOnly SameSite cookie）
 
 备份与恢复演练命令、恢复验收与记录模板见 [`RUNBOOK-备份恢复演练.md`](RUNBOOK-备份恢复演练.md)。

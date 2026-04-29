@@ -1,6 +1,7 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Client } from '@stomp/stompjs';
 import { getStoredAccessToken, subscribeToAuthChanges } from '../authStorage';
+import { refreshAuthSession } from '../api';
 
 type ConnectionEvent = {
   reconnected: boolean;
@@ -32,6 +33,7 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
     let subscription: ReturnType<Client['subscribe']> | undefined;
     let hasConnected = false;
     let authRejected = false;
+    let refreshInFlight = false;
     let currentReconnectDelay = INITIAL_RECONNECT_DELAY_MS;
     const client = new Client({
       brokerURL: buildWebSocketUrl(),
@@ -54,11 +56,24 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
         hasConnected = true;
       },
       onStompError: () => {
+        if (refreshInFlight) {
+          return;
+        }
+        refreshInFlight = true;
         authRejected = true;
-        void client.deactivate();
+        void refreshAuthSession()
+          .then((session) => {
+            if (session) {
+              authRejected = false;
+            }
+          })
+          .finally(() => {
+            refreshInFlight = false;
+            void client.deactivate();
+          });
       },
       onWebSocketClose: () => {
-        if (authRejected) {
+        if (authRejected || refreshInFlight) {
           return;
         }
         currentReconnectDelay = Math.min(currentReconnectDelay * 2, 5000);

@@ -29,6 +29,9 @@ describe('LoginPage', () => {
   it('logs in and redirects agent users to dashboard', async () => {
     mocks.login.mockResolvedValue({
       accessToken: 'token-123',
+      accessTokenExpiresAt: '2026-05-01T00:00:00Z',
+      refreshToken: 'refresh-123',
+      refreshTokenExpiresAt: '2026-05-08T00:00:00Z',
       user: { id: 1000, username: 'agent', name: 'Aiko Tan', role: 'AGENT' }
     });
     mocks.me.mockResolvedValue({ id: 1000, username: 'agent', name: 'Aiko Tan', role: 'AGENT' });
