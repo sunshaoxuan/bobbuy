@@ -110,8 +110,6 @@ public class AiAgentController {
       if ((targetProductId == null || targetProductId.isBlank()) && suggestion.itemNumber() != null && !suggestion.itemNumber().isBlank()) {
         targetProductId = store.findProductByItemNumber(suggestion.itemNumber()).map(Product::getId).orElse(null);
       }
-      boolean existingProductResolved = suggestion.existingProductFound()
-          || (targetProductId != null && !targetProductId.isBlank());
       boolean allowOverwrite = suggestion.existingProductFound()
           && targetProductId != null
           && (suggestion.matchScore() == null || suggestion.matchScore() >= SEMANTIC_OVERWRITE_THRESHOLD);
