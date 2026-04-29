@@ -72,7 +72,7 @@ public class RefreshTokenService {
     @Transactional(noRollbackFor = ApiException.class)
     public IssuedRefreshToken refresh(String rawToken, String clientFingerprint) {
         String normalizedToken = normalizeToken(rawToken);
-        RefreshTokenSession session = refreshTokenSessionRepository.findByTokenHash(hashToken(normalizedToken))
+        RefreshTokenSession session = refreshTokenSessionRepository.findByTokenHashForUpdate(hashToken(normalizedToken))
             .orElseThrow(this::invalidRefreshToken);
         Instant now = Instant.now();
 
@@ -81,7 +81,6 @@ public class RefreshTokenService {
             throw invalidRefreshToken();
         }
         if (session.isRevoked()) {
-            revokeFamily(session.getFamilyId(), now, REVOCATION_REUSE_DETECTED);
             throw invalidRefreshToken();
         }
         User user = userRepository.findById(session.getUserId())

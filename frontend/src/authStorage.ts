@@ -23,6 +23,7 @@ const AUTH_USER_KEY = 'bobbuy_auth_user';
 const TEST_ROLE_KEY = 'bobbuy_test_role';
 const TEST_USER_KEY = 'bobbuy_test_user';
 const AUTH_CHANGED_EVENT = 'bobbuy-auth-changed';
+const CSRF_TOKEN_COOKIE = 'bobbuy_csrf_token';
 
 export const isLocalAuthOverrideEnabled = () =>
   typeof window !== 'undefined' &&
@@ -63,11 +64,7 @@ export function getStoredAccessToken(): string | null {
 }
 
 export function getStoredRefreshToken(): string | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  const token = window.localStorage.getItem(REFRESH_TOKEN_KEY);
-  return token && token.trim() ? token.trim() : null;
+  return null;
 }
 
 export function getStoredAccessTokenExpiresAt(): string | null {
@@ -98,11 +95,7 @@ export function storeAuthSession(session: StoredAuthSession) {
     return;
   }
   window.localStorage.setItem(ACCESS_TOKEN_KEY, session.accessToken);
-  if (session.refreshToken && session.refreshToken.trim()) {
-    window.localStorage.setItem(REFRESH_TOKEN_KEY, session.refreshToken);
-  } else {
-    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
-  }
+  window.localStorage.removeItem(REFRESH_TOKEN_KEY);
   if (session.accessTokenExpiresAt && session.accessTokenExpiresAt.trim()) {
     window.localStorage.setItem(ACCESS_TOKEN_EXPIRES_AT_KEY, session.accessTokenExpiresAt);
   } else {
@@ -126,7 +119,22 @@ export function clearAuthSession() {
   window.localStorage.removeItem(ACCESS_TOKEN_EXPIRES_AT_KEY);
   window.localStorage.removeItem(REFRESH_TOKEN_EXPIRES_AT_KEY);
   window.localStorage.removeItem(AUTH_USER_KEY);
+  if (typeof document !== 'undefined') {
+    document.cookie = `${CSRF_TOKEN_COOKIE}=; Max-Age=0; Path=/`;
+  }
   dispatchAuthChanged();
+}
+
+export function getStoredCsrfToken(): string | null {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+  const token = document.cookie
+    .split(';')
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(`${CSRF_TOKEN_COOKIE}=`))
+    ?.slice(CSRF_TOKEN_COOKIE.length + 1);
+  return token && token.trim() ? decodeURIComponent(token.trim()) : null;
 }
 
 export function getTestInjectedRole(): UserRole | null {
