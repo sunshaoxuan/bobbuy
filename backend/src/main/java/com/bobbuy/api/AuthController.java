@@ -41,6 +41,7 @@ public class AuthController {
     @PostMapping("/refresh")
     public ApiResponse<AuthService.SessionResult> refresh(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
         String refreshToken = authCookieService.resolveRefreshToken(httpServletRequest);
+        // CSRF is only required for cookie-backed refresh requests; missing cookie falls through to 401.
         if (refreshToken != null && !authCookieService.isCsrfValid(httpServletRequest)) {
             authCookieService.clearAuthCookies(httpServletResponse);
             throw new ApiException(ErrorCode.FORBIDDEN, "error.auth.invalid_csrf_token");

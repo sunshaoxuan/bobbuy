@@ -692,7 +692,6 @@ type ApiErrorResponse = {
 export type AuthSessionResponse = {
     accessToken: string;
     accessTokenExpiresAt: string;
-    refreshToken?: string | null;
     refreshTokenExpiresAt: string;
     user: AuthenticatedUser;
 };

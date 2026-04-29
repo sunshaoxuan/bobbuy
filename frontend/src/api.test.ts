@@ -1,5 +1,5 @@
 import { api } from './api';
-import { clearAuthSession, getStoredAccessToken, getStoredRefreshToken, storeAuthSession } from './authStorage';
+import { clearAuthSession, getStoredAccessToken, storeAuthSession } from './authStorage';
 
 describe('api authentication headers and refresh recovery', () => {
   beforeEach(() => {
@@ -99,7 +99,7 @@ describe('api authentication headers and refresh recovery', () => {
     const refreshHeaders = fetchMock.mock.calls[1][1]?.headers as Headers;
     expect(refreshHeaders.get('X-BOBBUY-CSRF-TOKEN')).toBe('csrf-123');
     expect(getStoredAccessToken()).toBe('token-456');
-    expect(getStoredRefreshToken()).toBeNull();
+    expect(localStorage.getItem('bobbuy_refresh_token')).toBeNull();
   });
 
   it('coalesces concurrent 401 responses into one refresh request', async () => {
@@ -194,7 +194,7 @@ describe('api authentication headers and refresh recovery', () => {
 
     await expect(api.trips()).rejects.toThrow('expired');
     expect(getStoredAccessToken()).toBeNull();
-    expect(getStoredRefreshToken()).toBeNull();
+    expect(localStorage.getItem('bobbuy_refresh_token')).toBeNull();
   });
 
   it('sends logout with cookie credentials and csrf header without refresh token payload', async () => {

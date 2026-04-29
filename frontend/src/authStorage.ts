@@ -63,10 +63,6 @@ export function getStoredAccessToken(): string | null {
   return token && token.trim() ? token.trim() : null;
 }
 
-export function getStoredRefreshToken(): string | null {
-  return null;
-}
-
 export function getStoredAccessTokenExpiresAt(): string | null {
   if (typeof window === 'undefined') {
     return null;

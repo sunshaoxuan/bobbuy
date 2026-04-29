@@ -14,6 +14,7 @@ import java.util.Locale;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+  // CORS is centralized in SecurityConfig so cookie/CSRF rules stay aligned with auth filters.
   private final @NonNull RequestLoggingInterceptor requestLoggingInterceptor;
 
   public WebConfig(@NonNull RequestLoggingInterceptor requestLoggingInterceptor) {

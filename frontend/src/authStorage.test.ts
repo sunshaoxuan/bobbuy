@@ -1,4 +1,4 @@
-import { getStoredCsrfToken, getStoredRefreshToken, storeAuthSession } from './authStorage';
+import { getStoredCsrfToken, storeAuthSession } from './authStorage';
 
 describe('authStorage', () => {
   beforeEach(() => {
@@ -21,7 +21,6 @@ describe('authStorage', () => {
     });
 
     expect(localStorage.getItem('bobbuy_refresh_token')).toBeNull();
-    expect(getStoredRefreshToken()).toBeNull();
   });
 
   it('reads csrf token from cookie storage', () => {
