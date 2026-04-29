@@ -39,8 +39,8 @@
 - `playwright-e2e` 继续复用 `npm run e2e:prepare` 的浏览器探测逻辑，仅在缺失 Chromium 时安装。
 - 后端默认测试必须继续使用 H2 / fake/mock 资源，禁止默认门禁外连真实 Ollama、Codex CLI、MinIO 或公网服务。
 - AI/OCR 可靠性用例（provider unconfigured、OCR/LLM 失败、fallback、人工复核、重试）必须继续保留在默认 mock 测试中，禁止切换到真实外部服务。
-- 后端 `mvn test` 现同时覆盖 JWT 登录、refresh/logout、refresh token 轮换/复用检测/过期/撤销、`/api/auth/me`、401/403、customer 本人数据隔离、WebSocket STOMP `CONNECT` 鉴权与聊天上下文授权，以及 `bobbuy.security.header-auth.enabled=false` 时伪造 header 不得提权。
-- 前端单测已覆盖 HTTP 401 单轮 refresh+retry、并发 401 合并为单轮 refresh、refresh 失败清理登录态、logout 清理 access/refresh token，以及 WebSocket STOMP 使用 Bearer token、鉴权失败后 refresh 一次并在失败时停止重连。
+- 后端 `mvn test` 现同时覆盖 JWT 登录、HttpOnly refresh cookie 下发、refresh/logout 的 CSRF 拒绝、refresh token 单次轮换/过期/撤销、并发 refresh 只成功一次、`/api/auth/me`、401/403、customer 本人数据隔离、WebSocket STOMP `CONNECT` 鉴权与聊天上下文授权，以及 `bobbuy.security.header-auth.enabled=false` 时伪造 header 不得提权。
+- 前端单测已覆盖 access token 持久化、refresh token 不再写入 localStorage、HTTP 401 单轮 refresh+retry、并发 401 合并为单轮 refresh、refresh/logout 携带 cookie + `X-BOBBUY-CSRF-TOKEN`、refresh 失败清理登录态，以及 WebSocket STOMP 使用 Bearer token、鉴权失败后 refresh 一次并在失败时停止重连。
 - `core-service` / `ai-service` / `im-service` / `auth-service` / `gateway-service` 当前已补最小模块启动 smoke test，但尚无契约测试、独立 schema 验证与拆分后 CI/CD；若后续要继续拆分，仍需补齐这些门禁。
 - 运维基线当前按“默认门禁 + 手工 Runbook 校验”执行：`docker compose config`、健康检查、日志巡检、备份恢复演练不进入默认 Hosted CI。
 - 当前已知前端测试噪声：

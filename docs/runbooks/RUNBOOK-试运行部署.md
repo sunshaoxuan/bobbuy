@@ -27,6 +27,8 @@
 - `BOBBUY_SECURITY_JWT_TTL_SECONDS` 控制 HTTP 与 WebSocket 共用的 access token 生命周期。
 - `BOBBUY_SECURITY_REFRESH_TOKEN_TTL_SECONDS` 控制 refresh token 生命周期，默认 604800 秒（7 天）。
 - `BOBBUY_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED` 默认 `true`；在当前服务端 hash-only refresh token 方案下建议保持开启。
+- refresh cookie 默认使用 `BOBBUY_SECURITY_REFRESH_COOKIE_NAME=bobbuy_refresh_token`、`BOBBUY_SECURITY_REFRESH_COOKIE_PATH=/api/auth`、`BOBBUY_SECURITY_REFRESH_COOKIE_SAME_SITE=Lax`；公网 HTTPS 部署必须把 `BOBBUY_SECURITY_REFRESH_COOKIE_SECURE=true`。
+- CSRF double-submit token 默认使用 `BOBBUY_SECURITY_CSRF_COOKIE_NAME=bobbuy_csrf_token`、`BOBBUY_SECURITY_CSRF_COOKIE_PATH=/`、`BOBBUY_SECURITY_CSRF_HEADER_NAME=X-BOBBUY-CSRF-TOKEN`。
 - Compose 仅允许 `core-service` 执行 Flyway migration，其余服务固定 `SPRING_FLYWAY_ENABLED=false`。
 
 ## 1.1 试运行服务边界
@@ -76,6 +78,7 @@
 2. 至少修改以下项目后再部署：
      - `BOBBUY_SECURITY_JWT_SECRET`
      - `BOBBUY_SECURITY_REFRESH_TOKEN_TTL_SECONDS`
+     - `BOBBUY_SECURITY_REFRESH_COOKIE_SECURE`
      - `BOBBUY_SECURITY_SERVICE_TOKEN`
     - `POSTGRES_PASSWORD`
     - `MINIO_ROOT_PASSWORD`
@@ -94,6 +97,9 @@
    - `RABBITMQ_DEFAULT_PASS=bobbuypassword`
     - `BOBBUY_BIND_HOST=127.0.0.1`
 5. WebSocket / 聊天鉴权约束：
+    - 浏览器端只在 localStorage 保存 access token、用户信息和到期时间；refresh token 不再保存到 localStorage。
+    - `POST /api/auth/refresh`、`POST /api/auth/logout` 依赖 `bobbuy_refresh_token` HttpOnly cookie，并要求前端附带 `X-BOBBUY-CSRF-TOKEN`。
+    - 当前 same-origin 试运行默认 `SameSite=Lax`；若计划跨站前后端分离部署，需先单独评估 cookie / CORS / CSRF 新方案。
     - 前端只通过 STOMP `CONNECT` header `Authorization: Bearer <access-token>` 连接 `/ws`
     - 不使用 query token，避免 access token 出现在 URL / 访问日志
     - access token 失效后前端 HTTP 层会自动 refresh 并重试一次；refresh 失败后会清理本地登录态
@@ -234,6 +240,8 @@ docker compose logs -f nacos
 1. **登录失败 / 401**
      - 确认 `BOBBUY_SECURITY_JWT_SECRET` 非空
      - 确认 `BOBBUY_SECURITY_REFRESH_TOKEN_TTL_SECONDS` 与客户端时间未出现异常漂移
+     - 确认 `BOBBUY_SECURITY_REFRESH_COOKIE_SECURE`、`BOBBUY_SECURITY_REFRESH_COOKIE_SAME_SITE` 与当前访问方式一致（HTTP 本地调试不要误配 `Secure=true`）
+     - 确认浏览器仍持有 `bobbuy_refresh_token` / `bobbuy_csrf_token`，且 refresh/logout 请求已附带 `X-BOBBUY-CSRF-TOKEN`
      - 确认 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=false`
      - 若只表现为聊天实时消息失效，补查 refresh 是否成功、WebSocket 是否已携带新 access token 重连
   1.1 **内部接口 401**
@@ -311,6 +319,6 @@ docker compose logs -f nacos
 - 自动化备份恢复演练
 - mTLS / service mesh / 契约测试
 - OAuth / SSO
-- 更强的浏览器端 token 防护（如 HttpOnly SameSite cookie）
+- 跨站前后端分离部署下的更通用 cookie / CORS / CSRF 方案
 
 备份与恢复演练命令、恢复验收与记录模板见 [`RUNBOOK-备份恢复演练.md`](RUNBOOK-备份恢复演练.md)。

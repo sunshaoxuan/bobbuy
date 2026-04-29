@@ -5,6 +5,7 @@ import com.bobbuy.security.InternalServiceTokenFilter;
 import com.bobbuy.security.TokenAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -21,6 +22,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 @Configuration
 @EnableWebSecurity
@@ -28,13 +31,19 @@ public class SecurityConfig {
     private final InternalServiceTokenFilter internalServiceTokenFilter;
     private final TokenAuthenticationFilter tokenAuthenticationFilter;
     private final RoleInjectionFilter roleInjectionFilter;
+    private final List<String> allowedOriginPatterns;
 
     public SecurityConfig(InternalServiceTokenFilter internalServiceTokenFilter,
                           TokenAuthenticationFilter tokenAuthenticationFilter,
-                          RoleInjectionFilter roleInjectionFilter) {
+                          RoleInjectionFilter roleInjectionFilter,
+                          @Value("${bobbuy.security.cors.allowed-origin-patterns:http://localhost,http://127.0.0.1,http://localhost:4173,http://127.0.0.1:4173,http://localhost:5173,http://127.0.0.1:5173}") String allowedOriginPatterns) {
         this.internalServiceTokenFilter = internalServiceTokenFilter;
         this.tokenAuthenticationFilter = tokenAuthenticationFilter;
         this.roleInjectionFilter = roleInjectionFilter;
+        this.allowedOriginPatterns = Stream.of(allowedOriginPatterns.split(","))
+            .map(String::trim)
+            .filter(value -> !value.isEmpty())
+            .toList();
     }
 
     @Bean
@@ -90,10 +99,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedOriginPatterns(allowedOriginPatterns.isEmpty() ? Arrays.asList("http://localhost", "http://127.0.0.1") : allowedOriginPatterns);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(false);
+        configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(Arrays.asList("X-Trace-Id"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

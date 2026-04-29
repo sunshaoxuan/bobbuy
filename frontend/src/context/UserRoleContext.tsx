@@ -4,7 +4,6 @@ import {
   clearAuthSession,
   getStoredAccessToken,
   getStoredAccessTokenExpiresAt,
-  getStoredRefreshToken,
   getStoredRefreshTokenExpiresAt,
   getStoredUser,
   getTestInjectedRole,
@@ -61,7 +60,6 @@ function persistCurrentUser(user: AuthenticatedUser) {
   }
   storeAuthSession({
     accessToken,
-    refreshToken: getStoredRefreshToken(),
     accessTokenExpiresAt: getStoredAccessTokenExpiresAt(),
     refreshTokenExpiresAt: getStoredRefreshTokenExpiresAt(),
     user
@@ -130,11 +128,8 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    const refreshToken = getStoredRefreshToken();
     try {
-      if (refreshToken) {
-        await api.auth.logout({ refreshToken });
-      }
+      await api.auth.logout();
     } catch {
       // Ignore logout errors and always clear the local session.
     } finally {

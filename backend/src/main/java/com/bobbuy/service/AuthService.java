@@ -6,6 +6,7 @@ import com.bobbuy.model.User;
 import com.bobbuy.repository.UserRepository;
 import com.bobbuy.security.BobbuyAuthenticatedUser;
 import com.bobbuy.security.JwtTokenService;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
 import java.util.Optional;
 import org.springframework.security.core.Authentication;
@@ -95,6 +96,7 @@ public class AuthService {
     public record SessionResult(
         String accessToken,
         Instant accessTokenExpiresAt,
+        @JsonIgnore
         String refreshToken,
         Instant refreshTokenExpiresAt,
         UserProfile user

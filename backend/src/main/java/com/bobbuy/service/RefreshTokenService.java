@@ -72,7 +72,8 @@ public class RefreshTokenService {
     @Transactional(noRollbackFor = ApiException.class)
     public IssuedRefreshToken refresh(String rawToken, String clientFingerprint) {
         String normalizedToken = normalizeToken(rawToken);
-        RefreshTokenSession session = refreshTokenSessionRepository.findByTokenHash(hashToken(normalizedToken))
+        // Lock the session row so one old refresh token can only rotate once.
+        RefreshTokenSession session = refreshTokenSessionRepository.findByTokenHashForUpdate(hashToken(normalizedToken))
             .orElseThrow(this::invalidRefreshToken);
         Instant now = Instant.now();
 
@@ -81,7 +82,8 @@ public class RefreshTokenService {
             throw invalidRefreshToken();
         }
         if (session.isRevoked()) {
-            revokeFamily(session.getFamilyId(), now, REVOCATION_REUSE_DETECTED);
+            // Replays now fail closed with 401 instead of revoking the entire family,
+            // which avoids invalidating the single winning token in concurrent races.
             throw invalidRefreshToken();
         }
         User user = userRepository.findById(session.getUserId())

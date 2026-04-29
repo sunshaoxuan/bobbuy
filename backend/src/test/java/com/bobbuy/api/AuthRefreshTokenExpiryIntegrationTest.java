@@ -1,14 +1,16 @@
 package com.bobbuy.api;
 
 import com.bobbuy.service.BobbuyStore;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -24,9 +26,6 @@ class AuthRefreshTokenExpiryIntegrationTest {
   @Autowired
   private BobbuyStore store;
 
-  @Autowired
-  private ObjectMapper objectMapper;
-
   @BeforeEach
   void setUp() {
     store.seed();
@@ -34,25 +33,30 @@ class AuthRefreshTokenExpiryIntegrationTest {
 
   @Test
   void expiredRefreshTokenIsRejected() throws Exception {
-    String response = mockMvc.perform(post("/api/auth/login")
+    MvcResult result = mockMvc.perform(post("/api/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
                 {"username":"agent","password":"agent-pass"}
                 """))
         .andExpect(status().isOk())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-    String refreshToken = objectMapper.readTree(response).path("data").path("refreshToken").asText();
+        .andReturn();
+    String refreshToken = extractCookie(result, "bobbuy_refresh_token");
+    String csrfToken = extractCookie(result, "bobbuy_csrf_token");
 
     Thread.sleep(1200L);
 
     mockMvc.perform(post("/api/auth/refresh")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
-                {"refreshToken":"%s"}
-                """.formatted(refreshToken)))
+            .cookie(new Cookie("bobbuy_refresh_token", refreshToken), new Cookie("bobbuy_csrf_token", csrfToken))
+            .header("X-BOBBUY-CSRF-TOKEN", csrfToken))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.errorCode").value("UNAUTHORIZED"));
+  }
+
+  private String extractCookie(MvcResult result, String cookieName) {
+    return result.getResponse().getHeaders(HttpHeaders.SET_COOKIE).stream()
+        .filter(header -> header.startsWith(cookieName + "="))
+        .map(header -> header.substring(cookieName.length() + 1, header.indexOf(';')))
+        .findFirst()
+        .orElseThrow();
   }
 }

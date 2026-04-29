@@ -2,7 +2,7 @@ import { message } from 'antd';
 import {
     clearAuthSession,
     getStoredAccessToken,
-    getStoredRefreshToken,
+    getStoredCsrfToken,
     getTestInjectedRole,
     getTestInjectedUser,
     storeAuthSession,
@@ -692,13 +692,13 @@ type ApiErrorResponse = {
 export type AuthSessionResponse = {
     accessToken: string;
     accessTokenExpiresAt: string;
-    refreshToken: string;
     refreshTokenExpiresAt: string;
     user: AuthenticatedUser;
 };
 
 type RequestOptions = {
     includeAccessToken?: boolean;
+    includeCsrfToken?: boolean;
     retryOnUnauthorized?: boolean;
     withJsonContentType?: boolean;
 };
@@ -710,10 +710,21 @@ const genericErrorMessage = () => translate(getStoredLocale(), 'errors.request_f
 const isMockApiEnabled = () =>
     typeof window !== 'undefined' && window.localStorage.getItem('bobbuy_enable_mock_api') === 'true';
 
-function createRequestHeaders(initHeaders?: HeadersInit, withJsonContentType = false, includeAccessToken = true): Headers {
+function createRequestHeaders(
+    initHeaders?: HeadersInit,
+    withJsonContentType = false,
+    includeAccessToken = true,
+    includeCsrfToken = false
+): Headers {
     const headers = new Headers(initHeaders);
     if (!headers.has('Accept-Language')) {
         headers.set('Accept-Language', getStoredLocale());
+    }
+    if (includeCsrfToken && !headers.has('X-BOBBUY-CSRF-TOKEN')) {
+        const csrfToken = getStoredCsrfToken();
+        if (csrfToken) {
+            headers.set('X-BOBBUY-CSRF-TOKEN', csrfToken);
+        }
     }
     const accessToken = includeAccessToken ? getStoredAccessToken() : null;
     if (accessToken && !headers.has('Authorization')) {
@@ -742,7 +753,13 @@ async function authorizedFetch(url: string, init?: RequestInit, options?: Reques
     const requestOptions = options ?? {};
     const response = await fetch(url, {
         ...init,
-        headers: createRequestHeaders(init?.headers, requestOptions.withJsonContentType, requestOptions.includeAccessToken !== false)
+        credentials: 'same-origin',
+        headers: createRequestHeaders(
+            init?.headers,
+            requestOptions.withJsonContentType,
+            requestOptions.includeAccessToken !== false,
+            requestOptions.includeCsrfToken === true
+        )
     });
     if (response.status === 401 && requestOptions.retryOnUnauthorized !== false && !isAuthEndpoint(url)) {
         const refreshedSession = await refreshAuthSession();
@@ -772,15 +789,11 @@ export async function refreshAuthSession(): Promise<AuthSessionResponse | null> 
         return refreshSessionPromise;
     }
     refreshSessionPromise = (async () => {
-        const refreshToken = getStoredRefreshToken();
-        if (!refreshToken) {
-            return null;
-        }
         try {
             const response = await fetch('/api/auth/refresh', {
                 method: 'POST',
-                headers: createRequestHeaders(undefined, true, false),
-                body: JSON.stringify({ refreshToken })
+                credentials: 'same-origin',
+                headers: createRequestHeaders(undefined, false, false, true)
             });
             if (!response.ok) {
                 clearAuthSession();
@@ -968,9 +981,10 @@ export const api = {
                 retryOnUnauthorized: false
             }),
         refresh: () => refreshAuthSession(),
-        logout: (payload: { refreshToken?: string | null }) =>
-            postJson<{ revoked: boolean }, { refreshToken?: string | null }>('/api/auth/logout', payload, {
+        logout: () =>
+            postJson<{ revoked: boolean }, Record<string, never>>('/api/auth/logout', {}, {
                 includeAccessToken: false,
+                includeCsrfToken: true,
                 retryOnUnauthorized: false
             }),
         me: () =>

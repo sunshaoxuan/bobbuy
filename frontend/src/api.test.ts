@@ -1,11 +1,13 @@
 import { api } from './api';
-import { clearAuthSession, getStoredAccessToken, getStoredRefreshToken, storeAuthSession } from './authStorage';
+import { clearAuthSession, getStoredAccessToken, storeAuthSession } from './authStorage';
 
 describe('api authentication headers and refresh recovery', () => {
   beforeEach(() => {
     localStorage.clear();
+    document.cookie = 'bobbuy_csrf_token=csrf-123; path=/';
     vi.restoreAllMocks();
     clearAuthSession();
+    document.cookie = 'bobbuy_csrf_token=csrf-123; path=/';
   });
 
   it('adds Bearer token when an authenticated session exists', async () => {
@@ -90,8 +92,14 @@ describe('api authentication headers and refresh recovery', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock.mock.calls[1][0]).toBe('/api/auth/refresh');
     expect(fetchMock.mock.calls[2][0]).toBe('/api/trips');
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({
+      method: 'POST',
+      credentials: 'same-origin'
+    });
+    const refreshHeaders = fetchMock.mock.calls[1][1]?.headers as Headers;
+    expect(refreshHeaders.get('X-BOBBUY-CSRF-TOKEN')).toBe('csrf-123');
     expect(getStoredAccessToken()).toBe('token-456');
-    expect(getStoredRefreshToken()).toBe('refresh-456');
+    expect(localStorage.getItem('bobbuy_refresh_token')).toBeNull();
   });
 
   it('coalesces concurrent 401 responses into one refresh request', async () => {
@@ -186,6 +194,29 @@ describe('api authentication headers and refresh recovery', () => {
 
     await expect(api.trips()).rejects.toThrow('expired');
     expect(getStoredAccessToken()).toBeNull();
-    expect(getStoredRefreshToken()).toBeNull();
+    expect(localStorage.getItem('bobbuy_refresh_token')).toBeNull();
+  });
+
+  it('sends logout with cookie credentials and csrf header without refresh token payload', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => ({ status: 'success', data: { revoked: true } })
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.auth.logout();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/logout',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'same-origin',
+        body: JSON.stringify({})
+      })
+    );
+    const headers = fetchMock.mock.calls[0][1]?.headers as Headers;
+    expect(headers.get('X-BOBBUY-CSRF-TOKEN')).toBe('csrf-123');
   });
 });
