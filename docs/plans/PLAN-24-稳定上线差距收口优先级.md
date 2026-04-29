@@ -86,6 +86,13 @@
 4. Playwright 手动门禁必须保留 trace / screenshot / video / HTML report artifact，便于试运行失败复盘。
 5. AI 商品上架专用环境需保留 sample golden 与字段级对比报告，禁止只记录“成功/失败”而不保留关键识别字段。
 
+**当前状态（2026-04-29 / PLAN-41）**
+
+- `scripts/verify-ai-onboarding-samples.ps1` 已补 gate/report-only 分流、`gatePassed` 汇总与失败非零退出码。
+- `.github/workflows/codeql.yml` 已新增手动 CodeQL workflow，覆盖 Java/Kotlin、JavaScript/TypeScript、Actions。
+- `frontend npm audit --json` 已从 `3 critical / 10 high / 4 moderate` 降到 `0 critical / 0 high / 6 moderate`；剩余项均为 Vite/Vitest dev-only 风险，需按 `REPORT-05` 继续跟踪。
+- 真实 AI/OCR、`npm run e2e:ai`、真实旧库 adoption 与仓库级扫描执行结果仍是当前 release blocker。
+
 **验收标准**
 
 - `docs/reports/TEST-MATRIX-本地与CI执行矩阵.md` 与 GitHub Actions 一致。

@@ -44,8 +44,8 @@
 | [PLAN-38](PLAN-38-P2-Playwright端到端试运行验收开发提示词.md) | P2 Playwright 端到端试运行验收提示词 | ✅ 已完成 | 100% | 浏览器 smoke、角色门禁、聊天与核心业务试运行验收已稳定 | 全栈团队 |
 | [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) | P1 Sample 图片 AI 商品字段识别与档案落库优化提示词 | ✅ 已完成 | 100% | 已建立 sample golden、Product.attributes 落库、字段级验证脚本与 AI 专用验收口径 | 全栈团队 |
 | [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md) | P1 发版候选门禁与专用环境验收提示词 | 🔄 进行中 | 65% | sample 验证脚本漂移、本地 Flyway/恢复演练与发版候选证据包已收口；剩余为真实 AI/OCR、`e2e:ai`、CodeQL、依赖审计与真实旧库 adoption | 全栈团队 |
-| [PLAN-41](PLAN-41-P0-发版阻断项处置与安全审计提示词.md) | P0 发版阻断项处置与安全审计提示词 | ⏳ 待执行 | 0% | 修复 sample 脚本失败退出码，处置 npm/Maven/CodeQL、安全审计、真实 AI/OCR 与旧库 adoption 发版 blocker | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 90% | 默认质量门禁、Playwright smoke、sample 字段级脚本硬化与发版候选证据包已补齐；下一优先级为 PLAN-41 发版阻断项处置 | 全栈团队 |
+| [PLAN-41](PLAN-41-P0-发版阻断项处置与安全审计提示词.md) | P0 发版阻断项处置与安全审计提示词 | 🔄 进行中 | 60% | sample 脚本 gate/report-only 语义、前端高危依赖处置与 CodeQL workflow 已补；剩余为 CodeQL 实跑、Maven 审计外网可达性、真实 AI/OCR 与旧库 adoption blocker | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 92% | 默认质量门禁、Playwright smoke、sample 字段级脚本门禁、前端高危依赖处置与发版候选证据包已补齐；下一优先级为专用环境与仓库级安全执行 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |
@@ -264,7 +264,7 @@
   - ✅ AI 商品字段级识别、结构化落库与 sample golden 验证脚本
 
 - **仍需风险登记**:
-  - sample 验证脚本已修复 `basePrice -> price` 字段别名漂移，但仍需补“失败时非零退出码”的门禁语义。
+  - sample 验证脚本已修复 `basePrice -> price` 字段别名漂移与失败非零退出码；真实 `/api/ai/onboard/scan` 专用环境实扫仍未完成。
   - `npm run e2e:ai` AI 真实视觉链路未在当前环境执行，需专用环境。
   - `scripts/verify-ai-onboarding-samples.ps1` 已建立，但真实 `/api/ai/onboard/scan` 实扫仍需可达服务、真实 AI/OCR 与 seed 数据。
   - CodeQL / 依赖审计未固化为默认 CI 门禁。
@@ -288,7 +288,7 @@
    - [ ] AI 真实视觉：`cd frontend && npm run e2e:ai`，需 `RUN_AI_VISION_E2E=1` 与专用 AI/OCR/seed 环境
 
 2. **风险登记 / 独立门禁**:
-   - [ ] CodeQL / 依赖审计结果进入 PR 或 Release 验证记录（本次已执行 `npm audit`，仍有高危项待处置）
+    - [ ] CodeQL / 依赖审计结果进入 PR 或 Release 验证记录（本次已新增 CodeQL workflow，`npm audit` 已降至 `0 critical / 0 high / 6 moderate`）
    - [ ] PostgreSQL Flyway 旧库 adoption 前完成备份、baseline 与回滚演练（本次已完成空库 migrate/validate 与恢复库演练）
    - [ ] 真实告警平台、集中日志、自动化备份、服务级 SLO
 

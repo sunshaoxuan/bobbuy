@@ -168,10 +168,13 @@ AI / OCR 默认测试边界：
 - Sample 字段级黄金值基线：`docs/fixtures/ai-onboarding-sample-golden.json`
 - Sample 对比脚本：`pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1`
 - Sample 脚本 dry-run fixture：`docs/fixtures/ai-onboarding-sample-scan-mock.json`
-- Sample 脚本最小自检：
+- Sample 门禁命令（默认 gate 模式，遇到 `FAIL` / `SCAN_FAIL` / `MISSING_FILE` 返回非零）：
   `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"`
+- Sample report-only 命令（仅人工出报告，不得作为 release gate）：
+  `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"`
 - 专项报告：`docs/reports/REPORT-03-AI商品字段识别样例验证报告.md`
 - 发版候选证据报告：`docs/reports/REPORT-04-发版候选门禁验收报告.md`
+- 发版阻断项处置报告：`docs/reports/REPORT-05-发版阻断项处置报告.md`
 - `cd backend && mvn -DskipTests package && cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
 - `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
 
@@ -189,8 +192,8 @@ Playwright smoke 口径：
 - `npm run e2e:ai` 继续只跑真实 AI/OCR 专用链路，需单独环境与结果登记。
 
 风险登记 / 独立安全门禁：
-- CodeQL / 安全扫描
-- 依赖审计
+- CodeQL / 安全扫描（手动 workflow：`.github/workflows/codeql.yml`）
+- 依赖审计（前端 `npm audit --json`；后端 Maven 依赖审计见 `REPORT-05`）
 - 若本次 PR / Release 未执行，必须明确登记为风险项，不得写成“已通过”。
 
 ## 试运行最小运维基线
@@ -207,8 +210,11 @@ Playwright smoke 口径：
 - `cd frontend && npm ci && npm test`：通过。
 - `cd frontend && npm run build`：通过。
 - `cd frontend && npm run e2e`：通过（`46 passed / 2 skipped`；`2 skipped` 为 `RUN_AI_VISION_E2E` 门控用例）。
-- `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"`：通过（验证 `basePrice -> price` 别名与 optional path 规范化）
-- `cd frontend && npm audit --json`：发现 `3 critical / 10 high / 4 moderate`，仍阻断发版，详见 `REPORT-04`
+- `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"`：通过（gate 模式返回 `0`）
+- `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg')"`：按预期失败（gate 模式返回非零并继续输出报告）
+- `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"`：通过（report-only 返回 `0`，但 `gatePassed=false`）
+- `cd frontend && npm audit --json`：已降至 `0 critical / 0 high / 6 moderate`；剩余为 Vite/Vitest dev-only 风险，详见 `REPORT-05`
+- GitHub Actions 手动 `CodeQL` workflow：已新增 `.github/workflows/codeql.yml`，待仓库管理员执行
 - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`：通过
 - PostgreSQL 备份恢复演练：`pg_dump -> bobbuy_restore_verify_plan40` 恢复校验通过
 - `cd backend && mvn -DskipTests package`：通过。

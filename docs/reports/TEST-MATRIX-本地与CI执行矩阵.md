@@ -20,8 +20,9 @@
 | 服务壳 smoke test | `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test` | 当前仅本地 / 手动执行 | 否 | 使用 H2 与关闭 Nacos 的测试配置，验证 `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` 最小启动以及 gateway 内部 header 清理 |
 | Playwright 页面回归 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e` | `workflow_dispatch` + `playwright-e2e` job（输入 `run_playwright_e2e=true`） | 否 | GitHub Hosted Runner 可执行；使用 Vite dev server + 前端共享 mock 浏览器 smoke，覆盖 agent/customer 登录态、角色门禁、订单/账单/聊天、采购/拣货/库存人工接管，不依赖真实 AI / MinIO |
 | AI 真实视觉链路 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai` | 不纳入默认 Hosted CI；仅在专用环境手动执行并单独记录结果 | 否 | 必须提供 `RUN_AI_VISION_E2E=1`、`SPRING_PROFILES_ACTIVE=dev,ai-hermes`、可访问的 AI 模型、MinIO、seed 数据与样本图片 |
-| AI sample 字段级对比 | `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1` | 当前仅本地 / 专用环境执行 | 否 | 需要真实 `/api/ai/onboard/scan`、样本图片目录与 `docs/fixtures/ai-onboarding-sample-golden.json`；输出 `/tmp/ai-onboarding-sample-report.json` + `/tmp/ai-onboarding-sample-report.md` |
-| AI sample 脚本 dry-run 自检 | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"` | 当前仅本地执行 | 否 | 不依赖真实 `/api/ai/onboard/scan`；用于验证字段别名映射、optional path 规范化与报告格式，不得代替真实专用环境门禁 |
+| AI sample 字段级对比（gate 模式） | `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden` | 当前仅本地 / 专用环境执行 | 否 | 需要真实 `/api/ai/onboard/scan`、样本图片目录与 `docs/fixtures/ai-onboarding-sample-golden.json`；输出 `/tmp/ai-onboarding-sample-report.json` + `/tmp/ai-onboarding-sample-report.md`；遇到 `FAIL` / `SCAN_FAIL` / `MISSING_FILE` 返回非零 |
+| AI sample 脚本 dry-run 自检（gate 模式） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"` | 当前仅本地执行 | 否 | 不依赖真实 `/api/ai/onboard/scan`；用于验证字段别名映射、optional path 规范化、报告格式与 gate 退出码 |
+| AI sample 报告生成（report-only） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"` | 当前仅本地执行 | 否 | 仅用于人工生成 JSON/Markdown 报告；即使 `gatePassed=false` 也返回 `0`，不得作为 release gate |
 | Compose 配置渲染 | `cd /home/runner/work/bobbuy/bobbuy && docker compose config` | 当前未纳入默认 CI；作为试运行部署前置校验执行 | 否 | 要求 `.env` / 默认变量可成功渲染 Compose，且不得依赖未声明变量 |
 | 备份恢复演练 | 见 `docs/runbooks/RUNBOOK-备份恢复演练.md` | 不纳入默认 CI；按试运行变更窗口手工执行并记录结果 | 否 | 需要 Docker / PostgreSQL / MinIO / Nacos 可访问，且恢复验证必须在新库 / 独立 bucket / 独立目录进行 |
 
@@ -29,8 +30,8 @@
 
 | 验证项 | 默认状态 | 执行要求 | 备注 |
 | :-- | :-- | :-- | :-- |
-| CodeQL / 安全扫描 | 不纳入默认 `ci.yml` | 独立执行；若本次 PR / Release 未执行，必须登记为风险项，不得写成“已通过” | 如出现超时或平台限制，需记录原因与缓解动作 |
-| 依赖审计 | 不纳入默认 `ci.yml` | 按需独立执行；未执行时同样登记风险 | 重点关注 npm / Maven 高危依赖 |
+| CodeQL / 安全扫描 | 不纳入默认 `ci.yml` | 手动触发 `.github/workflows/codeql.yml`；若本次 PR / Release 未执行，必须登记为风险项，不得写成“已通过” | 覆盖 Java/Kotlin、JavaScript/TypeScript、Actions |
+| 依赖审计 | 不纳入默认 `ci.yml` | 按需独立执行；前端使用 `npm audit --json`，后端优先执行 OWASP Dependency-Check Maven | 若因网络/沙箱限制失败，必须记录具体错误与发版前责任边界 |
 
 ## 4. 执行约束与已知噪声
 
@@ -43,7 +44,7 @@
 - 后端默认测试必须继续使用 H2 / fake/mock 资源，禁止默认门禁外连真实 Ollama、Codex CLI、MinIO 或公网服务。
 - AI/OCR 可靠性用例（provider unconfigured、OCR/LLM 失败、fallback、人工复核、重试）必须继续保留在默认 mock 测试中，禁止切换到真实外部服务。
 - `docs/fixtures/ai-onboarding-sample-golden.json` 中标记 `needsHumanGolden=true` 的样例不会阻断默认脚本，需要人工补齐黄金值后再提升为强制门禁。
-- `scripts/verify-ai-onboarding-samples.ps1` 当前已内建 `basePrice -> price` 实际字段别名与 `expected.` optional path 规范化；真实门禁仍必须保留 golden 字段名，不得把脚本修复等同于放宽黄金值判定。
+- `scripts/verify-ai-onboarding-samples.ps1` 当前已内建 `basePrice -> price` 实际字段别名、`expected.` optional path 规范化、`gatePassed` 汇总，以及 gate/report-only 分流；真实门禁仍必须保留 golden 字段名，不得把脚本修复等同于放宽黄金值判定。
 - 后端 `mvn test` 现同时覆盖 JWT 登录、HttpOnly refresh cookie 下发、refresh/logout 的 CSRF 拒绝、refresh token 单次轮换/过期/撤销、并发 refresh 只成功一次、`/api/auth/me`、401/403、customer 本人数据隔离、WebSocket STOMP `CONNECT` 鉴权与聊天上下文授权，以及 `bobbuy.security.header-auth.enabled=false` 时伪造 header 不得提权。
 - 前端单测已覆盖 access token 持久化、refresh token 不再写入 localStorage、HTTP 401 单轮 refresh+retry、并发 401 合并为单轮 refresh、refresh/logout 携带 cookie + `X-BOBBUY-CSRF-TOKEN`、refresh 失败清理登录态，以及 WebSocket STOMP 使用 Bearer token、鉴权失败后 refresh 一次并在失败时停止重连。
 - `core-service` / `ai-service` / `im-service` / `auth-service` / `gateway-service` 当前已补最小模块启动 smoke test，但尚无契约测试、独立 schema 验证与拆分后 CI/CD；若后续要继续拆分，仍需补齐这些门禁。
@@ -78,15 +79,24 @@
   - 本次实际执行：`46 passed / 2 skipped`
   - `2 skipped` 为 `npm run e2e:ai` 专用的 `RUN_AI_VISION_E2E` 门控用例
 - [x] `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"`
+  - gate 模式返回 `0`
   - `IMG_1484.jpg`：验证 `expected.basePrice` 可命中实际 `price`
   - `IMG_1638.jpg`：验证 `expected.existingProductId` optional path 规范化为 `optional-missing`
+- [x] `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg')"`
+  - gate 模式返回非零
+  - 报告仍输出，`summary.gatePassed=false`
+- [x] `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"`
+  - report-only 返回 `0`
+  - 仅用于人工报告，不得代替门禁
 - [x] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm audit --json`
-  - 结果：`3 critical / 10 high / 4 moderate`
+  - 结果：`0 critical / 0 high / 6 moderate`
+- [x] `.github/workflows/codeql.yml`
+  - 已补手动 CodeQL workflow，待仓库管理员在 GitHub Actions 执行
 - [x] 本地 PostgreSQL 15 Flyway 与恢复演练
   - `docker compose up -d postgres`
   - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`
   - `pg_dump -> bobbuy_restore_verify_plan40` 恢复校验通过
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai`
 - [ ] `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`
-- [ ] CodeQL / Maven 依赖审计（未纳入默认门禁，需单独执行或在 PR / Release 中登记）
+- [ ] CodeQL / Maven 依赖审计执行结果归档（CodeQL workflow 已补，Maven 依赖审计在当前沙箱受外网限制）
 - [ ] mTLS / service mesh / 契约测试（本阶段未实现，需继续登记风险）
