@@ -158,7 +158,7 @@ class AuthControllerIntegrationTest {
 
   @Test
   void missingOrForgedRefreshTokenIsRejected() throws Exception {
-    mockMvc.perform(post("/api/auth/refresh")
+    mockMvc.perform(post("/api/auth/refresh"))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.errorCode").value("UNAUTHORIZED"));
   }

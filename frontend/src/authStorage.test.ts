@@ -29,4 +29,4 @@ describe('authStorage', () => {
 
     expect(getStoredCsrfToken()).toBe('csrf-123');
   });
-}
+});

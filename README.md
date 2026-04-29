@@ -26,7 +26,6 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - 社交 OAuth 登录
 - 真实地图路径规划 / 实时配送追踪
 - 无人值守 AI 小票识别
-- 更强的浏览器端 token 防护（如 HttpOnly SameSite cookie）
 
 ## 技术栈
 - **Backend**: Spring Boot 3 / Spring Cloud / Nacos / OpenFeign / Resilience4j / Spring Security / Spring Data JPA
@@ -105,6 +104,8 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - Compose 服务固定 `SPRING_PROFILES_ACTIVE=prod`。
 - `BOBBUY_SECURITY_JWT_SECRET` 必须显式填写，模板不再提供可直接上线的默认值。
 - `BOBBUY_SECURITY_REFRESH_TOKEN_TTL_SECONDS` 默认 604800 秒（7 天）；`BOBBUY_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED` 默认 `true`。
+- refresh cookie 默认使用 `bobbuy_refresh_token`、`Path=/api/auth`、`HttpOnly=true`、`SameSite=Lax`；公网 HTTPS 部署必须把 `BOBBUY_SECURITY_REFRESH_COOKIE_SECURE=true`。
+- CSRF double-submit token 默认使用 `bobbuy_csrf_token` cookie + `X-BOBBUY-CSRF-TOKEN` header；当前至少覆盖 `/api/auth/refresh` 与 `/api/auth/logout`。
 - `BOBBUY_SECURITY_HEADER_AUTH_ENABLED` 默认 `false`，公网 / 共享部署不得开启。
 - `BOBBUY_SECURITY_SERVICE_TOKEN` 必须显式填写；留空时不会信任内部服务 header，`/internal/**` 也不会放行。
 - WebSocket `/ws` 必须通过 STOMP `CONNECT` header `Authorization: Bearer <access-token>` 建立连接；未登录或 token 无效时前端退回既有 REST 刷新路径。
@@ -139,10 +140,11 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 
 ## 当前认证方案
 
-- **登录模型**：后端提供 `POST /api/auth/login`、`POST /api/auth/refresh`、`POST /api/auth/logout` 与 `GET /api/auth/me`；登录返回 HMAC JWT access token + opaque refresh token。
-- **refresh token 策略**：refresh token 为高熵 opaque token；服务端仅保存 SHA-256 hash，不保存明文；默认 TTL 7 天，可通过 `BOBBUY_SECURITY_REFRESH_TOKEN_TTL_SECONDS` 调整。
-- **轮换与撤销**：默认每次 refresh 都轮换 refresh token；已轮换/已撤销 token 被再次使用时，会拒绝本次请求并撤销同一 token family 的活动会话。
-- **前端登录态**：前端当前继续将 access/refresh token、到期时间和用户信息保存在 localStorage，以控制改动面；该方案存在 XSS 风险，仅适用于当前受控试运行，不等同于更强的 HttpOnly SameSite cookie 防护。
+- **登录模型**：后端提供 `POST /api/auth/login`、`POST /api/auth/refresh`、`POST /api/auth/logout` 与 `GET /api/auth/me`；登录响应返回 HMAC JWT access token，并通过 `Set-Cookie` 下发 opaque refresh token。
+- **refresh token 策略**：refresh token 为高熵 opaque token；服务端仅保存 SHA-256 hash，不保存明文；浏览器端改为 `bobbuy_refresh_token` HttpOnly cookie（默认 `Path=/api/auth`、`SameSite=Lax`、生产建议 `Secure=true`）；默认 TTL 7 天，可通过 `BOBBUY_SECURITY_REFRESH_TOKEN_TTL_SECONDS` 调整。
+- **CSRF 防护**：`/api/auth/refresh` 与 `/api/auth/logout` 采用 double-submit CSRF token；后端设置非 HttpOnly `bobbuy_csrf_token` cookie，前端发送 `X-BOBBUY-CSRF-TOKEN` header。
+- **轮换与并发**：默认每次 refresh 都轮换 refresh token；同一旧 refresh token 在并发场景下只允许一次成功轮换，其余请求返回 401。为避免并发误伤，本轮采用更保守策略：旧 token 重放不再自动撤销整条 family，而是直接拒绝并要求重新使用当前有效会话。
+- **前端登录态**：前端只在 localStorage 保存 access token、到期时间和用户信息；refresh token 不再写入 localStorage，降低 XSS 可读暴露面。
 - **本地演示账号**：仅在显式开启 `BOBBUY_SEED_ENABLED=true` 时提供 `agent / agent-pass`、`customer / customer-pass`。
 - **兼容策略**：`X-BOBBUY-ROLE` / `X-BOBBUY-USER` 仅在显式开启 `bobbuy.security.header-auth.enabled=true` 时可用，默认仅供 dev/test 过渡。
 - **生产要求**：公网部署必须配置 `BOBBUY_SECURITY_JWT_SECRET`，且不得开启 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=true`。
@@ -151,7 +153,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - **服务间鉴权现状**：gateway-service 会清理外部伪造的 `X-BOBBUY-SERVICE-TOKEN` / `X-BOBBUY-INTERNAL-SERVICE`，并在配置 `BOBBUY_SECURITY_SERVICE_TOKEN` 后向下游附带可信内部身份；后端仅对 `/internal/**` 路径信任该 token，且 service token 不等同于最终用户 JWT。
 - **service token 边界**：service token 只表达内部服务身份，不能调用用户 refresh 流程换取用户 access token，也不能与 `X-BOBBUY-ROLE` 组合推导用户身份。
 - **服务壳 smoke test**：可通过 `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test` 验证五个服务壳最小启动与 gateway header 清理。
-- **当前安全边界**：暂未实现第三方 OAuth/SSO、mTLS / service mesh、独立 schema / 数据所有权、契约测试、拆分后独立 CI/CD，以及更强的浏览器端 token 防护；旧库升级仍需按 Flyway 基线/备份流程执行。
+- **当前安全边界**：暂未实现第三方 OAuth/SSO、mTLS / service mesh、独立 schema / 数据所有权、契约测试、拆分后独立 CI/CD；当前 cookie 方案按 same-origin 试运行部署收口，跨站前后端分离部署仍需后续专门方案；旧库升级仍需按 Flyway 基线/备份流程执行。
 
 ## 验收门禁
 
