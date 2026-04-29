@@ -42,5 +42,7 @@
 - [x] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run build`
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e`
+  - 本次实际执行：`44 passed / 2 failed / 2 skipped`
+  - 失败用例：`chat_publish_flow.spec.ts`、`client_role_gate.spec.ts`
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai`
 - [ ] CodeQL / 依赖审计（未纳入默认门禁，需单独执行或在 PR / Release 中登记）
