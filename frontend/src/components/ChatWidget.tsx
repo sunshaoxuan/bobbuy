@@ -75,6 +75,10 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   const knownMessageKeysRef = useRef<Set<string>>(new Set());
   const loadingMessagesRef = useRef(false);
   const flushingPendingRef = useRef(false);
+  // Latest-value refs used inside callbacks to avoid stale-closure re-creation cycles
+  const messagesRef = useRef<ReturnType<typeof useChatPersistence>['persistedState']['messages']>([]);
+  const pendingMessagesRef = useRef<ReturnType<typeof useChatPersistence>['persistedState']['pendingMessages']>([]);
+  const nextCursorRef = useRef<number | null>(null);
   const hasScopedConversation = Boolean(tripId || orderId);
 
   const conversationType: ConversationType = tripId ? 'TRIP' : orderId ? 'ORDER' : 'PRIVATE';
@@ -95,6 +99,13 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
   const inputValue = persistedState.inputValue;
   const unreadCount = persistedState.unreadCount;
   const lastSuccessfulSyncAt = persistedState.lastSuccessfulSyncAt;
+
+  // Keep latest-value refs in sync so callbacks can read them without adding
+  // them to dependency arrays (which would recreate the callbacks on every
+  // state update and cause an infinite render loop).
+  messagesRef.current = messages;
+  pendingMessagesRef.current = pendingMessages;
+  nextCursorRef.current = nextCursor;
 
   useEffect(() => {
     knownMessageKeysRef.current = new Set(messages.map(messageKey));
@@ -136,10 +147,13 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
 
   const syncFromSlice = useCallback(
     (slice: ChatConversationSlice, options?: { appendHistory?: boolean; baseline?: boolean }) => {
+      const currentMessages = messagesRef.current;
+      const currentPendingMessages = pendingMessagesRef.current;
+      const currentNextCursor = nextCursorRef.current;
       const baseMessages = options?.appendHistory
-        ? [...messages, ...slice.messages]
-        : preserveOlderMessages(messages, nextCursor, slice.messages);
-      const mergedMessages = mergeChatMessages(baseMessages, pendingMessages);
+        ? [...currentMessages, ...slice.messages]
+        : preserveOlderMessages(currentMessages, currentNextCursor, slice.messages);
+      const mergedMessages = mergeChatMessages(baseMessages, currentPendingMessages);
       const nextKeys = mergedMessages.map(messageKey);
       if (options?.baseline) {
         knownMessageKeysRef.current = new Set(nextKeys);
@@ -159,7 +173,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
       setLoadError(undefined);
       setLastSuccessfulSyncAt(new Date().toISOString());
     },
-    [messages, nextCursor, open, pendingMessages, setLastSuccessfulSyncAt, setMessages, setUnreadCount]
+    [open, setLastSuccessfulSyncAt, setMessages, setUnreadCount]
   );
 
   const loadMessages = useCallback(
@@ -191,7 +205,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
         }
       } catch {
         if (!silent || open) {
-          setLoadError(messages.length > 0 ? t('chat.load_failed_keep_last') : t('chat.load_failed'));
+          setLoadError(messagesRef.current.length > 0 ? t('chat.load_failed_keep_last') : t('chat.load_failed'));
         }
         if (showFeedback) {
           message.error(t('chat.load_failed'));
@@ -203,7 +217,7 @@ export default function ChatWidget({ orderId, tripId, senderId, recipientId }: C
         }
       }
     },
-    [fetchConversationPage, messages.length, open, syncFromSlice, t]
+    [fetchConversationPage, open, syncFromSlice, t]
   );
 
   const websocketDestination = useMemo(

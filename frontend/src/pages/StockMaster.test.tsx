@@ -2,6 +2,7 @@ import { cleanup, render, screen, fireEvent, waitFor, waitForElementToBeRemoved,
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { I18nProvider } from '../i18n';
 import React from 'react';
+import { api } from '../api';
 
 vi.mock('../api', () => ({
   api: {
@@ -50,6 +51,7 @@ vi.mock('../api', () => ({
       }
     ]),
     translate: () => Promise.resolve({ translatedText: '' }),
+    deleteProduct: vi.fn().mockResolvedValue(undefined),
     onboardConfirm: () => Promise.resolve({
       product: { id: 'prd-new', name: { 'zh-CN': 'X' }, basePrice: 1 },
       displayName: 'X',
@@ -168,14 +170,31 @@ describe('StockMaster Component', () => {
     
     fireEvent.click(deleteButtons[0]);
     
-    const finalRows = screen.getAllByRole('row');
-    expect(finalRows.length).toBe(initialRows.length - 1);
+    await waitFor(() => {
+      const finalRows = screen.getAllByRole('row');
+      expect(finalRows.length).toBe(initialRows.length - 1);
+    });
+  });
+
+  it('shows error message and does not remove row when delete fails', async () => {
+    vi.mocked(api.deleteProduct).mockRejectedValueOnce(new Error('Server error'));
+    renderWithI18n(<StockMaster />);
+    await screen.findByDisplayValue(/Organic Milk/i);
+    const initialRows = screen.getAllByRole('row');
+    const deleteButtons = screen.getAllByRole('button').filter(btn => btn.querySelector('.anticon-delete'));
+
+    fireEvent.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      const finalRows = screen.getAllByRole('row');
+      expect(finalRows.length).toBe(initialRows.length);
+    });
   });
 
   it('displays success message on publish', async () => {
     renderWithI18n(<StockMaster />);
     await screen.findByDisplayValue(/Organic Milk/i);
-    const publishButton = screen.getByRole('button', { name: /AI 拍照上架|AI Quick Snap/i });
+    const publishButton = screen.getByRole('button', { name: /OCR 识别|OCR \+ AI Smart Snap/i });
     fireEvent.click(publishButton);
     
     expect(publishButton).toBeInTheDocument();
