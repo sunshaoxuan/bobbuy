@@ -43,7 +43,8 @@
 | [PLAN-37](PLAN-37-P2-浏览器Token防护与Refresh并发硬化开发提示词.md) | P2 浏览器 Token 防护与 Refresh 并发硬化提示词 | ✅ 已完成 | 100% | HttpOnly refresh cookie、CSRF、refresh 并发轮换边界已收口 | 全栈团队 |
 | [PLAN-38](PLAN-38-P2-Playwright端到端试运行验收开发提示词.md) | P2 Playwright 端到端试运行验收提示词 | ✅ 已完成 | 100% | 浏览器 smoke、角色门禁、聊天与核心业务试运行验收已稳定 | 全栈团队 |
 | [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) | P1 Sample 图片 AI 商品字段识别与档案落库优化提示词 | ✅ 已完成 | 100% | 已建立 sample golden、Product.attributes 落库、字段级验证脚本与 AI 专用验收口径 | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 88% | 默认质量门禁、Playwright smoke 与 AI 商品字段级落库链路已稳定；下一优先级为专用环境真实 AI/OCR 实扫与安全/架构独立门禁 | 全栈团队 |
+| [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md) | P1 发版候选门禁与专用环境验收提示词 | ⏳ 待执行 | 0% | 修复 sample 验证脚本漂移，完成真实 AI/OCR、e2e:ai、安全扫描、迁移演练与发版证据包 | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 88% | 默认质量门禁、Playwright smoke 与 AI 商品字段级落库链路已稳定；下一优先级为 PLAN-40 发版候选门禁与专用环境验收 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |
@@ -52,7 +53,7 @@
 ### 📖 计划体系说明
 - **PLAN-01 (战略)**: 业务功能的宏观路线图，定义 Sprint 1-3 的业务目标。
 - **PLAN-02 (专项)**: 针对 AUDIT-04 提出的质量赤字，制定的中长期技术债务清偿方案。
-- **PLAN-03 (战术)**: **当前执行入口**。从 PLAN-01 和 PLAN-02 中提取 P0 级任务，进行混合排期（功能+质量）。
+- **PLAN-03 (战术)**: 历史执行入口。当前执行入口已迁移到 PLAN-40 / PLAN-24 / CURRENT STATE。
 
 ---
 
@@ -262,6 +263,7 @@
   - ✅ AI 商品字段级识别、结构化落库与 sample golden 验证脚本
 
 - **仍需风险登记**:
+  - sample 验证脚本需修复 `basePrice -> price` 字段别名漂移，避免真实 scan 正确返回时被误判失败。
   - `npm run e2e:ai` AI 真实视觉链路未在当前环境执行，需专用环境。
   - `scripts/verify-ai-onboarding-samples.ps1` 已建立，但真实 `/api/ai/onboard/scan` 实扫仍需可达服务、真实 AI/OCR 与 seed 数据。
   - CodeQL / 依赖审计未固化为默认 CI 门禁。
@@ -271,9 +273,10 @@
 
 ## 🚀 下一步行动 (本周重点)
 
-**当前执行入口请参见 [PLAN-24: 稳定上线差距收口优先级](PLAN-24-稳定上线差距收口优先级.md) 与 [CURRENT-STATE-2026-04-28](../reports/CURRENT-STATE-2026-04-28.md)。历史 PLAN-03 不再作为当前入口。**
+**当前执行入口请参见 [PLAN-40: 发版候选门禁与专用环境验收提示词](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md)、[PLAN-24: 稳定上线差距收口优先级](PLAN-24-稳定上线差距收口优先级.md) 与 [CURRENT-STATE-2026-04-28](../reports/CURRENT-STATE-2026-04-28.md)。历史 PLAN-03 不再作为当前入口。**
 
 1. **试运行前手动门禁**:
+   - [ ] 发版候选门禁与专用环境验收：见 [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md)
    - [x] 后端：`cd backend && mvn test`
    - [x] 前端：`cd frontend && npm test && npm run build`
    - [x] 浏览器 smoke：`cd frontend && npm run e2e`，当前口径 `45 passed / 2 skipped / 1 flaky retry`
@@ -298,4 +301,4 @@
 
 **备注**: 
 - 本看板作为索引每日更新，**具体任务描述以各子计划文档和 CURRENT STATE 为准**。
-- 当前执行入口为 [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) 与 [CURRENT-STATE-2026-04-28](../reports/CURRENT-STATE-2026-04-28.md)，历史 PLAN-03 不再作为当前入口。
+- 当前执行入口为 [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md)、[PLAN-24](PLAN-24-稳定上线差距收口优先级.md) 与 [CURRENT-STATE-2026-04-28](../reports/CURRENT-STATE-2026-04-28.md)，历史 PLAN-03 不再作为当前入口。
