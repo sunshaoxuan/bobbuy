@@ -85,7 +85,6 @@ describe('useChatWebSocket', () => {
     websocketMocks.clients[0].config.onWebSocketClose?.({});
 
     await waitFor(() => {
-      expect(websocketMocks.clients[0].configure).toHaveBeenCalledWith({ reconnectDelay: 0 });
       expect(websocketMocks.clients[0].deactivate).toHaveBeenCalled();
     });
   });

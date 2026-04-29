@@ -14,6 +14,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ChatAuthorizationService {
+    // Chat topics are resolved to `/topic/order/{orderId}`, `/topic/trip/{tripId}`,
+    // or `/topic/private/{participantA}/{participantB}`. WebSocket authorization
+    // extracts the numeric resource id from group(1) for order/trip topics.
     private static final Pattern ORDER_TOPIC = Pattern.compile("^/topic/order/(\\d+)$");
     private static final Pattern TRIP_TOPIC = Pattern.compile("^/topic/trip/(\\d+)$");
     private static final Pattern PRIVATE_TOPIC = Pattern.compile("^/topic/private/[^/]+/[^/]+$");
@@ -108,6 +111,9 @@ public class ChatAuthorizationService {
                 .map(order -> customerId.equals(order.getCustomerId()))
                 .orElse(false);
         }
+        // Unscoped chat messages do not bind to a specific order/trip resource.
+        // They remain allowed here only for existing REST send flows that already
+        // passed authentication and do not expose customer cross-context reads.
         return allowUnscoped;
     }
 

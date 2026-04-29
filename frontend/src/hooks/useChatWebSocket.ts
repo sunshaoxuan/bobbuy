@@ -55,14 +55,10 @@ export function useChatWebSocket({ enabled, destination, onConnect, onMessage }:
       },
       onStompError: () => {
         authRejected = true;
-        currentReconnectDelay = 0;
-        client.configure({ reconnectDelay: currentReconnectDelay });
         void client.deactivate();
       },
       onWebSocketClose: () => {
         if (authRejected) {
-          currentReconnectDelay = 0;
-          client.configure({ reconnectDelay: currentReconnectDelay });
           return;
         }
         currentReconnectDelay = Math.min(currentReconnectDelay * 2, 5000);
