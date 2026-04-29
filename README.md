@@ -167,7 +167,11 @@ AI / OCR 默认测试边界：
 - 真实 AI/OCR 验收仅在专用环境执行，见 `docs/reports/TEST-MATRIX-本地与CI执行矩阵.md`。
 - Sample 字段级黄金值基线：`docs/fixtures/ai-onboarding-sample-golden.json`
 - Sample 对比脚本：`pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1`
+- Sample 脚本 dry-run fixture：`docs/fixtures/ai-onboarding-sample-scan-mock.json`
+- Sample 脚本最小自检：
+  `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"`
 - 专项报告：`docs/reports/REPORT-03-AI商品字段识别样例验证报告.md`
+- 发版候选证据报告：`docs/reports/REPORT-04-发版候选门禁验收报告.md`
 - `cd backend && mvn -DskipTests package && cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
 - `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
 
@@ -203,11 +207,17 @@ Playwright smoke 口径：
 - `cd frontend && npm ci && npm test`：通过。
 - `cd frontend && npm run build`：通过。
 - `cd frontend && npm run e2e`：通过（`46 passed / 2 skipped`；`2 skipped` 为 `RUN_AI_VISION_E2E` 门控用例）。
+- `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"`：通过（验证 `basePrice -> price` 别名与 optional path 规范化）
+- `cd frontend && npm audit --json`：发现 `3 critical / 10 high / 4 moderate`，仍阻断发版，详见 `REPORT-04`
+- `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`：通过
+- PostgreSQL 备份恢复演练：`pg_dump -> bobbuy_restore_verify_plan40` 恢复校验通过
 - `cd backend && mvn -DskipTests package`：通过。
 - `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`：通过。
 - `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`：通过。
-- `cd backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`：通过。
+- `cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai`：**未在本沙箱作为真实专用环境门禁执行**
+- `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`：**未在本沙箱执行真实专用环境实扫**
 
 详细矩阵见 [docs/reports/TEST-MATRIX-本地与CI执行矩阵.md](docs/reports/TEST-MATRIX-本地与CI执行矩阵.md)。
 
 当前边界执行摘要见 [docs/reports/REPORT-01-试运行服务边界执行报告.md](docs/reports/REPORT-01-试运行服务边界执行报告.md)。
+当前发版候选门禁执行摘要见 [docs/reports/REPORT-04-发版候选门禁验收报告.md](docs/reports/REPORT-04-发版候选门禁验收报告.md)。

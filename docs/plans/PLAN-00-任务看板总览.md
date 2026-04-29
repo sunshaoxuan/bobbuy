@@ -43,8 +43,8 @@
 | [PLAN-37](PLAN-37-P2-浏览器Token防护与Refresh并发硬化开发提示词.md) | P2 浏览器 Token 防护与 Refresh 并发硬化提示词 | ✅ 已完成 | 100% | HttpOnly refresh cookie、CSRF、refresh 并发轮换边界已收口 | 全栈团队 |
 | [PLAN-38](PLAN-38-P2-Playwright端到端试运行验收开发提示词.md) | P2 Playwright 端到端试运行验收提示词 | ✅ 已完成 | 100% | 浏览器 smoke、角色门禁、聊天与核心业务试运行验收已稳定 | 全栈团队 |
 | [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) | P1 Sample 图片 AI 商品字段识别与档案落库优化提示词 | ✅ 已完成 | 100% | 已建立 sample golden、Product.attributes 落库、字段级验证脚本与 AI 专用验收口径 | 全栈团队 |
-| [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md) | P1 发版候选门禁与专用环境验收提示词 | ⏳ 待执行 | 0% | 修复 sample 验证脚本漂移，完成真实 AI/OCR、e2e:ai、安全扫描、迁移演练与发版证据包 | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 88% | 默认质量门禁、Playwright smoke 与 AI 商品字段级落库链路已稳定；下一优先级为 PLAN-40 发版候选门禁与专用环境验收 | 全栈团队 |
+| [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md) | P1 发版候选门禁与专用环境验收提示词 | 🔄 进行中 | 65% | sample 验证脚本漂移、本地 Flyway/恢复演练与发版候选证据包已收口；剩余为真实 AI/OCR、`e2e:ai`、CodeQL、依赖审计与真实旧库 adoption | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 90% | 默认质量门禁、Playwright smoke、sample 字段级脚本硬化与发版候选证据包已补齐；剩余优先级为 PLAN-40 的专用环境/安全门禁阻断项 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |
@@ -276,18 +276,18 @@
 **当前执行入口请参见 [PLAN-40: 发版候选门禁与专用环境验收提示词](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md)、[PLAN-24: 稳定上线差距收口优先级](PLAN-24-稳定上线差距收口优先级.md) 与 [CURRENT-STATE-2026-04-28](../reports/CURRENT-STATE-2026-04-28.md)。历史 PLAN-03 不再作为当前入口。**
 
 1. **试运行前手动门禁**:
-   - [ ] 发版候选门禁与专用环境验收：见 [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md)
+   - [ ] 发版候选门禁与专用环境验收：脚本硬化、本地 Flyway/恢复演练与证据报告已完成；剩余见 [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md) 与 [REPORT-04](../reports/REPORT-04-发版候选门禁验收报告.md)
    - [x] 后端：`cd backend && mvn test`
    - [x] 前端：`cd frontend && npm test && npm run build`
-   - [x] 浏览器 smoke：`cd frontend && npm run e2e`，当前口径 `45 passed / 2 skipped / 1 flaky retry`
+   - [x] 浏览器 smoke：`cd frontend && npm run e2e`，当前口径 `46 passed / 2 skipped`
    - [x] Compose 配置渲染：`docker compose config`
    - [x] AI 商品字段级 sample golden、结构化落库与验证脚本：见 [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) 与 [REPORT-03](../reports/REPORT-03-AI商品字段识别样例验证报告.md)
    - [ ] AI sample 专用实扫：`pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`，需可达 `/api/ai/onboard/scan` 与真实 AI/OCR/seed 环境
    - [ ] AI 真实视觉：`cd frontend && npm run e2e:ai`，需 `RUN_AI_VISION_E2E=1` 与专用 AI/OCR/seed 环境
 
 2. **风险登记 / 独立门禁**:
-   - [ ] CodeQL / 依赖审计结果进入 PR 或 Release 验证记录
-   - [ ] PostgreSQL Flyway 旧库 adoption 前完成备份、baseline 与回滚演练
+   - [ ] CodeQL / 依赖审计结果进入 PR 或 Release 验证记录（本次已执行 `npm audit`，仍有高危项待处置）
+   - [ ] PostgreSQL Flyway 旧库 adoption 前完成备份、baseline 与回滚演练（本次已完成空库 migrate/validate 与恢复库演练）
    - [ ] 真实告警平台、集中日志、自动化备份、服务级 SLO
 
 3. **长期演进**:
