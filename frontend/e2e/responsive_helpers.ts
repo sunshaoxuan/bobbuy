@@ -1,5 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 
+type MockRole = 'CUSTOMER' | 'AGENT' | 'MERCHANT';
+
 const MOCK_TRIPS = [
   {
     id: 2000,
@@ -16,6 +18,45 @@ const MOCK_TRIPS = [
     settlementFreezeReason: ''
   }
 ];
+
+const MOCK_USERS: Record<MockRole, { id: number; username: string; name: string; role: MockRole }> = {
+  AGENT: {
+    id: 1000,
+    username: 'agent',
+    name: 'Agent Smith',
+    role: 'AGENT'
+  },
+  CUSTOMER: {
+    id: 1001,
+    username: 'customer',
+    name: 'Alice Wang',
+    role: 'CUSTOMER'
+  },
+  MERCHANT: {
+    id: 1002,
+    username: 'merchant',
+    name: 'Merchant Li',
+    role: 'MERCHANT'
+  }
+};
+
+const ACCESS_TOKEN_BY_ROLE: Record<MockRole, string> = {
+  AGENT: 'e2e-access-agent',
+  CUSTOMER: 'e2e-access-customer',
+  MERCHANT: 'e2e-access-merchant'
+};
+
+const REFRESH_TOKEN_BY_ROLE: Record<MockRole, string> = {
+  AGENT: 'e2e-refresh-agent',
+  CUSTOMER: 'e2e-refresh-customer',
+  MERCHANT: 'e2e-refresh-merchant'
+};
+
+const CSRF_TOKEN_BY_ROLE: Record<MockRole, string> = {
+  AGENT: 'e2e-csrf-agent',
+  CUSTOMER: 'e2e-csrf-customer',
+  MERCHANT: 'e2e-csrf-merchant'
+};
 
 const MOCK_ORDERS = [
   {
@@ -38,23 +79,54 @@ export const VIEWPORTS = [
 ] as const;
 
 export async function setCustomerContext(page: Page) {
-  await page.addInitScript(() => {
-    window.localStorage.setItem('bobbuy_locale', 'en-US');
-    window.localStorage.setItem('bobbuy_user_role', 'CUSTOMER');
-    window.localStorage.setItem('bobbuy_test_role', 'CUSTOMER');
-    window.localStorage.setItem('bobbuy_test_user', '1001');
-    window.localStorage.setItem('bobbuy_disable_chat_websocket', 'true');
-  });
+  await setAuthenticatedContext(page, 'CUSTOMER');
 }
 
 export async function setAgentContext(page: Page) {
-  await page.addInitScript(() => {
-    window.localStorage.setItem('bobbuy_locale', 'en-US');
-    window.localStorage.setItem('bobbuy_user_role', 'AGENT');
-    window.localStorage.setItem('bobbuy_test_role', 'AGENT');
-    window.localStorage.setItem('bobbuy_test_user', '1000');
-    window.localStorage.setItem('bobbuy_disable_chat_websocket', 'true');
-  });
+  await setAuthenticatedContext(page, 'AGENT');
+}
+
+async function setAuthenticatedContext(page: Page, role: MockRole) {
+  const user = MOCK_USERS[role];
+  const accessToken = ACCESS_TOKEN_BY_ROLE[role];
+  const csrfToken = CSRF_TOKEN_BY_ROLE[role];
+  const refreshToken = REFRESH_TOKEN_BY_ROLE[role];
+
+  await page.context().clearCookies();
+  await page.context().addCookies([
+    {
+      name: 'bobbuy_refresh_token',
+      value: refreshToken,
+      url: 'http://127.0.0.1:5173/api/auth',
+      httpOnly: true,
+      sameSite: 'Lax'
+    },
+    {
+      name: 'bobbuy_csrf_token',
+      value: csrfToken,
+      url: 'http://127.0.0.1:5173/',
+      sameSite: 'Lax'
+    }
+  ]);
+
+  await page.addInitScript(
+    ({ sessionUser, sessionAccessToken }) => {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+      window.localStorage.setItem('bobbuy_locale', 'en-US');
+      window.localStorage.setItem('bobbuy_access_token', sessionAccessToken);
+      window.localStorage.setItem('bobbuy_access_token_expires_at', '2099-12-31T23:59:59Z');
+      window.localStorage.setItem('bobbuy_refresh_token_expires_at', '2099-12-31T23:59:59Z');
+      window.localStorage.setItem('bobbuy_auth_user', JSON.stringify(sessionUser));
+      window.localStorage.setItem('bobbuy_chat_sender_id', String(sessionUser.id));
+      window.localStorage.setItem('bobbuy_disable_chat_websocket', 'true');
+      window.localStorage.removeItem('bobbuy_refresh_token');
+      window.localStorage.removeItem('bobbuy_test_role');
+      window.localStorage.removeItem('bobbuy_test_user');
+      window.localStorage.removeItem('bobbuy_user_role');
+    },
+    { sessionUser: user, sessionAccessToken: accessToken }
+  );
 }
 
 export async function assertNoHorizontalOverflow(page: Page) {
@@ -81,6 +153,72 @@ export async function setupCommonMocks(page: Page) {
   await page.route('**/api/**', (route) =>
     route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: {} }) })
   );
+
+  await page.route('**/api/auth/me', async (route) => {
+    const session = resolveSessionFromRequest(route.request().headers());
+    if (!session) {
+      await route.fulfill({ status: 401, body: JSON.stringify({ status: 'error', message: 'Unauthorized' }) });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      body: JSON.stringify({ status: 'success', data: session.user })
+    });
+  });
+
+  await page.route('**/api/auth/refresh', async (route) => {
+    const session = resolveSessionFromRequest(route.request().headers());
+    const csrfHeader = route.request().headers()['x-bobbuy-csrf-token'];
+    const cookieHeader = route.request().headers().cookie ?? '';
+    if (!session) {
+      await route.fulfill({ status: 401, body: JSON.stringify({ status: 'error', message: 'Unauthorized' }) });
+      return;
+    }
+    const csrfCookie = CSRF_TOKEN_BY_ROLE[session.user.role];
+    const refreshCookie = REFRESH_TOKEN_BY_ROLE[session.user.role];
+    if (!csrfHeader || csrfHeader !== csrfCookie || !cookieHeader.includes(`bobbuy_refresh_token=${refreshCookie}`)) {
+      await route.fulfill({ status: 403, body: JSON.stringify({ status: 'error', message: 'Invalid CSRF token' }) });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      headers: {
+        'Set-Cookie': `bobbuy_refresh_token=${refreshCookie}; Path=/api/auth; HttpOnly; SameSite=Lax`
+      },
+      body: JSON.stringify({
+        status: 'success',
+        data: {
+          accessToken: ACCESS_TOKEN_BY_ROLE[session.user.role],
+          accessTokenExpiresAt: '2099-12-31T23:59:59Z',
+          refreshTokenExpiresAt: '2099-12-31T23:59:59Z',
+          user: session.user
+        }
+      })
+    });
+  });
+
+  await page.route('**/api/auth/logout', async (route) => {
+    const session = resolveSessionFromRequest(route.request().headers());
+    const csrfHeader = route.request().headers()['x-bobbuy-csrf-token'];
+    const cookieHeader = route.request().headers().cookie ?? '';
+    if (!session) {
+      await route.fulfill({ status: 401, body: JSON.stringify({ status: 'error', message: 'Unauthorized' }) });
+      return;
+    }
+    const csrfCookie = CSRF_TOKEN_BY_ROLE[session.user.role];
+    const refreshCookie = REFRESH_TOKEN_BY_ROLE[session.user.role];
+    if (!csrfHeader || csrfHeader !== csrfCookie || !cookieHeader.includes(`bobbuy_refresh_token=${refreshCookie}`)) {
+      await route.fulfill({ status: 403, body: JSON.stringify({ status: 'error', message: 'Invalid CSRF token' }) });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      headers: {
+        'Set-Cookie': 'bobbuy_refresh_token=; Max-Age=0; Path=/api/auth; HttpOnly; SameSite=Lax'
+      },
+      body: JSON.stringify({ status: 'success', data: { revoked: true } })
+    });
+  });
 
   await page.route('**/api/trips/*/procurement-list', (route) =>
     route.fulfill({
@@ -144,6 +282,13 @@ export async function setupCommonMocks(page: Page) {
 
   await page.route('**/api/ai/experience/confirm', (route) =>
     route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: {} }) })
+  );
+
+  await page.route('**/api/chat/**/cursor**', (route) =>
+    route.fulfill({
+      status: 200,
+      body: JSON.stringify({ status: 'success', data: { messages: [], nextCursor: null, hasMore: false } })
+    })
   );
 
   await page.route('**/api/chat/**', (route) =>
@@ -330,4 +475,26 @@ export async function setupCommonMocks(page: Page) {
   await page.route('**/api/financial/audit/**', (route) =>
     route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: [] }) })
   );
+}
+
+function resolveSessionFromRequest(headers: Record<string, string | undefined>) {
+  const authorization = headers.authorization?.trim();
+  const accessToken = authorization?.startsWith('Bearer ') ? authorization.slice('Bearer '.length) : undefined;
+  const cookieHeader = headers.cookie ?? '';
+  const refreshToken = cookieHeader
+    .split(';')
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith('bobbuy_refresh_token='))
+    ?.slice('bobbuy_refresh_token='.length);
+  const role = (
+    Object.entries(ACCESS_TOKEN_BY_ROLE).find(([, token]) => token === accessToken)?.[0] ??
+    Object.entries(REFRESH_TOKEN_BY_ROLE).find(([, token]) => token === refreshToken)?.[0] ??
+    null
+  ) as MockRole | null;
+  if (!role) {
+    return null;
+  }
+  return {
+    user: MOCK_USERS[role]
+  };
 }

@@ -17,7 +17,7 @@ test.describe('Responsive: Client pages', () => {
       await setupCommonMocks(page);
       await setCustomerContext(page);
       await page.goto('/client/orders');
-      await expect(page.getByRole('heading', { name: 'My Orders' })).toBeVisible();
+      await expect(page.getByTestId('client-orders-title')).toBeVisible();
       await expect(page.locator('[data-testid="orders-summary"]')).toBeVisible();
       await assertNoHorizontalOverflow(page);
     });
@@ -27,7 +27,7 @@ test.describe('Responsive: Client pages', () => {
       await setupCommonMocks(page);
       await setCustomerContext(page);
       await page.goto('/client/billing');
-      await expect(page.getByRole('heading', { name: 'Billing' })).toBeVisible();
+      await expect(page.getByTestId('client-billing-title')).toBeVisible();
       await expect(page.getByText('BIZ-1001')).toBeVisible();
       await assertNoHorizontalOverflow(page);
     });
@@ -37,7 +37,7 @@ test.describe('Responsive: Client pages', () => {
       await setupCommonMocks(page);
       await setCustomerContext(page);
       await page.goto('/client/chat');
-      await expect(page.getByRole('heading', { name: 'Chat' })).toBeVisible();
+      await expect(page.getByTestId('client-chat-title')).toBeVisible();
       await assertNoHorizontalOverflow(page);
     });
   }

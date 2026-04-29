@@ -10,15 +10,15 @@ test.describe('client route gates', () => {
     await setCustomerContext(page);
 
     await page.goto('/client/orders');
-    await expect(page.getByText('My Orders')).toBeVisible();
+    await expect(page.getByTestId('client-orders-title')).toBeVisible();
     await expect(page.getByText(/Orders:\s*1\s*\|\s*Total:/)).toBeVisible();
 
     await page.goto('/client/billing');
-    await expect(page.getByText('Billing')).toBeVisible();
+    await expect(page.getByTestId('client-billing-title')).toBeVisible();
     await expect(page.getByText('BIZ-1001')).toBeVisible();
 
     await page.goto('/client/chat');
-    await expect(page.getByText('Chat')).toBeVisible();
+    await expect(page.getByTestId('client-chat-title')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Open chat' })).toBeVisible();
   });
 

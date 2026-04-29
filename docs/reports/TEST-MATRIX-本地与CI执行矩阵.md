@@ -18,7 +18,7 @@
 | :-- | :-- | :-- | :-- | :-- |
 | PostgreSQL 空库 migration | `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate` | `workflow_dispatch` + `postgres-migration-verify` job（输入 `run_postgres_migration_verify=true`） | 否 | 需要可写 PostgreSQL 空库；默认由 Flyway 插件验证 `backend/src/main/resources/db/migration` |
 | 服务壳 smoke test | `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test` | 当前仅本地 / 手动执行 | 否 | 使用 H2 与关闭 Nacos 的测试配置，验证 `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` 最小启动以及 gateway 内部 header 清理 |
-| Playwright 页面回归 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e` | `workflow_dispatch` + `playwright-e2e` job（输入 `run_playwright_e2e=true`） | 否 | GitHub Hosted Runner 可执行；常规用例走前端共享 mock，不依赖真实 AI / MinIO |
+| Playwright 页面回归 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e` | `workflow_dispatch` + `playwright-e2e` job（输入 `run_playwright_e2e=true`） | 否 | GitHub Hosted Runner 可执行；使用 Vite dev server + 前端共享 mock 浏览器 smoke，覆盖 agent/customer 登录态、角色门禁、订单/账单/聊天、采购/拣货/库存人工接管，不依赖真实 AI / MinIO |
 | AI 真实视觉链路 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai` | 不纳入默认 Hosted CI；仅在专用环境手动执行并单独记录结果 | 否 | 必须提供 `RUN_AI_VISION_E2E=1`、`SPRING_PROFILES_ACTIVE=dev,ai-hermes`、可访问的 AI 模型、MinIO、seed 数据与样本图片 |
 | Compose 配置渲染 | `cd /home/runner/work/bobbuy/bobbuy && docker compose config` | 当前未纳入默认 CI；作为试运行部署前置校验执行 | 否 | 要求 `.env` / 默认变量可成功渲染 Compose，且不得依赖未声明变量 |
 | 备份恢复演练 | 见 `docs/runbooks/RUNBOOK-备份恢复演练.md` | 不纳入默认 CI；按试运行变更窗口手工执行并记录结果 | 否 | 需要 Docker / PostgreSQL / MinIO / Nacos 可访问，且恢复验证必须在新库 / 独立 bucket / 独立目录进行 |
@@ -36,7 +36,8 @@
 - 新 clone 或本地清空 `node_modules` 后，必须先执行 `npm ci --prefix frontend`，再运行前端测试 / 构建。
 - PostgreSQL migration 验证默认通过 Flyway Maven Plugin 执行，不要求后端在 Hosted CI 中额外拉起 Redis/RabbitMQ/MinIO。
 - 试运行 Compose 当前固定 PostgreSQL 15，并默认把宿主机端口绑定到 `127.0.0.1`，避免内部依赖无意暴露到公网。
-- `playwright-e2e` 继续复用 `npm run e2e:prepare` 的浏览器探测逻辑，仅在缺失 Chromium 时安装。
+- `playwright-e2e` 继续复用 `npm run e2e:prepare` 的浏览器探测逻辑，仅在缺失 Chromium 时安装；CI 额外执行 `npx playwright install --with-deps chromium` 并上传 `frontend/playwright-report`、`frontend/test-results` artifact。
+- Playwright smoke 现在使用带 access token + HttpOnly refresh cookie + CSRF cookie 的 mock 浏览器会话，不再依赖 `bobbuy_test_role` / `bobbuy_test_user` 伪造角色头。
 - 后端默认测试必须继续使用 H2 / fake/mock 资源，禁止默认门禁外连真实 Ollama、Codex CLI、MinIO 或公网服务。
 - AI/OCR 可靠性用例（provider unconfigured、OCR/LLM 失败、fallback、人工复核、重试）必须继续保留在默认 mock 测试中，禁止切换到真实外部服务。
 - 后端 `mvn test` 现同时覆盖 JWT 登录、HttpOnly refresh cookie 下发、refresh/logout 的 CSRF 拒绝、refresh token 单次轮换/过期/撤销、并发 refresh 只成功一次、`/api/auth/me`、401/403、customer 本人数据隔离、WebSocket STOMP `CONNECT` 鉴权与聊天上下文授权，以及 `bobbuy.security.header-auth.enabled=false` 时伪造 header 不得提权。
@@ -69,9 +70,9 @@
   - MinIO：恢复验证 bucket `bobbuy-media-restore-verify` 中存在 `probe.txt`
   - Nacos：`infra/nacos/config` 已归档为 `/tmp/plan33/backup/nacos-config-restore-drill.tgz`
   - 未执行完整应用栈登录 / 页面预览验收，后续需在专门试运行窗口继续补全
-- [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e`
-  - 本次实际执行：`44 passed / 2 failed / 2 skipped`
-  - 失败用例：`chat_publish_flow.spec.ts`、`client_role_gate.spec.ts`
+- [x] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e`
+  - 本次实际执行：`46 passed / 2 skipped`
+  - `2 skipped` 为 `npm run e2e:ai` 专用的 `RUN_AI_VISION_E2E` 门控用例
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai`
 - [ ] CodeQL / 依赖审计（未纳入默认门禁，需单独执行或在 PR / Release 中登记）
 - [ ] mTLS / service mesh / 契约测试（本阶段未实现，需继续登记风险）

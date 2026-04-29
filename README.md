@@ -174,6 +174,13 @@ AI / OCR 默认测试边界：
 - `cd frontend && npm run e2e`
 - `cd frontend && npm run e2e:ai`
 
+Playwright smoke 口径：
+- `npm run e2e` 使用 Vite dev server（`frontend/playwright.config.ts`），不依赖真实 AI/OCR/MinIO/外部服务。
+- 默认覆盖 agent / customer 两类浏览器会话，覆盖登录态恢复、客户订单/账单/聊天、agent 采购/拣货/库存、角色门禁与聊天图片发布人工接管 smoke。
+- 浏览器端只保留 access token、本地用户信息与 CSRF cookie；默认 smoke 不再依赖 `bobbuy_test_role` / `bobbuy_test_user` 伪造角色头。
+- Playwright 失败时会保留 `playwright-report/`、`test-results/` 下的 HTML 报告、trace、screenshot、video；手动 CI job 会上传这些 artifact。
+- `npm run e2e:ai` 继续只跑真实 AI/OCR 专用链路，需单独环境与结果登记。
+
 风险登记 / 独立安全门禁：
 - CodeQL / 安全扫描
 - 依赖审计
@@ -192,6 +199,7 @@ AI / OCR 默认测试边界：
 - `cd backend && mvn test`：通过。
 - `cd frontend && npm ci && npm test`：通过。
 - `cd frontend && npm run build`：通过。
+- `cd frontend && npm run e2e`：通过（`46 passed / 2 skipped`；`2 skipped` 为 `RUN_AI_VISION_E2E` 门控用例）。
 - `cd backend && mvn -DskipTests package`：通过。
 - `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`：通过。
 - `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`：通过。
