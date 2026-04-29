@@ -259,6 +259,11 @@ public class BobbuyStore {
                 new LinkedHashMap<>(Map.of(supplier.getId(), "TOKYO-MATCHA-001")));
         product.setRecommended(true);
         product.setTemporary(false);
+        product.setAttributes(new LinkedHashMap<>(Map.of(
+                "netContent", "500g",
+                "packSize", "1pack",
+                "flavor", "matcha"
+        )));
         productRepository.save(product);
 
         Product muffinProduct = new Product(
@@ -280,6 +285,11 @@ public class BobbuyStore {
         muffinProduct.setItemNumber("3169-2");
         muffinProduct.setRecommended(false);
         muffinProduct.setTemporary(false);
+        muffinProduct.setAttributes(new LinkedHashMap<>(Map.of(
+                "netContent", "800g",
+                "packSize", "1pack",
+                "flavor", "muffin"
+        )));
         productRepository.save(muffinProduct);
 
         MerchantSku merchantSku = new MerchantSku(
@@ -502,8 +512,14 @@ public class BobbuyStore {
         if (patch.getCategoryId() != null) {
             existing.setCategoryId(patch.getCategoryId());
         }
+        if (patch.getItemNumber() != null) {
+            existing.setItemNumber(patch.getItemNumber());
+        }
         if (patch.getMerchantSkus() != null) {
             existing.setMerchantSkus(patch.getMerchantSkus());
+        }
+        if (patch.getAttributes() != null) {
+            existing.setAttributes(patch.getAttributes());
         }
         if (patch.getPriceTiers() != null) {
             existing.setPriceTiers(patch.getPriceTiers());

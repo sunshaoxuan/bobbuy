@@ -54,6 +54,10 @@ public class Product {
     @Column(name = "merchant_skus", columnDefinition = "jsonb")
     private Map<String, String> merchantSkus;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, String> attributes = new HashMap<>();
+
     private String itemNumber; // For AI matching and shelf identification
 
     @JdbcTypeCode(SqlTypes.JSON)
@@ -70,6 +74,7 @@ public class Product {
 
     public Product() {
         this.merchantSkus = new HashMap<>();
+        this.attributes = new HashMap<>();
     }
 
     public Product(String id,
@@ -192,6 +197,14 @@ public class Product {
 
     public void setMerchantSkus(Map<String, String> merchantSkus) {
         this.merchantSkus = merchantSkus;
+    }
+
+    public Map<String, String> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, String> attributes) {
+        this.attributes = attributes == null ? new HashMap<>() : new HashMap<>(attributes);
     }
 
     public String getItemNumber() {
