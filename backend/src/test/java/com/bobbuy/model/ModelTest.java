@@ -133,16 +133,28 @@ class ModelTest {
     void metricsTest() {
         Metrics metrics = new Metrics(1, 2, 3, 4.5,
                 java.util.Map.of("NEW", 1),
+                java.util.Map.of("GET /api/orders", 2L),
+                java.util.Map.of("2xx", 1L, "5xx", 1L),
                 java.util.Map.of("GET /api/orders", 120L),
                 java.util.Map.of("GET /api/orders", 180L),
+                java.util.Map.of("POST /api/auth/login", 1L),
+                java.util.Map.of("GET /api/orders", 1L),
+                1L,
+                0.5d,
                 java.util.List.of("GET /api/orders"));
         assertThat(metrics.getUsers()).isEqualTo(1);
         assertThat(metrics.getTrips()).isEqualTo(2);
         assertThat(metrics.getOrders()).isEqualTo(3);
         assertThat(metrics.getGmV()).isEqualTo(4.5);
         assertThat(metrics.getOrderStatusCounts()).containsEntry("NEW", 1);
+        assertThat(metrics.getRequestCounts()).containsEntry("GET /api/orders", 2L);
+        assertThat(metrics.getStatusCounts()).containsEntry("5xx", 1L);
         assertThat(metrics.getLatencyP95Ms()).containsEntry("GET /api/orders", 120L);
         assertThat(metrics.getLatencyP99Ms()).containsEntry("GET /api/orders", 180L);
+        assertThat(metrics.getHttp4xxByEndpoint()).containsEntry("POST /api/auth/login", 1L);
+        assertThat(metrics.getHttp5xxByEndpoint()).containsEntry("GET /api/orders", 1L);
+        assertThat(metrics.getLoginFailureCount()).isEqualTo(1L);
+        assertThat(metrics.getOverall5xxRate()).isEqualTo(0.5d);
         assertThat(metrics.getSlowEndpoints()).contains("GET /api/orders");
     }
 

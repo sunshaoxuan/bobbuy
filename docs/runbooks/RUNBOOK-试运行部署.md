@@ -3,6 +3,11 @@
 **适用范围**: 内部 / 小范围试运行  
 **不适用范围**: 高可用生产集群、TLS/域名证书、Secret Manager、监控告警自动化
 
+关联 Runbook：
+
+- 监控告警与故障处置：[`RUNBOOK-监控告警与故障处置.md`](RUNBOOK-监控告警与故障处置.md)
+- 备份恢复演练：[`RUNBOOK-备份恢复演练.md`](RUNBOOK-备份恢复演练.md)
+
 ---
 
 ## 1. 配置优先级
@@ -188,6 +193,12 @@ docker compose logs -f gateway-service
 docker compose logs -f nacos
 ```
 
+最小日志字段口径：
+
+- HTTP：`method/path/status/cost/trace_id/user/role`
+- AI / OCR：`provider/activeProvider/model/stage/latencyMs/errorCode/fallbackReason`
+- 排障优先级：先看 `gateway` / `gateway-service`，再看对应业务服务与基础设施
+
 重点排查项：
 
 1. **登录失败 / 401**
@@ -214,6 +225,8 @@ docker compose logs -f nacos
 1. 商品 AI 上架失败时，前端会显示失败原因并允许人工补录后保存草稿；默认保持 `DRAFTER_ONLY`。
 2. 小票识别 fallback 或失败时，前端显示 fallback / review 状态、trace 摘要，并保留重新识别入口。
 3. 仅 `REVIEWED` 小票会进入 `/procurement` 与 `/picking` 的已复核事实链；未确认识别结果不会自动改账。
+
+更多告警阈值、故障清单与升级条件见 [`RUNBOOK-监控告警与故障处置.md`](RUNBOOK-监控告警与故障处置.md)。
 
 ---
 
@@ -254,5 +267,7 @@ docker compose logs -f nacos
 - 高可用 / 多副本
 - TLS / 域名证书
 - Secret Manager
-- 监控 / 告警
+- 真实监控 / 告警平台
 - 自动化备份恢复演练
+
+备份与恢复演练命令、恢复验收与记录模板见 [`RUNBOOK-备份恢复演练.md`](RUNBOOK-备份恢复演练.md)。
