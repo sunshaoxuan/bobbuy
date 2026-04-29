@@ -40,7 +40,7 @@
 - 试运行 Compose 固定使用 `postgres:15-alpine`。
 - 原因：避免继续承受 PostgreSQL 18 与 Flyway 10.15.2 的“高于已验证范围”提示风险。
 - 如后续要升级 PostgreSQL 大版本，需先单独验证 Flyway 兼容性并更新本文档。
-- 若旧环境已有 `./data/postgres_v18` 数据目录，切换到当前 Compose 前必须先停服务并把数据迁移/备份到 `./data/postgres`，不要在未迁移数据目录的情况下直接覆盖启动。
+- 若旧环境已有 `./data/postgres_v18` 数据目录，切换到当前 Compose 前必须先停服务并把数据迁移 / 备份到 `./data/postgres`，不要在未迁移数据目录的情况下直接覆盖启动。
 
 ---
 
@@ -57,9 +57,10 @@
    - `MINIO_ROOT_PASSWORD`
    - `RABBITMQ_DEFAULT_PASS`
    - 可用 `openssl rand -base64 32` 生成 `BOBBUY_SECURITY_JWT_SECRET`
+   - 若 `BOBBUY_SECURITY_JWT_SECRET` 为空，后端会在启动阶段直接失败，不会以空 secret 进入试运行
 3. 按实际环境选择 AI 路径：
    - **Ollama / 私有兼容 gateway**：填写 `BOBBUY_AI_LLM_MAIN_URL`
-   - **视觉 / edge 模型**：填写 `BOBBUY_AI_LLM_EDGE_URL`
+   - **视觉 / edge 模型**：填写 `BOBBUY_AI_LLM_EDGE_URL`；只有 edge 节点模型名与默认 `llama3.2-vision:11b` 不一致时才覆盖 `BOBBUY_AI_LLM_EDGE_MODEL`
    - **OCR 容器同编排部署**：保持 `BOBBUY_OCR_URL=http://ocr-service:8000`
    - **本地桌面 Codex CLI 兜底**：仅在受控本机设置 `BOBBUY_AI_LLM_CODEX_COMMAND=codex`
 4. 仅限本地调试可保留的默认项：
