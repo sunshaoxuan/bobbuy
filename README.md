@@ -63,7 +63,7 @@ docker-compose -p bobbuy up -d
 - `cd backend && mvn test`
 - `cd frontend && npm test`
 - `cd frontend && npm run build`
-- `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
+- `cd backend && mvn -DskipTests package && cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
 - `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
 
 专用环境门禁（不进入默认 Hosted CI）：

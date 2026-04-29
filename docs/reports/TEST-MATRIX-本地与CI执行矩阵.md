@@ -9,7 +9,7 @@
 | 后端测试 | `cd /home/runner/work/bobbuy/bobbuy/backend && mvn test` | `backend-test` / `Run backend tests` | 是 | 否；默认使用测试资源与 fake/mock 配置，不依赖真实 Ollama、Codex CLI、MinIO、外网 AI 服务 |
 | 前端单测 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm test` | `frontend-quality` / `Run frontend tests` | 是 | 否 |
 | 前端构建 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run build` | `frontend-quality` / `Build frontend` | 是 | 否 |
-| 后端 Docker 构建 | `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test` | `docker-build` / `Build backend image` | 是 | 否 |
+| 后端 Docker 构建 | `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -DskipTests package && cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test` | `docker-build` / `Build backend package for Docker image` + `Build backend image` | 是 | 否 |
 | 前端 Docker 构建 | `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test` | `docker-build` / `Build frontend image` | 是 | 否 |
 
 ## 2. 专用环境门禁（手动触发 / 条件执行）
