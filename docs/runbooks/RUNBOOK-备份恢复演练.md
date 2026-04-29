@@ -233,11 +233,34 @@ curl -fsS http://127.0.0.1/health
 
 ---
 
-## 10. 本次任务建议执行顺序
+## 10. Flyway 旧库 adoption / 回滚补充记录
+
+如本次演练包含旧库纳管，还必须额外记录：
+
+```text
+是否存在 flyway_schema_history:
+旧库 schema 是否与 V1 baseline 对齐:
+是否启用 baseline-on-migrate:
+baseline / migrate / validate 结果:
+若失败，恢复到哪个验证库:
+是否已验证恢复库关键表/关键数据:
+正式环境是否仍保持未改动:
+```
+
+最低要求：
+
+1. 没有真实旧库副本时，不得把 adoption 写成“已完成”。
+2. baseline-on-migrate 只能执行一次性登记，且必须先有备份。
+3. 恢复验证必须先在独立库完成，再评估是否影响正式环境。
+
+---
+
+## 11. 本次任务建议执行顺序
 
 1. `docker compose config`
 2. 启动 `postgres` / `minio` / `nacos`（如环境允许）
 3. 先做 PostgreSQL 逻辑备份
 4. 恢复到独立验证库并验收
 5. 再做 MinIO / Nacos 配置备份与恢复验证
-6. 把结果写入执行报告
+6. 如涉及旧库 adoption，再补 baseline / validate / restore 记录
+7. 把结果写入执行报告

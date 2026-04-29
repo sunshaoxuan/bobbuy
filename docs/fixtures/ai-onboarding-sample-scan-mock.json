@@ -1,0 +1,53 @@
+{
+  "IMG_1484.jpg": {
+    "status": "success",
+    "data": {
+      "name": "Seafood Mix",
+      "brand": null,
+      "itemNumber": "53432",
+      "price": 2698,
+      "categoryId": "cat-1000",
+      "storageCondition": "AMBIENT",
+      "orderMethod": "DIRECT_BUY",
+      "attributes": {
+        "netContent": null,
+        "pricePerUnit": "498円/100g",
+        "packSize": null
+      },
+      "trace": {
+        "stage": "MOCK_SCAN",
+        "provider": "mock-llm",
+        "fallbackReason": null,
+        "events": [
+          {
+            "provider": "mock-ocr"
+          }
+        ]
+      }
+    }
+  },
+  "IMG_1638.jpg": {
+    "status": "success",
+    "data": {
+      "existingProductFound": true,
+      "categoryId": "cat-1000",
+      "storageCondition": "AMBIENT",
+      "orderMethod": "DIRECT_BUY",
+      "attributes": {
+        "netContent": null,
+        "pricePerUnit": null,
+        "packSize": null
+      },
+      "trace": {
+        "stage": "MOCK_SCAN",
+        "provider": "mock-llm",
+        "fallbackReason": null,
+        "events": [
+          {
+            "provider": "mock-ocr"
+          }
+        ]
+      }
+    }
+  }
+}

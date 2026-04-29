@@ -161,11 +161,58 @@ npm run e2e
 - GitHub Actions 手动 `playwright-e2e` job 会上传同名 artifact；试运行放行前必须至少人工通过一次。
 - `npm run e2e:ai` 仍需 `RUN_AI_VISION_E2E=1` 与真实 AI/OCR 专用环境，不属于默认 smoke。
 
+发版候选专用环境验收：
+
+1. 前置条件
+   - 后端 `/api/ai/onboard/scan` 可达
+   - 真实 OCR provider 可用
+   - 真实 LLM provider 可用
+   - seed 数据包含商品、类目、供应商规则
+   - `sample/` 样本图片目录可访问
+2. 执行顺序
+   ```bash
+   pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden
+
+   cd /home/runner/work/bobbuy/bobbuy/frontend
+   RUN_AI_VISION_E2E=1 npm run e2e:ai
+   ```
+3. 产物要求
+   - sample JSON report：`/tmp/ai-onboarding-sample-report.json`
+   - sample Markdown report：`/tmp/ai-onboarding-sample-report.md`
+   - Playwright `frontend/playwright-report/`
+   - Playwright `frontend/test-results/`
+4. 注意
+   - `docs/fixtures/ai-onboarding-sample-scan-mock.json` 只用于脚本 dry-run 自检，不得替代真实专用环境放行证据
+   - `needsHumanGolden=true` 的样例必须列出人工复核项，不得静默写成通过
+
 Flyway 验证点：
 
 - 仅 `core-service` 日志应出现 migration 执行。
 - `ai-service` / `im-service` / `auth-service` 不应并发执行 Flyway。
 - 如是旧库首次纳管，只有在确认 schema 与基线一致且已完成备份后，才允许临时设置 `BOBBUY_FLYWAY_BASELINE_ON_MIGRATE=true`。
+
+Flyway 旧库 adoption / 回滚演练：
+
+1. 先做逻辑备份：
+   ```bash
+   cd /home/runner/work/bobbuy/bobbuy
+   docker compose exec -T postgres pg_dump \
+     -U "${POSTGRES_USER:-bobbuy}" \
+     -d "${POSTGRES_DB:-bobbuy}" \
+     --clean --if-exists --no-owner --no-privileges \
+     > /tmp/bobbuy-backup/bobbuy-before-adoption.sql
+   ```
+2. 检查旧库是否已经存在 `flyway_schema_history`；若不存在，只能在确认 schema 与 `V1__baseline_schema.sql` 对齐后，执行一次性：
+   ```bash
+   cd /home/runner/work/bobbuy/bobbuy/backend
+   mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy \
+     -Dflyway.user=bobbuy \
+     -Dflyway.password=bobbuypassword \
+     -Dflyway.baselineOnMigrate=true \
+     flyway:migrate flyway:validate
+   ```
+3. 若验证失败或基线判断错误，按 `RUNBOOK-备份恢复演练.md` 恢复到独立验证库，确认无误后再决定是否回灌正式库。
+4. 没有真实旧库副本时，不得把 baseline-on-migrate 写成“已演练通过”；必须在发版记录中登记阻塞。
 
 ---
 
