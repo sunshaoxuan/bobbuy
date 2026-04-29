@@ -26,7 +26,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - 社交 OAuth 登录
 - 真实地图路径规划 / 实时配送追踪
 - 无人值守 AI 小票识别
-- refresh token / OAuth / WebSocket 鉴权（当前仍未实现）
+- refresh token / OAuth
 
 ## 技术栈
 - **Backend**: Spring Boot 3 / Spring Cloud / Nacos / OpenFeign / Resilience4j / Spring Security / Spring Data JPA
@@ -104,6 +104,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - Compose 服务固定 `SPRING_PROFILES_ACTIVE=prod`。
 - `BOBBUY_SECURITY_JWT_SECRET` 必须显式填写，模板不再提供可直接上线的默认值。
 - `BOBBUY_SECURITY_HEADER_AUTH_ENABLED` 默认 `false`，公网 / 共享部署不得开启。
+- WebSocket `/ws` 必须通过 STOMP `CONNECT` header `Authorization: Bearer <access-token>` 建立连接；未登录或 token 无效时前端退回既有 REST 刷新路径。
 - `BOBBUY_SEED_ENABLED` 默认 `false`；demo 账号仅限本地演示。
 - `core-service` 为唯一 Flyway migration 执行者，其余服务固定禁用 Flyway。
 - 服务器部署推荐 Ollama / 私有兼容 gateway；不要把个人 Codex CLI 当默认服务器方案。
@@ -140,7 +141,11 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - **本地演示账号**：仅在显式开启 `BOBBUY_SEED_ENABLED=true` 时提供 `agent / agent-pass`、`customer / customer-pass`。
 - **兼容策略**：`X-BOBBUY-ROLE` / `X-BOBBUY-USER` 仅在显式开启 `bobbuy.security.header-auth.enabled=true` 时可用，默认仅供 dev/test 过渡。
 - **生产要求**：公网部署必须配置 `BOBBUY_SECURITY_JWT_SECRET`，且不得开启 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=true`。
-- **当前安全边界**：暂未实现 refresh token、第三方 OAuth/SSO、WebSocket `/ws` 鉴权；旧库升级仍需按 Flyway 基线/备份流程执行。
+- **WebSocket 鉴权**：前端 STOMP 客户端通过 `Authorization: Bearer <access-token>` 连接 `/ws`，后端在 STOMP `CONNECT`/`SUBSCRIBE` 阶段校验 JWT，并限制 customer 仅能访问本人订单/行程聊天上下文。
+- **前端降级行为**：token 缺失时不建立 WebSocket；token 失效/连接被拒绝时停止重连，继续使用既有 REST 刷新/轮询路径，不清空本地未发送消息。
+- **服务间鉴权现状**：试运行阶段仍以 Docker 内网边界 + 共享 JWT 配置为前提，尚未引入独立 service token / mTLS；在服务间鉴权补齐前，不继续推进真实微服务深拆。
+- **refresh token 取舍**：本阶段继续暂缓；默认 access token TTL 由 `BOBBUY_SECURITY_JWT_TTL_SECONDS` 控制（默认 3600 秒），过期后需重新登录。
+- **当前安全边界**：暂未实现 refresh token、第三方 OAuth/SSO、独立服务间 service token / mTLS；旧库升级仍需按 Flyway 基线/备份流程执行。
 
 ## 验收门禁
 

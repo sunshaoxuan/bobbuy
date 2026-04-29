@@ -3,14 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useChatWebSocket } from './useChatWebSocket';
 
 const websocketMocks = vi.hoisted(() => {
-  const clients: Array<{
-    active: boolean;
-    config: Record<string, any>;
-    subscribe: ReturnType<typeof vi.fn>;
-    deactivate: ReturnType<typeof vi.fn>;
-    activate: ReturnType<typeof vi.fn>;
-    configure: ReturnType<typeof vi.fn>;
-  }> = [];
+  const clients: any[] = [];
 
   class MockClient {
     public active = false;

@@ -24,6 +24,7 @@
 - 共享 / 服务器部署必须显式设置 `SPRING_PROFILES_ACTIVE=prod`（Compose 已内置）。
 - `BOBBUY_SECURITY_JWT_SECRET` 必须在 `.env` 中显式填写。
 - `BOBBUY_SECURITY_HEADER_AUTH_ENABLED` 默认且必须保持为 `false`。
+- `BOBBUY_SECURITY_JWT_TTL_SECONDS` 控制 HTTP 与 WebSocket 共用的 access token 生命周期；本阶段未启用 refresh token。
 - Compose 仅允许 `core-service` 执行 Flyway migration，其余服务固定 `SPRING_FLYWAY_ENABLED=false`。
 
 ## 1.1 试运行服务边界
@@ -86,7 +87,14 @@
    - `POSTGRES_PASSWORD=bobbuypassword`
    - `MINIO_ROOT_PASSWORD=bobbuypassword`
    - `RABBITMQ_DEFAULT_PASS=bobbuypassword`
-   - `BOBBUY_BIND_HOST=127.0.0.1`
+    - `BOBBUY_BIND_HOST=127.0.0.1`
+5. WebSocket / 聊天鉴权约束：
+   - 前端只通过 STOMP `CONNECT` header `Authorization: Bearer <access-token>` 连接 `/ws`
+   - 不使用 query token，避免 access token 出现在 URL / 访问日志
+   - token 失效后前端会停止 WebSocket 重连并退回 REST 刷新；运维需按正常重新登录流程处理
+6. 服务间鉴权约束：
+   - 当前 `core-service` / `ai-service` / `im-service` / `auth-service` 仍依赖 Docker 内网边界与共享 JWT 配置
+   - 尚未提供独立 service token / mTLS；在补齐前不得继续真实微服务深拆或暴露服务壳直连公网
 
 ---
 
@@ -111,6 +119,13 @@ docker compose up -d --build
 ```bash
 docker compose ps
 docker compose logs -f core-service ai-service gateway-service
+```
+
+鉴权 smoke：
+
+```bash
+curl -i http://127.0.0.1:${GATEWAY_HOST_PORT:-80}/api/auth/me
+# 预期 401
 ```
 
 Flyway 验证点：
@@ -202,8 +217,9 @@ docker compose logs -f nacos
 重点排查项：
 
 1. **登录失败 / 401**
-    - 确认 `BOBBUY_SECURITY_JWT_SECRET` 非空
-    - 确认 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=false`
+     - 确认 `BOBBUY_SECURITY_JWT_SECRET` 非空
+     - 确认 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=false`
+     - 若只表现为聊天实时消息失效，补查 WebSocket token 是否过期并重新登录
 2. **服务起不来**
    - 先看 `docker compose ps`
    - 再看对应服务 readiness 日志
@@ -219,7 +235,11 @@ docker compose logs -f nacos
     - 检查 `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`
     - 检查 `BOBBUY_MINIO_BUCKET`
 6. **边界误判**
-   - 若发现文档、Runbook 或排障流程把 `ai-service` / `im-service` / `auth-service` 写成“独立微服务事实源”，应以 `ADR-01` 与当前 Runbook 为准进行修正
+    - 若发现文档、Runbook 或排障流程把 `ai-service` / `im-service` / `auth-service` 写成“独立微服务事实源”，应以 `ADR-01` 与当前 Runbook 为准进行修正
+7. **WebSocket 鉴权失败**
+    - 前端若能打开聊天但实时消息不更新，先确认 access token 未过期并重新登录
+    - 检查 `im-service` / `core-service` 日志中是否出现 websocket auth / chat forbidden
+    - 不要通过 query token 或重新开启 header auth 绕过问题
 
 人工处理流程：
 1. 商品 AI 上架失败时，前端会显示失败原因并允许人工补录后保存草稿；默认保持 `DRAFTER_ONLY`。
@@ -269,5 +289,7 @@ docker compose logs -f nacos
 - Secret Manager
 - 真实监控 / 告警平台
 - 自动化备份恢复演练
+- 独立服务间 service token / mTLS
+- refresh token 生命周期治理
 
 备份与恢复演练命令、恢复验收与记录模板见 [`RUNBOOK-备份恢复演练.md`](RUNBOOK-备份恢复演练.md)。
