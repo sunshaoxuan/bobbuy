@@ -353,6 +353,8 @@ const messages: Dictionary = {
     'stock.ai_quick_add.low_match_warning': '匹配度低于 70%，已禁止直接覆盖',
     'stock.ai_quick_add.low_match_hint': '请核对差异矩阵与视觉证据，仅允许另存为新产品。',
     'stock.ai_quick_add.save_as_new': '另存为新产品',
+    'stock.ai_quick_add.manual_review_needed': 'AI/OCR 未完成，请人工接管',
+    'stock.ai_quick_add.manual_review_hint': '你可以补录字段后保存为草稿，或重试识别。',
     'stock.ai_quick_add.visual_evidence': '视觉证据比对',
     'stock.ai_quick_add.history_image': '历史档案图',
     'stock.ai_quick_add.current_image': '当前识别图',

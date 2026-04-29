@@ -98,6 +98,10 @@ public class AiProductOnboardingServiceTest {
     assertNotNull(suggestion.matchScore());
     assertTrue(suggestion.recognitionSummary().contains("name=Matcha KitKat"));
     assertTrue(suggestion.sourceDomains().contains("www.costco.com"));
+    assertEquals("PUBLISHABLE", suggestion.trace().recognitionStatus());
+    assertEquals("paddleocr", suggestion.trace().events().stream().findFirst().map(event -> event.model()).orElse(""));
+    assertTrue(suggestion.trace().events().stream().anyMatch(event -> "OCR".equals(event.stage())));
+    assertTrue(suggestion.trace().events().stream().anyMatch(event -> "LLM_STRUCTURING".equals(event.stage())));
   }
 
   @Test

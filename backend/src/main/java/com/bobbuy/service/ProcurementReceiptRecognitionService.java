@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.time.LocalDateTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,6 +36,10 @@ public class ProcurementReceiptRecognitionService {
   private static final String AI_MODE = "AI";
   private static final String FALLBACK_MODE = "RULE_FALLBACK";
   private static final String REVIEW_STATUS_PENDING = "PENDING_REVIEW";
+  private static final String STATUS_RECOGNIZED = "RECOGNIZED";
+  private static final String STATUS_FAILED_RECOGNITION = "FAILED_RECOGNITION";
+  private static final String STATUS_PENDING_MANUAL_REVIEW = "PENDING_MANUAL_REVIEW";
+  private static final String STATUS_REVIEWED = "REVIEWED";
   private static final double DEFAULT_AI_CONFIDENCE = 0.86d;
   private static final double DEFAULT_FALLBACK_CONFIDENCE = 0.42d;
   // Keep name overlap as the primary signal while still letting price help disambiguate very similar receipt lines.
@@ -77,40 +82,71 @@ public class ProcurementReceiptRecognitionService {
   }
 
   public Map<String, Object> recognizeLocally(String base64Image, String fileName, List<OrderHeader> orders) {
-    Optional<AiReceiptExtraction> extracted = extractWithAi(base64Image, fileName);
-    if (extracted.isPresent()) {
-      return reconcile(extracted.get(), orders);
+    ReceiptRecognitionAttempt attempt = extractWithAi(base64Image, fileName);
+    if (attempt.extraction().isPresent()) {
+      return reconcile(attempt.extraction().get(), orders, attempt.trace());
     }
-    return buildFallback(orders);
+    return buildFallback(orders, attempt.trace());
   }
 
   private Map<String, Object> recognizeRemotely(String base64Image, String fileName, List<OrderHeader> orders) {
     AiReceiptRecognitionRequest request = new AiReceiptRecognitionRequest(base64Image, fileName, orders);
+    Map<String, Object> fallbackTrace = buildTrace(
+        remoteEnabled ? "remote-ai-service" : "unconfigured",
+        remoteEnabled ? "remote-ai-service" : "unconfigured",
+        "receipt-recognizer",
+        "REMOTE_OCR",
+        0L,
+        "REMOTE_UNAVAILABLE",
+        "Remote receipt recognition degraded to local fallback.",
+        "remote-service-fallback",
+        0,
+        1,
+        firstNonBlank(fileName, "inline-receipt"),
+        null,
+        STATUS_FAILED_RECOGNITION,
+        LocalDateTime.now(),
+        LocalDateTime.now());
     if (circuitBreakerFactory == null) {
       try {
         return extractRemoteResult(request, orders);
       } catch (Exception ex) {
         log.warn("Remote AI receipt recognition failed without circuit breaker: {}", ex.getMessage());
-        return buildFallback(orders);
+        return buildFallback(orders, fallbackTrace);
       }
     }
     return circuitBreakerFactory.create("aiService").run(
         () -> extractRemoteResult(request, orders),
         throwable -> {
           log.warn("Remote AI receipt recognition degraded to fallback: {}", throwable.getMessage());
-          return buildFallback(orders);
+          return buildFallback(orders, fallbackTrace);
         });
   }
 
   private Map<String, Object> extractRemoteResult(AiReceiptRecognitionRequest request, List<OrderHeader> orders) {
     ApiResponse<Map<String, Object>> response = aiReceiptRecognitionClient.recognizeReceipt(request);
     if (response == null || response.getData() == null || response.getData().isEmpty()) {
-      return buildFallback(orders);
+      return buildFallback(orders, buildTrace(
+          "remote-ai-service",
+          "remote-ai-service",
+          "receipt-recognizer",
+          "REMOTE_OCR",
+          0L,
+          "EMPTY_REMOTE_RESPONSE",
+          "Remote receipt recognition returned an empty payload.",
+          "remote-empty-response",
+          0,
+          1,
+          firstNonBlank(request.fileName(), "inline-receipt"),
+          null,
+          STATUS_FAILED_RECOGNITION,
+          LocalDateTime.now(),
+          LocalDateTime.now()));
     }
     return response.getData();
   }
 
-  private Optional<AiReceiptExtraction> extractWithAi(String base64Image, String fileName) {
+  private ReceiptRecognitionAttempt extractWithAi(String base64Image, String fileName) {
     String prompt = """
         你是采购小票识别助手。请识别这张采购小票图片，并严格输出 JSON 对象，不要输出解释。
         JSON schema:
@@ -136,10 +172,19 @@ public class ProcurementReceiptRecognitionService {
         4. summary 用中文概括识别置信度和主要不确定点。
         附加文件名：%s
         """.formatted(fileName == null ? "unknown" : fileName);
+    String inputRef = firstNonBlank(fileName, "inline-receipt");
+    LocalDateTime startedAt = LocalDateTime.now();
+    long startedNs = System.nanoTime();
+    String provider = llmGateway.getEdgeProvider();
+    String model = llmGateway.getEdgeModel();
     try {
       Optional<String> response = llmGateway.generate(prompt, "llava", List.of(base64Image));
       if (response.isEmpty() || response.get().isBlank()) {
-        return Optional.empty();
+        return new ReceiptRecognitionAttempt(
+            Optional.empty(),
+            buildTrace(provider, provider, model, "LLM_STRUCTURING", elapsedMs(startedNs), "UNCONFIGURED",
+                "Receipt AI returned empty response.", "unconfigured-or-empty-response", 0, 1, inputRef, null,
+                STATUS_FAILED_RECOGNITION, startedAt, LocalDateTime.now()));
       }
       String jsonPayload = extractJsonPayload(response.get());
       Map<String, Object> raw = objectMapper.readValue(jsonPayload, new TypeReference<>() {});
@@ -152,22 +197,32 @@ public class ProcurementReceiptRecognitionService {
         }
       }
       if (items.isEmpty()) {
-        return Optional.empty();
+        return new ReceiptRecognitionAttempt(
+            Optional.empty(),
+            buildTrace(provider, provider, model, "LLM_STRUCTURING", elapsedMs(startedNs), "EMPTY_RESULT",
+                "Receipt AI did not return any usable line items.", "empty-result-fallback", 0, 1, inputRef, null,
+                STATUS_FAILED_RECOGNITION, startedAt, LocalDateTime.now()));
       }
-      return Optional.of(new AiReceiptExtraction(
+      return new ReceiptRecognitionAttempt(Optional.of(new AiReceiptExtraction(
           stringValue(raw.get("merchantName")),
           stringValue(raw.get("receiptDate")),
           stringValue(raw.get("currency")),
           firstNonBlank(stringValue(raw.get("summary")), "AI extracted receipt items."),
           items,
-          response.get()));
+          response.get())),
+          buildTrace(provider, provider, model, "LLM_STRUCTURING", elapsedMs(startedNs), null,
+              null, null, 0, 1, inputRef, null, STATUS_RECOGNIZED, startedAt, LocalDateTime.now()));
     } catch (Exception ex) {
       log.warn("Receipt AI extraction failed for fileName={}: {}", fileName, ex.getMessage());
-      return Optional.empty();
+      return new ReceiptRecognitionAttempt(
+          Optional.empty(),
+          buildTrace(provider, provider, model, "LLM_STRUCTURING", elapsedMs(startedNs), "AI_RECOGNITION_FAILED",
+              truncateTraceMessage(ex.getMessage()), "exception-fallback", 0, 1, inputRef, null,
+              STATUS_FAILED_RECOGNITION, startedAt, LocalDateTime.now()));
     }
   }
 
-  private Map<String, Object> reconcile(AiReceiptExtraction extraction, List<OrderHeader> orders) {
+  private Map<String, Object> reconcile(AiReceiptExtraction extraction, List<OrderHeader> orders, Map<String, Object> trace) {
     List<ReceiptLineCandidate> candidates = flattenOrders(orders);
     Map<String, Integer> matchedByKey = new HashMap<>();
     List<Map<String, Object>> matchedOrderLines = new ArrayList<>();
@@ -257,15 +312,18 @@ public class ProcurementReceiptRecognitionService {
       result.put("matchedOrderLines", matchedOrderLines);
       result.put("unmatchedReceiptItems", unmatchedReceiptItems);
       result.put("missingOrderedItems", missingOrderedItems);
-      result.put("selfUseItems", new ArrayList<>());
-      result.put("confidence", DEFAULT_AI_CONFIDENCE);
-      result.put("reviewStatus", REVIEW_STATUS_PENDING);
-      result.put("reviewedBy", null);
-      result.put("reviewedAt", null);
+    result.put("selfUseItems", new ArrayList<>());
+    result.put("confidence", DEFAULT_AI_CONFIDENCE);
+    result.put("reviewStatus", REVIEW_STATUS_PENDING);
+    result.put("recognitionStatus", STATUS_RECOGNIZED);
+    result.put("reviewedBy", null);
+    result.put("reviewedAt", null);
+    result.put("trace", trace);
+    result.put("traceHistory", new ArrayList<>());
     return result;
   }
 
-  private Map<String, Object> buildFallback(List<OrderHeader> orders) {
+  private Map<String, Object> buildFallback(List<OrderHeader> orders, Map<String, Object> trace) {
     List<Map<String, Object>> receiptItems = new ArrayList<>();
     List<Map<String, Object>> matchedOrderLines = new ArrayList<>();
     List<Map<String, Object>> missingOrderedItems = new ArrayList<>();
@@ -308,8 +366,11 @@ public class ProcurementReceiptRecognitionService {
     result.put("selfUseItems", new ArrayList<>());
     result.put("confidence", DEFAULT_FALLBACK_CONFIDENCE);
     result.put("reviewStatus", REVIEW_STATUS_PENDING);
+    result.put("recognitionStatus", STATUS_PENDING_MANUAL_REVIEW);
     result.put("reviewedBy", "");
     result.put("reviewedAt", "");
+    result.put("trace", trace);
+    result.put("traceHistory", new ArrayList<>());
     return result;
   }
 
@@ -444,6 +505,52 @@ public class ProcurementReceiptRecognitionService {
     return Math.round(value * 100d) / 100d;
   }
 
+  private long elapsedMs(long startedNs) {
+    return Math.max(0L, (System.nanoTime() - startedNs) / 1_000_000L);
+  }
+
+  private Map<String, Object> buildTrace(String provider,
+                                         String activeProvider,
+                                         String model,
+                                         String stage,
+                                         long latencyMs,
+                                         String errorCode,
+                                         String errorMessage,
+                                         String fallbackReason,
+                                         int retryCount,
+                                         int attemptNo,
+                                         String inputRef,
+                                         String outputRef,
+                                         String status,
+                                         LocalDateTime createdAt,
+                                         LocalDateTime updatedAt) {
+    Map<String, Object> trace = new LinkedHashMap<>();
+    trace.put("provider", firstNonBlank(provider, "unconfigured"));
+    trace.put("activeProvider", firstNonBlank(activeProvider, "unconfigured"));
+    trace.put("model", firstNonBlank(model, ""));
+    trace.put("stage", firstNonBlank(stage, ""));
+    trace.put("latencyMs", latencyMs);
+    trace.put("errorCode", errorCode);
+    trace.put("errorMessage", truncateTraceMessage(errorMessage));
+    trace.put("fallbackReason", fallbackReason);
+    trace.put("retryCount", retryCount);
+    trace.put("attemptNo", attemptNo);
+    trace.put("inputRef", firstNonBlank(inputRef, ""));
+    trace.put("outputRef", outputRef);
+    trace.put("status", firstNonBlank(status, STATUS_PENDING_MANUAL_REVIEW));
+    trace.put("createdAt", createdAt);
+    trace.put("updatedAt", updatedAt);
+    return trace;
+  }
+
+  private String truncateTraceMessage(String errorMessage) {
+    if (errorMessage == null || errorMessage.isBlank()) {
+      return null;
+    }
+    String sanitized = errorMessage.replaceAll("\\s+", " ").trim();
+    return sanitized.length() > 180 ? sanitized.substring(0, 180) : sanitized;
+  }
+
   private record ReceiptLineCandidate(String businessId,
                                       String skuId,
                                       String itemName,
@@ -461,5 +568,9 @@ public class ProcurementReceiptRecognitionService {
                                      String summary,
                                      List<Map<String, Object>> receiptItems,
                                      String rawAiResponse) {
+  }
+
+  private record ReceiptRecognitionAttempt(Optional<AiReceiptExtraction> extraction,
+                                           Map<String, Object> trace) {
   }
 }

@@ -106,4 +106,31 @@ describe('AiQuickAddModal', () => {
       )
     );
   });
+
+  it('falls back to manual entry when scan fails', async () => {
+    onboardScanMock.mockRejectedValueOnce(new Error('error.ai.ocr_failed'));
+    const onSuccess = vi.fn();
+    renderModal(onSuccess);
+    const input = document.querySelector('.ant-upload-wrapper input[type="file"], input[type="file"]') as HTMLInputElement | null;
+    expect(input).not.toBeNull();
+    fireEvent.change(input!, { target: { files: [new File(['x'], 'broken.png', { type: 'image/png' })] } });
+
+    expect(await screen.findByTestId('ai-manual-entry-alert', {}, { timeout: 4000 })).toBeInTheDocument();
+    fireEvent.change(await screen.findByPlaceholderText(/例如：富士苹果|product name/i), { target: { value: 'Manual Product' } });
+    fireEvent.click(screen.getByRole('button', { name: /另存为新产品|Save as New Product/i }));
+
+    await waitFor(() =>
+      expect(onSuccess).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Manual Product',
+          visibilityStatus: 'DRAFTER_ONLY',
+          existingProductFound: false,
+          trace: expect.objectContaining({
+            recognitionStatus: 'FAILED_RECOGNITION',
+            manualReviewRequired: true
+          })
+        })
+      )
+    );
+  });
 });

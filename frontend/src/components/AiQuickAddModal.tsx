@@ -21,9 +21,11 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
   const [fileList, setFileList] = useState<any[]>([]);
 
   const [suggestion, setSuggestion] = useState<AiOnboardingSuggestion | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [form] = Form.useForm();
   const lowConfidence = (suggestion?.matchScore ?? 100) < 70;
   const historicalImage = suggestion?.verificationTarget?.mediaGallery?.find((item) => item.type === 'IMAGE' || item.type === 'image')?.url;
+  const manualEntryMode = Boolean(scanError);
 
   React.useEffect(() => {
     if (visible) {
@@ -31,6 +33,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
       setLoading(false);
       setFileList([]);
       setSuggestion(null);
+      setScanError(null);
       form.resetFields();
     }
   }, [visible, form]);
@@ -43,6 +46,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
     reader.onload = async () => {
       try {
         const base64 = reader.result as string;
+        setScanError(null);
         // Inject the original photo into the suggestion
         const result = await api.onboardScan(base64, file.name);
         setSuggestion({ ...result, originalPhotoBase64: base64 });
@@ -63,8 +67,38 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
       } catch (error) {
         logError(error);
         setLoading(false);
-        setCurrentStep(0);
-        message.error(t('stock.ai_quick_add.failed'));
+        const errorMessage = error instanceof Error ? error.message : t('stock.ai_quick_add.failed');
+        setScanError(errorMessage);
+        setSuggestion({
+          name: '',
+          brand: '',
+          price: undefined,
+          itemNumber: '',
+          categoryId: '',
+          existingProductFound: false,
+          existingProductId: undefined,
+          visibilityStatus: 'DRAFTER_ONLY',
+          originalPhotoBase64: base64,
+          inputSampleId: file.name,
+          recognitionSummary: errorMessage,
+          trace: {
+            inputSampleId: file.name,
+            inputRef: file.name,
+            stage: 'MANUAL_REVIEW',
+            recognitionStatus: 'FAILED_RECOGNITION',
+            manualReviewRequired: true,
+            errorCode: 'FAILED_RECOGNITION',
+            errorMessage
+          }
+        });
+        form.setFieldsValue({
+          name: '',
+          brand: '',
+          itemNumber: '',
+          price: undefined
+        });
+        setCurrentStep(4);
+        message.warning(errorMessage);
       }
     };
     reader.onerror = () => {
@@ -99,6 +133,7 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
           ...values,
           existingProductFound: false,
           existingProductId: undefined,
+          visibilityStatus: 'DRAFTER_ONLY',
         });
       }
     });
@@ -118,8 +153,8 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
       title={t('stock.ai_quick_add.title')}
       open={visible}
       onCancel={onCancel}
-      footer={currentStep === 4 ? [
-        suggestion?.verificationTarget ? (
+        footer={currentStep === 4 ? [
+        suggestion?.verificationTarget || manualEntryMode ? (
           <Button key="save-as-new" onClick={handleSaveAsNew}>
             {t('stock.ai_quick_add.save_as_new')}
           </Button>
@@ -201,6 +236,26 @@ const AiQuickAddModal: React.FC<AiQuickAddModalProps> = ({ visible, onCancel, on
                 style={{ marginBottom: 16 }}
               />
             )}
+            {manualEntryMode ? (
+              <Alert
+                data-testid="ai-manual-entry-alert"
+                message={t('stock.ai_quick_add.manual_review_needed')}
+                description={`${scanError} · ${t('stock.ai_quick_add.manual_review_hint')}`}
+                type="warning"
+                showIcon
+                style={{ marginBottom: 16 }}
+                action={
+                  <Button size="small" onClick={() => {
+                    setCurrentStep(0);
+                    setSuggestion(null);
+                    setScanError(null);
+                    form.resetFields();
+                  }}>
+                    {t('chat.retry')}
+                  </Button>
+                }
+              />
+            ) : null}
             {suggestion?.existingProductFound && (
               <Alert
                 data-testid="ai-existing-product-alert"

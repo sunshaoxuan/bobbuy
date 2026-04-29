@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.net.URI;
+import java.time.LocalDateTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,6 +53,8 @@ public class AiProductOnboardingService {
     private static final int MAX_MATCHED_AUDIT_FRAGMENTS = 4;
     private static final String SOURCE_POLICY_VERSION = "V23";
     private static final double SEMANTIC_OVERWRITE_THRESHOLD = 70d;
+    private static final String STATUS_PUBLISHABLE = "PUBLISHABLE";
+    private static final String STATUS_PENDING_MANUAL_REVIEW = "PENDING_MANUAL_REVIEW";
     private static final Pattern NET_CONTENT_PATTERN = Pattern.compile("(\\d+(?:\\.\\d+)?)\\s?(kg|g|mg|lb|oz|l|ml)", Pattern.CASE_INSENSITIVE);
     private static final Pattern PACK_PATTERN = Pattern.compile("(\\d+)\\s?(pack|pcs|piece|pieces|bottle|bottles|袋|包|盒|箱)", Pattern.CASE_INSENSITIVE);
     private static final Set<String> DENIED_SOURCE_KEYWORDS = Set.of(
@@ -116,13 +119,35 @@ public class AiProductOnboardingService {
             throw new AiOnboardingPipelineException("VALIDATION", "error.ai.invalid_image", "Empty image data provided");
         }
         String normalizedBase64Image = normalizeBase64Image(base64Image);
+        List<com.bobbuy.api.AiTraceEvent> traceEvents = new ArrayList<>();
+        String inputRef = firstNonBlank(inputSampleId, "inline-image");
         if (normalizedBase64Image.isBlank()) {
             log.warn("Onboarding failed [VALIDATION]: image data is blank after normalization.");
             throw new AiOnboardingPipelineException("VALIDATION", "error.ai.invalid_image", "Image data is blank after normalization");
         }
         // 1. OCR Extract (Local Python Service)
         log.info("Phase 1: Dispatching to PaddleOCR service...");
+        LocalDateTime ocrStartedAt = LocalDateTime.now();
+        long ocrStartedNs = System.nanoTime();
         List<String> ocrLines = llmGateway.performOcr(normalizedBase64Image);
+        long ocrLatencyMs = elapsedMs(ocrStartedNs);
+        traceEvents.add(traceEvent(
+            llmGateway.getOcrProvider(),
+            llmGateway.getOcrProvider(),
+            "paddleocr",
+            "OCR",
+            ocrLatencyMs,
+            ocrLines.isEmpty() ? "OCR_FAILURE" : null,
+            ocrLines.isEmpty() ? "OCR service returned no text." : null,
+            null,
+            0,
+            1,
+            inputRef,
+            null,
+            ocrLines.isEmpty() ? "FAILED_RECOGNITION" : "RECOGNIZED",
+            ocrStartedAt,
+            LocalDateTime.now()
+        ));
 
         if (ocrLines.isEmpty()) {
             log.error("Onboarding failed [OCR_FAILURE]: OCR service returned no text.");
@@ -206,7 +231,27 @@ public class AiProductOnboardingService {
             }
             """, rawOcrText, merchantRules, historicalContext);
 
+        LocalDateTime structuringStartedAt = LocalDateTime.now();
+        long structuringStartedNs = System.nanoTime();
         Optional<String> llmResponse = llmGateway.generate(prompt, null, null);
+        long structuringLatencyMs = elapsedMs(structuringStartedNs);
+        traceEvents.add(traceEvent(
+            llmGateway.getActiveMainProvider(),
+            llmGateway.getActiveMainProvider(),
+            llmGateway.getMainModel(),
+            "LLM_STRUCTURING",
+            structuringLatencyMs,
+            llmResponse.isEmpty() ? "AI_RECOGNITION" : null,
+            llmResponse.isEmpty() ? "LLM returned empty response." : null,
+            null,
+            0,
+            1,
+            inputRef,
+            null,
+            llmResponse.isEmpty() ? "FAILED_RECOGNITION" : "RECOGNIZED",
+            structuringStartedAt,
+            LocalDateTime.now()
+        ));
         if (llmResponse.isEmpty()) {
             log.error("Onboarding failed [AI_RECOGNITION]: LLM returned empty response.");
             throw new AiOnboardingPipelineException("AI_RECOGNITION", "error.ai.recognition_failed", "LLM failed to map entities");
@@ -315,6 +360,7 @@ public class AiProductOnboardingService {
             String searchQuery = brand != null ? brand + " " + name : name;
             log.info("Phase 3: Deep Researching for query: '{}'...", searchQuery);
             List<WebSearchService.SearchResult> searchResults;
+            LocalDateTime governanceStartedAt = LocalDateTime.now();
             try {
                 searchResults = webSearchService.search(searchQuery);
             } catch (Exception ex) {
@@ -359,12 +405,65 @@ public class AiProductOnboardingService {
                 }
             }
             if (gallery.isEmpty()) {
+                traceEvents.add(traceEvent(
+                    "source-governance",
+                    "source-governance",
+                    SOURCE_POLICY_VERSION,
+                    "SOURCE_GOVERNANCE",
+                    0L,
+                    "FAILED_SOURCE_GOVERNANCE",
+                    "No usable images after source filtering.",
+                    rejectedSourceDomains.isEmpty() ? "source-filter-empty" : String.join(",", rejectedSourceDomains),
+                    0,
+                    1,
+                    inputRef,
+                    null,
+                    "FAILED_SOURCE_GOVERNANCE",
+                    governanceStartedAt,
+                    LocalDateTime.now()
+                ));
                 log.error("Onboarding failed [SOURCE_FILTER]: no usable gallery images after policy filtering. rejectedDomains={}", rejectedSourceDomains);
                 throw new AiOnboardingPipelineException("SOURCE_FILTER", "error.ai.source_filter_empty", "No usable images after source filtering");
             }
+            traceEvents.add(traceEvent(
+                "source-governance",
+                "source-governance",
+                SOURCE_POLICY_VERSION,
+                "SOURCE_GOVERNANCE",
+                0L,
+                null,
+                null,
+                rejectedSourceDomains.isEmpty() ? null : "filtered-untrusted-sources",
+                0,
+                1,
+                inputRef,
+                null,
+                "RECOGNIZED",
+                governanceStartedAt,
+                LocalDateTime.now()
+            ));
 
             // 4. Knowledge Synthesis (Cloud Core - Qwen)
+            LocalDateTime synthesisStartedAt = LocalDateTime.now();
+            long synthesisStartedNs = System.nanoTime();
             String finalDescription = synthesize(name, brand, basePrice, rawResponse, researchSnippet);
+            traceEvents.add(traceEvent(
+                llmGateway.getActiveMainProvider(),
+                llmGateway.getActiveMainProvider(),
+                llmGateway.getMainModel(),
+                "SEMANTIC_SYNTHESIS",
+                elapsedMs(synthesisStartedNs),
+                finalDescription == null || finalDescription.isBlank() ? "FALLBACK_EMPTY_SYNTHESIS" : null,
+                finalDescription == null || finalDescription.isBlank() ? "Synthesis fell back to search snippet." : null,
+                finalDescription == null || finalDescription.isBlank() ? "empty-synthesis-fallback" : null,
+                0,
+                1,
+                inputRef,
+                null,
+                "RECOGNIZED",
+                synthesisStartedAt,
+                LocalDateTime.now()
+            ));
 
             // Final ItemNumber Mapping Recovery (from synthesis)
             if (itemNumber == null || itemNumber.isBlank()) {
@@ -376,6 +475,8 @@ public class AiProductOnboardingService {
                 }
             }
 
+            LocalDateTime verificationStartedAt = LocalDateTime.now();
+            long verificationStartedNs = System.nanoTime();
             VerificationAssessment verificationAssessment = verifyAgainstExistingProduct(
                 verificationProduct,
                 name,
@@ -390,6 +491,25 @@ public class AiProductOnboardingService {
                 existingFound = true;
                 existingId = verificationProduct.getId();
             }
+            boolean manualReviewRequired = verificationProduct != null && verificationAssessment.matchScore() < SEMANTIC_OVERWRITE_THRESHOLD;
+            String recognitionStatus = manualReviewRequired ? STATUS_PENDING_MANUAL_REVIEW : STATUS_PUBLISHABLE;
+            traceEvents.add(traceEvent(
+                llmGateway.getActiveMainProvider(),
+                llmGateway.getActiveMainProvider(),
+                llmGateway.getMainModel(),
+                "SEMANTIC_COMPARE",
+                elapsedMs(verificationStartedNs),
+                null,
+                null,
+                manualReviewRequired ? "low-match-score" : null,
+                0,
+                1,
+                inputRef,
+                existingId,
+                recognitionStatus,
+                verificationStartedAt,
+                LocalDateTime.now()
+            ));
             List<AiFieldDiff> fieldDiffs = createFieldDiffs(
                 verificationProduct,
                 name,
@@ -417,12 +537,30 @@ public class AiProductOnboardingService {
             }
 
             String resultDecision = existingFound ? "EXISTING_PRODUCT" : "NEW_PRODUCT";
+            com.bobbuy.api.AiTraceEvent lastEvent = traceEvents.get(traceEvents.size() - 1);
             AiOnboardingTrace trace = new AiOnboardingTrace(
                 firstNonBlank(inputSampleId, ""),
                 recognitionSummary,
                 List.copyOf(collectedSourceDomains),
                 resultDecision,
-                null
+                null,
+                lastEvent.provider(),
+                lastEvent.activeProvider(),
+                lastEvent.model(),
+                lastEvent.stage(),
+                lastEvent.latencyMs(),
+                lastEvent.errorCode(),
+                lastEvent.errorMessage(),
+                lastEvent.fallbackReason(),
+                lastEvent.retryCount(),
+                lastEvent.attemptNo(),
+                lastEvent.inputRef(),
+                lastEvent.outputRef(),
+                recognitionStatus,
+                manualReviewRequired,
+                traceEvents.get(0).createdAt(),
+                LocalDateTime.now(),
+                List.copyOf(traceEvents)
             );
 
             return Optional.of(new AiOnboardingSuggestion(
@@ -472,6 +610,52 @@ public class AiProductOnboardingService {
             return trimmed.substring(markerIndex + "base64,".length()).trim();
         }
         return trimmed;
+    }
+
+    private long elapsedMs(long startedNs) {
+        return Math.max(0L, (System.nanoTime() - startedNs) / 1_000_000L);
+    }
+
+    private com.bobbuy.api.AiTraceEvent traceEvent(String provider,
+                                                   String activeProvider,
+                                                   String model,
+                                                   String stage,
+                                                   Long latencyMs,
+                                                   String errorCode,
+                                                   String errorMessage,
+                                                   String fallbackReason,
+                                                   Integer retryCount,
+                                                   Integer attemptNo,
+                                                   String inputRef,
+                                                   String outputRef,
+                                                   String status,
+                                                   LocalDateTime createdAt,
+                                                   LocalDateTime updatedAt) {
+        return new com.bobbuy.api.AiTraceEvent(
+            firstNonBlank(provider, "unconfigured"),
+            firstNonBlank(activeProvider, "unconfigured"),
+            firstNonBlank(model, ""),
+            firstNonBlank(stage, ""),
+            latencyMs,
+            errorCode,
+            truncateTraceMessage(errorMessage),
+            fallbackReason,
+            retryCount,
+            attemptNo,
+            firstNonBlank(inputRef, ""),
+            outputRef,
+            firstNonBlank(status, STATUS_PENDING_MANUAL_REVIEW),
+            createdAt,
+            updatedAt
+        );
+    }
+
+    private String truncateTraceMessage(String errorMessage) {
+        if (errorMessage == null || errorMessage.isBlank()) {
+            return null;
+        }
+        String sanitized = errorMessage.replaceAll("\\s+", " ").trim();
+        return sanitized.length() > 180 ? sanitized.substring(0, 180) : sanitized;
     }
 
     /**

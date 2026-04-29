@@ -53,10 +53,12 @@ class ProcurementReceiptRecognitionServiceTest {
     Map<String, Object> result = service.recognize("base64", "receipt.jpg", List.of(order));
 
     assertThat(result.get("recognitionMode")).isEqualTo("AI");
+    assertThat(result.get("recognitionStatus")).isEqualTo("RECOGNIZED");
     assertThat((String) result.get("merchantName")).isEqualTo("Tokyo Mart");
     assertThat((List<?>) result.get("receiptItems")).hasSize(2);
     assertThat((List<?>) result.get("matchedOrderLines")).hasSize(1);
     assertThat((List<?>) result.get("unmatchedReceiptItems")).hasSize(1);
+    assertThat((Map<String, Object>) result.get("trace")).containsEntry("stage", "LLM_STRUCTURING");
   }
 
   @Test
@@ -72,7 +74,21 @@ class ProcurementReceiptRecognitionServiceTest {
     Map<String, Object> result = service.recognize("base64", "receipt.jpg", List.of(order));
 
     assertThat(result.get("recognitionMode")).isEqualTo("RULE_FALLBACK");
+    assertThat(result.get("recognitionStatus")).isEqualTo("PENDING_MANUAL_REVIEW");
     assertThat((List<?>) result.get("receiptItems")).hasSize(1);
     assertThat((List<?>) result.get("missingOrderedItems")).hasSize(1);
+    assertThat((Map<String, Object>) result.get("trace")).containsEntry("status", "FAILED_RECOGNITION");
+  }
+
+  @Test
+  void recognizeCapturesFailureReasonWhenAiThrows() {
+    when(llmGateway.generate(anyString(), eq("llava"), anyList()))
+        .thenThrow(new IllegalStateException("provider timeout"));
+
+    Map<String, Object> result = service.recognize("base64", "receipt.jpg", List.of());
+
+    assertThat(result.get("recognitionMode")).isEqualTo("RULE_FALLBACK");
+    assertThat((Map<String, Object>) result.get("trace")).containsEntry("errorCode", "AI_RECOGNITION_FAILED");
+    assertThat(((Map<?, ?>) result.get("trace")).get("fallbackReason")).isEqualTo("exception-fallback");
   }
 }

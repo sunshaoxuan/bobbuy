@@ -747,7 +747,10 @@ public class ProcurementHudService {
           now,
           now,
           payload.getImageBase64(),
-          procurementReceiptRecognitionService.recognize(payload.getImageBase64(), payload.getFileName(), orders));
+          attachReceiptTraceMetadata(
+              procurementReceiptRecognitionService.recognize(payload.getImageBase64(), payload.getFileName(), orders),
+              null,
+              savedReceiptInputRef(payload.getFileName())));
       receipt.setRawRecognitionResult(copyMap(receipt.getReconciliationResult()));
       ProcurementReceipt saved = procurementReceiptRepository.save(receipt);
       financialAuditTrailService.logProcurementReceiptUpload(
@@ -779,8 +782,11 @@ public class ProcurementHudService {
     LocalDateTime reviewedAt = LocalDateTime.now();
     manualResult.putIfAbsent("confidence", rawRecognition.get("confidence"));
     manualResult.put("reviewStatus", "REVIEWED");
+    manualResult.put("recognitionStatus", "REVIEWED");
     manualResult.put("reviewedBy", operatorName);
     manualResult.put("reviewedAt", reviewedAt);
+    manualResult.put("traceHistory", appendTraceHistory(rawRecognition, receipt.getId() == null ? null : "receipt:" + receipt.getId()));
+    manualResult.put("trace", buildManualReviewTrace(rawRecognition, operatorName, reviewedAt, receipt.getId()));
     Map<String, Object> original = new LinkedHashMap<>();
     original.put("processingStatus", receipt.getProcessingStatus());
     original.put("reconciliationResult", receipt.getReconciliationResult());
@@ -820,10 +826,13 @@ public class ProcurementHudService {
     }
     List<OrderHeader> orders = orderHeaderRepository.findByTripIdOrderByCreatedAtAscIdAsc(tripId);
     Map<String, Object> previousResult = copyMap(receipt.getReconciliationResult());
-    Map<String, Object> recognitionResult = procurementReceiptRecognitionService.recognize(
-        receipt.getSourceImageBase64(),
-        receipt.getFileName(),
-        orders);
+    Map<String, Object> recognitionResult = attachReceiptTraceMetadata(
+        procurementReceiptRecognitionService.recognize(
+            receipt.getSourceImageBase64(),
+            receipt.getFileName(),
+            orders),
+        previousResult,
+        receipt.getId() == null ? savedReceiptInputRef(receipt.getFileName()) : "receipt:" + receipt.getId());
     receipt.setRawRecognitionResult(copyMap(recognitionResult));
     receipt.setManualReconciliationResult(new LinkedHashMap<>());
     receipt.setReconciliationResult(recognitionResult);
@@ -1179,6 +1188,107 @@ public class ProcurementHudService {
 
   private Map<String, Object> copyMap(Map<String, Object> source) {
     return source == null ? new LinkedHashMap<>() : new LinkedHashMap<>(source);
+  }
+
+  private Map<String, Object> attachReceiptTraceMetadata(Map<String, Object> result,
+                                                         Map<String, Object> previousResult,
+                                                         String inputRef) {
+    Map<String, Object> normalized = copyMap(result);
+    Map<String, Object> trace = asMap(normalized.get("trace"));
+    int previousAttempt = extractAttemptNo(previousResult);
+    int nextAttempt = Math.max(1, previousAttempt + 1);
+    trace.put("attemptNo", nextAttempt);
+    trace.put("retryCount", Math.max(0, nextAttempt - 1));
+    trace.putIfAbsent("inputRef", firstNonBlank(inputRef, "inline-receipt"));
+    trace.put("updatedAt", LocalDateTime.now());
+    normalized.put("trace", trace);
+    normalized.put("traceHistory", previousResult == null ? new ArrayList<>() : appendTraceHistory(previousResult, null));
+    return normalized;
+  }
+
+  private List<Map<String, Object>> appendTraceHistory(Map<String, Object> result, String outputRef) {
+    List<Map<String, Object>> history = new ArrayList<>(asListOfMaps(result == null ? null : result.get("traceHistory")));
+    Map<String, Object> trace = asMap(result == null ? null : result.get("trace"));
+    if (!trace.isEmpty()) {
+      Map<String, Object> snapshot = new LinkedHashMap<>(trace);
+      if (outputRef != null && !outputRef.isBlank()) {
+        snapshot.put("outputRef", outputRef);
+      }
+      history.add(snapshot);
+    }
+    return history;
+  }
+
+  private Map<String, Object> buildManualReviewTrace(Map<String, Object> rawRecognition,
+                                                     String operatorName,
+                                                     LocalDateTime reviewedAt,
+                                                     Long receiptId) {
+    Map<String, Object> previousTrace = asMap(rawRecognition.get("trace"));
+    Map<String, Object> trace = new LinkedHashMap<>();
+    trace.put("provider", "manual-review");
+    trace.put("activeProvider", "manual-review");
+    trace.put("model", operatorName);
+    trace.put("stage", "MANUAL_REVIEW");
+    trace.put("latencyMs", 0);
+    trace.put("errorCode", null);
+    trace.put("errorMessage", null);
+    trace.put("fallbackReason", previousTrace.get("fallbackReason"));
+    trace.put("retryCount", previousTrace.getOrDefault("retryCount", 0));
+    trace.put("attemptNo", previousTrace.getOrDefault("attemptNo", 1));
+    trace.put("inputRef", previousTrace.getOrDefault("inputRef", receiptId == null ? "inline-receipt" : "receipt:" + receiptId));
+    trace.put("outputRef", receiptId == null ? null : "receipt:" + receiptId);
+    trace.put("status", "REVIEWED");
+    trace.put("createdAt", previousTrace.getOrDefault("createdAt", reviewedAt));
+    trace.put("updatedAt", reviewedAt);
+    return trace;
+  }
+
+  private int extractAttemptNo(Map<String, Object> result) {
+    Map<String, Object> trace = asMap(result == null ? null : result.get("trace"));
+    Object attemptNo = trace.get("attemptNo");
+    if (attemptNo instanceof Number number) {
+      return Math.max(0, number.intValue());
+    }
+    try {
+      return Math.max(0, Integer.parseInt(String.valueOf(attemptNo)));
+    } catch (Exception ex) {
+      return 0;
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> asMap(Object value) {
+    if (value instanceof Map<?, ?> map) {
+      return new LinkedHashMap<>((Map<String, Object>) map);
+    }
+    return new LinkedHashMap<>();
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Map<String, Object>> asListOfMaps(Object value) {
+    if (value instanceof List<?> list) {
+      List<Map<String, Object>> result = new ArrayList<>();
+      for (Object item : list) {
+        if (item instanceof Map<?, ?> map) {
+          result.add(new LinkedHashMap<>((Map<String, Object>) map));
+        }
+      }
+      return result;
+    }
+    return new ArrayList<>();
+  }
+
+  private String savedReceiptInputRef(String fileName) {
+    return fileName == null || fileName.isBlank() ? "inline-receipt" : fileName.trim();
+  }
+
+  private String firstNonBlank(String... values) {
+    for (String value : values) {
+      if (value != null && !value.isBlank()) {
+        return value.trim();
+      }
+    }
+    return "";
   }
 
   private Map<String, Object> buildPaymentAuditPayload(CustomerPaymentLedger payment) {
