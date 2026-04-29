@@ -169,7 +169,7 @@ export default function App() {
                   }))}
               />
               {isAuthenticated ? (
-                <Button size="small" onClick={logout}>
+                <Button size="small" onClick={() => void logout()}>
                   {t('auth.logout')}
                 </Button>
               ) : null}

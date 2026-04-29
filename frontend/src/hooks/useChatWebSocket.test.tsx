@@ -2,6 +2,10 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useChatWebSocket } from './useChatWebSocket';
 
+const apiMocks = vi.hoisted(() => ({
+  refreshAuthSession: vi.fn()
+}));
+
 const websocketMocks = vi.hoisted(() => {
   const clients: any[] = [];
 
@@ -32,11 +36,17 @@ vi.mock('@stomp/stompjs', () => ({
   Client: websocketMocks.MockClient
 }));
 
+vi.mock('../api', () => ({
+  refreshAuthSession: apiMocks.refreshAuthSession
+}));
+
 describe('useChatWebSocket', () => {
   beforeEach(() => {
     websocketMocks.clients.length = 0;
     window.localStorage.clear();
     window.localStorage.setItem('bobbuy_locale', 'en-US');
+    apiMocks.refreshAuthSession.mockReset();
+    apiMocks.refreshAuthSession.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -71,7 +81,7 @@ describe('useChatWebSocket', () => {
     expect(websocketMocks.clients).toHaveLength(0);
   });
 
-  it('stops reconnecting after auth rejection', async () => {
+  it('stops reconnecting after auth rejection when refresh fails', async () => {
     window.localStorage.setItem('bobbuy_access_token', 'token-123');
 
     renderHook(() =>
@@ -85,6 +95,32 @@ describe('useChatWebSocket', () => {
     websocketMocks.clients[0].config.onWebSocketClose?.({});
 
     await waitFor(() => {
+      expect(apiMocks.refreshAuthSession).toHaveBeenCalled();
+      expect(websocketMocks.clients[0].deactivate).toHaveBeenCalled();
+    });
+  });
+
+  it('refreshes the auth session after websocket auth rejection', async () => {
+    window.localStorage.setItem('bobbuy_access_token', 'token-123');
+    apiMocks.refreshAuthSession.mockResolvedValue({
+      accessToken: 'token-456',
+      accessTokenExpiresAt: '2026-05-01T00:00:00Z',
+      refreshToken: 'refresh-456',
+      refreshTokenExpiresAt: '2026-05-08T00:00:00Z',
+      user: { id: 1000, username: 'agent', name: 'Aiko Tan', role: 'AGENT' }
+    });
+
+    renderHook(() =>
+      useChatWebSocket({
+        enabled: true,
+        destination: '/topic/trip/2000'
+      })
+    );
+
+    websocketMocks.clients[0].config.onStompError?.({});
+
+    await waitFor(() => {
+      expect(apiMocks.refreshAuthSession).toHaveBeenCalledTimes(1);
       expect(websocketMocks.clients[0].deactivate).toHaveBeenCalled();
     });
   });

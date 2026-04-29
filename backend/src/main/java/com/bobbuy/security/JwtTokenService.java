@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,6 +49,10 @@ public class JwtTokenService {
     }
 
     public String createAccessToken(User user) {
+        return createAccessTokenDetails(user).token();
+    }
+
+    public IssuedAccessToken createAccessTokenDetails(User user) {
         Instant now = Instant.now();
         Map<String, Object> header = Map.of("alg", JWT_ALGORITHM, "typ", "JWT");
         Map<String, Object> payload = new LinkedHashMap<>();
@@ -55,12 +60,13 @@ public class JwtTokenService {
         payload.put("role", user.getRole().name());
         payload.put("username", user.getUsername());
         payload.put("name", user.getName());
+        payload.put("jti", UUID.randomUUID().toString());
         payload.put("iat", now.getEpochSecond());
         payload.put("exp", now.plus(ttl).getEpochSecond());
         String encodedHeader = encodeJson(header);
         String encodedPayload = encodeJson(payload);
         String signature = sign(encodedHeader + "." + encodedPayload);
-        return encodedHeader + "." + encodedPayload + "." + signature;
+        return new IssuedAccessToken(encodedHeader + "." + encodedPayload + "." + signature, now.plus(ttl));
     }
 
     public VerifiedToken verify(String token) {
@@ -125,5 +131,8 @@ public class JwtTokenService {
     }
 
     public record VerifiedToken(Long userId, String username, String role) {
+    }
+
+    public record IssuedAccessToken(String token, Instant expiresAt) {
     }
 }

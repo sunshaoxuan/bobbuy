@@ -44,11 +44,17 @@ describe('UserRoleContext', () => {
       name: 'Chen Li',
       role: 'CUSTOMER'
     });
-    storeAuthSession('token-123', {
-      id: 1001,
-      username: 'customer',
-      name: 'Chen Li',
-      role: 'CUSTOMER'
+    storeAuthSession({
+      accessToken: 'token-123',
+      refreshToken: 'refresh-123',
+      accessTokenExpiresAt: '2026-05-01T00:00:00Z',
+      refreshTokenExpiresAt: '2026-05-08T00:00:00Z',
+      user: {
+        id: 1001,
+        username: 'customer',
+        name: 'Chen Li',
+        role: 'CUSTOMER'
+      }
     });
     render(
       <UserRoleProvider>

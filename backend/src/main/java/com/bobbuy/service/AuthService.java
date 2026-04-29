@@ -6,6 +6,7 @@ import com.bobbuy.model.User;
 import com.bobbuy.repository.UserRepository;
 import com.bobbuy.security.BobbuyAuthenticatedUser;
 import com.bobbuy.security.JwtTokenService;
+import java.time.Instant;
 import java.util.Optional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,16 +17,19 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       JwtTokenService jwtTokenService) {
+                       JwtTokenService jwtTokenService,
+                       RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenService = jwtTokenService;
+        this.refreshTokenService = refreshTokenService;
     }
 
-    public LoginResult login(String username, String password) {
+    public SessionResult login(String username, String password, String clientFingerprint) {
         User user = userRepository.findByUsernameIgnoreCase(username == null ? "" : username.trim())
             .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED, "error.auth.invalid_credentials"));
         if (!user.isEnabled()) {
@@ -34,7 +38,19 @@ public class AuthService {
         if (user.getPasswordHash() == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new ApiException(ErrorCode.UNAUTHORIZED, "error.auth.invalid_credentials");
         }
-        return new LoginResult(jwtTokenService.createAccessToken(user), toUserProfile(user));
+        return createSessionResult(user, refreshTokenService.issue(user, clientFingerprint));
+    }
+
+    public SessionResult refresh(String refreshToken, String clientFingerprint) {
+        RefreshTokenService.IssuedRefreshToken issuedRefreshToken = refreshTokenService.refresh(refreshToken, clientFingerprint);
+        User user = userRepository.findById(issuedRefreshToken.userId())
+            .filter(User::isEnabled)
+            .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED, "error.auth.invalid_refresh_token"));
+        return createSessionResult(user, issuedRefreshToken);
+    }
+
+    public LogoutResult logout(String refreshToken) {
+        return new LogoutResult(refreshTokenService.revoke(refreshToken));
     }
 
     public UserProfile currentUser(Authentication authentication) {
@@ -65,7 +81,27 @@ public class AuthService {
         return new UserProfile(user.getId(), user.getUsername(), user.getName(), user.getRole().name());
     }
 
-    public record LoginResult(String accessToken, UserProfile user) {
+    private SessionResult createSessionResult(User user, RefreshTokenService.IssuedRefreshToken issuedRefreshToken) {
+        JwtTokenService.IssuedAccessToken accessToken = jwtTokenService.createAccessTokenDetails(user);
+        return new SessionResult(
+            accessToken.token(),
+            accessToken.expiresAt(),
+            issuedRefreshToken.token(),
+            issuedRefreshToken.expiresAt(),
+            toUserProfile(user)
+        );
+    }
+
+    public record SessionResult(
+        String accessToken,
+        Instant accessTokenExpiresAt,
+        String refreshToken,
+        Instant refreshTokenExpiresAt,
+        UserProfile user
+    ) {
+    }
+
+    public record LogoutResult(boolean revoked) {
     }
 
     public record UserProfile(Long id, String username, String name, String role) {

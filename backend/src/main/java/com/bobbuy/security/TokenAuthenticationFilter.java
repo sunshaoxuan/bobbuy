@@ -24,6 +24,14 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        return "/api/auth/login".equals(requestUri)
+            || "/api/auth/refresh".equals(requestUri)
+            || "/api/auth/logout".equals(requestUri);
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {

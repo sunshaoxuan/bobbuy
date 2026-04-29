@@ -90,6 +90,7 @@ docker compose logs -f postgres minio rabbitmq nacos redis ocr-service
 禁止写入日志：
 
 - JWT / Bearer token
+- refresh token
 - `X-BOBBUY-SERVICE-TOKEN`
 - STOMP `CONNECT` header 中的 Bearer token
 - 用户密码
@@ -206,7 +207,8 @@ curl -fsS -H "Authorization: Bearer <agent-token>" http://127.0.0.1/api/metrics
   grep -n "BOBBUY_SECURITY_JWT_SECRET" /home/runner/work/bobbuy/bobbuy/.env
   ```
 - **缓解动作**: 检查 JWT secret、时间漂移、header auth 是否被误开、网关路由是否正常
-- **补充说明**: WebSocket `/ws` 已改为依赖同一 access token；若只有聊天实时能力异常，也按登录链路检查 token 过期与 STOMP 鉴权失败
+- **补充说明**: HTTP 401 现在会最多自动 refresh 并重试一次；若 refresh 也失败，前端会清理登录态并要求重新登录
+- **补充说明**: WebSocket `/ws` 已改为依赖同一 access token；若只有聊天实时能力异常，也按登录链路检查 refresh 是否成功与 STOMP 鉴权失败
 - **补充说明**: 若只影响 `/internal/**` 或 `core-service -> ai-service` 这类内部调用，还需同步检查 `BOBBUY_SECURITY_SERVICE_TOKEN` 是否在 gateway-service 与下游服务一致
 - **升级条件**: 所有角色均无法登录，或 token 验证持续失败超过 10 分钟
 

@@ -7,7 +7,18 @@ export type AuthenticatedUser = {
   role: UserRole;
 };
 
+export type StoredAuthSession = {
+  accessToken: string;
+  refreshToken?: string | null;
+  accessTokenExpiresAt?: string | null;
+  refreshTokenExpiresAt?: string | null;
+  user: AuthenticatedUser;
+};
+
 const ACCESS_TOKEN_KEY = 'bobbuy_access_token';
+const REFRESH_TOKEN_KEY = 'bobbuy_refresh_token';
+const ACCESS_TOKEN_EXPIRES_AT_KEY = 'bobbuy_access_token_expires_at';
+const REFRESH_TOKEN_EXPIRES_AT_KEY = 'bobbuy_refresh_token_expires_at';
 const AUTH_USER_KEY = 'bobbuy_auth_user';
 const TEST_ROLE_KEY = 'bobbuy_test_role';
 const TEST_USER_KEY = 'bobbuy_test_user';
@@ -51,6 +62,30 @@ export function getStoredAccessToken(): string | null {
   return token && token.trim() ? token.trim() : null;
 }
 
+export function getStoredRefreshToken(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const token = window.localStorage.getItem(REFRESH_TOKEN_KEY);
+  return token && token.trim() ? token.trim() : null;
+}
+
+export function getStoredAccessTokenExpiresAt(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const value = window.localStorage.getItem(ACCESS_TOKEN_EXPIRES_AT_KEY);
+  return value && value.trim() ? value.trim() : null;
+}
+
+export function getStoredRefreshTokenExpiresAt(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const value = window.localStorage.getItem(REFRESH_TOKEN_EXPIRES_AT_KEY);
+  return value && value.trim() ? value.trim() : null;
+}
+
 export function getStoredUser(): AuthenticatedUser | null {
   if (typeof window === 'undefined') {
     return null;
@@ -58,12 +93,27 @@ export function getStoredUser(): AuthenticatedUser | null {
   return parseStoredUser(window.localStorage.getItem(AUTH_USER_KEY));
 }
 
-export function storeAuthSession(accessToken: string, user: AuthenticatedUser) {
+export function storeAuthSession(session: StoredAuthSession) {
   if (typeof window === 'undefined') {
     return;
   }
-  window.localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  window.localStorage.setItem(ACCESS_TOKEN_KEY, session.accessToken);
+  if (session.refreshToken && session.refreshToken.trim()) {
+    window.localStorage.setItem(REFRESH_TOKEN_KEY, session.refreshToken);
+  } else {
+    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
+  if (session.accessTokenExpiresAt && session.accessTokenExpiresAt.trim()) {
+    window.localStorage.setItem(ACCESS_TOKEN_EXPIRES_AT_KEY, session.accessTokenExpiresAt);
+  } else {
+    window.localStorage.removeItem(ACCESS_TOKEN_EXPIRES_AT_KEY);
+  }
+  if (session.refreshTokenExpiresAt && session.refreshTokenExpiresAt.trim()) {
+    window.localStorage.setItem(REFRESH_TOKEN_EXPIRES_AT_KEY, session.refreshTokenExpiresAt);
+  } else {
+    window.localStorage.removeItem(REFRESH_TOKEN_EXPIRES_AT_KEY);
+  }
+  window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(session.user));
   dispatchAuthChanged();
 }
 
@@ -72,6 +122,9 @@ export function clearAuthSession() {
     return;
   }
   window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+  window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+  window.localStorage.removeItem(ACCESS_TOKEN_EXPIRES_AT_KEY);
+  window.localStorage.removeItem(REFRESH_TOKEN_EXPIRES_AT_KEY);
   window.localStorage.removeItem(AUTH_USER_KEY);
   dispatchAuthChanged();
 }

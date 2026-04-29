@@ -1,5 +1,13 @@
 import { message } from 'antd';
-import { clearAuthSession, getStoredAccessToken, getTestInjectedRole, getTestInjectedUser, type AuthenticatedUser } from './authStorage';
+import {
+    clearAuthSession,
+    getStoredAccessToken,
+    getStoredRefreshToken,
+    getTestInjectedRole,
+    getTestInjectedUser,
+    storeAuthSession,
+    type AuthenticatedUser
+} from './authStorage';
 import { getStoredLocale, translate } from './i18n';
 
 export type Metrics = {
@@ -681,22 +689,33 @@ type ApiErrorResponse = {
     message?: string;
 };
 
-export type AuthLoginResponse = {
+export type AuthSessionResponse = {
     accessToken: string;
+    accessTokenExpiresAt: string;
+    refreshToken: string;
+    refreshTokenExpiresAt: string;
     user: AuthenticatedUser;
 };
+
+type RequestOptions = {
+    includeAccessToken?: boolean;
+    retryOnUnauthorized?: boolean;
+    withJsonContentType?: boolean;
+};
+
+let refreshSessionPromise: Promise<AuthSessionResponse | null> | null = null;
 
 const genericErrorMessage = () => translate(getStoredLocale(), 'errors.request_failed');
 
 const isMockApiEnabled = () =>
     typeof window !== 'undefined' && window.localStorage.getItem('bobbuy_enable_mock_api') === 'true';
 
-function createRequestHeaders(initHeaders?: HeadersInit, withJsonContentType = false): Headers {
+function createRequestHeaders(initHeaders?: HeadersInit, withJsonContentType = false, includeAccessToken = true): Headers {
     const headers = new Headers(initHeaders);
     if (!headers.has('Accept-Language')) {
         headers.set('Accept-Language', getStoredLocale());
     }
-    const accessToken = getStoredAccessToken();
+    const accessToken = includeAccessToken ? getStoredAccessToken() : null;
     if (accessToken && !headers.has('Authorization')) {
         headers.set('Authorization', `Bearer ${accessToken}`);
     } else if (!accessToken) {
@@ -715,6 +734,71 @@ function createRequestHeaders(initHeaders?: HeadersInit, withJsonContentType = f
     return headers;
 }
 
+function isAuthEndpoint(url: string) {
+    return url === '/api/auth/login' || url === '/api/auth/refresh' || url === '/api/auth/logout';
+}
+
+async function authorizedFetch(url: string, init?: RequestInit, options?: RequestOptions): Promise<Response> {
+    const requestOptions = options ?? {};
+    const response = await fetch(url, {
+        ...init,
+        headers: createRequestHeaders(init?.headers, requestOptions.withJsonContentType, requestOptions.includeAccessToken !== false)
+    });
+    if (response.status === 401 && requestOptions.retryOnUnauthorized !== false && !isAuthEndpoint(url)) {
+        const refreshedSession = await refreshAuthSession();
+        if (refreshedSession) {
+            return authorizedFetch(url, init, { ...requestOptions, retryOnUnauthorized: false });
+        }
+    }
+    return response;
+}
+
+async function parseSuccessPayload<T>(response: Response, fallbackValue?: T): Promise<T> {
+    const payload = (await response.json()) as ApiResponse<T> | T;
+    if (typeof payload === 'object' && payload !== null && 'status' in payload && 'data' in payload) {
+        if (payload.data !== undefined) {
+            return payload.data as T;
+        }
+        if (fallbackValue !== undefined && isMockApiEnabled()) {
+            return fallbackValue;
+        }
+        throw new Error(genericErrorMessage());
+    }
+    return payload as T;
+}
+
+export async function refreshAuthSession(): Promise<AuthSessionResponse | null> {
+    if (refreshSessionPromise) {
+        return refreshSessionPromise;
+    }
+    refreshSessionPromise = (async () => {
+        const refreshToken = getStoredRefreshToken();
+        if (!refreshToken) {
+            return null;
+        }
+        try {
+            const response = await fetch('/api/auth/refresh', {
+                method: 'POST',
+                headers: createRequestHeaders(undefined, true, false),
+                body: JSON.stringify({ refreshToken })
+            });
+            if (!response.ok) {
+                clearAuthSession();
+                return null;
+            }
+            const session = await parseSuccessPayload<AuthSessionResponse>(response);
+            storeAuthSession(session);
+            return session;
+        } catch {
+            clearAuthSession();
+            return null;
+        }
+    })().finally(() => {
+        refreshSessionPromise = null;
+    });
+    return refreshSessionPromise;
+}
+
 async function parseErrorMessage(response: Response): Promise<string> {
     try {
         const payload = (await response.json()) as ApiErrorResponse;
@@ -728,33 +812,9 @@ async function parseErrorMessage(response: Response): Promise<string> {
 }
 
 async function fetchJson<T>(url: string, fallbackValue: T, init?: RequestInit): Promise<T> {
+    let response: Response;
     try {
-        const response = await fetch(url, {
-            ...init,
-            headers: createRequestHeaders(init?.headers)
-        });
-        if (!response.ok) {
-            if (response.status === 401) {
-                clearAuthSession();
-            }
-            const errorMessage = await parseErrorMessage(response);
-            message.error(errorMessage);
-            if (isMockApiEnabled()) {
-                return fallbackValue;
-            }
-            throw new Error(errorMessage);
-        }
-        const payload = (await response.json()) as ApiResponse<T> | T;
-        if (typeof payload === 'object' && payload !== null && 'status' in payload && 'data' in payload) {
-            if (payload.data !== undefined) {
-                return payload.data as T;
-            }
-            if (isMockApiEnabled()) {
-                return fallbackValue;
-            }
-            throw new Error(genericErrorMessage());
-        }
-        return payload as T;
+        response = await authorizedFetch(url, init);
     } catch (error) {
         console.error(`[API ERROR] FETCH failure at ${url}:`, error);
         if (isMockApiEnabled()) {
@@ -765,14 +825,25 @@ async function fetchJson<T>(url: string, fallbackValue: T, init?: RequestInit): 
         message.error(errorMessage);
         throw error instanceof Error ? error : new Error(errorMessage);
     }
+    if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthSession();
+        }
+        const errorMessage = await parseErrorMessage(response);
+        message.error(errorMessage);
+        if (isMockApiEnabled()) {
+            return fallbackValue;
+        }
+        throw new Error(errorMessage);
+    }
+    return parseSuccessPayload(response, fallbackValue);
 }
 
-async function postJson<TResponse, TBody>(url: string, body: TBody): Promise<TResponse> {
-    const response = await fetch(url, {
+async function postJson<TResponse, TBody>(url: string, body: TBody, options?: RequestOptions): Promise<TResponse> {
+    const response = await authorizedFetch(url, {
         method: 'POST',
-        headers: createRequestHeaders(undefined, true),
         body: JSON.stringify(body)
-    });
+    }, { ...options, withJsonContentType: true });
     if (!response.ok) {
         if (response.status === 401) {
             clearAuthSession();
@@ -782,19 +853,14 @@ async function postJson<TResponse, TBody>(url: string, body: TBody): Promise<TRe
         message.error(errorMessage);
         throw new Error(errorMessage);
     }
-    const payload = (await response.json()) as ApiResponse<TResponse> | TResponse;
-    if (typeof payload === 'object' && payload !== null && 'status' in payload && 'data' in payload) {
-        return (payload.data ?? ({} as TResponse)) as TResponse;
-    }
-    return payload as TResponse;
+    return parseSuccessPayload(response);
 }
 
-async function patchJson<TResponse, TBody>(url: string, body: TBody): Promise<TResponse> {
-    const response = await fetch(url, {
+async function patchJson<TResponse, TBody>(url: string, body: TBody, options?: RequestOptions): Promise<TResponse> {
+    const response = await authorizedFetch(url, {
         method: 'PATCH',
-        headers: createRequestHeaders(undefined, true),
         body: JSON.stringify(body)
-    });
+    }, { ...options, withJsonContentType: true });
     if (!response.ok) {
         if (response.status === 401) {
             clearAuthSession();
@@ -803,19 +869,14 @@ async function patchJson<TResponse, TBody>(url: string, body: TBody): Promise<TR
         message.error(errorMessage);
         throw new Error(errorMessage);
     }
-    const payload = (await response.json()) as ApiResponse<TResponse> | TResponse;
-    if (typeof payload === 'object' && payload !== null && 'status' in payload && 'data' in payload) {
-        return (payload.data ?? ({} as TResponse)) as TResponse;
-    }
-    return payload as TResponse;
+    return parseSuccessPayload(response);
 }
 
-async function putJson<TResponse, TBody>(url: string, body: TBody): Promise<TResponse> {
-    const response = await fetch(url, {
+async function putJson<TResponse, TBody>(url: string, body: TBody, options?: RequestOptions): Promise<TResponse> {
+    const response = await authorizedFetch(url, {
         method: 'PUT',
-        headers: createRequestHeaders(undefined, true),
         body: JSON.stringify(body)
-    });
+    }, { ...options, withJsonContentType: true });
     if (!response.ok) {
         if (response.status === 401) {
             clearAuthSession();
@@ -824,11 +885,7 @@ async function putJson<TResponse, TBody>(url: string, body: TBody): Promise<TRes
         message.error(errorMessage);
         throw new Error(errorMessage);
     }
-    const payload = (await response.json()) as ApiResponse<TResponse> | TResponse;
-    if (typeof payload === 'object' && payload !== null && 'status' in payload && 'data' in payload) {
-        return (payload.data ?? ({} as TResponse)) as TResponse;
-    }
-    return payload as TResponse;
+    return parseSuccessPayload(response);
 }
 
 export type PriceTier = {
@@ -906,7 +963,16 @@ export type AiOnboardingSuggestion = {
 export const api = {
     auth: {
         login: (payload: { username: string; password: string }) =>
-            postJson<AuthLoginResponse, { username: string; password: string }>('/api/auth/login', payload),
+            postJson<AuthSessionResponse, { username: string; password: string }>('/api/auth/login', payload, {
+                includeAccessToken: false,
+                retryOnUnauthorized: false
+            }),
+        refresh: () => refreshAuthSession(),
+        logout: (payload: { refreshToken?: string | null }) =>
+            postJson<{ revoked: boolean }, { refreshToken?: string | null }>('/api/auth/logout', payload, {
+                includeAccessToken: false,
+                retryOnUnauthorized: false
+            }),
         me: () =>
             fetchJson<AuthenticatedUser>('/api/auth/me', {
                 id: 0,
@@ -1044,9 +1110,7 @@ export const api = {
     procurementDeliveryPreparations: (tripId: number) =>
         fetchJson<DeliveryPreparation[]>(`/api/procurement/${tripId}/delivery-preparations`, []),
     exportDeliveryPreparations: async (tripId: number) => {
-        const response = await fetch(`/api/procurement/${tripId}/delivery-preparations/export`, {
-            headers: createRequestHeaders()
-        });
+        const response = await authorizedFetch(`/api/procurement/${tripId}/delivery-preparations/export`);
         if (!response.ok) {
             const errorMessage = await parseErrorMessage(response);
             message.error(errorMessage);
@@ -1076,9 +1140,7 @@ export const api = {
             payload
         ),
     exportProcurementSettlement: async (tripId: number, format: 'csv' | 'pdf') => {
-        const response = await fetch(`/api/procurement/${tripId}/export?format=${format}`, {
-            headers: createRequestHeaders()
-        });
+        const response = await authorizedFetch(`/api/procurement/${tripId}/export?format=${format}`);
         if (!response.ok) {
             const errorMessage = await parseErrorMessage(response);
             message.error(errorMessage);
@@ -1087,9 +1149,7 @@ export const api = {
         return response.blob();
     },
     exportCustomerStatement: async (tripId: number, businessId: string) => {
-        const response = await fetch(`/api/procurement/${tripId}/customers/${encodeURIComponent(businessId)}/statement`, {
-            headers: createRequestHeaders()
-        });
+        const response = await authorizedFetch(`/api/procurement/${tripId}/customers/${encodeURIComponent(businessId)}/statement`);
         if (!response.ok) {
             const errorMessage = await parseErrorMessage(response);
             message.error(errorMessage);
@@ -1161,9 +1221,8 @@ export const api = {
     getPrivateChat: (userA: string, userB: string) =>
         fetchJson<ChatMessage[]>(`/api/chat/private?userA=${userA}&userB=${userB}`, []),
     deleteProduct: (id: string) =>
-        fetch(`/api/mobile/products/${id}`, {
-            method: 'DELETE',
-            headers: createRequestHeaders()
+        authorizedFetch(`/api/mobile/products/${id}`, {
+            method: 'DELETE'
         }).then(res => {
             if (!res.ok) throw new Error('Delete failed');
         })
