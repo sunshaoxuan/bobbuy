@@ -83,11 +83,13 @@
 1. 更新 CI，使它与 `TEST-MATRIX` 一致。
 2. 把 AI 真实链路、E2E、CodeQL 作为分层门禁：默认、专用、风险登记。
 3. 每次 Release 必须记录本地/CI 验证结果。
+4. Playwright 手动门禁必须保留 trace / screenshot / video / HTML report artifact，便于试运行失败复盘。
 
 **验收标准**
 
 - `docs/reports/TEST-MATRIX-本地与CI执行矩阵.md` 与 GitHub Actions 一致。
 - README 不再宣称未通过的测试为已通过。
+- `workflow_dispatch` 的 Playwright job 能上传可回看的 artifact，且 `npm run e2e` 稳定通过。
 
 ---
 

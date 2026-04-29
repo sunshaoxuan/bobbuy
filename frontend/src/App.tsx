@@ -51,8 +51,7 @@ export default function App() {
         { key: '/picking', label: <NavLink to="/picking">{t('nav.picking')}</NavLink> },
         { key: '/stock-master', label: <NavLink to="/stock-master">{t('nav.stock_master')}</NavLink> },
         { key: '/suppliers', label: <NavLink to="/suppliers">{t('nav.suppliers')}</NavLink> },
-        { key: '/users', label: <NavLink to="/users">{t('nav.users')}</NavLink> },
-        { key: '/client/chat', label: <NavLink to="/client/chat">{t('nav.client_chat')}</NavLink> }
+        { key: '/users', label: <NavLink to="/users">{t('nav.users')}</NavLink> }
       ];
     }
     // Customer Menu
@@ -301,7 +300,7 @@ export default function App() {
                 <Route
                   path="/client/chat"
                   element={
-                    <ProtectedRoute allowedRoles={['CUSTOMER', 'AGENT']}>
+                    <ProtectedRoute allowedRoles={['CUSTOMER']}>
                       <ClientChat />
                     </ProtectedRoute>
                   }

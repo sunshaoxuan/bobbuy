@@ -14,6 +14,7 @@ const LOCAL_WEB_SERVER_TIMEOUT = 120_000;
 
 export default defineConfig({
   testDir: './e2e',
+  reporter: [['list'], ['html', { open: 'never' }]],
   timeout: isCI ? CI_TEST_TIMEOUT : LOCAL_TEST_TIMEOUT,
   expect: {
     timeout: isCI ? CI_EXPECT_TIMEOUT : LOCAL_EXPECT_TIMEOUT
@@ -25,7 +26,9 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:5173',
     actionTimeout: isCI ? CI_ACTION_TIMEOUT : LOCAL_ACTION_TIMEOUT,
     navigationTimeout: isCI ? CI_NAVIGATION_TIMEOUT : LOCAL_NAVIGATION_TIMEOUT,
-    trace: 'retain-on-failure'
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure'
   },
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1 --port 5173',

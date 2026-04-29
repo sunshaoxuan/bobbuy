@@ -8,6 +8,7 @@ async function setupProcurementPageMocks(
     checklist?: Array<Record<string, any>>;
   }
 ) {
+  await setupCommonMocks(page);
   const checklist = options?.checklist ?? [{
     businessId: 'BIZ-1001',
     customerId: 1001,
@@ -235,6 +236,7 @@ test('procurement picking updates are reflected on the picking page', async ({ p
     }
   ];
 
+  await setupProcurementPageMocks(page, { checklist });
   await page.route('**/api/procurement/2000/picking/BIZ-1001', async (route) => {
     updated = true;
     checklist[0] = {
@@ -245,7 +247,6 @@ test('procurement picking updates are reflected on the picking page', async ({ p
     };
     await route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: checklist[0] }) });
   });
-  await setupProcurementPageMocks(page, { checklist });
 
   await setAgentContext(page);
   await page.goto('/procurement');

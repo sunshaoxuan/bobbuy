@@ -14,8 +14,18 @@ test('chat image confirmation can create a draft item and publish it to mall', a
     await route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: [] }) });
   });
 
-  await page.route('**/api/chat/trips/2000', async (route) => {
-    await route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: messages }) });
+  await page.route('**/api/chat/trips/2000/cursor**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      body: JSON.stringify({
+        status: 'success',
+        data: {
+          messages,
+          nextCursor: null,
+          hasMore: false
+        }
+      })
+    });
   });
 
   await page.route('**/api/ai/onboard/scan', async (route) => {

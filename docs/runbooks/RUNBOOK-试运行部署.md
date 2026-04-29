@@ -148,6 +148,19 @@ mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am \
 # 预期通过：5 个服务壳最小启动 + gateway 内部 header 清理
 ```
 
+Playwright 试运行 smoke：
+
+```bash
+cd /home/runner/work/bobbuy/bobbuy/frontend
+npm ci
+npm run e2e
+```
+
+- 当前 `npm run e2e` 使用 Vite dev server + Playwright mock 浏览器会话，验证 agent/customer 登录态恢复、客户订单/账单/聊天、采购/拣货/库存人工接管与角色门禁。
+- 失败时查看 `frontend/playwright-report/index.html`，以及 `frontend/test-results/**/trace.zip`、`test-failed-1.png`、`video.webm`。
+- GitHub Actions 手动 `playwright-e2e` job 会上传同名 artifact；试运行放行前必须至少人工通过一次。
+- `npm run e2e:ai` 仍需 `RUN_AI_VISION_E2E=1` 与真实 AI/OCR 专用环境，不属于默认 smoke。
+
 Flyway 验证点：
 
 - 仅 `core-service` 日志应出现 migration 执行。

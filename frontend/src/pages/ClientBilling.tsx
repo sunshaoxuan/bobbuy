@@ -100,7 +100,7 @@ export default function ClientBilling() {
     <div className="page-card client-page">
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <Space direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Title level={4} style={{ margin: 0 }}>
+          <Title level={4} style={{ margin: 0 }} data-testid="client-billing-title">
             {t('nav.client_billing')}
           </Title>
           <Select

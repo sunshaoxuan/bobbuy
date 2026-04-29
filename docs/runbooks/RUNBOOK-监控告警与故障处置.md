@@ -212,6 +212,7 @@ curl -fsS -H "Authorization: Bearer <agent-token>" http://127.0.0.1/api/metrics
 - **补充说明**: 若只在 refresh/logout 看到 403，优先检查 `bobbuy_csrf_token` cookie、`X-BOBBUY-CSRF-TOKEN` header，以及 `BOBBUY_SECURITY_REFRESH_COOKIE_SECURE` / `SameSite` 是否与当前访问方式一致
 - **补充说明**: WebSocket `/ws` 已改为依赖同一 access token；若只有聊天实时能力异常，也按登录链路检查 refresh 是否成功与 STOMP 鉴权失败
 - **补充说明**: 若只影响 `/internal/**` 或 `core-service -> ai-service` 这类内部调用，还需同步检查 `BOBBUY_SECURITY_SERVICE_TOKEN` 是否在 gateway-service 与下游服务一致
+- **补充说明**: 若问题只在浏览器 smoke / 手动门禁出现，先打开 `frontend/playwright-report/index.html` 或 CI 上传的 `playwright-e2e-artifacts`，优先查看失败用例的 trace、video、screenshot
 - **升级条件**: 所有角色均无法登录，或 token 验证持续失败超过 10 分钟
 
 ### 5.3 订单 / 账单 / 钱包 5xx
