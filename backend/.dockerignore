@@ -1,3 +1,4 @@
+# Keep the packaged jar because the Dockerfile copies the Maven-built artifact directly.
 target/*
 !target/*.jar
 *.log
