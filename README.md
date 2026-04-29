@@ -41,7 +41,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - **服务外壳**：`ai-service`、`im-service`、`auth-service` 当前继续复用 `backend` 共享代码、共享 PostgreSQL schema 与共享安全配置，不是独立业务事实源。
 - **可选服务**：`ocr-service` 属于 AI/OCR 增强能力依赖；不可用时系统按既有 fallback / 人工复核路径降级。
 - **后续拆分候选**：`ai-service`、`im-service`、`auth-service`；在服务间鉴权、独立 schema、Tracing、SLO、独立 CI/CD 到位前，不继续深拆。
-- 当前默认 Compose 仍保留 `ai-service` / `im-service` / `auth-service`，因为网关路由与启动回归测试尚未准备好安全降级为 optional/profile。
+- 当前默认 Compose 仍保留 `ai-service` / `im-service` / `auth-service`；虽已补最小服务壳 smoke test，但在独立 schema、契约测试与拆分后 CI/CD 到位前，仍不安全降级为 optional/profile。
 
 ## 试运行运维入口
 
@@ -72,10 +72,11 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
    cp .env.template .env
    ```
 2. 至少修改：
-   - `BOBBUY_SECURITY_JWT_SECRET`
-   - `POSTGRES_PASSWORD`
-   - `MINIO_ROOT_PASSWORD`
-   - `RABBITMQ_DEFAULT_PASS`
+    - `BOBBUY_SECURITY_JWT_SECRET`
+    - `BOBBUY_SECURITY_SERVICE_TOKEN`
+    - `POSTGRES_PASSWORD`
+    - `MINIO_ROOT_PASSWORD`
+    - `RABBITMQ_DEFAULT_PASS`
 3. 校验并启动：
    ```bash
    cd /home/runner/work/bobbuy/bobbuy
@@ -104,6 +105,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - Compose 服务固定 `SPRING_PROFILES_ACTIVE=prod`。
 - `BOBBUY_SECURITY_JWT_SECRET` 必须显式填写，模板不再提供可直接上线的默认值。
 - `BOBBUY_SECURITY_HEADER_AUTH_ENABLED` 默认 `false`，公网 / 共享部署不得开启。
+- `BOBBUY_SECURITY_SERVICE_TOKEN` 必须显式填写；留空时不会信任内部服务 header，`/internal/**` 也不会放行。
 - WebSocket `/ws` 必须通过 STOMP `CONNECT` header `Authorization: Bearer <access-token>` 建立连接；未登录或 token 无效时前端退回既有 REST 刷新路径。
 - `BOBBUY_SEED_ENABLED` 默认 `false`；demo 账号仅限本地演示。
 - `core-service` 为唯一 Flyway migration 执行者，其余服务固定禁用 Flyway。
@@ -143,9 +145,10 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - **生产要求**：公网部署必须配置 `BOBBUY_SECURITY_JWT_SECRET`，且不得开启 `BOBBUY_SECURITY_HEADER_AUTH_ENABLED=true`。
 - **WebSocket 鉴权**：前端 STOMP 客户端通过 `Authorization: Bearer <access-token>` 连接 `/ws`，后端在 STOMP `CONNECT`/`SUBSCRIBE` 阶段校验 JWT，并限制 customer 仅能访问本人订单/行程聊天上下文。
 - **前端降级行为**：token 缺失时不建立 WebSocket；token 失效/连接被拒绝时停止重连，继续使用既有 REST 刷新/轮询路径，不清空本地未发送消息。
-- **服务间鉴权现状**：试运行阶段仍以 Docker 内网边界 + 共享 JWT 配置为前提，尚未引入独立 service token / mTLS；在服务间鉴权补齐前，不继续推进真实微服务深拆。
+- **服务间鉴权现状**：gateway-service 会清理外部伪造的 `X-BOBBUY-SERVICE-TOKEN` / `X-BOBBUY-INTERNAL-SERVICE`，并在配置 `BOBBUY_SECURITY_SERVICE_TOKEN` 后向下游附带可信内部身份；后端仅对 `/internal/**` 路径信任该 token，且 service token 不等同于最终用户 JWT。
 - **refresh token 取舍**：本阶段继续暂缓；默认 access token TTL 由 `BOBBUY_SECURITY_JWT_TTL_SECONDS` 控制（默认 3600 秒），过期后需重新登录。
-- **当前安全边界**：暂未实现 refresh token、第三方 OAuth/SSO、独立服务间 service token / mTLS；旧库升级仍需按 Flyway 基线/备份流程执行。
+- **服务壳 smoke test**：可通过 `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test` 验证五个服务壳最小启动与 gateway header 清理。
+- **当前安全边界**：暂未实现 refresh token、第三方 OAuth/SSO、mTLS / service mesh、独立 schema / 数据所有权、契约测试与拆分后独立 CI/CD；旧库升级仍需按 Flyway 基线/备份流程执行。
 
 ## 验收门禁
 
@@ -162,6 +165,7 @@ AI / OCR 默认测试边界：
 
 专用环境门禁（不进入默认 Hosted CI）：
 - `cd backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`
+- `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test`
 - `cd frontend && npm run e2e`
 - `cd frontend && npm run e2e:ai`
 
@@ -172,7 +176,7 @@ AI / OCR 默认测试边界：
 
 ## 试运行最小运维基线
 
-- 日志：统一使用 `docker compose logs` + `X-Trace-Id` + 应用请求日志排障；关键字段包含 `method/path/status/cost/trace_id/user/role`
+- 日志：统一使用 `docker compose logs` + `X-Trace-Id` + 应用请求日志排障；关键字段包含 `method/path/status/cost/trace_id/user/role/internal_service`
 - 指标：`/api/metrics` 提供轻量 endpoint 请求次数、`p95/p99`、`4xx/5xx`、登录失败次数与全局 `5xx` 比率
 - AI / OCR：继续以 trace、`fallbackReason`、`FAILED_RECOGNITION`、`PENDING_MANUAL_REVIEW` 为主，不在本阶段强行引入 Prometheus
 - 告警 / 故障处置：统一见 `RUNBOOK-监控告警与故障处置.md`

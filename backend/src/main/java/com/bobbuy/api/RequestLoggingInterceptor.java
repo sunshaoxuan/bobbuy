@@ -1,6 +1,7 @@
 package com.bobbuy.api;
 
 import com.bobbuy.security.BobbuyAuthenticatedUser;
+import com.bobbuy.security.InternalServiceIdentity;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -13,14 +14,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import java.security.Principal;
 import java.util.UUID;
 
 @Component
 public class RequestLoggingInterceptor implements HandlerInterceptor {
   private static final Logger log = LoggerFactory.getLogger(RequestLoggingInterceptor.class);
   private static final String TRACE_HEADER = "X-Trace-Id";
-  private static final String USER_HEADER = "X-BOBBUY-USER";
   private static final String START_TIME = "requestStartTimeMs";
   private final RequestMetricsService requestMetricsService;
 
@@ -52,22 +51,20 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String userId = resolveUser(request, authentication);
     String role = resolveRole(authentication);
+    String internalService = InternalServiceIdentity.from(request).map(InternalServiceIdentity::serviceName).orElse("-");
     requestMetricsService.record(request.getMethod(), request.getRequestURI(), costMs, response.getStatus());
-    log.info("[INFO] {} {} status={} cost={}ms trace_id={} user={} role={}",
+    log.info("[INFO] {} {} status={} cost={}ms trace_id={} user={} role={} internal_service={}",
         request.getMethod(),
         request.getRequestURI(),
         response.getStatus(),
         costMs,
         traceId,
         userId,
-        role);
+        role,
+        internalService);
   }
 
   private String resolveUser(HttpServletRequest request, Authentication authentication) {
-    String userId = request.getHeader(USER_HEADER);
-    if (hasText(userId)) {
-      return userId.trim();
-    }
     if (authentication == null) {
       return "anonymous";
     }
@@ -77,9 +74,6 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
         return authenticatedUser.username();
       }
       return fallbackPrincipalName(authenticatedUser);
-    }
-    if (principal instanceof Principal namedPrincipal && hasText(namedPrincipal.getName())) {
-      return namedPrincipal.getName();
     }
     return hasText(authentication.getName()) ? authentication.getName() : "anonymous";
   }

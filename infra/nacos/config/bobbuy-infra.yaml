@@ -31,6 +31,8 @@ bobbuy:
     bucket: ${BOBBUY_MINIO_BUCKET:bobbuy-media}
   security:
     default-role: CUSTOMER
+    service-token:
+      secret: ${BOBBUY_SECURITY_SERVICE_TOKEN:}
 
 logging:
   level:
