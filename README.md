@@ -57,14 +57,27 @@ docker-compose -p bobbuy up -d
 - `/ws` / `/ws/**` → `im-service`
 - 其余 `/api/**` → `core-service`
 
-## 验收命令与当前状态
-- `cd frontend && npm run build`
+## 验收门禁
+
+默认门禁（每个 PR / `main` push 必跑）：
+- `cd backend && mvn test`
 - `cd frontend && npm test`
+- `cd frontend && npm run build`
+- `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
+- `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
+
+专用环境门禁（不进入默认 Hosted CI）：
 - `cd frontend && npm run e2e`
-- `mvn -pl bobbuy-common test`
-- `mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am package -DskipTests`
+- `cd frontend && npm run e2e:ai`
+
+风险登记 / 独立安全门禁：
+- CodeQL / 安全扫描
+- 依赖审计
+- 若本次 PR / Release 未执行，必须明确登记为风险项，不得写成“已通过”。
 
 最近本地验证：
-- `cd backend && mvn -DskipTests compile`：通过。
+- `cd backend && mvn test`：通过。
+- `cd frontend && npm test`：通过。
 - `cd frontend && npm run build`：通过。
-- `cd backend && mvn test`：当前未通过，测试基线修复列为 P0。
+
+详细矩阵见 [docs/reports/TEST-MATRIX-本地与CI执行矩阵.md](docs/reports/TEST-MATRIX-本地与CI执行矩阵.md)。
