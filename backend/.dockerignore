@@ -1,6 +1,13 @@
 # Keep the packaged jar because the Dockerfile copies the Maven-built artifact directly.
-target/*
-!target/*.jar
+target/classes/
+target/generated-sources/
+target/generated-test-sources/
+target/maven-archiver/
+target/maven-status/
+target/site/
+target/surefire-reports/
+target/test-classes/
+target/*.jar.original
 *.log
 .mvn/
 mvnw
