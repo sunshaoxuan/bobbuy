@@ -247,6 +247,26 @@ public class LlmGateway {
         return isCodexConfigured() ? "codex" : "unconfigured";
     }
 
+    public String getActiveMainProvider() {
+        return resolveActiveMainProvider();
+    }
+
+    public String getMainModel() {
+        return mainModel;
+    }
+
+    public String getEdgeModel() {
+        return edgeModel;
+    }
+
+    public String getEdgeProvider() {
+        return edgeUrl == null || edgeUrl.isBlank() ? "unconfigured" : "ollama-compatible";
+    }
+
+    public String getOcrProvider() {
+        return ocrUrl == null || ocrUrl.isBlank() ? "unconfigured" : "python-ocr";
+    }
+
     private String blankToUnset(String value) {
         return value == null || value.isBlank() ? "<unset>" : value;
     }

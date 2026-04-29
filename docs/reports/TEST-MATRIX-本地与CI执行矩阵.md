@@ -36,6 +36,7 @@
 - 试运行 Compose 当前固定 PostgreSQL 15，并默认把宿主机端口绑定到 `127.0.0.1`，避免内部依赖无意暴露到公网。
 - `playwright-e2e` 继续复用 `npm run e2e:prepare` 的浏览器探测逻辑，仅在缺失 Chromium 时安装。
 - 后端默认测试必须继续使用 H2 / fake/mock 资源，禁止默认门禁外连真实 Ollama、Codex CLI、MinIO 或公网服务。
+- AI/OCR 可靠性用例（provider unconfigured、OCR/LLM 失败、fallback、人工复核、重试）必须继续保留在默认 mock 测试中，禁止切换到真实外部服务。
 - 后端 `mvn test` 现同时覆盖 JWT 登录、`/api/auth/me`、401/403、customer 本人数据隔离，以及 `bobbuy.security.header-auth.enabled=false` 时伪造 header 不得提权。
 - 当前已知前端测试噪声：
   - Ant Design `useForm` 未连接 warning。
@@ -48,6 +49,7 @@
 - [x] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm ci && npm test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run build`
+- [x] AI/OCR 默认单测继续使用 fake/mock，不连接真实 Ollama、Codex CLI、OCR service、MinIO
 - [x] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -DskipTests package`
 - [x] `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`

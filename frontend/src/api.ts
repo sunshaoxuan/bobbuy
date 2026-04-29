@@ -265,6 +265,7 @@ export type ProcurementReceipt = {
     updatedAt?: string;
     reconciliationResult: {
         recognitionMode?: string;
+        recognitionStatus?: string;
         summary?: string;
         merchantName?: string;
         receiptDate?: string;
@@ -273,6 +274,24 @@ export type ProcurementReceipt = {
         reviewStatus?: string;
         reviewedBy?: string;
         reviewedAt?: string;
+        trace?: {
+            provider?: string;
+            activeProvider?: string;
+            model?: string;
+            stage?: string;
+            latencyMs?: number;
+            errorCode?: string;
+            errorMessage?: string;
+            fallbackReason?: string;
+            retryCount?: number;
+            attemptNo?: number;
+            inputRef?: string;
+            outputRef?: string;
+            status?: string;
+            createdAt?: string;
+            updatedAt?: string;
+        };
+        traceHistory?: Array<Record<string, any>>;
         receiptItems: Array<Record<string, any>>;
         matchedOrderLines: Array<Record<string, any>>;
         unmatchedReceiptItems: Array<Record<string, any>>;
@@ -849,6 +868,23 @@ export type AiOnboardingSuggestion = {
         sourceDomains?: string[];
         resultDecision?: string;
         finalProductId?: string;
+        provider?: string;
+        activeProvider?: string;
+        model?: string;
+        stage?: string;
+        latencyMs?: number;
+        errorCode?: string;
+        errorMessage?: string;
+        fallbackReason?: string;
+        retryCount?: number;
+        attemptNo?: number;
+        inputRef?: string;
+        outputRef?: string;
+        recognitionStatus?: string;
+        manualReviewRequired?: boolean;
+        createdAt?: string;
+        updatedAt?: string;
+        events?: Array<Record<string, any>>;
     };
     matchScore?: number;
     semanticReasoning?: string;

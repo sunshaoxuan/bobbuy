@@ -150,6 +150,7 @@ Flyway 验证点：
 - `LlmGateway` 启动日志会输出 configured provider、active provider、Ollama URL、Codex command。
 - 当 `BOBBUY_AI_LLM_MAIN_URL` 与 `BOBBUY_AI_LLM_CODEX_COMMAND` 都为空时，active provider 会显示为 `unconfigured`，AI 功能按现有 fallback/人工流程降级。
 - AI / OCR 不可用时，系统允许回落到现有 fallback 路径；本任务不把 AI 不可用写成“已恢复”。
+- AI 商品上架与小票识别响应都会附带 trace 字段（provider / activeProvider / model / stage / latencyMs / errorCode / fallbackReason / retryCount / attemptNo / inputRef / outputRef）。
 
 ---
 
@@ -179,9 +180,15 @@ docker compose logs -f nacos
 4. **AI 无响应**
    - 检查 `BOBBUY_AI_LLM_MAIN_URL` / `BOBBUY_AI_LLM_EDGE_URL`
    - 服务器不要默认依赖 Codex CLI
+   - 前端若出现 `unconfigured` / `FAILED_RECOGNITION` / `PENDING_MANUAL_REVIEW`，按页面提示走重试或人工补录/复核
 5. **MinIO 上传失败**
    - 检查 `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`
    - 检查 `BOBBUY_MINIO_BUCKET`
+
+人工处理流程：
+1. 商品 AI 上架失败时，前端会显示失败原因并允许人工补录后保存草稿；默认保持 `DRAFTER_ONLY`。
+2. 小票识别 fallback 或失败时，前端显示 fallback / review 状态、trace 摘要，并保留重新识别入口。
+3. 仅 `REVIEWED` 小票会进入 `/procurement` 与 `/picking` 的已复核事实链；未确认识别结果不会自动改账。
 
 ---
 

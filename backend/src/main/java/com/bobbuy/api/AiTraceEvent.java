@@ -1,14 +1,8 @@
 package com.bobbuy.api;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
-public record AiOnboardingTrace(
-    String inputSampleId,
-    String recognitionSummary,
-    List<String> sourceDomains,
-    String resultDecision,
-    String finalProductId,
+public record AiTraceEvent(
     String provider,
     String activeProvider,
     String model,
@@ -21,10 +15,8 @@ public record AiOnboardingTrace(
     Integer attemptNo,
     String inputRef,
     String outputRef,
-    String recognitionStatus,
-    Boolean manualReviewRequired,
+    String status,
     LocalDateTime createdAt,
-    LocalDateTime updatedAt,
-    List<AiTraceEvent> events
+    LocalDateTime updatedAt
 ) {
 }

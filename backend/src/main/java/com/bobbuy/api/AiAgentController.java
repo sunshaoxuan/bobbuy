@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/ai")
@@ -101,9 +102,21 @@ public class AiAgentController {
       Product result;
       String evidenceImageUrl = imageStorageService.saveBase64(suggestion.originalPhotoBase64());
       ProductVisibility targetVisibility = suggestion.visibilityStatus();
+      boolean manualReviewRequired = suggestion.trace() != null && Boolean.TRUE.equals(suggestion.trace().manualReviewRequired());
+      if (manualReviewRequired || (suggestion.matchScore() != null && suggestion.matchScore() < SEMANTIC_OVERWRITE_THRESHOLD)) {
+        targetVisibility = ProductVisibility.DRAFTER_ONLY;
+      }
+      String targetProductId = suggestion.existingProductId();
+      if ((targetProductId == null || targetProductId.isBlank()) && suggestion.itemNumber() != null && !suggestion.itemNumber().isBlank()) {
+        targetProductId = store.findProductByItemNumber(suggestion.itemNumber()).map(Product::getId).orElse(null);
+      }
       boolean allowOverwrite = suggestion.existingProductFound()
-          && suggestion.existingProductId() != null
+          && targetProductId != null
           && (suggestion.matchScore() == null || suggestion.matchScore() >= SEMANTIC_OVERWRITE_THRESHOLD);
+
+      if (!allowOverwrite && !suggestion.existingProductFound() && targetProductId != null) {
+        allowOverwrite = true;
+      }
 
       if (allowOverwrite) {
         ProductPatch patch = new ProductPatch();
@@ -126,7 +139,7 @@ public class AiAgentController {
         if (suggestion.brand() != null) {
           patch.setBrand(suggestion.brand());
         }
-        result = store.patchProduct(suggestion.existingProductId(), patch)
+        result = store.patchProduct(targetProductId, patch)
             .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "error.product.not_found"));
       } else {
         Product newProduct = new Product();
@@ -177,7 +190,24 @@ public class AiAgentController {
           requestTrace != null ? requestTrace.recognitionSummary() : suggestion.recognitionSummary(),
           requestTrace != null ? requestTrace.sourceDomains() : suggestion.sourceDomains(),
           allowOverwrite ? "EXISTING_PRODUCT" : "NEW_PRODUCT",
-          result.getId());
+          result.getId(),
+          requestTrace != null ? requestTrace.provider() : null,
+          requestTrace != null ? requestTrace.activeProvider() : null,
+          requestTrace != null ? requestTrace.model() : null,
+          requestTrace != null ? requestTrace.stage() : "MANUAL_REVIEW",
+          requestTrace != null ? requestTrace.latencyMs() : null,
+          requestTrace != null ? requestTrace.errorCode() : null,
+          requestTrace != null ? requestTrace.errorMessage() : null,
+          requestTrace != null ? requestTrace.fallbackReason() : null,
+          requestTrace != null ? requestTrace.retryCount() : 0,
+          requestTrace != null ? requestTrace.attemptNo() : 1,
+          requestTrace != null ? requestTrace.inputRef() : suggestion.inputSampleId(),
+          result.getId(),
+          "CONFIRMED",
+          false,
+          requestTrace != null ? requestTrace.createdAt() : LocalDateTime.now(),
+          LocalDateTime.now(),
+          requestTrace != null ? requestTrace.events() : List.of());
 
       return ResponseEntity.ok(ApiResponse.success(
           new MobileProductResponse(

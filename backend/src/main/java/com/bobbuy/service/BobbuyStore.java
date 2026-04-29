@@ -427,6 +427,13 @@ public class BobbuyStore {
         return productRepository.findById(id);
     }
 
+    public Optional<Product> findProductByItemNumber(String itemNumber) {
+        if (itemNumber == null || itemNumber.isBlank()) {
+            return Optional.empty();
+        }
+        return productRepository.findByItemNumber(itemNumber.trim());
+    }
+
     @Transactional
     public Product createProduct(Product product) {
         if (product.getId() == null || product.getId().isBlank()) {

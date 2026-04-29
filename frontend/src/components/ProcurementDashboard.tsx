@@ -492,6 +492,30 @@ export default function ProcurementDashboard() {
 
   const tableScroll = { x: 'max-content' as const };
   const formatConfidencePercent = (confidence?: number) => `${Math.round((confidence ?? 0) * 100)}%`;
+  const receiptTraceSummary = (receipt?: ProcurementReceipt) => {
+    const trace = receipt?.reconciliationResult?.trace;
+    if (!trace) {
+      return '';
+    }
+    const fragments = [
+      trace.activeProvider || trace.provider,
+      trace.model,
+      trace.stage,
+      trace.errorCode,
+      trace.fallbackReason ? `fallback:${trace.fallbackReason}` : undefined,
+      typeof trace.attemptNo === 'number' ? `attempt:${trace.attemptNo}` : undefined
+    ].filter(Boolean);
+    return fragments.join(' · ');
+  };
+  const receiptStatusColor = (status?: string) => {
+    if (status === 'REVIEWED' || status === 'CONFIRMED' || status === 'PUBLISHABLE') {
+      return 'green';
+    }
+    if (status === 'FAILED_RECOGNITION' || status === 'FAILED_SOURCE_GOVERNANCE') {
+      return 'red';
+    }
+    return 'gold';
+  };
 
   return (
     <>
@@ -747,6 +771,9 @@ export default function ProcurementDashboard() {
                           <Tag color={receipt.reconciliationResult?.recognitionMode === 'AI' ? 'blue' : 'default'}>
                             {receipt.reconciliationResult?.recognitionMode ?? 'UNKNOWN'}
                           </Tag>
+                          <Tag color={receiptStatusColor(receipt.reconciliationResult?.recognitionStatus)}>
+                            {receipt.reconciliationResult?.recognitionStatus ?? 'PENDING'}
+                          </Tag>
                           <Tag color={receipt.reconciliationResult?.reviewStatus === 'REVIEWED' ? 'green' : 'gold'}>
                             {receipt.reconciliationResult?.reviewStatus ?? 'PENDING_REVIEW'}
                           </Tag>
@@ -762,6 +789,7 @@ export default function ProcurementDashboard() {
                         <Text type="secondary">
                           {t('procurement.receipt_confidence')}: {formatConfidencePercent(receipt.reconciliationResult?.confidence as number | undefined)}
                         </Text>
+                        {receiptTraceSummary(receipt) ? <Text type="secondary">{receiptTraceSummary(receipt)}</Text> : null}
                         <Text>{receipt.reconciliationResult?.summary || t('procurement.receipt_workbench_ai_notice')}</Text>
                       </Space>
                     </Card>
@@ -773,15 +801,19 @@ export default function ProcurementDashboard() {
               {selectedReceipt ? (
                 <Space direction="vertical" style={{ width: '100%' }} size={12}>
                   <Alert
-                    type="info"
+                    type={selectedReceipt.reconciliationResult?.recognitionMode === 'RULE_FALLBACK' ? 'warning' : 'info'}
                     showIcon
                     message={t('procurement.receipt_workbench_left')}
                     description={[
                       selectedReceipt.reconciliationResult?.summary || t('procurement.receipt_workbench_ai_notice'),
+                      selectedReceipt.reconciliationResult?.recognitionStatus
+                        ? `status: ${selectedReceipt.reconciliationResult.recognitionStatus}`
+                        : '',
+                      receiptTraceSummary(selectedReceipt),
                       selectedReceipt.reconciliationResult?.reviewedBy
                         ? `${t('procurement.receipt_reviewed_by')}: ${selectedReceipt.reconciliationResult.reviewedBy} · ${selectedReceipt.reconciliationResult.reviewedAt ?? '-'}`
                         : t('procurement.receipt_pending_review_hint')
-                    ].join(' / ')}
+                    ].filter(Boolean).join(' / ')}
                   />
                   <Table
                     size="small"

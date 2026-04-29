@@ -352,6 +352,8 @@ const messages: Dictionary = {
     'stock.ai_quick_add.low_match_warning': 'Match score is below 70%; direct overwrite is disabled.',
     'stock.ai_quick_add.low_match_hint': 'Review the diff matrix and visual evidence. You can only save this as a new product.',
     'stock.ai_quick_add.save_as_new': 'Save as New Product',
+    'stock.ai_quick_add.manual_review_needed': 'AI/OCR needs manual takeover',
+    'stock.ai_quick_add.manual_review_hint': 'Fill the fields manually to save a draft, or retry the scan.',
     'stock.ai_quick_add.visual_evidence': 'Visual Evidence Comparison',
     'stock.ai_quick_add.history_image': 'Historical Archive Image',
     'stock.ai_quick_add.current_image': 'Current Recognition Image',

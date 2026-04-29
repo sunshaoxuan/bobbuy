@@ -60,8 +60,10 @@ vi.mock('../api', () => ({
                 updatedAt: '2026-01-01T00:00:00',
                 reconciliationResult: {
                     recognitionMode: 'AI',
+                    recognitionStatus: 'PENDING_MANUAL_REVIEW',
                     confidence: 0.91,
                     reviewStatus: 'PENDING_REVIEW',
+                    trace: { activeProvider: 'ollama-compatible', model: 'llava', stage: 'LLM_STRUCTURING', attemptNo: 2 },
                     receiptItems: [{ name: 'Matcha Kit', quantity: 1, unitPrice: 50 }],
                     matchedOrderLines: [],
                     unmatchedReceiptItems: [{ name: 'Store item', quantity: 1, disposition: 'UNREVIEWED' }],
@@ -265,5 +267,7 @@ describe('ProcurementHUD Component', () => {
         expect(await screen.findByText(/Picking Checklist|拣货确认清单/i)).toBeInTheDocument();
         expect(await screen.findByText(/Operation History|操作历史/i)).toBeInTheDocument();
         expect((await screen.findAllByText('20260117001')).length).toBeGreaterThan(0);
+        expect(await screen.findByText('PENDING_MANUAL_REVIEW')).toBeInTheDocument();
+        expect((await screen.findAllByText(/ollama-compatible/i)).length).toBeGreaterThan(0);
     });
 });
