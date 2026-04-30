@@ -10,10 +10,9 @@
 **当前事实基线**:
 - PLAN-43 已完成：CodeQL JS/TS build mode、重复触发、Maven dependency-check workflow、AI evidence workflow 已落地。
 - `REPORT-07` 已形成复判，但结论仍为 **NO_GO**。
-- 最新 CodeQL run `25177727147` 已成功。
-- 最新 main `BOBBuy CI` run `25177731792` 中 `backend-test`、`frontend-quality` 通过，但 `docker-build` 的 frontend image 在 `npm install` 阶段因 `ECONNRESET` 失败。
-- 已将 `frontend/Dockerfile` 切换为 `npm ci` 并增加 npm fetch retry；本地 `docker build frontend -t bobbuy-frontend-test` 已通过，仍需重跑 GitHub Actions 确认默认 CI。
-- main 上 Maven dependency-check run `25177731775` 已触发，当前需要等待完成并归档 HTML/JSON artifact。
+- 最新 main 默认 CI run `25192905348` 已成功。
+- 最新 main CodeQL run `25192905342` 已成功，但仍有 3 个 open high alert。
+- main 上 Maven dependency-check run `25177731775` 已成功，但 artifact 上传路径错误导致无 HTML/JSON 可下载报告；已修正 workflow 上传路径，需重跑确认。
 - AI release evidence workflow 尚无 run；真实 AI/OCR sample、真实 `e2e:ai` 与真实旧库 adoption 仍未形成可审计通过证据。
 
 ---
@@ -22,9 +21,9 @@
 
 刚合入 PR #60 后，原先“workflow 不存在 / 无法触发”的问题已经转化为更具体的放行问题：
 
-1. 默认 CI 必须重新恢复为全绿，当前阻断点是 frontend Docker build 网络抖动。
-2. CodeQL 已通过，但需要把最新 run 与 alerts 结论写入放行证据。
-3. Maven dependency-check 已有独立 workflow 和 NVD key/cache，仍需等待 main run 完成并归档报告。
+1. 默认 CI 已恢复全绿。
+2. CodeQL 已通过，但 3 个 open high alert 必须修复或正式豁免。
+3. Maven dependency-check 已成功执行，但报告 artifact 归档失败，需重跑修正后的 workflow。
 4. 真实 AI/OCR sample gate 和真实 `e2e:ai` 尚未执行。
 5. 真实旧库 Flyway adoption / restore drill 尚未执行。
 
