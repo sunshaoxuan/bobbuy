@@ -1,5 +1,6 @@
 package com.bobbuy.service;
 
+import com.bobbuy.util.EncryptionUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -7,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -34,8 +36,19 @@ public class LlmGateway {
     private final String mainProvider;
     private final String codexCommand;
     private final Duration codexTimeout;
+    private final String codexBridgeUrl;
+    private final String codexBridgeModel;
+    private final String codexBridgeApiKey;
+    private final String codexBridgeSecretSalt;
+    private final String codexBridgeSecretNonce;
+    private final String codexBridgeSecretCiphertext;
+    private final String codexBridgeSecretTag;
+    private final int codexBridgeSecretIterations;
+    private final String aiSecretMasterPassword;
+    private final Duration codexBridgeTimeout;
     private final Duration ollamaHealthTimeout;
     private volatile String activeMainProvider;
+    private volatile Optional<String> resolvedCodexBridgeApiKey;
 
     // Edge Node (Local) - Low latency, Vision/OCR
     private final String edgeUrl;
@@ -48,6 +61,16 @@ public class LlmGateway {
                       @Value("${bobbuy.ai.llm.main.provider:auto}") String mainProvider,
                       @Value("${bobbuy.ai.llm.codex.command:codex}") String codexCommand,
                       @Value("${bobbuy.ai.llm.codex.timeout-seconds:120}") long codexTimeoutSeconds,
+                      @Value("${bobbuy.ai.llm.codex-bridge.url:}") String codexBridgeUrl,
+                      @Value("${bobbuy.ai.llm.codex-bridge.model:gpt-5.3-codex}") String codexBridgeModel,
+                      @Value("${bobbuy.ai.llm.codex-bridge.api-key:}") String codexBridgeApiKey,
+                      @Value("${bobbuy.ai.llm.codex-bridge.timeout-seconds:120}") long codexBridgeTimeoutSeconds,
+                      @Value("${bobbuy.ai.llm.codex-bridge.secret.salt:}") String codexBridgeSecretSalt,
+                      @Value("${bobbuy.ai.llm.codex-bridge.secret.nonce:}") String codexBridgeSecretNonce,
+                      @Value("${bobbuy.ai.llm.codex-bridge.secret.ciphertext:}") String codexBridgeSecretCiphertext,
+                      @Value("${bobbuy.ai.llm.codex-bridge.secret.tag:}") String codexBridgeSecretTag,
+                      @Value("${bobbuy.ai.llm.codex-bridge.secret.iterations:200000}") int codexBridgeSecretIterations,
+                      @Value("${bobbuy.ai.secret.master-password:}") String aiSecretMasterPassword,
                       @Value("${bobbuy.ai.llm.ollama.health-timeout-seconds:3}") long ollamaHealthTimeoutSeconds,
                       @Value("${bobbuy.ai.llm.edge.url:}") String edgeUrl,
                       @Value("${bobbuy.ai.llm.edge.model:llava}") String edgeModel,
@@ -58,6 +81,16 @@ public class LlmGateway {
         this.mainProvider = mainProvider == null || mainProvider.isBlank() ? "auto" : mainProvider.trim().toLowerCase();
         this.codexCommand = codexCommand;
         this.codexTimeout = Duration.ofSeconds(Math.max(1, codexTimeoutSeconds));
+        this.codexBridgeUrl = codexBridgeUrl;
+        this.codexBridgeModel = codexBridgeModel;
+        this.codexBridgeApiKey = codexBridgeApiKey;
+        this.codexBridgeTimeout = Duration.ofSeconds(Math.max(1, codexBridgeTimeoutSeconds));
+        this.codexBridgeSecretSalt = codexBridgeSecretSalt;
+        this.codexBridgeSecretNonce = codexBridgeSecretNonce;
+        this.codexBridgeSecretCiphertext = codexBridgeSecretCiphertext;
+        this.codexBridgeSecretTag = codexBridgeSecretTag;
+        this.codexBridgeSecretIterations = Math.max(10000, codexBridgeSecretIterations);
+        this.aiSecretMasterPassword = aiSecretMasterPassword;
         this.ollamaHealthTimeout = Duration.ofSeconds(Math.max(1, ollamaHealthTimeoutSeconds));
         this.edgeUrl = edgeUrl;
         this.edgeModel = edgeModel;
@@ -66,15 +99,17 @@ public class LlmGateway {
 
     @PostConstruct
     public void initializeMainProvider() {
-        if ("codex".equals(mainProvider)) {
+        if ("codex-bridge".equals(mainProvider) || "openai-compatible".equals(mainProvider)) {
+            activeMainProvider = codexBridgeOrUnconfigured();
+        } else if ("codex".equals(mainProvider)) {
             activeMainProvider = codexOrUnconfigured();
         } else if (mainUrl == null || mainUrl.isBlank()) {
-            activeMainProvider = codexOrUnconfigured();
+            activeMainProvider = codexBridgeThenCodexOrUnconfigured();
         } else {
-            activeMainProvider = isOllamaAvailable(mainUrl) ? "ollama" : codexOrUnconfigured();
+            activeMainProvider = isOllamaAvailable(mainUrl) ? "ollama" : codexBridgeThenCodexOrUnconfigured();
         }
-        log.info("AI main LLM provider initialized: configured={}, active={}, ollamaUrl={}, codexCommand={}",
-                mainProvider, activeMainProvider, blankToUnset(mainUrl), blankToUnset(codexCommand));
+        log.info("AI main LLM provider initialized: configured={}, active={}, ollamaUrl={}, codexBridgeUrl={}, codexCommand={}",
+                mainProvider, activeMainProvider, blankToUnset(mainUrl), blankToUnset(codexBridgeUrl), blankToUnset(codexCommand));
     }
 
     /**
@@ -154,6 +189,9 @@ public class LlmGateway {
         if (!isVision && "codex".equals(resolveActiveMainProvider())) {
             return generateWithCodex(prompt);
         }
+        if (!isVision && "codex-bridge".equals(resolveActiveMainProvider())) {
+            return generateWithCodexBridge(prompt, targetModel);
+        }
         
         String url = isVision ? edgeUrl : mainUrl;
         String model = targetModel != null && !targetModel.isBlank() ? targetModel : (isVision ? edgeModel : mainModel);
@@ -190,6 +228,11 @@ public class LlmGateway {
             return Optional.of(response);
         } catch (Exception e) {
             log.error("LLM Gateway error at {}: {}", url, e.getMessage());
+            if (!isVision && !"codex-bridge".equals(activeMainProvider) && isCodexBridgeConfigured()) {
+                activeMainProvider = "codex-bridge";
+                log.info("Ollama main node failed; switching active main LLM provider to Codex Bridge.");
+                return generateWithCodexBridge(prompt, targetModel);
+            }
             if (!isVision && !"codex".equals(activeMainProvider) && isCodexConfigured()) {
                 activeMainProvider = "codex";
                 log.info("Ollama main node failed; switching active main LLM provider to Codex.");
@@ -200,6 +243,9 @@ public class LlmGateway {
     }
 
     private boolean isMainLlmConfigured() {
+        if ("codex-bridge".equals(resolveActiveMainProvider())) {
+            return isCodexBridgeConfigured();
+        }
         if ("codex".equals(resolveActiveMainProvider())) {
             return isCodexConfigured();
         }
@@ -243,6 +289,46 @@ public class LlmGateway {
         return codexCommand != null && !codexCommand.isBlank();
     }
 
+    private boolean isCodexBridgeConfigured() {
+        return codexBridgeUrl != null && !codexBridgeUrl.isBlank() && resolveCodexBridgeApiKey().isPresent();
+    }
+
+    private boolean isCodexBridgeAvailable() {
+        Optional<String> apiKey = resolveCodexBridgeApiKey();
+        if (codexBridgeUrl == null || codexBridgeUrl.isBlank() || apiKey.isEmpty()) {
+            return false;
+        }
+        try {
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+            requestFactory.setConnectTimeout(codexBridgeTimeout);
+            requestFactory.setReadTimeout(codexBridgeTimeout);
+            Map<String, Object> raw = RestClient.builder()
+                    .baseUrl(trimTrailingSlash(codexBridgeUrl))
+                    .requestFactory(requestFactory)
+                    .build()
+                    .get()
+                    .uri("models")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.get())
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() {});
+            return raw != null;
+        } catch (Exception e) {
+            log.warn("Codex Bridge is unavailable at {}: {}", codexBridgeUrl, e.getMessage());
+            return false;
+        }
+    }
+
+    private String codexBridgeThenCodexOrUnconfigured() {
+        if (isCodexBridgeAvailable()) {
+            return "codex-bridge";
+        }
+        return codexOrUnconfigured();
+    }
+
+    private String codexBridgeOrUnconfigured() {
+        return isCodexBridgeAvailable() ? "codex-bridge" : "unconfigured";
+    }
+
     private String codexOrUnconfigured() {
         return isCodexConfigured() ? "codex" : "unconfigured";
     }
@@ -252,6 +338,9 @@ public class LlmGateway {
     }
 
     public String getMainModel() {
+        if ("codex-bridge".equals(resolveActiveMainProvider())) {
+            return codexBridgeModel;
+        }
         return mainModel;
     }
 
@@ -319,5 +408,125 @@ public class LlmGateway {
                 }
             }
         }
+    }
+
+    private Optional<String> generateWithCodexBridge(String prompt, String targetModel) {
+        Optional<String> apiKey = resolveCodexBridgeApiKey();
+        if (codexBridgeUrl == null || codexBridgeUrl.isBlank() || apiKey.isEmpty()) {
+            log.warn("Codex Bridge is not configured.");
+            return Optional.empty();
+        }
+
+        String model = targetModel != null && !targetModel.isBlank() ? targetModel : codexBridgeModel;
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", model);
+        payload.put("stream", false);
+        payload.put("messages", List.of(Map.of("role", "user", "content", prompt)));
+
+        try {
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+            requestFactory.setConnectTimeout(codexBridgeTimeout);
+            requestFactory.setReadTimeout(codexBridgeTimeout);
+            log.info("Dispatching LLM task to Codex Bridge at {} (model: {})", codexBridgeUrl, model);
+            Map<String, Object> raw = RestClient.builder()
+                    .baseUrl(trimTrailingSlash(codexBridgeUrl))
+                    .requestFactory(requestFactory)
+                    .build()
+                    .post()
+                    .uri("chat/completions")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.get())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(payload)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() {});
+
+            return extractOpenAiCompatibleContent(raw);
+        } catch (Exception e) {
+            log.error("Codex Bridge Gateway error: {}", e.getMessage());
+            if (isCodexConfigured()) {
+                activeMainProvider = "codex";
+                log.info("Codex Bridge failed; switching active main LLM provider to Codex CLI.");
+                return generateWithCodex(prompt);
+            }
+            return Optional.empty();
+        }
+    }
+
+    private Optional<String> extractOpenAiCompatibleContent(Map<String, Object> raw) {
+        if (raw == null || !(raw.get("choices") instanceof List<?> choices) || choices.isEmpty()) {
+            return Optional.empty();
+        }
+        Object firstChoice = choices.get(0);
+        if (!(firstChoice instanceof Map<?, ?> choice)) {
+            return Optional.empty();
+        }
+        Object message = choice.get("message");
+        if (message instanceof Map<?, ?> messageMap && messageMap.get("content") instanceof String content && !content.isBlank()) {
+            return Optional.of(content);
+        }
+        Object text = choice.get("text");
+        if (text instanceof String content && !content.isBlank()) {
+            return Optional.of(content);
+        }
+        return Optional.empty();
+    }
+
+    private Optional<String> resolveCodexBridgeApiKey() {
+        Optional<String> cached = resolvedCodexBridgeApiKey;
+        if (cached != null) {
+            return cached;
+        }
+        synchronized (this) {
+            if (resolvedCodexBridgeApiKey != null) {
+                return resolvedCodexBridgeApiKey;
+            }
+            resolvedCodexBridgeApiKey = loadCodexBridgeApiKey();
+            return resolvedCodexBridgeApiKey;
+        }
+    }
+
+    private Optional<String> loadCodexBridgeApiKey() {
+        if (codexBridgeApiKey != null && !codexBridgeApiKey.isBlank()) {
+            return Optional.of(codexBridgeApiKey);
+        }
+        if (!hasEncryptedCodexBridgeSecret()) {
+            return Optional.empty();
+        }
+        if (aiSecretMasterPassword == null || aiSecretMasterPassword.isBlank()) {
+            log.warn("Codex Bridge encrypted API key is configured, but bobbuy.ai.secret.master-password is empty.");
+            return Optional.empty();
+        }
+        try {
+            String decrypted = EncryptionUtils.decrypt(
+                    aiSecretMasterPassword,
+                    codexBridgeSecretSalt,
+                    codexBridgeSecretNonce,
+                    codexBridgeSecretCiphertext,
+                    codexBridgeSecretTag,
+                    codexBridgeSecretIterations
+            );
+            return decrypted == null || decrypted.isBlank() ? Optional.empty() : Optional.of(decrypted);
+        } catch (Exception e) {
+            log.error("Failed to decrypt Codex Bridge API key: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private boolean hasEncryptedCodexBridgeSecret() {
+        return codexBridgeSecretSalt != null && !codexBridgeSecretSalt.isBlank()
+                && codexBridgeSecretNonce != null && !codexBridgeSecretNonce.isBlank()
+                && codexBridgeSecretCiphertext != null && !codexBridgeSecretCiphertext.isBlank()
+                && codexBridgeSecretTag != null && !codexBridgeSecretTag.isBlank();
+    }
+
+    private String trimTrailingSlash(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed;
     }
 }

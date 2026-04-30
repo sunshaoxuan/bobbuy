@@ -18,7 +18,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - **聊天协作**：聊天已升级为 REST 持久化 + WebSocket(STOMP) 实时推送；客户侧聊天保持“订单上下文优先，Trip 次级筛选”。
 - **AI 商品上架**：支持 OCR-first 识别、LLM 结构化、供应商规则、来源治理、既有商品匹配与人工确认；返回 provider/model/stage/latency/error/fallback trace，并在失败时支持人工补录为草稿；结构化字段（净含量/单位价格/包装规格/储存提示）会进入 `Product.attributes` JSONB 并可在前端继续修正。
 - **数据库迁移治理**：已引入 Flyway；`backend/src/main/resources/db/migration` 提供 PostgreSQL 基线 schema，`backend` / `core-service` 通过 migration 初始化空库，生产/试运行不再依赖 Hibernate `ddl-auto=update`。
-- **LLM 兜底**：主文本 LLM 支持 `auto` 路由，优先 Ollama，不可用时可切换到 Codex CLI；服务器生产环境不假定 Codex CLI 可用。
+- **LLM 兜底**：主文本 LLM 支持 `auto` 路由，优先 Ollama，不可用时可切换到 OpenAI-compatible `codex-bridge`，最后才使用本地 Codex CLI；服务器生产环境不假定 Codex CLI 可用。
 
 ## 当前未实现 / 不宣称
 - 消息队列驱动的非聊天业务闭环
@@ -111,7 +111,8 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - WebSocket `/ws` 必须通过 STOMP `CONNECT` header `Authorization: Bearer <access-token>` 建立连接；未登录或 token 无效时前端退回既有 REST 刷新路径。
 - `BOBBUY_SEED_ENABLED` 默认 `false`；demo 账号仅限本地演示。
 - `core-service` 为唯一 Flyway migration 执行者，其余服务固定禁用 Flyway。
-- 服务器部署推荐 Ollama / 私有兼容 gateway；不要把个人 Codex CLI 当默认服务器方案。
+- 服务器部署推荐 Ollama / 私有兼容 gateway；如使用个人 Codex 订阅桥接服务，请配置 `BOBBUY_AI_LLM_MAIN_PROVIDER=codex-bridge` 或保持 `auto` 作为 Ollama 不可用时的兜底，并使用 `BOBBUY_AI_LLM_CODEX_BRIDGE_URL` 指向 OpenAI-compatible `/v1` endpoint。
+- `BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY` 仅允许用于本机 `.env` / secret manager；如需把密文配置提交到仓库，使用 `scripts/encrypt-ai-secret.ps1` 生成 `BOBBUY_AI_LLM_CODEX_BRIDGE_SECRET_*`，并把 `BOBBUY_AI_SECRET_MASTER_PASSWORD` 保留在服务器环境变量中，不得写入 git。
 - `BOBBUY_AI_LLM_MAIN_URL` / `BOBBUY_AI_LLM_EDGE_URL` / `BOBBUY_OCR_URL` 留空时，前端会进入人工接管/重试路径，日志与响应 trace 会显示 `unconfigured`。
 
 ### 数据库迁移
@@ -163,7 +164,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - `cd frontend && npm run build`
 
 AI / OCR 默认测试边界：
-- 默认单测只走 fake/mock/H2，不连接真实 Ollama、Codex CLI、OCR service、MinIO。
+- 默认单测只走 fake/mock/H2，不连接真实 Ollama、Codex Bridge、Codex CLI、OCR service、MinIO。
 - 真实 AI/OCR 验收仅在专用环境执行，见 `docs/reports/TEST-MATRIX-本地与CI执行矩阵.md`。
 - Sample 字段级黄金值基线：`docs/fixtures/ai-onboarding-sample-golden.json`
 - Sample 对比脚本：`pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1`
