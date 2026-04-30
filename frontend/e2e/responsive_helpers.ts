@@ -86,6 +86,17 @@ export async function setAgentContext(page: Page) {
   await setAuthenticatedContext(page, 'AGENT');
 }
 
+export async function loginAsAgent(page: Page) {
+  const username = process.env.BOBBUY_E2E_AGENT_USERNAME?.trim() || 'agent';
+  const password = process.env.BOBBUY_E2E_AGENT_PASSWORD?.trim() || 'agent-pass';
+
+  await page.goto('/login');
+  await page.locator('input#username').fill(username);
+  await page.locator('input#password').fill(password);
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL('**/dashboard');
+}
+
 async function setAuthenticatedContext(page: Page, role: MockRole) {
   const user = MOCK_USERS[role];
   const accessToken = ACCESS_TOKEN_BY_ROLE[role];

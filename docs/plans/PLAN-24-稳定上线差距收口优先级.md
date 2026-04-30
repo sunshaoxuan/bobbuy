@@ -86,14 +86,15 @@
 4. Playwright 手动门禁必须保留 trace / screenshot / video / HTML report artifact，便于试运行失败复盘。
 5. AI 商品上架专用环境需保留 sample golden 与字段级对比报告，禁止只记录“成功/失败”而不保留关键识别字段。
 
-**当前状态（2026-04-30 / PLAN-42）**
+**当前状态（2026-04-30 / PLAN-43）**
 
 - `scripts/verify-ai-onboarding-samples.ps1` 已补 gate/report-only 分流、`gatePassed` 汇总与失败非零退出码。
-- `.github/workflows/codeql.yml` 已新增手动 CodeQL workflow，覆盖 Java/Kotlin、JavaScript/TypeScript、Actions。
+- `.github/workflows/codeql.yml` 已支持 `push` / `pull_request` / `workflow_dispatch`，覆盖 Java/Kotlin、JavaScript/TypeScript、Actions。
+- `.github/workflows/dependency-check.yml` 已新增 GitHub-hosted Maven dependency-check workflow，并上传 HTML/JSON artifact。
+- `.github/workflows/ai-release-evidence.yml` 已新增专用环境 AI sample gate + `e2e:ai` 证据收集 workflow。
 - `frontend npm audit --json` 已从 `3 critical / 10 high / 4 moderate` 降到 `0 critical / 0 high / 6 moderate`；剩余项均为 Vite/Vitest dev-only 风险，需按 `REPORT-05` 继续跟踪。
-- 已新增 `REPORT-06`，记录 `main` 分支默认 CI run `25141502571` 成功，但最终放行结论仍为 `NO_GO`。
-- CodeQL workflow 当前 run 数量仍为 `0`，尚未形成仓库级扫描结果。
-- Maven OWASP Dependency-Check 再次尝试执行，仍被 `www.cisa.gov` DNS 解析失败阻塞。
+- 已新增 `REPORT-07`，记录本轮自动触发的 CodeQL run `25142273258` 与 Maven dependency-check run `25142273277` 均为 `action_required`（0 jobs，需仓库管理员批准/放行），最终结论仍为 `NO_GO`。
+- Maven OWASP Dependency-Check 本地再次尝试执行，仍被 `www.cisa.gov` DNS 解析失败阻塞；GitHub-hosted workflow 路径已补，但尚未真正放行执行。
 - 真实 AI/OCR、`npm run e2e:ai`、真实旧库 adoption 与仓库级扫描执行结果仍是当前 release blocker。
 
 **验收标准**

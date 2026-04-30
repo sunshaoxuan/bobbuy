@@ -177,6 +177,7 @@ AI / OCR 默认测试边界：
 - 发版候选证据报告：`docs/reports/REPORT-04-发版候选门禁验收报告.md`
 - 发版阻断项处置报告：`docs/reports/REPORT-05-发版阻断项处置报告.md`
 - 专用环境发版证据与放行判定：`docs/reports/REPORT-06-专用环境发版证据与放行判定.md`
+- NO-GO 解阻与放行复判：`docs/reports/REPORT-07-NO-GO阻断项解阻与放行复判.md`
 - `cd backend && mvn -DskipTests package && cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
 - `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
 
@@ -185,17 +186,18 @@ AI / OCR 默认测试边界：
 - `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test`
 - `cd frontend && npm run e2e`
 - `cd frontend && npm run e2e:ai`
+- `workflow_dispatch`: `.github/workflows/ai-release-evidence.yml`（需传专用后端 URL；`frontend` 支持 `BOBBUY_API_PROXY_TARGET` / `BOBBUY_WS_PROXY_TARGET` 与 `BOBBUY_E2E_AGENT_USERNAME` / `BOBBUY_E2E_AGENT_PASSWORD`）
 
 Playwright smoke 口径：
 - `npm run e2e` 使用 Vite dev server（`frontend/playwright.config.ts`），不依赖真实 AI/OCR/MinIO/外部服务。
 - 默认覆盖 agent / customer 两类浏览器会话，覆盖登录态恢复、客户订单/账单/聊天、agent 采购/拣货/库存、角色门禁与聊天图片发布人工接管 smoke。
 - 浏览器端只保留 access token、本地用户信息与 CSRF cookie；默认 smoke 不再依赖 `bobbuy_test_role` / `bobbuy_test_user` 伪造角色头。
 - Playwright 失败时会保留 `playwright-report/`、`test-results/` 下的 HTML 报告、trace、screenshot、video；手动 CI job 会上传这些 artifact。
-- `npm run e2e:ai` 继续只跑真实 AI/OCR 专用链路，需单独环境与结果登记。
+- `npm run e2e:ai` 继续只跑真实 AI/OCR 专用链路；专用环境执行时默认使用真实登录，不再依赖 mock agent 会话。
 
 风险登记 / 独立安全门禁：
-- CodeQL / 安全扫描（手动 workflow：`.github/workflows/codeql.yml`）
-- 依赖审计（前端 `npm audit --json`；后端 Maven 依赖审计见 `REPORT-05` / `REPORT-06`）
+- CodeQL / 安全扫描（`.github/workflows/codeql.yml`：`push` / `pull_request` / `workflow_dispatch`）
+- 依赖审计（前端 `npm audit --json`；后端 `.github/workflows/dependency-check.yml` 或本地 Maven 扫描）
 - 若本次 PR / Release 未执行，必须明确登记为风险项，不得写成“已通过”。
 
 ## 试运行最小运维基线
@@ -217,8 +219,9 @@ Playwright smoke 口径：
 - `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"`：通过（report-only 返回 `0`，但 `gatePassed=false`）
 - `cd frontend && npm audit --json`：已降至 `0 critical / 0 high / 6 moderate`；剩余为 Vite/Vitest dev-only 风险，详见 `REPORT-05`
 - GitHub Actions 默认 `BOBBuy CI`：`main` 分支 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25141502571> 通过（`backend-test`、`frontend-quality`、`docker-build` 成功）
-- GitHub Actions 手动 `CodeQL` workflow：已新增 `.github/workflows/codeql.yml`，截至 `2026-04-30` run 数量仍为 `0`
-- `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -B org.owasp:dependency-check-maven:12.1.8:check -Dformat=HTML,JSON -DoutputDirectory=/tmp/plan42-dependency-check -DskipProvidedScope=true -DskipTestScope=true`：受 `www.cisa.gov` DNS 解析失败阻塞，未生成可信报告
+- GitHub Actions `CodeQL` workflow：已自动触发 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25142273258>，但当前结论为 `action_required`（0 jobs，需仓库管理员批准/放行）
+- GitHub Actions `Maven dependency-check` workflow：已自动触发 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25142273277>，但当前结论为 `action_required`（0 jobs，需仓库管理员批准/放行）
+- `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -B org.owasp:dependency-check-maven:12.1.8:check -Dformat=HTML,JSON -DoutputDirectory=/tmp/plan42-dependency-check -DskipProvidedScope=true -DskipTestScope=true`：本沙箱仍受 `www.cisa.gov` DNS 解析失败阻塞，未生成可信报告
 - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`：通过
 - PostgreSQL 备份恢复演练：`pg_dump -> bobbuy_restore_verify_plan40` 恢复校验通过
 - `cd backend && mvn -DskipTests package`：通过。
@@ -232,3 +235,4 @@ Playwright smoke 口径：
 当前边界执行摘要见 [docs/reports/REPORT-01-试运行服务边界执行报告.md](docs/reports/REPORT-01-试运行服务边界执行报告.md)。
 当前发版候选门禁执行摘要见 [docs/reports/REPORT-04-发版候选门禁验收报告.md](docs/reports/REPORT-04-发版候选门禁验收报告.md)。
 当前专用环境发版证据与最终放行判定见 [docs/reports/REPORT-06-专用环境发版证据与放行判定.md](docs/reports/REPORT-06-专用环境发版证据与放行判定.md)。
+当前 NO-GO 解阻复判见 [docs/reports/REPORT-07-NO-GO阻断项解阻与放行复判.md](docs/reports/REPORT-07-NO-GO阻断项解阻与放行复判.md)。

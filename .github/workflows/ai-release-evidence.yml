@@ -1,0 +1,89 @@
+name: AI release evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      backend_base_url:
+        description: "Dedicated backend base URL, e.g. http://127.0.0.1:8080"
+        required: true
+        type: string
+      agent_username:
+        description: "Dedicated agent username"
+        required: false
+        default: "agent"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  ai-release-evidence:
+    name: ai-release-evidence
+    runs-on: ubuntu-latest
+    env:
+      BOBBUY_API_PROXY_TARGET: ${{ inputs.backend_base_url }}
+      BOBBUY_E2E_AGENT_USERNAME: ${{ inputs.agent_username }}
+      BOBBUY_E2E_AGENT_PASSWORD: ${{ secrets.AI_E2E_AGENT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate backend URL input
+        shell: bash
+        run: |
+          set -euo pipefail
+          backend_url='${{ inputs.backend_base_url }}'
+          if [[ ! "$backend_url" =~ ^https?://[^[:space:]]+$ ]]; then
+            echo "backend_base_url must be an http/https URL without spaces" >&2
+            exit 1
+          fi
+
+      - name: Derive backend websocket URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          backend_ws_url='${{ inputs.backend_base_url }}'
+          if [[ "$backend_ws_url" == https://* ]]; then
+            backend_ws_url="wss://${backend_ws_url#https://}"
+          else
+            backend_ws_url="ws://${backend_ws_url#http://}"
+          fi
+          echo "BOBBUY_WS_PROXY_TARGET=$backend_ws_url" >> "$GITHUB_ENV"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+
+      - name: Install Playwright Chromium dependencies
+        run: cd frontend && npx playwright install --with-deps chromium
+
+      - name: Run real AI sample gate
+        shell: pwsh
+        run: >
+          & '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1'
+          -GoldenPath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-golden.json'
+          -SampleDir '/home/runner/work/bobbuy/bobbuy/sample'
+          -ScanEndpoint '${{ inputs.backend_base_url }}/api/ai/onboard/scan'
+          -IncludeNeedsHumanGolden
+          -JsonReportPath '/tmp/bobbuy-ai-sample-report.json'
+          -MarkdownReportPath '/tmp/bobbuy-ai-sample-report.md'
+
+      - name: Run real AI Playwright E2E
+        run: npm run e2e:ai --prefix frontend
+
+      - name: Upload AI evidence artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-release-evidence
+          path: |
+            /tmp/bobbuy-ai-sample-report.json
+            /tmp/bobbuy-ai-sample-report.md
+            frontend/playwright-report
+            frontend/test-results
+          if-no-files-found: ignore

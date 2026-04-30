@@ -1,6 +1,6 @@
 # 本地 / CI 测试执行矩阵
 
-> 2026-04-30 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build` 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 做配置渲染校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-06` 已记录最新放行结论为 `NO_GO`：默认 CI 与本地 smoke 已通过，但 CodeQL 实跑、Maven 可信依赖审计、真实 AI/OCR 与真实旧库 adoption 证据仍未完成。
+> 2026-04-30 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build` 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 做配置渲染校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 已记录最新放行结论仍为 `NO_GO`：本轮已补自动触发 CodeQL / Maven dependency-check 与 AI evidence workflow，但 GitHub Actions 审批/权限、真实 AI/OCR 与真实旧库 adoption 证据仍未完成。
 
 ## 1. 默认门禁（每个 PR / `main` push 必跑）
 
@@ -19,8 +19,8 @@
 | PostgreSQL 空库 migration | `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate` | `workflow_dispatch` + `postgres-migration-verify` job（输入 `run_postgres_migration_verify=true`） | 否 | 需要可写 PostgreSQL 空库；默认由 Flyway 插件验证 `backend/src/main/resources/db/migration` |
 | 服务壳 smoke test | `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test` | 当前仅本地 / 手动执行 | 否 | 使用 H2 与关闭 Nacos 的测试配置，验证 `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` 最小启动以及 gateway 内部 header 清理 |
 | Playwright 页面回归 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e` | `workflow_dispatch` + `playwright-e2e` job（输入 `run_playwright_e2e=true`） | 否 | GitHub Hosted Runner 可执行；使用 Vite dev server + 前端共享 mock 浏览器 smoke，覆盖 agent/customer 登录态、角色门禁、订单/账单/聊天、采购/拣货/库存人工接管，不依赖真实 AI / MinIO |
-| AI 真实视觉链路 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai` | 不纳入默认 Hosted CI；仅在专用环境手动执行并单独记录结果 | 否 | 必须提供 `RUN_AI_VISION_E2E=1`、`SPRING_PROFILES_ACTIVE=dev,ai-hermes`、可访问的 AI 模型、MinIO、seed 数据与样本图片 |
-| AI sample 字段级对比（gate 模式） | `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden` | 当前仅本地 / 专用环境执行 | 否 | 需要真实 `/api/ai/onboard/scan`、样本图片目录与 `docs/fixtures/ai-onboarding-sample-golden.json`；输出 `/tmp/ai-onboarding-sample-report.json` + `/tmp/ai-onboarding-sample-report.md`；遇到 `FAIL` / `SCAN_FAIL` / `MISSING_FILE` 返回非零 |
+| AI 真实视觉链路 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 必须提供真实后端 URL、`SPRING_PROFILES_ACTIVE=dev,ai-hermes`、可访问的 AI 模型、MinIO、seed 数据、样本图片，以及 `BOBBUY_E2E_AGENT_USERNAME` / `BOBBUY_E2E_AGENT_PASSWORD` |
+| AI sample 字段级对比（gate 模式） | `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 需要真实 `/api/ai/onboard/scan`、样本图片目录与 `docs/fixtures/ai-onboarding-sample-golden.json`；输出 `/tmp/ai-onboarding-sample-report.json` + `/tmp/ai-onboarding-sample-report.md`；遇到 `FAIL` / `SCAN_FAIL` / `MISSING_FILE` 返回非零 |
 | AI sample 脚本 dry-run 自检（gate 模式） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"` | 当前仅本地执行 | 否 | 不依赖真实 `/api/ai/onboard/scan`；用于验证字段别名映射、optional path 规范化、报告格式与 gate 退出码 |
 | AI sample 报告生成（report-only） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"` | 当前仅本地执行 | 否 | 仅用于人工生成 JSON/Markdown 报告；即使 `gatePassed=false` 也返回 `0`，不得作为 release gate |
 | Compose 配置渲染 | `cd /home/runner/work/bobbuy/bobbuy && docker compose config` | 当前未纳入默认 CI；作为试运行部署前置校验执行 | 否 | 要求 `.env` / 默认变量可成功渲染 Compose，且不得依赖未声明变量 |
@@ -30,8 +30,8 @@
 
 | 验证项 | 默认状态 | 执行要求 | 备注 |
 | :-- | :-- | :-- | :-- |
-| CodeQL / 安全扫描 | 不纳入默认 `ci.yml` | 手动触发 `.github/workflows/codeql.yml`；若本次 PR / Release 未执行，必须登记为风险项，不得写成“已通过” | 覆盖 Java/Kotlin、JavaScript/TypeScript、Actions |
-| 依赖审计 | 不纳入默认 `ci.yml` | 按需独立执行；前端使用 `npm audit --json`，后端优先执行 OWASP Dependency-Check Maven | 若因网络/沙箱限制失败，必须记录具体错误与发版前责任边界 |
+| CodeQL / 安全扫描 | 不纳入默认 `ci.yml` | `.github/workflows/codeql.yml` 已支持 `push` / `pull_request` / `workflow_dispatch`；若 run 仍未真正执行，必须登记具体审批/权限阻塞 | 覆盖 Java/Kotlin、JavaScript/TypeScript、Actions |
+| 依赖审计 | 不纳入默认 `ci.yml` | 前端使用 `npm audit --json`；后端优先执行 `.github/workflows/dependency-check.yml` 或等价 Maven 扫描 | 若因网络/沙箱或 GitHub Actions 审批失败，必须记录具体错误与责任边界 |
 
 ## 4. 执行约束与已知噪声
 
@@ -94,15 +94,18 @@
 - [x] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm audit --json`
   - 结果：`0 critical / 0 high / 6 moderate`
 - [x] `.github/workflows/codeql.yml`
-  - 已补手动 CodeQL workflow
-  - 截至 `2026-04-30` workflow run 数量仍为 `0`
+  - 已补自动触发 + 手动触发 CodeQL workflow
+  - run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25142273258> 当前为 `action_required`（0 jobs，需仓库管理员批准/放行）
+- [x] `.github/workflows/dependency-check.yml`
+  - 已补 GitHub-hosted Maven dependency-check workflow 与 artifact 上传
+  - run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25142273277> 当前为 `action_required`（0 jobs，需仓库管理员批准/放行）
 - [x] 本地 PostgreSQL 15 Flyway 与恢复演练
   - `docker compose up -d postgres`
   - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`
   - `pg_dump -> bobbuy_restore_verify_plan40` 恢复校验通过
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -B org.owasp:dependency-check-maven:12.1.8:check -Dformat=HTML,JSON -DoutputDirectory=/tmp/plan42-dependency-check -DskipProvidedScope=true -DskipTestScope=true`
-  - 当前受 `UnknownHostException: www.cisa.gov` 阻塞，未生成可信 HTML/JSON 报告
+  - 本地当前受 `UnknownHostException: www.cisa.gov` 阻塞；GitHub-hosted run 也仍受 `action_required` 阻塞，尚未生成可信 HTML/JSON 报告
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai`
 - [ ] `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`
-- [ ] CodeQL 实跑与 code scanning 结果归档（workflow 已补，但 run 数量仍为 `0`）
+- [ ] CodeQL 实跑与 code scanning 结果归档（workflow 已自动触发，但 run `25142273258` 仍为 `action_required`）
 - [ ] mTLS / service mesh / 契约测试（本阶段未实现，需继续登记风险）

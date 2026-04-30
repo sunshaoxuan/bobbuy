@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+const defaultApiProxyTarget = 'http://localhost:8080';
+const apiProxyTarget = process.env.BOBBUY_API_PROXY_TARGET?.trim() || defaultApiProxyTarget;
+const wsProxyTarget = process.env.BOBBUY_WS_PROXY_TARGET?.trim() || apiProxyTarget.replace(/^http/i, 'ws');
+
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -31,16 +35,16 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: apiProxyTarget,
         changeOrigin: true,
         secure: false,
         headers: {
-          'Origin': 'http://localhost:8080',
-          'Referer': 'http://localhost:8080/'
+          'Origin': apiProxyTarget,
+          'Referer': `${apiProxyTarget}/`
         }
       },
       '/ws': {
-        target: 'ws://localhost:8080',
+        target: wsProxyTarget,
         ws: true,
         changeOrigin: true
       }
