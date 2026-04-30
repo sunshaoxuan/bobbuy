@@ -94,7 +94,7 @@
 - `.github/workflows/ai-release-evidence.yml` 已新增专用环境 AI sample gate + `e2e:ai` 证据收集 workflow。
 - `frontend npm audit --json` 已从 `3 critical / 10 high / 4 moderate` 降到 `0 critical / 0 high / 6 moderate`；剩余项均为 Vite/Vitest dev-only 风险，需按 `REPORT-05` 继续跟踪。
 - 默认 `BOBBuy CI` 最新 main run `25178072203` 已恢复 success，`backend-test` / `frontend-quality` / `docker-build` 全部通过。
-- 最新成功 CodeQL run 为 `25177727147`，但仍需在默认分支 push 下补齐 code scanning alerts 归档。
+- 最新成功 CodeQL run 为 `25177727147`，恢复 `push` 后的验证 run `25178669741` 仍为 `action_required`（0 jobs）；默认分支 code scanning alerts 归档仍未完成。
 - 最新 Maven dependency-check main run `25177731775` 仍为 `in_progress`，artifact 尚未产出。
 - 真实 AI/OCR、`npm run e2e:ai`、真实旧库 adoption 与仓库级扫描结果归档仍是当前 release blocker。
 

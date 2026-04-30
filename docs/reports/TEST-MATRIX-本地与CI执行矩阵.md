@@ -96,6 +96,7 @@
 - [x] `.github/workflows/codeql.yml`
   - 最新成功 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25177727147>
   - `actions` / `javascript-typescript` / `java-kotlin` matrix 全部成功
+  - 恢复 `push` 后的验证 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25178669741> 仍为 `action_required`（0 jobs）
   - 当前仍需默认分支 push analysis 与 code scanning alerts 数归档
 - [x] `.github/workflows/dependency-check.yml`
   - 已补 GitHub-hosted Maven dependency-check workflow 与 artifact 上传
@@ -108,5 +109,5 @@
   - 本地当前受 `UnknownHostException: www.cisa.gov` 阻塞；GitHub-hosted main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25177731775> 仍为 `in_progress`，尚未生成可信 HTML/JSON 报告
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai`
 - [ ] `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`
-- [ ] CodeQL 默认分支实跑与 code scanning 结果归档（需等待恢复后的 `push` 触发在默认分支形成新基线）
+- [ ] CodeQL 默认分支实跑与 code scanning 结果归档（恢复后的分支验证 run `25178669741` 仍为 `action_required`，需仓库管理员放行并等待默认分支形成新基线）
 - [ ] mTLS / service mesh / 契约测试（本阶段未实现，需继续登记风险）
