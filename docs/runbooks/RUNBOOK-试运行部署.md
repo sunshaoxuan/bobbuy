@@ -171,19 +171,22 @@ npm run e2e
    - `sample/` 样本图片目录可访问
 2. 执行顺序
    ```bash
-   pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden
+    pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden
 
-   cd /home/runner/work/bobbuy/bobbuy/frontend
-   RUN_AI_VISION_E2E=1 npm run e2e:ai
-   ```
+    cd /home/runner/work/bobbuy/bobbuy/frontend
+    RUN_AI_VISION_E2E=1 npm run e2e:ai
+    ```
+   - 默认 `verify-ai-onboarding-samples.ps1` 为 gate 模式：只要存在 `FAIL` / `SCAN_FAIL` / `MISSING_FILE` 就返回非零。
+   - 若只需人工导出报告，可额外使用 `-ReportOnly`，但**不得**把 report-only 命令当作 release gate 通过证据。
 3. 产物要求
    - sample JSON report：`/tmp/ai-onboarding-sample-report.json`
    - sample Markdown report：`/tmp/ai-onboarding-sample-report.md`
    - Playwright `frontend/playwright-report/`
    - Playwright `frontend/test-results/`
 4. 注意
-   - `docs/fixtures/ai-onboarding-sample-scan-mock.json` 只用于脚本 dry-run 自检，不得替代真实专用环境放行证据
-   - `needsHumanGolden=true` 的样例必须列出人工复核项，不得静默写成通过
+    - `docs/fixtures/ai-onboarding-sample-scan-mock.json` 只用于脚本 dry-run 自检，不得替代真实专用环境放行证据
+    - `docs/fixtures/ai-onboarding-sample-scan-mock-fail.json` 只用于验证 gate/report-only 语义，不代表真实识别结论
+    - `needsHumanGolden=true` 的样例必须列出人工复核项，不得静默写成通过
 
 Flyway 验证点：
 

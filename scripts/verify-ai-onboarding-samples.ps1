@@ -6,7 +6,8 @@ param(
     [string]$MarkdownReportPath = "/tmp/ai-onboarding-sample-report.md",
     [switch]$IncludeNeedsHumanGolden,
     [string]$MockScanResponsePath,
-    [string[]]$SampleIds
+    [string[]]$SampleIds,
+    [switch]$ReportOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -229,137 +230,167 @@ function Expand-ExpectedFields {
     return $results
 }
 
-$goldenEntries = Get-Content -Raw -Path $GoldenPath | ConvertFrom-Json
-$selectedSampleIds = @($SampleIds | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-if ($selectedSampleIds.Count -gt 0) {
-    $goldenEntries = @($goldenEntries | Where-Object { $selectedSampleIds -contains $_.sampleId })
-}
-
-$mockScanResponses = $null
-if (-not [string]::IsNullOrWhiteSpace($MockScanResponsePath)) {
-    $mockScanResponses = Get-Content -Raw -Path $MockScanResponsePath | ConvertFrom-Json
-}
-
-$results = @()
-
-foreach ($entry in $goldenEntries) {
-    $samplePath = Join-Path $SampleDir $entry.sampleId
-    if ($null -eq $mockScanResponses -and -not (Test-Path $samplePath)) {
-        $results += [pscustomobject]@{
-            sampleId = $entry.sampleId
-            status = "MISSING_FILE"
-            needsHumanGolden = [bool]$entry.needsHumanGolden
-            detail = "Sample file not found"
-            fieldResults = @()
-        }
-        continue
+try {
+    $goldenEntries = Get-Content -Raw -Path $GoldenPath | ConvertFrom-Json
+    $selectedSampleIds = @($SampleIds | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($selectedSampleIds.Count -gt 0) {
+        $goldenEntries = @($goldenEntries | Where-Object { $selectedSampleIds -contains $_.sampleId })
     }
 
-    if ($entry.needsHumanGolden -and -not $IncludeNeedsHumanGolden) {
-        $results += [pscustomobject]@{
-            sampleId = $entry.sampleId
-            status = "NEEDS_HUMAN_GOLDEN"
-            needsHumanGolden = $true
-            detail = $entry.description
-            fieldResults = @()
-        }
-        continue
+    $mockScanResponses = $null
+    if (-not [string]::IsNullOrWhiteSpace($MockScanResponsePath)) {
+        $mockScanResponses = Get-Content -Raw -Path $MockScanResponsePath | ConvertFrom-Json
     }
 
-    try {
-        if ($null -ne $mockScanResponses) {
-            $scanResponse = Get-MockScanResponse -Responses $mockScanResponses -SampleId $entry.sampleId
-            if ($null -eq $scanResponse) {
-                throw "Mock response not found for sample: $($entry.sampleId)"
-            }
-        } else {
-            $bytes = [System.IO.File]::ReadAllBytes($samplePath)
-            $body = @{
-                base64Image = "data:image/jpeg;base64,$([Convert]::ToBase64String($bytes))"
+    $results = @()
+
+    foreach ($entry in $goldenEntries) {
+        $samplePath = Join-Path $SampleDir $entry.sampleId
+        if ($null -eq $mockScanResponses -and -not (Test-Path $samplePath)) {
+            $results += [pscustomobject]@{
                 sampleId = $entry.sampleId
-            } | ConvertTo-Json -Depth 10
-            $scanResponse = Invoke-RestMethod -Uri $ScanEndpoint -Method Post -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 180
-        }
-
-        if ($scanResponse.status -and $scanResponse.status -ne "success") {
-            throw "Non-success response: $($scanResponse | ConvertTo-Json -Depth 10 -Compress)"
-        }
-        $actual = if ($null -ne $scanResponse.data) { $scanResponse.data } else { $scanResponse }
-        $fieldResults = @()
-        foreach ($field in (Expand-ExpectedFields -Expected $entry.expected)) {
-            $expectedPath = Normalize-FieldPath $field.path
-            $actualPath = Resolve-ActualFieldPath $expectedPath
-            $fieldResults += Test-FieldMatch -ExpectedPath $expectedPath -ActualPath $actualPath -Expected $field.value -Actual (Get-NestedValue -Object $actual -Path $actualPath) -Tolerance $entry.tolerance
-        }
-
-        $failedCount = @($fieldResults | Where-Object { -not $_.passed }).Count
-        $results += [pscustomobject]@{
-            sampleId = $entry.sampleId
-            status = if ($failedCount -eq 0) { "PASS" } else { "FAIL" }
-            needsHumanGolden = [bool]$entry.needsHumanGolden
-            detail = $entry.description
-            actual = [pscustomobject]@{
-                name = $actual.name
-                brand = $actual.brand
-                itemNumber = $actual.itemNumber
-                basePrice = $actual.price
-                categoryId = $actual.categoryId
-                attributes = $actual.attributes
-                traceStage = $actual.trace.stage
-                ocrProvider = if ($actual.trace.events.Count -gt 0) { $actual.trace.events[0].provider } else { $null }
-                llmProvider = $actual.trace.provider
-                fallbackReason = $actual.trace.fallbackReason
+                status = "MISSING_FILE"
+                needsHumanGolden = [bool]$entry.needsHumanGolden
+                detail = "Sample file not found"
+                fieldResults = @()
             }
-            fieldResults = $fieldResults
+            continue
         }
-    } catch {
-        $results += [pscustomobject]@{
-            sampleId = $entry.sampleId
-            status = "SCAN_FAIL"
-            needsHumanGolden = [bool]$entry.needsHumanGolden
-            detail = $_.Exception.Message
-            fieldResults = @()
+
+        if ($entry.needsHumanGolden -and -not $IncludeNeedsHumanGolden) {
+            $results += [pscustomobject]@{
+                sampleId = $entry.sampleId
+                status = "NEEDS_HUMAN_GOLDEN"
+                needsHumanGolden = $true
+                detail = $entry.description
+                fieldResults = @()
+            }
+            continue
+        }
+
+        try {
+            if ($null -ne $mockScanResponses) {
+                $scanResponse = Get-MockScanResponse -Responses $mockScanResponses -SampleId $entry.sampleId
+                if ($null -eq $scanResponse) {
+                    throw "Mock response not found for sample: $($entry.sampleId)"
+                }
+            } else {
+                $bytes = [System.IO.File]::ReadAllBytes($samplePath)
+                $body = @{
+                    base64Image = "data:image/jpeg;base64,$([Convert]::ToBase64String($bytes))"
+                    sampleId = $entry.sampleId
+                } | ConvertTo-Json -Depth 10
+                $scanResponse = Invoke-RestMethod -Uri $ScanEndpoint -Method Post -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 180
+            }
+
+            if ($scanResponse.status -and $scanResponse.status -ne "success") {
+                throw "Non-success response: $($scanResponse | ConvertTo-Json -Depth 10 -Compress)"
+            }
+            $actual = if ($null -ne $scanResponse.data) { $scanResponse.data } else { $scanResponse }
+            $fieldResults = @()
+            foreach ($field in (Expand-ExpectedFields -Expected $entry.expected)) {
+                $expectedPath = Normalize-FieldPath $field.path
+                $actualPath = Resolve-ActualFieldPath $expectedPath
+                $fieldResults += Test-FieldMatch -ExpectedPath $expectedPath -ActualPath $actualPath -Expected $field.value -Actual (Get-NestedValue -Object $actual -Path $actualPath) -Tolerance $entry.tolerance
+            }
+
+            $failedCount = @($fieldResults | Where-Object { -not $_.passed }).Count
+            $results += [pscustomobject]@{
+                sampleId = $entry.sampleId
+                status = if ($failedCount -eq 0) { "PASS" } else { "FAIL" }
+                needsHumanGolden = [bool]$entry.needsHumanGolden
+                detail = $entry.description
+                actual = [pscustomobject]@{
+                    name = $actual.name
+                    brand = $actual.brand
+                    itemNumber = $actual.itemNumber
+                    basePrice = $actual.price
+                    categoryId = $actual.categoryId
+                    attributes = $actual.attributes
+                    traceStage = $actual.trace.stage
+                    ocrProvider = if ($actual.trace.events.Count -gt 0) { $actual.trace.events[0].provider } else { $null }
+                    llmProvider = $actual.trace.provider
+                    fallbackReason = $actual.trace.fallbackReason
+                }
+                fieldResults = $fieldResults
+            }
+        } catch {
+            $results += [pscustomobject]@{
+                sampleId = $entry.sampleId
+                status = "SCAN_FAIL"
+                needsHumanGolden = [bool]$entry.needsHumanGolden
+                detail = $_.Exception.Message
+                fieldResults = @()
+            }
         }
     }
-}
 
-$report = [pscustomobject]@{
-    generatedAt = (Get-Date).ToString("o")
-    goldenPath = $GoldenPath
-    sampleDir = $SampleDir
-    scanEndpoint = $ScanEndpoint
-    results = $results
-}
+    $summary = [pscustomobject]@{
+        total = @($results).Count
+        pass = @($results | Where-Object { $_.status -eq "PASS" }).Count
+        fail = @($results | Where-Object { $_.status -eq "FAIL" }).Count
+        skipped = @($results | Where-Object { $_.status -eq "NEEDS_HUMAN_GOLDEN" }).Count
+        scanFail = @($results | Where-Object { $_.status -eq "SCAN_FAIL" }).Count
+        missingFile = @($results | Where-Object { $_.status -eq "MISSING_FILE" }).Count
+    }
+    $summary | Add-Member -NotePropertyName gatePassed -NotePropertyValue (($summary.fail + $summary.scanFail + $summary.missingFile) -eq 0)
 
-$report | ConvertTo-Json -Depth 10 | Set-Content -Path $JsonReportPath -Encoding UTF8
+    $report = [pscustomobject]@{
+        generatedAt = (Get-Date).ToString("o")
+        goldenPath = $GoldenPath
+        sampleDir = $SampleDir
+        scanEndpoint = $ScanEndpoint
+        reportOnly = [bool]$ReportOnly
+        summary = $summary
+        results = $results
+    }
 
-$markdown = @()
-$markdown += "# AI 商品字段识别样例验证报告"
-$markdown += ""
-$markdown += "| Sample | Status | Trace Stage | OCR/LLM | Fallback |"
-$markdown += "| :-- | :-- | :-- | :-- | :-- |"
-foreach ($result in $results) {
-    $actual = $result.actual
-    $markdown += "| $($result.sampleId) | $($result.status) | $($actual.traceStage) | $($actual.ocrProvider)/$($actual.llmProvider) | $($actual.fallbackReason) |"
-}
-$markdown += ""
-foreach ($result in $results) {
-    $markdown += "## $($result.sampleId)"
+    $report | ConvertTo-Json -Depth 10 | Set-Content -Path $JsonReportPath -Encoding UTF8
+
+    $markdown = @()
+    $markdown += "# AI 商品字段识别样例验证报告"
     $markdown += ""
-    $markdown += "- 状态：$($result.status)"
-    $markdown += "- 说明：$($result.detail)"
-    if ($result.fieldResults.Count -gt 0) {
-        $markdown += ""
-        $markdown += "| 字段 | 实际读取路径 | 期望 | 实际 | 结果 | 原因 |"
-        $markdown += "| :-- | :-- | :-- | :-- | :-- | :-- |"
-        foreach ($fieldResult in $result.fieldResults) {
-            $markdown += "| $($fieldResult.expectedPath) | $($fieldResult.actualPath) | $(Convert-ToReportCellValue $fieldResult.expected) | $(Convert-ToReportCellValue $fieldResult.actual) | $(if ($fieldResult.passed) { 'PASS' } else { 'FAIL' }) | $($fieldResult.reason) |"
-        }
-        $markdown += ""
+    $markdown += "- 模式：$(if ($ReportOnly) { 'report-only（仅人工报告，不能作为 release gate）' } else { 'gate（默认阻断模式）' })"
+    $markdown += "- 样例总数：$($summary.total)"
+    $markdown += "- PASS：$($summary.pass)"
+    $markdown += "- FAIL：$($summary.fail)"
+    $markdown += "- SCAN_FAIL：$($summary.scanFail)"
+    $markdown += "- MISSING_FILE：$($summary.missingFile)"
+    $markdown += "- SKIPPED(NEEDS_HUMAN_GOLDEN)：$($summary.skipped)"
+    $markdown += "- gatePassed：$($summary.gatePassed)"
+    $markdown += ""
+    $markdown += "| Sample | Status | Trace Stage | OCR/LLM | Fallback |"
+    $markdown += "| :-- | :-- | :-- | :-- | :-- |"
+    foreach ($result in $results) {
+        $actual = $result.actual
+        $markdown += "| $($result.sampleId) | $($result.status) | $($actual.traceStage) | $($actual.ocrProvider)/$($actual.llmProvider) | $($actual.fallbackReason) |"
     }
+    $markdown += ""
+    foreach ($result in $results) {
+        $markdown += "## $($result.sampleId)"
+        $markdown += ""
+        $markdown += "- 状态：$($result.status)"
+        $markdown += "- 说明：$($result.detail)"
+        if ($result.fieldResults.Count -gt 0) {
+            $markdown += ""
+            $markdown += "| 字段 | 实际读取路径 | 期望 | 实际 | 结果 | 原因 |"
+            $markdown += "| :-- | :-- | :-- | :-- | :-- | :-- |"
+            foreach ($fieldResult in $result.fieldResults) {
+                $markdown += "| $($fieldResult.expectedPath) | $($fieldResult.actualPath) | $(Convert-ToReportCellValue $fieldResult.expected) | $(Convert-ToReportCellValue $fieldResult.actual) | $(if ($fieldResult.passed) { 'PASS' } else { 'FAIL' }) | $($fieldResult.reason) |"
+            }
+            $markdown += ""
+        }
+    }
+
+    $markdown -join [Environment]::NewLine | Set-Content -Path $MarkdownReportPath -Encoding UTF8
+
+    Write-Host "JSON report: $JsonReportPath"
+    Write-Host "Markdown report: $MarkdownReportPath"
+
+    if (-not $summary.gatePassed -and -not $ReportOnly) {
+        exit 1
+    }
+} catch {
+    Write-Error $_
+    exit 2
 }
-
-$markdown -join [Environment]::NewLine | Set-Content -Path $MarkdownReportPath -Encoding UTF8
-
-Write-Host "JSON report: $JsonReportPath"
-Write-Host "Markdown report: $MarkdownReportPath"
