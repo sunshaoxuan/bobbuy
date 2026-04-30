@@ -218,9 +218,9 @@ Playwright smoke 口径：
 - `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg')"`：按预期失败（gate 模式返回非零并继续输出报告）
 - `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"`：通过（report-only 返回 `0`，但 `gatePassed=false`）
 - `cd frontend && npm audit --json`：已降至 `0 critical / 0 high / 6 moderate`；剩余为 Vite/Vitest dev-only 风险，详见 `REPORT-05`
-- GitHub Actions 默认 `BOBBuy CI`：`main` 分支 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25141502571> 通过（`backend-test`、`frontend-quality`、`docker-build` 成功）
-- GitHub Actions `CodeQL` workflow：已自动触发 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25142273258>，但当前结论为 `action_required`（0 jobs，需仓库管理员批准/放行）
-- GitHub Actions `Maven dependency-check` workflow：已自动触发 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25142273277>，但当前结论为 `action_required`（0 jobs，需仓库管理员批准/放行）
+- GitHub Actions 默认 `BOBBuy CI`：`main` 分支 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25178072203> 通过（`backend-test`、`frontend-quality`、`docker-build` 成功）
+- GitHub Actions `CodeQL` workflow：最新成功 run 为 <https://github.com/sunshaoxuan/bobbuy/actions/runs/25177727147>（`actions` / `javascript-typescript` / `java-kotlin` 均成功）；本轮已补回 `push` 触发，仍需下一个默认分支分析与 alert 数归档
+- GitHub Actions `Maven dependency-check` workflow：最新 `main` run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25177731775> 仍为 `in_progress`，尚未产出可信 HTML/JSON artifact
 - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -B org.owasp:dependency-check-maven:12.1.8:check -Dformat=HTML,JSON -DoutputDirectory=/tmp/plan42-dependency-check -DskipProvidedScope=true -DskipTestScope=true`：本沙箱仍受 `www.cisa.gov` DNS 解析失败阻塞，未生成可信报告
 - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`：通过
 - PostgreSQL 备份恢复演练：`pg_dump -> bobbuy_restore_verify_plan40` 恢复校验通过

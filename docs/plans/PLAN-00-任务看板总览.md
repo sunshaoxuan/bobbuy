@@ -47,8 +47,8 @@
 | [PLAN-41](PLAN-41-P0-发版阻断项处置与安全审计提示词.md) | P0 发版阻断项处置与安全审计提示词 | 🔄 进行中 | 80% | sample 脚本 gate/report-only 语义、前端高危依赖处置、CodeQL workflow、NVD API key 与 Maven dependency-check 已解阻；剩余为最新 main 依赖审计完成状态、真实 AI/OCR 与旧库 adoption blocker | 全栈团队 |
 | [PLAN-42](PLAN-42-P0-专用环境发版证据执行提示词.md) | P0 专用环境发版证据执行提示词 | 🔄 进行中 | 52% | `REPORT-06` 的 `NO_GO` 判定仍是基线，`REPORT-07` 已记录自动化解阻但仍 NO_GO；剩余为 main 默认 CI 恢复、真实 AI/OCR、e2e:ai 与真实旧库 adoption 证据 | 全栈团队 |
 | [PLAN-43](PLAN-43-P0-NO-GO阻断项执行解阻提示词.md) | P0 NO-GO 阻断项执行解阻提示词 | ✅ 已完成 | 100% | CodeQL JS/TS build mode、重复触发、Maven dependency-check workflow 与 AI evidence workflow 已落地，并形成 `REPORT-07` NO_GO 复判 | 全栈团队 |
-| [PLAN-44](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md) | P0 真实环境放行证据与 REPORT-07 复判提示词 | 🔄 执行中 | 10% | 先恢复最新 main 默认 CI，再补真实 AI/OCR sample、真实 `e2e:ai`、真实旧库 adoption，并更新 `REPORT-07` GO/NO_GO 复判 | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 94% | 默认质量门禁大体稳定但最新 main Docker frontend build 曾因 npm `ECONNRESET` 失败；CodeQL 已成功，Maven dependency-check 正在/已持续运行；下一优先级为 PLAN-44 的 CI 恢复与真实环境放行证据 | 全栈团队 |
+| [PLAN-44](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md) | P0 真实环境放行证据与 REPORT-07 复判提示词 | 🔄 执行中 | 28% | 最新 main 默认 CI 已恢复全绿；剩余为 CodeQL 默认分支告警归档、Maven dependency-check artifact、真实 AI/OCR sample、真实 `e2e:ai` 与真实旧库 adoption | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 95% | 默认质量门禁已恢复，CodeQL 最新矩阵成功，Maven dependency-check 正在 main 持续执行；下一优先级为 PLAN-44 的真实环境放行证据与 REPORT-07 复判 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |
