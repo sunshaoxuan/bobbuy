@@ -27,6 +27,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate backend URL input
+        shell: bash
+        run: |
+          set -euo pipefail
+          backend_url='${{ inputs.backend_base_url }}'
+          if [[ ! "$backend_url" =~ ^https?://[^[:space:]]+$ ]]; then
+            echo "backend_base_url must be an http/https URL without spaces" >&2
+            exit 1
+          fi
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
