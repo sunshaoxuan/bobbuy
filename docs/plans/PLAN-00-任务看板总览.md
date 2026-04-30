@@ -46,8 +46,8 @@
 | [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md) | P1 发版候选门禁与专用环境验收提示词 | 🔄 进行中 | 65% | sample 验证脚本漂移、本地 Flyway/恢复演练与发版候选证据包已收口；剩余为真实 AI/OCR、`e2e:ai`、CodeQL、依赖审计与真实旧库 adoption | 全栈团队 |
 | [PLAN-41](PLAN-41-P0-发版阻断项处置与安全审计提示词.md) | P0 发版阻断项处置与安全审计提示词 | 🔄 进行中 | 60% | sample 脚本 gate/report-only 语义、前端高危依赖处置与 CodeQL workflow 已补；剩余为 CodeQL 实跑、Maven 审计外网可达性、真实 AI/OCR 与旧库 adoption blocker | 全栈团队 |
 | [PLAN-42](PLAN-42-P0-专用环境发版证据执行提示词.md) | P0 专用环境发版证据执行提示词 | 🔄 进行中 | 35% | 已形成 `REPORT-06` 并给出 `NO_GO` 判定；默认 CI 与本地 smoke 复验完成，剩余为 CodeQL 实跑、Maven 可信审计、真实 AI/OCR、e2e:ai 与真实旧库 adoption 证据 | 全栈团队 |
-| [PLAN-43](PLAN-43-P0-NO-GO阻断项执行解阻提示词.md) | P0 NO-GO 阻断项执行解阻提示词 | ⏳ 待执行 | 0% | 面向 `REPORT-06` 的五项 NO_GO blocker 执行解阻，并形成 `REPORT-07` 放行复判 | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 93% | 默认质量门禁、Playwright smoke、sample 字段级脚本门禁、前端高危依赖处置与发版候选证据包已补齐；下一优先级为 PLAN-43 解阻 `REPORT-06` 的五项 NO_GO blocker | 全栈团队 |
+| [PLAN-43](PLAN-43-P0-NO-GO阻断项执行解阻提示词.md) | P0 NO-GO 阻断项执行解阻提示词 | 🔄 进行中 | 25% | 已补 CodeQL / Maven dependency-check / AI evidence 自动化执行路径，并形成 `REPORT-07`；当前仍受 GitHub Actions 审批、真实 AI/OCR 环境与真实旧库副本阻塞 | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 94% | 默认质量门禁、Playwright smoke、sample 字段级脚本门禁、前端高危依赖处置与发版候选证据包已补齐；当前优先级为推进 PLAN-43 中 GitHub Actions 审批、真实 AI/OCR 证据与真实旧库 adoption 解阻 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |
@@ -269,7 +269,7 @@
   - sample 验证脚本已修复 `basePrice -> price` 字段别名漂移与失败非零退出码；真实 `/api/ai/onboard/scan` 专用环境实扫仍未完成。
   - `npm run e2e:ai` AI 真实视觉链路未在当前环境执行，需专用环境。
   - `scripts/verify-ai-onboarding-samples.ps1` 已建立，但真实 `/api/ai/onboard/scan` 实扫仍需可达服务、真实 AI/OCR 与 seed 数据。
-  - `REPORT-06` 已明确 CodeQL 实跑、Maven 可信审计、真实 AI/OCR 与真实旧库 adoption 仍未固化为可放行证据。
+  - `REPORT-07` 已明确 CodeQL / Maven workflow 已自动触发，但当前仍为 `action_required`；真实 AI/OCR 与真实旧库 adoption 仍未固化为可放行证据。
   - OAuth/SSO、mTLS/service mesh、独立 schema、契约测试、拆分后独立 CI/CD 仍属于后续架构任务。
 
 ---
@@ -279,7 +279,7 @@
 **当前执行入口请参见 [PLAN-43: NO-GO 阻断项执行解阻提示词](PLAN-43-P0-NO-GO阻断项执行解阻提示词.md)、[PLAN-42: 专用环境发版证据执行提示词](PLAN-42-P0-专用环境发版证据执行提示词.md)、[PLAN-41: 发版阻断项处置与安全审计提示词](PLAN-41-P0-发版阻断项处置与安全审计提示词.md)、[PLAN-40: 发版候选门禁与专用环境验收提示词](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md)、[PLAN-24: 稳定上线差距收口优先级](PLAN-24-稳定上线差距收口优先级.md) 与 [CURRENT-STATE-2026-04-28](../reports/CURRENT-STATE-2026-04-28.md)。历史 PLAN-03 不再作为当前入口。**
 
 1. **试运行前手动门禁**:
-   - [ ] NO-GO 阻断项执行解阻：见 [PLAN-43](PLAN-43-P0-NO-GO阻断项执行解阻提示词.md)
+   - [ ] NO-GO 阻断项执行解阻：见 [PLAN-43](PLAN-43-P0-NO-GO阻断项执行解阻提示词.md) 与 [REPORT-07](../reports/REPORT-07-NO-GO阻断项解阻与放行复判.md)
    - [x] 专用环境发版证据执行：已见 [PLAN-42](PLAN-42-P0-专用环境发版证据执行提示词.md) 与 [REPORT-06](../reports/REPORT-06-专用环境发版证据与放行判定.md)；当前结论为 `NO_GO`
    - [ ] 发版阻断项处置与安全审计：见 [PLAN-41](PLAN-41-P0-发版阻断项处置与安全审计提示词.md)
    - [ ] 发版候选门禁与专用环境验收：脚本硬化、本地 Flyway/恢复演练与证据报告已完成；剩余见 [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md) 与 [REPORT-04](../reports/REPORT-04-发版候选门禁验收报告.md)
@@ -292,7 +292,7 @@
    - [ ] AI 真实视觉：`cd frontend && npm run e2e:ai`，需 `RUN_AI_VISION_E2E=1` 与专用 AI/OCR/seed 环境
 
 2. **风险登记 / 独立门禁**:
-    - [x] CodeQL / 依赖审计结果已进入 PR / Release 验证记录（见 [REPORT-06](../reports/REPORT-06-专用环境发版证据与放行判定.md)；当前状态为 CodeQL `0 runs`、Maven 外网阻塞、`npm audit` 为 `0 critical / 0 high / 6 moderate`）
+     - [x] CodeQL / 依赖审计结果已进入 PR / Release 验证记录（见 [REPORT-07](../reports/REPORT-07-NO-GO阻断项解阻与放行复判.md)；当前状态为 CodeQL / Maven workflow `action_required`、`npm audit` 为 `0 critical / 0 high / 6 moderate`）
    - [ ] PostgreSQL Flyway 旧库 adoption 前完成备份、baseline 与回滚演练（本次已完成空库 migrate/validate 与恢复库演练）
    - [ ] 真实告警平台、集中日志、自动化备份、服务级 SLO
 
