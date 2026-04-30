@@ -1,6 +1,6 @@
 # 本地 / CI 测试执行矩阵
 
-> 2026-04-29 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build` 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 做配置渲染校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`core-service` / `ai-service` / `im-service` / `auth-service` 当前仍复用 `backend` 共享代码，因此这些 smoke test 只验证启动边界，不等同于已拥有独立微服务测试边界。
+> 2026-04-30 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build` 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 做配置渲染校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-06` 已记录最新放行结论为 `NO_GO`：默认 CI 与本地 smoke 已通过，但 CodeQL 实跑、Maven 可信依赖审计、真实 AI/OCR 与真实旧库 adoption 证据仍未完成。
 
 ## 1. 默认门禁（每个 PR / `main` push 必跑）
 
@@ -54,9 +54,12 @@
   - 预期失败路径中的 `Delete failed: Error: Server error` console 输出。
   以上噪声目前不阻断默认门禁，但应继续在后续清理项中跟踪。
 
-## 5. 2026-04-29 本地验证结果
+## 5. 2026-04-30 最新验证结果
 
 - [x] `cd /home/runner/work/bobbuy/bobbuy && docker compose config`
+- [x] GitHub Actions `BOBBuy CI` run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25141502571>
+  - `backend-test` / `frontend-quality` / `docker-build` 成功
+  - `playwright-e2e` / `postgres-migration-verify` 因手动输入未开启而 skipped
 - [x] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm ci && npm test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run build`
@@ -91,12 +94,15 @@
 - [x] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm audit --json`
   - 结果：`0 critical / 0 high / 6 moderate`
 - [x] `.github/workflows/codeql.yml`
-  - 已补手动 CodeQL workflow，待仓库管理员在 GitHub Actions 执行
+  - 已补手动 CodeQL workflow
+  - 截至 `2026-04-30` workflow run 数量仍为 `0`
 - [x] 本地 PostgreSQL 15 Flyway 与恢复演练
   - `docker compose up -d postgres`
   - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`
   - `pg_dump -> bobbuy_restore_verify_plan40` 恢复校验通过
+- [ ] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -B org.owasp:dependency-check-maven:12.1.8:check -Dformat=HTML,JSON -DoutputDirectory=/tmp/plan42-dependency-check -DskipProvidedScope=true -DskipTestScope=true`
+  - 当前受 `UnknownHostException: www.cisa.gov` 阻塞，未生成可信 HTML/JSON 报告
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai`
 - [ ] `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`
-- [ ] CodeQL / Maven 依赖审计执行结果归档（CodeQL workflow 已补，Maven 依赖审计在当前沙箱受外网限制）
+- [ ] CodeQL 实跑与 code scanning 结果归档（workflow 已补，但 run 数量仍为 `0`）
 - [ ] mTLS / service mesh / 契约测试（本阶段未实现，需继续登记风险）
