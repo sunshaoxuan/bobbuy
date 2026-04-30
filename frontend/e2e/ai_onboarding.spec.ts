@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
-import { setAgentContext } from './responsive_helpers';
+import { loginAsAgent } from './responsive_helpers';
 
 test.skip(!process.env.RUN_AI_VISION_E2E, 'Manual AI onboarding flow requires dedicated backend model/files.');
 
@@ -28,7 +28,7 @@ async function openQuickAddAndUpload(page: any, sampleFilename: string) {
 
 test.describe('AI Vision Onboarding E2E', () => {
     test.beforeEach(async ({ page }) => {
-        await setAgentContext(page);
+        await loginAsAgent(page);
         await page.goto('/stock-master');
     });
 
