@@ -48,7 +48,7 @@ jobs:
             -B
             org.owasp:dependency-check-maven:12.1.8:check
             -Dformats=HTML,JSON
-            -Dodc.outputDirectory=/tmp/bobbuy-dependency-check
+            -DoutputDirectory=/tmp/bobbuy-dependency-check
             -DskipProvidedScope=true
             -DskipTestScope=true
           )
