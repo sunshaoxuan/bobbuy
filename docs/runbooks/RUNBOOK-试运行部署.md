@@ -56,6 +56,7 @@
 - 可写磁盘目录：`data/postgres`、`data/minio`、`data/redis`、`data/rabbitmq`、`data/logs`
 - 计划使用的 AI provider：
   - **推荐**：Ollama / 私有兼容 gateway
+  - **可选**：OpenAI-compatible `codex-bridge`，用于受控个人 Codex 订阅桥接服务
   - **可选**：受控桌面环境中的 Codex CLI
   - **禁止作为服务器默认方案**：依赖个人 Windows 桌面 Codex CLI 登录态
 
@@ -88,6 +89,7 @@
     - 若 `BOBBUY_SECURITY_JWT_SECRET` 为空，后端会在启动阶段直接失败，不会以空 secret 进入试运行
 3. 按实际环境选择 AI 路径：
    - **Ollama / 私有兼容 gateway**：填写 `BOBBUY_AI_LLM_MAIN_URL`
+   - **Codex Bridge**：填写 `BOBBUY_AI_LLM_MAIN_PROVIDER=codex-bridge`、`BOBBUY_AI_LLM_CODEX_BRIDGE_URL`；明文 key 只放 `.env` / secret manager，或用 `scripts/encrypt-ai-secret.ps1` 生成 `BOBBUY_AI_LLM_CODEX_BRIDGE_SECRET_*` 密文字段并把 `BOBBUY_AI_SECRET_MASTER_PASSWORD` 留在宿主机环境变量
    - **视觉 / edge 模型**：填写 `BOBBUY_AI_LLM_EDGE_URL`；只有 edge 节点模型名与默认 `llama3.2-vision:11b` 不一致时才覆盖 `BOBBUY_AI_LLM_EDGE_MODEL`
    - **OCR 容器同编排部署**：保持 `BOBBUY_OCR_URL=http://ocr-service:8000`
    - **本地桌面 Codex CLI 兜底**：仅在受控本机设置 `BOBBUY_AI_LLM_CODEX_COMMAND=codex`
@@ -267,14 +269,18 @@ Flyway 旧库 adoption / 回滚演练：
 1. **Ollama / 私有兼容 gateway**
    - 适用于服务器、容器、受控内网
    - 通过 `BOBBUY_AI_LLM_MAIN_URL` / `BOBBUY_AI_LLM_EDGE_URL` 指定
-2. **Codex CLI 本地兜底**
+2. **Codex Bridge**
+   - 适用于个人受控、OpenAI-compatible `/v1/chat/completions` 桥接服务
+   - 通过 `BOBBUY_AI_LLM_CODEX_BRIDGE_URL`、`BOBBUY_AI_LLM_CODEX_BRIDGE_MODEL` 指定
+   - key 可直接由环境变量 `BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY` 注入；如提交密文字段，必须把 `BOBBUY_AI_SECRET_MASTER_PASSWORD` 放在 git 外部
+3. **Codex CLI 本地兜底**
    - 仅适用于本地桌面、受控登录态
    - 不能作为 Linux 服务器容器默认前提
 
 运行时口径：
 
-- `LlmGateway` 启动日志会输出 configured provider、active provider、Ollama URL、Codex command。
-- 当 `BOBBUY_AI_LLM_MAIN_URL` 与 `BOBBUY_AI_LLM_CODEX_COMMAND` 都为空时，active provider 会显示为 `unconfigured`，AI 功能按现有 fallback/人工流程降级。
+- `LlmGateway` 启动日志会输出 configured provider、active provider、Ollama URL、Codex Bridge URL、Codex command；不会输出 API key。
+- 当 `BOBBUY_AI_LLM_MAIN_URL`、`BOBBUY_AI_LLM_CODEX_BRIDGE_URL` 与 `BOBBUY_AI_LLM_CODEX_COMMAND` 都为空时，active provider 会显示为 `unconfigured`，AI 功能按现有 fallback/人工流程降级。
 - AI / OCR 不可用时，系统允许回落到现有 fallback 路径；本任务不把 AI 不可用写成“已恢复”。
 - AI 商品上架与小票识别响应都会附带 trace 字段（provider / activeProvider / model / stage / latencyMs / errorCode / fallbackReason / retryCount / attemptNo / inputRef / outputRef）。
 
@@ -318,7 +324,8 @@ docker compose logs -f nacos
    - 确认只有 `core-service` 启用了 Flyway
    - 旧库先备份，再评估是否允许 `baseline-on-migrate`
 4. **AI 无响应**
-    - 检查 `BOBBUY_AI_LLM_MAIN_URL` / `BOBBUY_AI_LLM_EDGE_URL`
+    - 检查 `BOBBUY_AI_LLM_MAIN_URL` / `BOBBUY_AI_LLM_CODEX_BRIDGE_URL` / `BOBBUY_AI_LLM_EDGE_URL`
+    - 使用 Codex Bridge 时确认 `/v1/models` 返回授权后的模型列表，且 key 或密文字段能被当前环境解密
     - 服务器不要默认依赖 Codex CLI
     - 确认 `ai-service` 作为服务外壳已启动，且不要把它误判为独立业务事实源
     - 前端若出现 `unconfigured` / `FAILED_RECOGNITION` / `PENDING_MANUAL_REVIEW`，按页面提示走重试或人工补录/复核

@@ -17,6 +17,11 @@ on:
         required: false
         default: false
         type: boolean
+      run_maven_dependency_audit:
+        description: "Run OWASP Dependency-Check for Maven dependencies."
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -153,6 +158,54 @@ jobs:
           path: |
             frontend/playwright-report
             frontend/test-results
+          if-no-files-found: ignore
+
+  maven-dependency-audit:
+    name: maven-dependency-audit
+    if: github.event_name == 'workflow_dispatch' && inputs.run_maven_dependency_audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Cache Dependency-Check data
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: dependency-check-data-${{ runner.os }}-${{ hashFiles('backend/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            dependency-check-data-${{ runner.os }}-${{ hashFiles('backend/pom.xml') }}-
+            dependency-check-data-${{ runner.os }}-
+
+      - name: Run OWASP Dependency-Check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: |
+          if [ -z "${NVD_API_KEY}" ]; then
+            echo "NVD_API_KEY GitHub Actions secret is required for this manual job." >&2
+            exit 1
+          fi
+          mvn -B --file backend/pom.xml \
+            org.owasp:dependency-check-maven:12.1.8:check \
+            -DnvdApiKey="${NVD_API_KEY}" \
+            -DnvdValidForHours=24 \
+            -Dformat=HTML \
+            -Dformat=JSON
+
+      - name: Upload Dependency-Check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maven-dependency-check-report
+          path: |
+            backend/target/dependency-check-report.html
+            backend/target/dependency-check-report.json
           if-no-files-found: ignore
 
   # `npm run e2e:ai` remains outside hosted default CI because it requires a dedicated
