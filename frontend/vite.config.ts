@@ -3,8 +3,7 @@ import react from '@vitejs/plugin-react';
 
 const defaultApiProxyTarget = 'http://localhost:8080';
 const apiProxyTarget = process.env.BOBBUY_API_PROXY_TARGET?.trim() || defaultApiProxyTarget;
-const defaultWsProxyTarget = defaultApiProxyTarget.replace(/^http/i, 'ws');
-const wsProxyTarget = process.env.BOBBUY_WS_PROXY_TARGET?.trim() || apiProxyTarget.replace(/^http/i, 'ws') || defaultWsProxyTarget;
+const wsProxyTarget = process.env.BOBBUY_WS_PROXY_TARGET?.trim() || apiProxyTarget.replace(/^http/i, 'ws');
 
 export default defineConfig({
   plugins: [react()],

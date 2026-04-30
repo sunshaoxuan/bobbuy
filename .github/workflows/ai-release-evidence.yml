@@ -37,6 +37,18 @@ jobs:
             exit 1
           fi
 
+      - name: Derive backend websocket URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          backend_ws_url='${{ inputs.backend_base_url }}'
+          if [[ "$backend_ws_url" == https://* ]]; then
+            backend_ws_url="wss://${backend_ws_url#https://}"
+          else
+            backend_ws_url="ws://${backend_ws_url#http://}"
+          fi
+          echo "BOBBUY_WS_PROXY_TARGET=$backend_ws_url" >> "$GITHUB_ENV"
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
