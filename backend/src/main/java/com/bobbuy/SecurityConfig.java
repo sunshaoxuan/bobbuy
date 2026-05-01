@@ -93,6 +93,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/health/**").permitAll()
+                .requestMatchers("/api/actuator/health/**").permitAll()
+                .requestMatchers("/actuator/health/**").permitAll()
                 .requestMatchers("/internal/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()

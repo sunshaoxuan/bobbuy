@@ -104,11 +104,13 @@ const renderWithI18n = (ui: React.ReactElement) => {
 
 describe('StockMaster Component', () => {
   beforeEach(() => {
+    window.localStorage.setItem('bobbuy_locale', 'zh-CN');
     setMatchMedia(false);
   });
 
   afterEach(async () => {
     cleanup();
+    window.localStorage.clear();
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
@@ -208,13 +210,13 @@ describe('StockMaster Component', () => {
     fireEvent.click(editButtons[0]);
 
     const drawer = screen.getByRole('dialog');
-    const categoryInput = within(drawer).getByRole('textbox', { name: /类目/i });
+    const categoryInput = within(drawer).getByRole('textbox', { name: /类目|Category/i });
     fireEvent.change(categoryInput, { target: { value: '服装' } });
 
     await waitFor(() => {
-      expect(within(drawer).getByText(/分类属性/i)).toBeInTheDocument();
-      expect(within(drawer).getByLabelText(/尺码/i)).toBeInTheDocument();
-      expect(within(drawer).getByLabelText(/材质/i)).toBeInTheDocument();
+      expect(within(drawer).getByText(/分类属性|Category Attributes/i)).toBeInTheDocument();
+      expect(within(drawer).getByLabelText(/尺码|Size/i)).toBeInTheDocument();
+      expect(within(drawer).getByLabelText(/材质|Material/i)).toBeInTheDocument();
     });
   });
 

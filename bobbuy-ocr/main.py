@@ -6,12 +6,35 @@ import io
 from PIL import Image
 import numpy as np
 import os
+from threading import Lock
 
 app = FastAPI(title="BOBBuy OCR Service")
 
-# Initialize PaddleOCR with Japanese support
-# We use CPU by default to keep it compatible with most environments
-ocr = PaddleOCR(lang='japan', device='cpu', enable_mkldnn=False, use_angle_cls=False, ocr_version='PP-OCRv3')
+ocr = None
+ocr_init_error = None
+ocr_lock = Lock()
+
+
+def get_ocr():
+    global ocr, ocr_init_error
+    if ocr is not None:
+        return ocr
+    with ocr_lock:
+        if ocr is not None:
+            return ocr
+        try:
+            ocr = PaddleOCR(
+                lang='japan',
+                device='cpu',
+                enable_mkldnn=False,
+                use_angle_cls=False,
+                ocr_version='PP-OCRv3'
+            )
+            ocr_init_error = None
+            return ocr
+        except Exception as exc:
+            ocr_init_error = str(exc)
+            raise
 
 class OCRRequest(BaseModel):
     image: str  # base64 encoded image
@@ -29,7 +52,10 @@ async def perform_ocr(request: OCRRequest):
         img_np = np.array(image)
         
         # Perform OCR
-        result = ocr.ocr(img_np)
+        try:
+            result = get_ocr().ocr(img_np)
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=f"OCR model unavailable: {str(exc)}")
         
         # Format results
         output = []
@@ -71,7 +97,7 @@ async def perform_ocr(request: OCRRequest):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "ocrReady": ocr is not None, "ocrInitError": ocr_init_error}
 
 if __name__ == "__main__":
     import uvicorn
