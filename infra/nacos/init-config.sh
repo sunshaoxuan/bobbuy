@@ -30,5 +30,6 @@ for file in "${CONFIG_DIR}"/*.yaml; do
     --data-urlencode "dataId=${data_id}" \
     --data-urlencode "group=${NACOS_GROUP}" \
     --data-urlencode "type=yaml" \
-    --data-urlencode "content@${file}"
+    --data-urlencode "content@${file}" >/dev/null
+  echo "Published ${data_id}"
 done
