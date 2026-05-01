@@ -1,19 +1,6 @@
-FROM maven:3.9-eclipse-temurin-17 AS build
-WORKDIR /workspace
-COPY pom.xml ./
-COPY backend ./backend
-COPY bobbuy-common ./bobbuy-common
-COPY bobbuy-core ./bobbuy-core
-COPY bobbuy-ai ./bobbuy-ai
-COPY bobbuy-im ./bobbuy-im
-COPY bobbuy-auth ./bobbuy-auth
-COPY bobbuy-gateway ./bobbuy-gateway
-ARG MODULE
-RUN mvn -pl ${MODULE} -am clean package -DskipTests
-
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 ARG MODULE
-COPY --from=build /workspace/${MODULE}/target/*.jar app.jar
+COPY ${MODULE}/target/${MODULE}-*.jar /app/app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
