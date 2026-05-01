@@ -149,8 +149,8 @@ public class SecurityConfig {
     }
 
     private RequestMatcher cookieBackedAuthMutationMatcher() {
-        return request -> HttpMethod.POST.matches(request.getMethod())
-            && isCookieBackedAuthMutation(request)
+        return request -> isCookieBackedAuthMutation(request)
+            && HttpMethod.POST.matches(request.getMethod())
             && authCookieService.resolveRefreshToken(request) != null;
     }
 
