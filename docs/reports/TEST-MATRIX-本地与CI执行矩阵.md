@@ -1,6 +1,6 @@
 # 本地 / CI 测试执行矩阵
 
-> 2026-04-30 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 做配置渲染校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论仍为 `NO_GO`：默认 CI 已恢复，但 Maven dependency-check artifact、真实 AI/OCR 与真实旧库 adoption 证据仍未完成。
+> 2026-05-01 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 做配置渲染校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论仍为 `NO_GO`：dependency-check artifact 已闭环，但默认分支 CodeQL 清零、真实 AI/OCR 与真实旧库 adoption 证据仍未完成。
 
 ## 1. 默认门禁（每个 PR / `main` push 必跑）
 
@@ -30,8 +30,8 @@
 
 | 验证项 | 默认状态 | 执行要求 | 备注 |
 | :-- | :-- | :-- | :-- |
-| CodeQL / 安全扫描 | 不纳入默认 `ci.yml` | `.github/workflows/codeql.yml` 当前支持 `push` / `pull_request` / `workflow_dispatch`；需归档默认分支 push analysis 与 code scanning alerts 数 | 覆盖 Java/Kotlin、JavaScript/TypeScript、Actions |
-| 依赖审计 | 不纳入默认 `ci.yml` | 前端使用 `npm audit --json`；后端优先执行 `.github/workflows/dependency-check.yml` 或等价 Maven 扫描 | 若 GitHub-hosted run 仍在执行或未产出 artifact，必须记录具体状态与责任边界 |
+| CodeQL / 安全扫描 | 不纳入默认 `ci.yml` | `.github/workflows/codeql.yml` 当前支持 `push` / `pull_request` / `workflow_dispatch`；需归档默认分支 push analysis 与 code scanning alerts 数 | 覆盖 Java/Kotlin、JavaScript/TypeScript、Actions；本轮 3 个 high 对应源码已修复，但默认分支清零仍待 merge + 复扫 |
+| 依赖审计 | 不纳入默认 `ci.yml` | 前端使用 `npm audit --json`；后端优先执行 `.github/workflows/dependency-check.yml` 或等价 Maven 扫描 | main run `25193181061` artifact 已可下载；当前分支 run `25196499019` 仍为 `action_required`，且报告内 `8 critical / 21 high / 19 moderate` 需继续登记 |
 
 ## 4. 执行约束与已知噪声
 
@@ -94,20 +94,25 @@
 - [x] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm audit --json`
   - 结果：`0 critical / 0 high / 6 moderate`
 - [x] `.github/workflows/codeql.yml`
-  - 最新成功 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25177727147>
+  - 最新 main success run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25193181071>
   - `actions` / `javascript-typescript` / `java-kotlin` matrix 全部成功
-  - 恢复 `push` 后的验证 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25178669741> 仍为 `action_required`（0 jobs）
-  - 当前仍需默认分支 push analysis 与 code scanning alerts 数归档
+  - 当前分支验证 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25196499021> 仍为 `action_required`（0 jobs）
+  - 本沙箱访问 code scanning alerts API 返回 `403 Resource not accessible by integration`，默认分支 high alert 清零仍待 merge + 复扫归档
 - [x] `.github/workflows/dependency-check.yml`
-  - 已补 GitHub-hosted Maven dependency-check workflow 与 artifact 上传
-  - 最新 `main` run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25177731775> 当前为 `in_progress`
+  - GitHub-hosted main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25193181061> 已成功
+  - artifact `dependency-check-report`（id `6741960133`）已验证可下载，且 ZIP 内同时包含 HTML/JSON
+  - 摘要（unique CVE）：`8 critical / 21 high / 19 moderate`
+  - 当前分支验证 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25196499019> 仍为 `action_required`（0 jobs）
 - [x] 本地 PostgreSQL 15 Flyway 与恢复演练
   - `docker compose up -d postgres`
   - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`
   - `pg_dump -> bobbuy_restore_verify_plan40` 恢复校验通过
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -B org.owasp:dependency-check-maven:12.1.8:check -Dformat=HTML,JSON -DoutputDirectory=/tmp/plan42-dependency-check -DskipProvidedScope=true -DskipTestScope=true`
-  - 本地当前受 `UnknownHostException: www.cisa.gov` 阻塞；GitHub-hosted main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25177731775> 仍为 `in_progress`，尚未生成可信 HTML/JSON 报告
+  - 本地仍不稳定；当前以 GitHub-hosted main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25193181061> artifact 作为可信报告来源
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai`
+  - 本轮前置阻塞：`docker compose up -d ...` 拉起真实栈时，service 镜像 Maven-in-Docker 仍因 `repo.maven.apache.org` `PKIX path building failed` 中断
 - [ ] `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`
-- [ ] CodeQL 默认分支实跑与 code scanning 结果归档（恢复后的分支验证 run `25178669741` 仍为 `action_required`，需仓库管理员放行并等待默认分支形成新基线）
+  - 本轮前置阻塞：本机 `http://localhost/api/health` / `http://127.0.0.1/api/health` 不可达，未形成可用真实后端入口
+- [ ] CodeQL 默认分支实跑与 code scanning 结果归档（当前分支验证 run `25196499021` 仍为 `action_required`，需仓库管理员放行并等待默认分支形成新基线）
+- [ ] 真实旧库 adoption / restore drill（仓库工作区内未提供真实旧库副本 / 历史 schema dump）
 - [ ] mTLS / service mesh / 契约测试（本阶段未实现，需继续登记风险）

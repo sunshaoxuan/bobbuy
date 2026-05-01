@@ -86,17 +86,16 @@
 4. Playwright 手动门禁必须保留 trace / screenshot / video / HTML report artifact，便于试运行失败复盘。
 5. AI 商品上架专用环境需保留 sample golden 与字段级对比报告，禁止只记录“成功/失败”而不保留关键识别字段。
 
-**当前状态（2026-04-30 / PLAN-44）**
+**当前状态（2026-05-01 / PLAN-45）**
 
-- `scripts/verify-ai-onboarding-samples.ps1` 已补 gate/report-only 分流、`gatePassed` 汇总与失败非零退出码。
-- `.github/workflows/codeql.yml` 已恢复 `push` / `pull_request` / `workflow_dispatch`，覆盖 Java/Kotlin、JavaScript/TypeScript、Actions。
-- `.github/workflows/dependency-check.yml` 已新增 GitHub-hosted Maven dependency-check workflow，并上传 HTML/JSON artifact。
-- `.github/workflows/ai-release-evidence.yml` 已新增专用环境 AI sample gate + `e2e:ai` 证据收集 workflow。
-- `frontend npm audit --json` 已从 `3 critical / 10 high / 4 moderate` 降到 `0 critical / 0 high / 6 moderate`；剩余项均为 Vite/Vitest dev-only 风险，需按 `REPORT-05` 继续跟踪。
-- 默认 `BOBBuy CI` 最新 main run `25178072203` 已恢复 success，`backend-test` / `frontend-quality` / `docker-build` 全部通过。
-- 最新成功 CodeQL run 为 `25177727147`，恢复 `push` 后的验证 run `25178669741` 仍为 `action_required`（0 jobs）；默认分支 code scanning alerts 归档仍未完成。
-- 最新 Maven dependency-check main run `25177731775` 仍为 `in_progress`，artifact 尚未产出。
-- 真实 AI/OCR、`npm run e2e:ai`、真实旧库 adoption 与仓库级扫描结果归档仍是当前 release blocker。
+- `scripts/verify-ai-onboarding-samples.ps1` 的 gate/report-only 分流、`gatePassed` 汇总与失败非零退出码仍保持可用。
+- `.github/workflows/codeql.yml` 继续覆盖 Java/Kotlin、JavaScript/TypeScript、Actions；本轮已在源码层修复 `SecurityConfig` 的 Spring CSRF 告警与 `ui-merchant-framework.js` 的 2 个 DOM XSS 告警。
+- `.github/workflows/dependency-check.yml` 的 main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25193181061> 已成功，artifact `dependency-check-report`（id `6741960133`）可下载，且 HTML/JSON 均已核验存在。
+- dependency-check JSON 摘要（unique CVE 口径）已登记：`8 critical / 21 high / 19 moderate`。
+- 当前分支 `CodeQL` run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25196499021> 与 `Maven dependency-check` run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25196499019> 仍为 `action_required`（0 jobs），需仓库侧放行后才能形成当前分支复扫证据。
+- `.github/workflows/ai-release-evidence.yml` 仍未形成真实 run；本轮检查到 `.env` 中 AI/OCR/seed 为已配置状态，但本机无可用 `/api/health` 入口，且尝试 `docker compose up -d ...` 时 service 镜像 Maven-in-Docker 仍因 `repo.maven.apache.org` `PKIX path building failed` 阻塞。
+- 仓库工作区内未发现真实旧库副本 / 历史 schema dump，因此 adoption / restore drill 仍无可执行输入。
+- 结论：dependency-check artifact blocker 已解阻，但默认分支 CodeQL 清零、真实 AI/OCR、真实 `e2e:ai`、真实旧库 adoption 仍是 release blocker。
 
 **验收标准**
 
