@@ -2,14 +2,14 @@
 
 **日期**: 2026-05-01  
 **分支**: `main`
-**提交**: `c83a08d5b201387bba2a54b74a1ffe6e1fc450b3`
+**提交**: `d25ef92`
 
 ---
 
 ## 1. 最终结论
 
 - **放行判定**: **NO_GO**
-- **结论原因**: 最新 main 默认 CI、CodeQL 与 Maven dependency-check 均已成功，3 个 CodeQL high alert 已标记 `fixed`，dependency-check artifact 可下载且含 HTML/JSON；当前 main 已把 `tomcat-embed-core`、`netty-transport`、`commons-fileupload` 提升到非告警版本，并把 Compose 服务镜像改为复制宿主机构建好的 jar，从而解除 Maven-in-Docker `PKIX path building failed`；新 dependency-check 复扫已降至 `0 critical / 1 high / 10 medium`，唯一 high 为 pgjdbc `CVE-2026-42198`；真实 compose 栈仍被 Nacos cgroup v2 / `ProcessorMetrics` 启动异常阻塞，真实 AI/OCR sample、真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 与真实旧库 adoption / restore drill 仍无可信通过证据。
+- **结论原因**: 最新 main 已完成 CodeQL high 修复、主要 Maven 高危依赖升级、pgjdbc 升级、service jar 预构建门禁、Nacos cgroup v2 启动修复、OCR 延迟初始化与 Compose 健康检查修复；但 README / Runbook / TEST-MATRIX / CURRENT STATE / PLAN / REPORT 文档尚未完全拉平，pgjdbc 升级后的 dependency-check 复扫仍需归档，真实 AI/OCR sample、真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 与真实旧库 adoption / restore drill 仍无可信通过证据。
 
 ---
 
@@ -74,6 +74,7 @@
 - 本地 `mvn ... dependency-check ...` 复扫仍因 `www.cisa.gov` DNS 不可达失败，因此当前仍以 main artifact `6744112430` 作为可信基线，等待 GitHub-hosted 新报告完成正式闭环。
 - 新 GitHub-hosted dependency-check run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25215061203> 已完成，artifact `dependency-check-report`（id `6749713633`）可下载；JSON 摘要已降至 `0 critical / 1 high / 10 medium`。
 - 唯一 high：`postgresql-42.6.2.jar` / `CVE-2026-42198`，建议升级 pgjdbc 到 `42.7.11+` 或形成正式豁免。
+- 当前 main 已将 pgjdbc 升级到 `42.7.11`；下一轮需归档升级后的 dependency-check artifact 并确认该 high 清零。
 
 ### 2.4 AI 专用环境执行链路已具备，但真实证据仍缺失
 
