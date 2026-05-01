@@ -27,7 +27,7 @@
 | [PLAN-21](PLAN-21-参与者档案与线下结算增强-VNext+1.md) | 参与者档案与线下结算增强 | ✅ 已完成 | 100% | 地址/社交档案、线下收款、差额结转 | 全栈团队 |
 | [PLAN-22](PLAN-22-账本精算与配送履约闭环.md) | 账本精算与配送履约闭环 | ✅ 已完成 | 100% | 余额口径、待配送、拣货确认 | 全栈团队 |
 | [PLAN-23](PLAN-23-冻结门禁与履约视图统一.md) | 冻结门禁与履约视图统一 | ✅ 已完成 | 100% | 冻结只读、拣货单一事实源 | 全栈团队 |
-| [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) | 稳定上线差距收口优先级 | 🔄 执行中 | 95% | 默认 CI、dependency-check artifact 与 CodeQL high 清零已落地；剩余为 dependency-check critical/high 风险处置、真实 AI/OCR 证据与真实旧库 adoption | 全栈团队 |
+| [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) | 稳定上线差距收口优先级 | 🔄 执行中 | 97% | 默认 CI、dependency-check artifact、CodeQL high 清零、服务镜像 Compose build 收口已落地；剩余为 dependency-check 托管复扫、真实 AI/OCR 证据与真实旧库 adoption | 全栈团队 |
 | [PLAN-25](PLAN-25-P0后端测试基线恢复开发提示词.md) | P0 后端测试基线恢复提示词 | ✅ 已完成 | 100% | `backend mvn test` 已恢复稳定全绿 | 全栈团队 |
 | [PLAN-26](PLAN-26-P0前端测试基线恢复开发提示词.md) | P0 前端测试基线恢复提示词 | ✅ 已完成 | 100% | `frontend npm test` 已恢复稳定完成 | 全栈团队 |
 | [PLAN-27](PLAN-27-P0上线验收矩阵与CI固化开发提示词.md) | P0 上线验收矩阵与 CI 固化提示词 | ✅ 已完成 | 100% | 默认 CI 与手动/专用门禁分层已对齐 | 全栈团队 |
@@ -43,14 +43,14 @@
 | [PLAN-37](PLAN-37-P2-浏览器Token防护与Refresh并发硬化开发提示词.md) | P2 浏览器 Token 防护与 Refresh 并发硬化提示词 | ✅ 已完成 | 100% | HttpOnly refresh cookie、CSRF、refresh 并发轮换边界已收口 | 全栈团队 |
 | [PLAN-38](PLAN-38-P2-Playwright端到端试运行验收开发提示词.md) | P2 Playwright 端到端试运行验收提示词 | ✅ 已完成 | 100% | 浏览器 smoke、角色门禁、聊天与核心业务试运行验收已稳定 | 全栈团队 |
 | [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) | P1 Sample 图片 AI 商品字段识别与档案落库优化提示词 | ✅ 已完成 | 100% | 已建立 sample golden、Product.attributes 落库、字段级验证脚本与 AI 专用验收口径 | 全栈团队 |
-| [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md) | P1 发版候选门禁与专用环境验收提示词 | 🔄 进行中 | 83% | sample 验证脚本漂移、本地 Flyway/恢复演练、CodeQL、Maven dependency-check 与发版候选证据包已收口到 PR/Actions 证据；剩余为依赖 critical/high、真实 AI/OCR、`e2e:ai` 与真实旧库 adoption | 全栈团队 |
-| [PLAN-41](PLAN-41-P0-发版阻断项处置与安全审计提示词.md) | P0 发版阻断项处置与安全审计提示词 | 🔄 进行中 | 93% | sample 脚本 gate/report-only 语义、前端高危依赖处置、CodeQL workflow、NVD API key、dependency-check artifact 与 CodeQL high 清零已解阻；剩余为依赖 critical/high 与真实环境 blocker | 全栈团队 |
-| [PLAN-42](PLAN-42-P0-专用环境发版证据执行提示词.md) | P0 专用环境发版证据执行提示词 | 🔄 进行中 | 56% | `REPORT-06` 的 `NO_GO` 判定仍是基线，`REPORT-07` 已记录自动化解阻但仍 NO_GO；剩余为 CodeQL high alert、真实 AI/OCR、e2e:ai 与真实旧库 adoption 证据 | 全栈团队 |
+| [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md) | P1 发版候选门禁与专用环境验收提示词 | 🔄 进行中 | 86% | sample 验证脚本漂移、本地 Flyway/恢复演练、CodeQL、Maven dependency-check 与发版候选证据包已收口到 PR/Actions 证据；当前再补宿主机 jar 打包 Compose build，剩余为托管 dependency-check 复扫、真实 AI/OCR、`e2e:ai` 与真实旧库 adoption | 全栈团队 |
+| [PLAN-41](PLAN-41-P0-发版阻断项处置与安全审计提示词.md) | P0 发版阻断项处置与安全审计提示词 | 🔄 进行中 | 96% | sample 脚本 gate/report-only 语义、前端高危依赖处置、CodeQL workflow、NVD API key、dependency-check artifact、CodeQL high 清零与服务镜像 PKIX 解阻已解阻；剩余为 dependency-check 托管复扫与真实环境 blocker | 全栈团队 |
+| [PLAN-42](PLAN-42-P0-专用环境发版证据执行提示词.md) | P0 专用环境发版证据执行提示词 | 🔄 进行中 | 58% | `REPORT-06` 的 `NO_GO` 判定仍是基线，`REPORT-07` 已记录自动化解阻但仍 NO_GO；当前 Compose Maven PKIX 已解除，剩余为托管 dependency-check 复扫、真实 AI/OCR、e2e:ai 与真实旧库 adoption 证据 | 全栈团队 |
 | [PLAN-43](PLAN-43-P0-NO-GO阻断项执行解阻提示词.md) | P0 NO-GO 阻断项执行解阻提示词 | ✅ 已完成 | 100% | CodeQL JS/TS build mode、重复触发、Maven dependency-check workflow 与 AI evidence workflow 已落地，并形成 `REPORT-07` NO_GO 复判 | 全栈团队 |
-| [PLAN-44](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md) | P0 真实环境放行证据与 REPORT-07 复判提示词 | 🔄 执行中 | 66% | 最新 main 默认 CI、CodeQL main push 与 Maven dependency-check 均成功；dependency-check artifact 与 CodeQL fixed 证据已闭环，剩余为依赖风险、真实 AI/OCR 与旧库 adoption 证据 | 全栈团队 |
+| [PLAN-44](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md) | P0 真实环境放行证据与 REPORT-07 复判提示词 | 🔄 执行中 | 70% | 最新 main 默认 CI、CodeQL main push 与 Maven dependency-check 均成功；dependency-check artifact 与 CodeQL fixed 证据已闭环，当前再补宿主机 jar 打包 Compose build，剩余为托管依赖复扫、真实 AI/OCR 与旧库 adoption 证据 | 全栈团队 |
 | [PLAN-45](PLAN-45-P0-CodeQL告警与真实放行证据闭环提示词.md) | P0 CodeQL 告警与真实放行证据闭环提示词 | ✅ 已完成 | 100% | CodeQL 3 个 high 已在 main 上标记 fixed；dependency-check artifact 已可下载并登记 `8 critical / 21 high / 19 moderate` | 全栈团队 |
-| [PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md) | P0 依赖高危处置与真实环境证据闭环提示词 | ⏳ 待执行 | 0% | 下一轮聚焦 dependency-check critical/high 处置、Compose Maven PKIX 解阻、真实 AI/OCR sample、真实 `e2e:ai` 与真实旧库 adoption | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 96% | 默认质量门禁与 CodeQL 已恢复，dependency-check artifact 已可下载；当前仍不可放行，下一优先级为 PLAN-46 的依赖高危处置与真实环境放行证据 | 全栈团队 |
+| [PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md) | P0 依赖高危处置与真实环境证据闭环提示词 | 🔄 执行中 | 62% | 已完成 Tomcat/Netty/commons-fileupload 高危版本覆盖与 Compose Maven PKIX 解阻；剩余为托管 dependency-check 复扫、真实 AI/OCR sample、真实 `e2e:ai` 与真实旧库 adoption | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 97% | 默认质量门禁与 CodeQL 已恢复，dependency-check artifact 已可下载，当前分支已完成高危依赖覆盖与服务镜像 Compose build 收口；仍不可放行，剩余为托管依赖复扫与真实环境放行证据 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |

@@ -22,9 +22,9 @@
 
 | 排名 | 优先级 | 任务 | 当前问题 | 上线影响 | 目标状态 |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| 1 | P0 | 恢复后端测试基线 | `mvn test` 当前失败：AI 测试口径漂移、测试数据隔离污染 | 无法判断核心业务是否稳定 | `backend mvn test` 稳定全绿 |
-| 2 | P0 | 恢复前端测试基线 | `npm test` 本地执行超时，无法确认组件回归 | 前端改动缺少可靠门禁 | `frontend npm test` 可稳定完成 |
-| 3 | P0 | 固化上线验收矩阵 | 文档已有矩阵，但 CI/本地状态与实际不完全一致 | 上线决策无统一门槛 | build/test/e2e/AI 专项分层明确 |
+| 1 | P0 | 处置 dependency-check critical/high | main artifact 仍记录 `8 critical / 21 high / 19 moderate`；当前分支仅完成高危依赖版本覆盖，尚缺新的托管复扫与豁免表 | 无法完成发布安全复判 | GitHub-hosted dependency-check 复扫通过，critical/high 清零或全部正式豁免 |
+| 2 | P0 | 真实 Compose / AI 专用环境解阻 | service 镜像 Maven PKIX 已解除，但专用环境仍未形成可用 AI/OCR / seed 入口；当前沙箱还额外暴露出 Nacos cgroup v2 启动问题 | 无法执行真实 sample gate / `e2e:ai` | Compose 栈可健康启动并形成真实 `/api/health`、sample 与 Playwright artifact |
+| 3 | P0 | 真实旧库 adoption / restore drill | 仓库内仍无脱敏旧库副本 / 历史 schema dump | Flyway 上线缺少真实旧库证据 | 旧库 baseline / migrate / validate / restore drill 全流程留痕 |
 | 4 | P1 | 认证与权限生产化 | 已完成 JWT 登录、HttpOnly refresh cookie + CSRF、refresh token 会话治理、header auth 生产禁用、WebSocket 鉴权与最小 service token；mTLS、契约测试与 OAuth/SSO 仍未完成 | 不适合在缺少后续收口的情况下继续外扩或深拆服务 | JWT + cookie-based refresh + gateway/internal service token 稳定，剩余边界风险明确登记 |
 | 5 | P1 | 数据库迁移治理 | 已补 Flyway 基线与空库验证，旧库 adoption/回滚策略仍未完全固化 | 数据结构升级仍需变更审查与备份流程 | Flyway 基线稳定运行，旧库升级手册补齐 |
 | 6 | P1 | 部署与配置收口 | `.env`、Nacos、Compose、backend profile 有重复配置；Codex CLI 只适合本地 | 部署漂移与环境误判 | 试运行配置模板和生产禁用项明确 |
@@ -37,70 +37,74 @@
 
 ## 3. P0: 上线判断门禁
 
-### 3.1 恢复后端测试基线
+### 3.1 处置 dependency-check critical/high
 
 **问题**
 
-- `AiProductOnboardingServiceTest` 仍按旧视觉直连路径断言，当前代码已改为 OCR-first。
-- `BobbuyStoreTest`、`ProcurementHudServiceTest`、`SecurityAuthorizationIntegrationTest` 存在测试数据污染，seed 后列表数量、容量、冻结状态互相影响。
+- main artifact `6744112430` 仍记录 `8 critical / 21 high / 19 moderate`。
+- 当前分支虽已把 `tomcat-embed-core`、`netty-transport`、`commons-fileupload` 覆盖到无告警版本，但尚未形成新的 GitHub-hosted dependency-check 复扫报告。
+- 本地 `dependency-check` 继续受 `www.cisa.gov` DNS 不可达阻塞，无法作为最终证据。
 
 **执行任务**
 
-1. 为每个集成测试建立独立数据上下文：清库、唯一 ID、或 `@DirtiesContext` 分层使用。
-2. 重写 AI 上架测试 mock：OCR -> LLM -> supplier rules -> source filter -> confirm 的当前链路。
-3. 把“真实 AI 视觉验收”继续保留为 `RUN_AI_VISION_E2E=1` 门控，不进入默认 `mvn test`。
-4. 固定失败样例，避免测试依赖执行顺序。
+1. 保持 `pom.xml` / `backend/pom.xml` 的高危版本覆盖生效。
+2. 触发并归档新的 GitHub-hosted dependency-check run。
+3. 若仍有残余项，补依赖/CVE/scope/runtime 影响与豁免表。
 
 **验收标准**
 
-- `cd backend && mvn test` 连续 2 次通过。
-- Surefire 报告无失败、无错误。
-- 不通过连接真实 Ollama/Codex/MinIO 来完成默认单测。
+- 新的 GitHub-hosted dependency-check artifact 可下载。
+- critical/high 清零，或所有剩余项均有正式豁免。
+- `REPORT-07`、`TEST-MATRIX`、README 中的安全结论同步更新。
 
-### 3.2 恢复前端测试基线
+### 3.2 解阻真实 Compose / AI 专用环境
 
 **问题**
 
-- `npm test` 本地执行超过 3 分钟未完成，无法作为门禁。
+- `Dockerfile.service` 的 Maven-in-Docker PKIX 已解除，但真实 AI/OCR / seed 环境入口仍未形成。
+- 当前沙箱额外暴露出 `nacos/nacos-server:v2.3.2-slim` 在 cgroup v2 环境启动时 `ProcessorMetrics` 空指针，阻断本地 Compose 全栈健康检查。
 
 **执行任务**
 
-1. 用 `vitest --run --reporter=verbose` 定位卡住的测试文件。
-2. 拆分慢测和 E2E 依赖，禁止单测等待真实计时器/网络。
-3. 给新供应商页面、商品删除、AI 识别结果编辑补基础组件测试。
-4. 明确常规单测与 Playwright E2E 的边界。
+1. 继续使用宿主机 jar 打包路径构建 `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service`。
+2. 在专用环境复跑 `docker compose build ...`、`docker compose up -d ...` 与 gateway 健康检查。
+3. 获取真实 sample gate 报告与 `RUN_AI_VISION_E2E=1 npm run e2e:ai` artifact。
 
 **验收标准**
 
-- `cd frontend && npm test` 在可接受时间内稳定完成。
-- `cd frontend && npm run build` 继续通过。
-- 新增页面不会因缺 i18n key 显示裸 key。
+- `docker compose build core-service ai-service im-service auth-service gateway-service` 稳定通过。
+- 真实后端 `/api/health` 可达。
+- sample JSON/Markdown 报告与 Playwright artifact 可回看。
 
-### 3.3 固化上线验收矩阵
+### 3.3 真实旧库 adoption / restore drill
+
+**问题**
+
+- 旧库基线、迁移与恢复仍缺真实输入。
+- 空库 Flyway 验证不能替代真实旧库 adoption 证据。
 
 **执行任务**
 
-1. 更新 CI，使它与 `TEST-MATRIX` 一致。
-2. 把 AI 真实链路、E2E、CodeQL 作为分层门禁：默认、专用、风险登记。
-3. 每次 Release 必须记录本地/CI 验证结果。
-4. Playwright 手动门禁必须保留 trace / screenshot / video / HTML report artifact，便于试运行失败复盘。
-5. AI 商品上架专用环境需保留 sample golden 与字段级对比报告，禁止只记录“成功/失败”而不保留关键识别字段。
+1. 获取脱敏旧库副本或历史 schema dump，并登记来源/时间/脱敏方式。
+2. 在隔离 PostgreSQL 环境执行 baseline / migrate / validate / restore drill。
+3. 把 `flyway_schema_history` 状态与恢复结果写入 `REPORT-07`。
 
-**当前状态（2026-05-01 / PLAN-45）**
+**验收标准**
 
+- 有可审计的旧库来源与恢复记录。
+- adoption / restore drill 可复现。
+- 若仍缺输入，发布结论必须继续保持 `NO_GO`。
+
+### 3.4 当前状态（2026-05-01 / PLAN-46）
+
+- `backend mvn test`、`frontend npm ci && npm test`、`frontend npm run build` 与默认 Docker build 继续通过。
 - `scripts/verify-ai-onboarding-samples.ps1` 的 gate/report-only 分流、`gatePassed` 汇总与失败非零退出码仍保持可用。
-- `.github/workflows/codeql.yml` 继续覆盖 Java/Kotlin、JavaScript/TypeScript、Actions；main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25198280107> 已成功，`SecurityConfig` 的 Spring CSRF 告警与 `ui-merchant-framework.js` 的 2 个 DOM XSS 告警均已标记 `fixed`。
-- `.github/workflows/dependency-check.yml` 的 main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25198280108> 已成功，artifact `dependency-check-report`（id `6744112430`）可下载，且 HTML/JSON 均已核验存在。
-- dependency-check JSON 摘要（unique CVE 口径）已登记：`8 critical / 21 high / 19 moderate`。
-- `.github/workflows/ai-release-evidence.yml` 仍未形成真实 run；本轮检查到 `.env` 中 AI/OCR/seed 为已配置状态，但本机无可用 `/api/health` 入口，且尝试 `docker compose up -d ...` 时 service 镜像 Maven-in-Docker 仍因 `repo.maven.apache.org` `PKIX path building failed` 阻塞。
-- 仓库工作区内未发现真实旧库副本 / 历史 schema dump，因此 adoption / restore drill 仍无可执行输入。
-- 结论：CodeQL high alert 与 dependency-check artifact blocker 已解阻，但 dependency-check 的 critical/high 风险、真实 AI/OCR、真实 `e2e:ai`、真实旧库 adoption 仍是 release blocker。
-
-**验收标准**
-
-- `docs/reports/TEST-MATRIX-本地与CI执行矩阵.md` 与 GitHub Actions 一致。
-- README 不再宣称未通过的测试为已通过。
-- `workflow_dispatch` 的 Playwright job 能上传可回看的 artifact，且 `npm run e2e` 稳定通过。
+- `.github/workflows/codeql.yml` main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25198280107> 已成功，3 个 high alert 均已 `fixed`。
+- `.github/workflows/dependency-check.yml` main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25198280108> 已成功，artifact `dependency-check-report`（id `6744112430`）可下载；当前分支已把 `tomcat-embed-core` 升至 `10.1.54`、`netty-transport` 升至 `4.1.132.Final`、`commons-fileupload` 升至 `1.6.0`。
+- `Dockerfile.service` 已改为复制宿主机构建好的 jar，`docker compose build core-service ai-service im-service auth-service gateway-service` 已通过，Compose 不再受 Maven PKIX 阻塞。
+- `.github/workflows/ai-release-evidence.yml` 仍未形成真实 run；当前沙箱继续缺少可用真实 `/api/health`、真实 AI/OCR/seed 凭据与 agent 登录信息。
+- 仓库工作区内仍未发现真实旧库副本 / 历史 schema dump，因此 adoption / restore drill 仍无可执行输入。
+- 结论：默认门禁与 Compose 镜像构建 blocker 已继续收口；当前剩余 blocker 为 dependency-check 托管复扫、真实 AI/OCR / `e2e:ai` 证据与真实旧库 adoption。
 
 ---
 
