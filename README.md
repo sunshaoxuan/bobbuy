@@ -105,7 +105,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - `BOBBUY_SECURITY_JWT_SECRET` 必须显式填写，模板不再提供可直接上线的默认值。
 - `BOBBUY_SECURITY_REFRESH_TOKEN_TTL_SECONDS` 默认 604800 秒（7 天）；`BOBBUY_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED` 默认 `true`。
 - refresh cookie 默认使用 `bobbuy_refresh_token`、`Path=/api/auth`、`HttpOnly=true`、`SameSite=Lax`；公网 HTTPS 部署必须把 `BOBBUY_SECURITY_REFRESH_COOKIE_SECURE=true`。
-- CSRF double-submit token 默认使用 `bobbuy_csrf_token` cookie + `X-BOBBUY-CSRF-TOKEN` header；当前至少覆盖 `/api/auth/refresh` 与 `/api/auth/logout`。
+- CSRF double-submit token 默认使用 `bobbuy_csrf_token` cookie + `X-BOBBUY-CSRF-TOKEN` header；当前由 Spring Security 对 cookie-backed `/api/auth/refresh` 与 `/api/auth/logout` 强制校验。
 - `BOBBUY_SECURITY_HEADER_AUTH_ENABLED` 默认 `false`，公网 / 共享部署不得开启。
 - `BOBBUY_SECURITY_SERVICE_TOKEN` 必须显式填写；留空时不会信任内部服务 header，`/internal/**` 也不会放行。
 - WebSocket `/ws` 必须通过 STOMP `CONNECT` header `Authorization: Bearer <access-token>` 建立连接；未登录或 token 无效时前端退回既有 REST 刷新路径。
@@ -143,7 +143,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 
 - **登录模型**：后端提供 `POST /api/auth/login`、`POST /api/auth/refresh`、`POST /api/auth/logout` 与 `GET /api/auth/me`；登录响应返回 HMAC JWT access token，并通过 `Set-Cookie` 下发 opaque refresh token。
 - **refresh token 策略**：refresh token 为高熵 opaque token；服务端仅保存 SHA-256 hash，不保存明文；浏览器端改为 `bobbuy_refresh_token` HttpOnly cookie（默认 `Path=/api/auth`、`SameSite=Lax`、生产建议 `Secure=true`）；默认 TTL 7 天，可通过 `BOBBUY_SECURITY_REFRESH_TOKEN_TTL_SECONDS` 调整。
-- **CSRF 防护**：`/api/auth/refresh` 与 `/api/auth/logout` 采用 double-submit CSRF token；后端设置非 HttpOnly `bobbuy_csrf_token` cookie，前端发送 `X-BOBBUY-CSRF-TOKEN` header。
+- **CSRF 防护**：`/api/auth/refresh` 与 `/api/auth/logout` 采用 double-submit CSRF token；后端设置非 HttpOnly `bobbuy_csrf_token` cookie，前端发送 `X-BOBBUY-CSRF-TOKEN` header，并由 Spring Security 对 cookie-backed refresh/logout 请求强制校验。
 - **轮换与并发**：默认每次 refresh 都轮换 refresh token；同一旧 refresh token 在并发场景下只允许一次成功轮换，其余请求返回 401。为避免并发误伤，本轮采用更保守策略：旧 token 重放不再自动撤销整条 family，而是直接拒绝并要求重新使用当前有效会话。
 - **前端登录态**：前端只在 localStorage 保存 access token、到期时间和用户信息；refresh token 不再写入 localStorage，降低 XSS 可读暴露面。
 - **本地演示账号**：仅在显式开启 `BOBBUY_SEED_ENABLED=true` 时提供 `agent / agent-pass`、`customer / customer-pass`。
@@ -219,16 +219,17 @@ Playwright smoke 口径：
 - `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"`：通过（report-only 返回 `0`，但 `gatePassed=false`）
 - `cd frontend && npm audit --json`：已降至 `0 critical / 0 high / 6 moderate`；剩余为 Vite/Vitest dev-only 风险，详见 `REPORT-05`
 - GitHub Actions 默认 `BOBBuy CI`：`main` 分支 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25178072203> 通过（`backend-test`、`frontend-quality`、`docker-build` 成功）
-- GitHub Actions `CodeQL` workflow：最新成功 run 为 <https://github.com/sunshaoxuan/bobbuy/actions/runs/25177727147>（`actions` / `javascript-typescript` / `java-kotlin` 均成功）；本轮已补回 `push` 触发，但验证 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25178669741> 仍为 `action_required`（0 jobs），默认分支 analysis 与 alert 数仍待归档
-- GitHub Actions `Maven dependency-check` workflow：最新 `main` run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25177731775> 仍为 `in_progress`，尚未产出可信 HTML/JSON artifact
-- `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -B org.owasp:dependency-check-maven:12.1.8:check -Dformat=HTML,JSON -DoutputDirectory=/tmp/plan42-dependency-check -DskipProvidedScope=true -DskipTestScope=true`：本沙箱仍受 `www.cisa.gov` DNS 解析失败阻塞，未生成可信报告
+- GitHub Actions `CodeQL` workflow：最新 `main` success run 为 <https://github.com/sunshaoxuan/bobbuy/actions/runs/25193181071>；本轮已提交 3 个 high 告警对应源码修复，但当前分支验证 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25196499021> 仍为 `action_required`（0 jobs），默认分支 high alert 清零待 merge + 复扫归档
+- GitHub Actions `Maven dependency-check` workflow：最新 `main` run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25193181061> 成功，artifact `dependency-check-report`（id `6741960133`）已核验可下载且同时包含 HTML/JSON；摘要（unique CVE）为 `8 critical / 21 high / 19 moderate`
+- 已尝试在本沙箱拉起真实 compose 栈执行 sample gate / `RUN_AI_VISION_E2E=1 npm run e2e:ai`，但 `docker compose up -d ...` 当前仍在 service 镜像 Maven-in-Docker 阶段因 `repo.maven.apache.org` `PKIX path building failed` 阻塞，尚未形成真实 AI/OCR artifact
 - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`：通过
 - PostgreSQL 备份恢复演练：`pg_dump -> bobbuy_restore_verify_plan40` 恢复校验通过
 - `cd backend && mvn -DskipTests package`：通过。
 - `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`：通过。
 - `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`：通过。
-- `cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai`：**未在本沙箱作为真实专用环境门禁执行**
-- `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`：**未在本沙箱执行真实专用环境实扫**
+- `cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai`：**本轮尝试前置拉起真实 compose 栈失败，尚未形成可信专用环境 artifact**
+- `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`：**本轮缺少可达真实后端入口，尚未形成可信实扫报告**
+- 真实旧库 adoption / restore drill：**仓库内未提供真实旧库副本 / 历史 schema dump，当前仍为 blocker**
 
 详细矩阵见 [docs/reports/TEST-MATRIX-本地与CI执行矩阵.md](docs/reports/TEST-MATRIX-本地与CI执行矩阵.md)。
 

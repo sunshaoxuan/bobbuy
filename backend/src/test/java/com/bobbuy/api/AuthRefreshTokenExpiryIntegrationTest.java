@@ -56,7 +56,7 @@ class AuthRefreshTokenExpiryIntegrationTest {
     return result.getResponse().getHeaders(HttpHeaders.SET_COOKIE).stream()
         .filter(header -> header.startsWith(cookieName + "="))
         .map(header -> header.substring(cookieName.length() + 1, header.indexOf(';')))
-        .findFirst()
+        .reduce((previous, current) -> current)
         .orElseThrow();
   }
 }

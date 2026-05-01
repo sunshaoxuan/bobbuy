@@ -64,9 +64,13 @@ public class AuthCookieService {
     }
 
     public void writeRefreshAndCsrfCookies(HttpServletResponse response, String refreshToken, Instant refreshExpiresAt) {
+        writeRefreshAndCsrfCookies(response, refreshToken, refreshExpiresAt, null);
+    }
+
+    public void writeRefreshAndCsrfCookies(HttpServletResponse response, String refreshToken, Instant refreshExpiresAt, String csrfToken) {
         long maxAgeSeconds = maxAgeSeconds(refreshExpiresAt);
         response.addHeader(HttpHeaders.SET_COOKIE, buildRefreshCookie(refreshToken, maxAgeSeconds).toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, buildCsrfCookie(generateCsrfToken(), maxAgeSeconds).toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, buildCsrfCookie(resolveCsrfTokenForWrite(csrfToken), maxAgeSeconds).toString());
     }
 
     public void clearAuthCookies(HttpServletResponse response) {
@@ -84,6 +88,14 @@ public class AuthCookieService {
 
     public String getCsrfHeaderName() {
         return csrfHeaderName;
+    }
+
+    public String getCsrfCookiePath() {
+        return csrfCookiePath;
+    }
+
+    public boolean isSecureCookie() {
+        return secureCookie;
     }
 
     private ResponseCookie buildRefreshCookie(String value, long maxAgeSeconds) {
@@ -117,6 +129,10 @@ public class AuthCookieService {
         byte[] tokenBytes = new byte[CSRF_TOKEN_BYTES];
         secureRandom.nextBytes(tokenBytes);
         return URL_ENCODER.encodeToString(tokenBytes);
+    }
+
+    private String resolveCsrfTokenForWrite(String csrfToken) {
+        return normalize(csrfToken).orElseGet(this::generateCsrfToken);
     }
 
     private Optional<String> resolveCookieValue(HttpServletRequest request, String cookieName) {
