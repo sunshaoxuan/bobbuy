@@ -77,11 +77,12 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
     - `MINIO_ROOT_PASSWORD`
     - `RABBITMQ_DEFAULT_PASS`
 3. 校验并启动：
-   ```bash
-   cd /home/runner/work/bobbuy/bobbuy
-   docker compose config
-   docker compose up -d --build
-   ```
+    ```bash
+    cd /home/runner/work/bobbuy/bobbuy
+    docker compose config
+    mvn -f pom.xml -DskipTests package -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am
+    docker compose up -d --build
+    ```
 
 默认仅绑定到宿主机 `127.0.0.1`：
 
@@ -213,11 +214,14 @@ Playwright smoke 口径：
 - `cd backend && mvn test`：通过。
 - `cd frontend && npm ci && npm test`：通过。
 - `cd frontend && npm run build`：通过。
+- `cd /home/runner/work/bobbuy/bobbuy && mvn -f pom.xml -DskipTests package -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am`：通过。
+- `cd /home/runner/work/bobbuy/bobbuy && docker compose build core-service ai-service im-service auth-service gateway-service`：通过；`Dockerfile.service` 已改为直接复制宿主机构建好的 jar，不再在容器内执行 Maven。
 - `cd frontend && npm run e2e`：通过（`46 passed / 2 skipped`；`2 skipped` 为 `RUN_AI_VISION_E2E` 门控用例）。
 - `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"`：通过（gate 模式返回 `0`）
 - `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg')"`：按预期失败（gate 模式返回非零并继续输出报告）
 - `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"`：通过（report-only 返回 `0`，但 `gatePassed=false`）
 - `cd frontend && npm audit --json`：已降至 `0 critical / 0 high / 6 moderate`；剩余为 Vite/Vitest dev-only 风险，详见 `REPORT-05`
+- `cd /home/runner/work/bobbuy/bobbuy && docker compose up -d postgres minio redis rabbitmq nacos ...`：不再出现 `Dockerfile.service` Maven PKIX 阻塞；当前沙箱剩余阻塞变为 `nacos/nacos-server:v2.3.2-slim` 在 cgroup v2 环境启动时触发 `ProcessorMetrics` 空指针，真实 AI/OCR 与旧库证据仍未形成，`REPORT-07` 继续保持 `NO_GO`
 - GitHub Actions 默认 `BOBBuy CI`：`main` 分支 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25178072203> 通过（`backend-test`、`frontend-quality`、`docker-build` 成功）
 - GitHub Actions `CodeQL` workflow：最新 `main` success run 为 <https://github.com/sunshaoxuan/bobbuy/actions/runs/25193181071>；本轮已提交 3 个 high 告警对应源码修复，但当前分支验证 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25196499021> 仍为 `action_required`（0 jobs），默认分支 high alert 清零待 merge + 复扫归档
 - GitHub Actions `Maven dependency-check` workflow：最新 `main` run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25193181061> 成功，artifact `dependency-check-report`（id `6741960133`）已核验可下载且同时包含 HTML/JSON；摘要（unique CVE）为 `8 critical / 21 high / 19 moderate`

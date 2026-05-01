@@ -9,7 +9,7 @@
 ## 1. 最终结论
 
 - **放行判定**: **NO_GO**
-- **结论原因**: 最新 main 默认 CI、CodeQL 与 Maven dependency-check 均已成功，3 个 CodeQL high alert 已标记 `fixed`，dependency-check artifact 可下载且含 HTML/JSON；但 Maven dependency-check 仍报告 `8 critical / 21 high / 19 moderate`，真实 AI/OCR sample、真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 与真实旧库 adoption / restore drill 仍无可信通过证据。
+- **结论原因**: 最新 main 默认 CI、CodeQL 与 Maven dependency-check 均已成功，3 个 CodeQL high alert 已标记 `fixed`，dependency-check artifact 可下载且含 HTML/JSON；当前分支已把 `tomcat-embed-core`、`netty-transport`、`commons-fileupload` 提升到非告警版本，并把 Compose 服务镜像改为复制宿主机构建好的 jar，从而解除 Maven-in-Docker `PKIX path building failed`；但新的 GitHub-hosted dependency-check 复扫尚未形成，真实 AI/OCR sample、真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 与真实旧库 adoption / restore drill 仍无可信通过证据。
 
 ---
 
@@ -62,6 +62,16 @@
 
 **复判**: “artifact 可下载”这一 blocker 已解阻，但报告中仍存在大量 critical/high/moderate 依赖风险；在完成升级、修复或正式豁免前，安全门禁仍不能视为通过。
 
+### 2.3.1 当前分支已完成的依赖与镜像构建处置
+
+- `pom.xml` 与 `backend/pom.xml` 已覆盖解析版本：
+  - `org.apache.tomcat.embed:tomcat-embed-core` -> `10.1.54`
+  - `io.netty:netty-transport` -> `4.1.132.Final`
+  - `commons-fileupload:commons-fileupload` -> `1.6.0`
+- 已用 `mvn -f backend/pom.xml dependency:tree -Dincludes=commons-fileupload:commons-fileupload,io.netty:netty-transport,org.apache.tomcat.embed:tomcat-embed-core` 验证解析结果生效。
+- `Dockerfile.service` 已改为直接复制宿主机构建的 `${MODULE}/target/${MODULE}-*.jar`，并通过 `mvn -f pom.xml -DskipTests package -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am` + `docker compose build core-service ai-service im-service auth-service gateway-service` 验证可构建。
+- 本地 `mvn ... dependency-check ...` 复扫仍因 `www.cisa.gov` DNS 不可达失败，因此当前仍以 main artifact `6744112430` 作为可信基线，等待 GitHub-hosted 新报告完成正式闭环。
+
 ### 2.4 AI 专用环境执行链路已具备，但真实证据仍缺失
 
 - workflow: `.github/workflows/ai-release-evidence.yml`
@@ -71,7 +81,7 @@
   - `.env` 中 `BOBBUY_AI_LLM_MAIN_PROVIDER`、`BOBBUY_AI_LLM_MAIN_URL`、`BOBBUY_OCR_URL`、`BOBBUY_SEED_ENABLED` 为已配置状态
   - 但 `BOBBUY_API_PROXY_TARGET`、`BOBBUY_WS_PROXY_TARGET`、`BOBBUY_E2E_AGENT_USERNAME`、`BOBBUY_E2E_AGENT_PASSWORD` 未配置
   - `http://localhost/api/health` / `http://127.0.0.1/api/health` 当前均不可达
-  - 已尝试 `docker compose up -d ...` 拉起真实栈，但 `Dockerfile.service` 仍在容器内 Maven 构建阶段因 `repo.maven.apache.org` `PKIX path building failed` 阻塞，未能进入可执行 sample gate / `e2e:ai` 的状态
+  - 已尝试 `docker compose up -d ...` 拉起真实栈；`Dockerfile.service` 的 Maven PKIX 阻塞已解除，但当前沙箱剩余阻塞变为 `nacos/nacos-server:v2.3.2-slim` 在 cgroup v2 环境启动时触发 `ProcessorMetrics` 空指针，未能进入可执行 sample gate / `e2e:ai` 的状态
 - 当前缺口:
   - 可访问的真实后端入口
   - 真实 OCR / LLM / seed 环境联通证明
@@ -96,8 +106,8 @@
 | :-- | :-- | :-- | :-- |
 | 默认 CI | RESOLVED | main run `25192905348` 已 success | 已解阻 |
 | CodeQL 默认分支证据 | RESOLVED | main run `25198280107` 已 success，3 个 high alert 均为 fixed | 已解阻 |
-| Maven dependency-check | BLOCKED | main run `25198280108` artifact 已可下载，但报告中 `8 critical / 21 high / 19 moderate` 仍需风险处置或正式豁免 | 安全负责人 / 仓库管理员 |
-| 真实 AI sample 实扫 | BLOCKED | 本轮尝试拉起真实 compose 栈时，service 镜像 Maven-in-Docker 因 PKIX 失败未能完成，尚无 sample JSON/Markdown 报告 | AI/OCR / 平台负责人 |
+| Maven dependency-check | BLOCKED | main run `25198280108` artifact 已可下载；当前分支已完成高危依赖版本覆盖，但新的 GitHub-hosted 复扫与余项豁免表尚未形成 | 安全负责人 / 仓库管理员 |
+| 真实 AI sample 实扫 | BLOCKED | service 镜像 Maven PKIX 已解阻，但沙箱内 Nacos 仍因 `ProcessorMetrics` 空指针启动失败，尚无 sample JSON/Markdown 报告 | AI/OCR / 平台负责人 |
 | 真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` | BLOCKED | 同上，真实后端入口与 Playwright artifact 仍未形成 | AI/OCR / 前端负责人 |
 | 真实旧库 adoption / restore drill | BLOCKED | 仓库内未提供真实旧库副本或历史 schema dump，无法执行 adoption / restore | DBA / 发布负责人 |
 
@@ -110,14 +120,20 @@
 - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dtest='AuthControllerIntegrationTest,SecurityAuthorizationIntegrationTest,SecurityAuthorizationProductionModeIntegrationTest,AuthRefreshTokenExpiryIntegrationTest' test`
 - `cd /home/runner/work/bobbuy/bobbuy/frontend && npm ci && npm test`
 - `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run build`
-- 下载并校验 dependency-check artifact `6741960133`
+- `cd /home/runner/work/bobbuy/bobbuy && mvn -f pom.xml -DskipTests package -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am`
+- `cd /home/runner/work/bobbuy/bobbuy && docker compose build core-service ai-service im-service auth-service gateway-service`
+- `cd /home/runner/work/bobbuy/bobbuy && mvn -f backend/pom.xml dependency:tree -Dincludes=commons-fileupload:commons-fileupload,io.netty:netty-transport,org.apache.tomcat.embed:tomcat-embed-core`
+- 下载并校验 dependency-check artifact `6744112430`
+- `cd /home/runner/work/bobbuy/bobbuy && mvn -B org.owasp:dependency-check-maven:12.1.8:check -Dformats=JSON -DoutputDirectory=/tmp/plan46-dependency-check -DskipProvidedScope=true -DskipTestScope=true --file backend/pom.xml`
 - `cd /home/runner/work/bobbuy/bobbuy && docker compose up -d postgres minio redis rabbitmq nacos nacos-init core-service ai-service im-service auth-service gateway-service frontend gateway ocr-service`
 
 结果：
 
 - 默认本地门禁命令通过。
-- dependency-check artifact 可下载且含 HTML/JSON。
-- 真实 compose 环境拉起失败：`Dockerfile.service` 容器内 Maven 访问 `repo.maven.apache.org` 触发 `PKIX path building failed`，因此未能进入真实 sample gate / `e2e:ai` / adoption drill。
+- 已确认解析版本升级为 `commons-fileupload 1.6.0`、`netty-transport 4.1.132.Final`、`tomcat-embed-core 10.1.54`。
+- `docker compose build core-service ai-service im-service auth-service gateway-service` 已通过，Compose 服务镜像不再在容器内执行 Maven。
+- dependency-check artifact 可下载且含 HTML/JSON；本地复扫仍因 `www.cisa.gov` DNS 不可达失败，新的 GitHub-hosted 复扫尚未形成。
+- 真实 compose 环境拉起已不再出现 Maven PKIX 阻塞；当前新的沙箱阻塞变为 Nacos cgroup v2 / `ProcessorMetrics` 空指针，因此仍未进入真实 sample gate / `e2e:ai` / adoption drill。
 
 ---
 
@@ -129,7 +145,7 @@
 
 1. 默认 CI 已恢复，全绿证据已具备。
 2. CodeQL 3 个 high 对应源码修复已在 main 上复扫，alerts 均为 `fixed`。
-3. Maven dependency-check 最新 main run 已成功，artifact 可下载，且已记录 `8 critical / 21 high / 19 moderate`（unique CVE）摘要；该风险仍未处置。
-4. 真实 AI sample、真实 AI E2E、真实旧库 adoption / restore drill 仍无可信证据；本轮已确认当前主要阻塞为 compose 服务镜像 Maven PKIX 与缺少真实旧库 dump。
+3. Maven dependency-check 最新 main run 已成功，artifact 可下载，且已记录 `8 critical / 21 high / 19 moderate`（unique CVE）摘要；当前分支已完成高危依赖版本覆盖，但新的 GitHub-hosted 复扫与豁免表仍未处置完成。
+4. 真实 AI sample、真实 AI E2E、真实旧库 adoption / restore drill 仍无可信证据；本轮已确认 compose 服务镜像 Maven PKIX 已解除，但当前新的专用环境阻塞为 Nacos 在本沙箱 cgroup v2 环境启动失败与缺少真实旧库 dump。
 
 因此当前仍不能放行发版候选。

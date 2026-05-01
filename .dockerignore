@@ -1,0 +1,9 @@
+.git
+.github
+.vscode
+.idea
+data/
+frontend/node_modules/
+frontend/dist/
+scratch/
+tools/

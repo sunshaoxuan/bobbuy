@@ -99,6 +99,8 @@ services:
       MODE: standalone
       PREFER_HOST_MODE: hostname
       NACOS_AUTH_ENABLE: "false"
+      MANAGEMENT_METRICS_BINDERS_PROCESSOR_ENABLED: "false"
+      JAVA_OPT_EXT: --management.metrics.binders.processor.enabled=false
       JVM_XMS: 256m
       JVM_XMX: 256m
     ports:

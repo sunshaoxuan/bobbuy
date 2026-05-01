@@ -1,6 +1,6 @@
 # 本地 / CI 测试执行矩阵
 
-> 2026-05-01 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 做配置渲染校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论仍为 `NO_GO`：dependency-check artifact 已闭环，但默认分支 CodeQL 清零、真实 AI/OCR 与真实旧库 adoption 证据仍未完成。
+> 2026-05-01 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 与服务 jar 预构建 / Compose build 校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论仍为 `NO_GO`：当前分支已覆盖高危依赖版本并解除 Compose Maven PKIX 阻塞，但新的 dependency-check 托管复扫、真实 AI/OCR 与真实旧库 adoption 证据仍未完成。
 
 ## 1. 默认门禁（每个 PR / `main` push 必跑）
 
@@ -16,6 +16,7 @@
 
 | 验证项 | 本地命令 | CI 触发方式 | 默认门禁 | 环境要求 |
 | :-- | :-- | :-- | :-- | :-- |
+| 服务镜像 Compose build | `cd /home/runner/work/bobbuy/bobbuy && mvn -f pom.xml -DskipTests package -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am && docker compose build core-service ai-service im-service auth-service gateway-service` | 当前仅本地 / 手动执行 | 否 | 先在宿主机构建 jar，再由 `Dockerfile.service` 复制产物打包；本轮已验证可避免 Maven-in-Docker PKIX 问题 |
 | PostgreSQL 空库 migration | `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate` | `workflow_dispatch` + `postgres-migration-verify` job（输入 `run_postgres_migration_verify=true`） | 否 | 需要可写 PostgreSQL 空库；默认由 Flyway 插件验证 `backend/src/main/resources/db/migration` |
 | 服务壳 smoke test | `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test` | 当前仅本地 / 手动执行 | 否 | 使用 H2 与关闭 Nacos 的测试配置，验证 `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` 最小启动以及 gateway 内部 header 清理 |
 | Playwright 页面回归 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e` | `workflow_dispatch` + `playwright-e2e` job（输入 `run_playwright_e2e=true`） | 否 | GitHub Hosted Runner 可执行；使用 Vite dev server + 前端共享 mock 浏览器 smoke，覆盖 agent/customer 登录态、角色门禁、订单/账单/聊天、采购/拣货/库存人工接管，不依赖真实 AI / MinIO |
@@ -31,7 +32,7 @@
 | 验证项 | 默认状态 | 执行要求 | 备注 |
 | :-- | :-- | :-- | :-- |
 | CodeQL / 安全扫描 | 不纳入默认 `ci.yml` | `.github/workflows/codeql.yml` 当前支持 `push` / `pull_request` / `workflow_dispatch`；需归档默认分支 push analysis 与 code scanning alerts 数 | 覆盖 Java/Kotlin、JavaScript/TypeScript、Actions；本轮 3 个 high 对应源码已修复，但默认分支清零仍待 merge + 复扫 |
-| 依赖审计 | 不纳入默认 `ci.yml` | 前端使用 `npm audit --json`；后端优先执行 `.github/workflows/dependency-check.yml` 或等价 Maven 扫描 | main run `25193181061` artifact 已可下载；当前分支 run `25196499019` 仍为 `action_required`，且报告内 `8 critical / 21 high / 19 moderate` 需继续登记 |
+| 依赖审计 | 不纳入默认 `ci.yml` | 前端使用 `npm audit --json`；后端优先执行 `.github/workflows/dependency-check.yml` 或等价 Maven 扫描 | main run `25198280108` artifact 已可下载；当前分支已完成 Tomcat/Netty/commons-fileupload 版本覆盖，但 GitHub-hosted 复扫尚未生成，本地复扫仍受 `www.cisa.gov` DNS 不可达阻塞 |
 
 ## 4. 执行约束与已知噪声
 
@@ -71,6 +72,10 @@
 - [x] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -DskipTests package`
 - [x] `cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
 - [x] `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
+- [x] `cd /home/runner/work/bobbuy/bobbuy && mvn -f pom.xml -DskipTests package -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am`
+- [x] `cd /home/runner/work/bobbuy/bobbuy && docker compose build core-service ai-service im-service auth-service gateway-service`
+- [x] `cd /home/runner/work/bobbuy/bobbuy && mvn -f backend/pom.xml dependency:tree -Dincludes=commons-fileupload:commons-fileupload,io.netty:netty-transport,org.apache.tomcat.embed:tomcat-embed-core`
+  - 解析结果：`commons-fileupload 1.6.0`、`netty-transport 4.1.132.Final`、`tomcat-embed-core 10.1.54`
 - [x] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`
 - [x] `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test`
 - [x] 按 `docs/runbooks/RUNBOOK-备份恢复演练.md` 执行一次本地基础设施级恢复演练
@@ -108,11 +113,11 @@
   - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`
   - `pg_dump -> bobbuy_restore_verify_plan40` 恢复校验通过
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -B org.owasp:dependency-check-maven:12.1.8:check -Dformat=HTML,JSON -DoutputDirectory=/tmp/plan42-dependency-check -DskipProvidedScope=true -DskipTestScope=true`
-  - 本地仍不稳定；当前以 GitHub-hosted main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25193181061> artifact 作为可信报告来源
+  - 本地仍不稳定；当前以 GitHub-hosted main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25198280108> artifact 作为可信报告来源，本次失败原因为 `www.cisa.gov` DNS 不可达
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai`
-  - 本轮前置阻塞：`docker compose up -d ...` 拉起真实栈时，service 镜像 Maven-in-Docker 仍因 `repo.maven.apache.org` `PKIX path building failed` 中断
+  - 本轮前置阻塞：service 镜像 Maven PKIX 已解阻，但沙箱内 `nacos/nacos-server:v2.3.2-slim` 仍在 cgroup v2 环境启动失败，且未形成真实 AI/OCR / seed 入口
 - [ ] `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`
-  - 本轮前置阻塞：本机 `http://localhost/api/health` / `http://127.0.0.1/api/health` 不可达，未形成可用真实后端入口
+  - 本轮前置阻塞：本机 `http://localhost/api/health` / `http://127.0.0.1/api/health` 仍不可达；当前剩余阻塞为 Nacos 启动异常与真实 AI/OCR / seed 凭据缺失
 - [ ] CodeQL 默认分支实跑与 code scanning 结果归档（当前分支验证 run `25196499021` 仍为 `action_required`，需仓库管理员放行并等待默认分支形成新基线）
 - [ ] 真实旧库 adoption / restore drill（仓库工作区内未提供真实旧库副本 / 历史 schema dump）
 - [ ] mTLS / service mesh / 契约测试（本阶段未实现，需继续登记风险）
