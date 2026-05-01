@@ -99,10 +99,12 @@ services:
       MODE: standalone
       PREFER_HOST_MODE: hostname
       NACOS_AUTH_ENABLE: "false"
+      JAVA_OPT: -XX:-UseContainerSupport
       MANAGEMENT_METRICS_BINDERS_PROCESSOR_ENABLED: "false"
       JAVA_OPT_EXT: --management.metrics.binders.processor.enabled=false
       JVM_XMS: 256m
       JVM_XMX: 256m
+      JVM_XMN: 128m
     ports:
       - "${BOBBUY_BIND_HOST:-127.0.0.1}:${NACOS_HOST_PORT:-8848}:8848"
     healthcheck:
@@ -191,7 +193,7 @@ services:
       nacos-init:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:8081/actuator/health/readiness | grep -q UP"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health/readiness | grep -q UP"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -269,7 +271,7 @@ services:
       nacos-init:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:8082/actuator/health/readiness | grep -q UP"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8082/actuator/health/readiness | grep -q UP"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -346,7 +348,7 @@ services:
       nacos-init:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:8083/actuator/health/readiness | grep -q UP"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8083/actuator/health/readiness | grep -q UP"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -397,7 +399,7 @@ services:
       nacos-init:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:8084/actuator/health/readiness | grep -q UP"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8084/actuator/health/readiness | grep -q UP"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -451,7 +453,7 @@ services:
       im-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:8080/actuator/health/readiness | grep -q UP"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness | grep -q UP"]
       interval: 15s
       timeout: 5s
       retries: 10
