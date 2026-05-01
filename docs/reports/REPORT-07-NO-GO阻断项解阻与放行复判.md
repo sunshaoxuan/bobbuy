@@ -2,14 +2,14 @@
 
 **日期**: 2026-05-01  
 **分支**: `main`
-**提交**: `4b44431b5b13d4b34804014473c795c69774b5c7`
+**提交**: `c83a08d5b201387bba2a54b74a1ffe6e1fc450b3`
 
 ---
 
 ## 1. 最终结论
 
 - **放行判定**: **NO_GO**
-- **结论原因**: 最新 main 默认 CI、CodeQL 与 Maven dependency-check 均已成功，3 个 CodeQL high alert 已标记 `fixed`，dependency-check artifact 可下载且含 HTML/JSON；当前分支已把 `tomcat-embed-core`、`netty-transport`、`commons-fileupload` 提升到非告警版本，并把 Compose 服务镜像改为复制宿主机构建好的 jar，从而解除 Maven-in-Docker `PKIX path building failed`；但新的 GitHub-hosted dependency-check 复扫尚未形成，真实 AI/OCR sample、真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 与真实旧库 adoption / restore drill 仍无可信通过证据。
+- **结论原因**: 最新 main 默认 CI、CodeQL 与 Maven dependency-check 均已成功，3 个 CodeQL high alert 已标记 `fixed`，dependency-check artifact 可下载且含 HTML/JSON；当前 main 已把 `tomcat-embed-core`、`netty-transport`、`commons-fileupload` 提升到非告警版本，并把 Compose 服务镜像改为复制宿主机构建好的 jar，从而解除 Maven-in-Docker `PKIX path building failed`；新 dependency-check 复扫已降至 `0 critical / 1 high / 10 medium`，唯一 high 为 pgjdbc `CVE-2026-42198`；真实 compose 栈仍被 Nacos cgroup v2 / `ProcessorMetrics` 启动异常阻塞，真实 AI/OCR sample、真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 与真实旧库 adoption / restore drill 仍无可信通过证据。
 
 ---
 
@@ -70,7 +70,10 @@
   - `commons-fileupload:commons-fileupload` -> `1.6.0`
 - 已用 `mvn -f backend/pom.xml dependency:tree -Dincludes=commons-fileupload:commons-fileupload,io.netty:netty-transport,org.apache.tomcat.embed:tomcat-embed-core` 验证解析结果生效。
 - `Dockerfile.service` 已改为直接复制宿主机构建的 `${MODULE}/target/${MODULE}-*.jar`，并通过 `mvn -f pom.xml -DskipTests package -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am` + `docker compose build core-service ai-service im-service auth-service gateway-service` 验证可构建。
+- 该镜像构建路线要求先在宿主机完成 Maven package；下一轮需把该前置步骤固定到文档、脚本或 CI，避免干净工作区直接 `docker compose build` 因缺 jar 失败。
 - 本地 `mvn ... dependency-check ...` 复扫仍因 `www.cisa.gov` DNS 不可达失败，因此当前仍以 main artifact `6744112430` 作为可信基线，等待 GitHub-hosted 新报告完成正式闭环。
+- 新 GitHub-hosted dependency-check run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25215061203> 已完成，artifact `dependency-check-report`（id `6749713633`）可下载；JSON 摘要已降至 `0 critical / 1 high / 10 medium`。
+- 唯一 high：`postgresql-42.6.2.jar` / `CVE-2026-42198`，建议升级 pgjdbc 到 `42.7.11+` 或形成正式豁免。
 
 ### 2.4 AI 专用环境执行链路已具备，但真实证据仍缺失
 
@@ -106,7 +109,7 @@
 | :-- | :-- | :-- | :-- |
 | 默认 CI | RESOLVED | main run `25192905348` 已 success | 已解阻 |
 | CodeQL 默认分支证据 | RESOLVED | main run `25198280107` 已 success，3 个 high alert 均为 fixed | 已解阻 |
-| Maven dependency-check | BLOCKED | main run `25198280108` artifact 已可下载；当前分支已完成高危依赖版本覆盖，但新的 GitHub-hosted 复扫与余项豁免表尚未形成 | 安全负责人 / 仓库管理员 |
+| Maven dependency-check | BLOCKED | main run `25215061203` artifact 已可下载；新摘要为 `0 critical / 1 high / 10 medium`，唯一 high 为 `postgresql-42.6.2.jar` / `CVE-2026-42198`，仍需升级或正式豁免 | 安全负责人 / 仓库管理员 |
 | 真实 AI sample 实扫 | BLOCKED | service 镜像 Maven PKIX 已解阻，但沙箱内 Nacos 仍因 `ProcessorMetrics` 空指针启动失败，尚无 sample JSON/Markdown 报告 | AI/OCR / 平台负责人 |
 | 真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` | BLOCKED | 同上，真实后端入口与 Playwright artifact 仍未形成 | AI/OCR / 前端负责人 |
 | 真实旧库 adoption / restore drill | BLOCKED | 仓库内未提供真实旧库副本或历史 schema dump，无法执行 adoption / restore | DBA / 发布负责人 |
@@ -145,7 +148,7 @@
 
 1. 默认 CI 已恢复，全绿证据已具备。
 2. CodeQL 3 个 high 对应源码修复已在 main 上复扫，alerts 均为 `fixed`。
-3. Maven dependency-check 最新 main run 已成功，artifact 可下载，且已记录 `8 critical / 21 high / 19 moderate`（unique CVE）摘要；当前分支已完成高危依赖版本覆盖，但新的 GitHub-hosted 复扫与豁免表仍未处置完成。
+3. Maven dependency-check 最新 artifact 可下载，且新摘要已降至 `0 critical / 1 high / 10 medium`；唯一 high 为 `postgresql-42.6.2.jar` / `CVE-2026-42198`，仍未处置。
 4. 真实 AI sample、真实 AI E2E、真实旧库 adoption / restore drill 仍无可信证据；本轮已确认 compose 服务镜像 Maven PKIX 已解除，但当前新的专用环境阻塞为 Nacos 在本沙箱 cgroup v2 环境启动失败与缺少真实旧库 dump。
 
 因此当前仍不能放行发版候选。

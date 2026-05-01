@@ -104,7 +104,7 @@
 - `Dockerfile.service` 已改为复制宿主机构建好的 jar，`docker compose build core-service ai-service im-service auth-service gateway-service` 已通过，Compose 不再受 Maven PKIX 阻塞。
 - `.github/workflows/ai-release-evidence.yml` 仍未形成真实 run；当前沙箱继续缺少可用真实 `/api/health`、真实 AI/OCR/seed 凭据与 agent 登录信息。
 - 仓库工作区内仍未发现真实旧库副本 / 历史 schema dump，因此 adoption / restore drill 仍无可执行输入。
-- 结论：默认门禁与 Compose 镜像构建 blocker 已继续收口；当前剩余 blocker 为 dependency-check 托管复扫、真实 AI/OCR / `e2e:ai` 证据与真实旧库 adoption。
+- 结论：默认门禁与 Compose 镜像构建 blocker 已继续收口；dependency-check 托管复扫已降至 `0 critical / 1 high / 10 medium`。当前剩余 blocker 为 pgjdbc `CVE-2026-42198` high、Nacos cgroup v2 / `ProcessorMetrics` 启动异常、真实 AI/OCR / `e2e:ai` 证据与真实旧库 adoption。
 
 ---
 

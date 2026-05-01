@@ -49,8 +49,9 @@
 | [PLAN-43](PLAN-43-P0-NO-GO阻断项执行解阻提示词.md) | P0 NO-GO 阻断项执行解阻提示词 | ✅ 已完成 | 100% | CodeQL JS/TS build mode、重复触发、Maven dependency-check workflow 与 AI evidence workflow 已落地，并形成 `REPORT-07` NO_GO 复判 | 全栈团队 |
 | [PLAN-44](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md) | P0 真实环境放行证据与 REPORT-07 复判提示词 | 🔄 执行中 | 70% | 最新 main 默认 CI、CodeQL main push 与 Maven dependency-check 均成功；dependency-check artifact 与 CodeQL fixed 证据已闭环，当前再补宿主机 jar 打包 Compose build，剩余为托管依赖复扫、真实 AI/OCR 与旧库 adoption 证据 | 全栈团队 |
 | [PLAN-45](PLAN-45-P0-CodeQL告警与真实放行证据闭环提示词.md) | P0 CodeQL 告警与真实放行证据闭环提示词 | ✅ 已完成 | 100% | CodeQL 3 个 high 已在 main 上标记 fixed；dependency-check artifact 已可下载并登记 `8 critical / 21 high / 19 moderate` | 全栈团队 |
-| [PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md) | P0 依赖高危处置与真实环境证据闭环提示词 | 🔄 执行中 | 62% | 已完成 Tomcat/Netty/commons-fileupload 高危版本覆盖与 Compose Maven PKIX 解阻；剩余为托管 dependency-check 复扫、真实 AI/OCR sample、真实 `e2e:ai` 与真实旧库 adoption | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 97% | 默认质量门禁与 CodeQL 已恢复，dependency-check artifact 已可下载，当前分支已完成高危依赖覆盖与服务镜像 Compose build 收口；仍不可放行，剩余为托管依赖复扫与真实环境放行证据 | 全栈团队 |
+| [PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md) | P0 依赖高危处置与真实环境证据闭环提示词 | 🔄 执行中 | 78% | 已完成 Tomcat/Netty/commons-fileupload 高危版本覆盖与 Compose Maven PKIX 解阻；新 dependency-check 复扫降至 `0 critical / 1 high / 10 medium`，剩余为 pgjdbc high、真实 AI/OCR 与旧库 adoption | 全栈团队 |
+| [PLAN-47](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md) | P0 专用环境 Nacos 解阻与真实 AI 证据闭环提示词 | ⏳ 待执行 | 0% | 下一轮聚焦 pgjdbc `CVE-2026-42198`、Nacos cgroup v2 / ProcessorMetrics 启动异常、service jar 预构建门禁、真实 AI/OCR 与旧库 adoption | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 97% | 默认质量门禁与 CodeQL 已恢复，dependency-check artifact 已可下载，当前分支已完成高危依赖覆盖与服务镜像 Compose build 收口；仍不可放行，剩余为 Nacos 专用环境解阻、托管依赖复扫与真实环境放行证据 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |
@@ -256,7 +257,7 @@
 
 ### 技术债务清偿进度
 
-> 2026-05-01 修正：PLAN-25 到 PLAN-39 已完成，PLAN-43 到 PLAN-45 已把 CodeQL、Maven dependency-check artifact 与 AI evidence workflow 的自动化路径落地并形成 `REPORT-07`。最新 main 默认 CI 成功，CodeQL main push 成功且 3 个 high 均为 fixed，Maven dependency-check artifact 可下载；当前剩余风险集中在 dependency-check critical/high、真实 AI/OCR、真实旧库 adoption 与长期架构项。
+> 2026-05-01 修正：PLAN-25 到 PLAN-39 已完成，PLAN-43 到 PLAN-45 已把 CodeQL、Maven dependency-check artifact 与 AI evidence workflow 的自动化路径落地并形成 `REPORT-07`。最新 main 默认 CI 成功，CodeQL main push 成功且 3 个 high 均为 fixed，Maven dependency-check artifact 可下载；PLAN-46 已覆盖 Tomcat/Netty/FileUpload 高危解析版本并解除服务镜像 Maven-in-Docker PKIX。当前剩余风险集中在 dependency-check 托管复扫余项、Nacos cgroup v2、真实 AI/OCR、真实旧库 adoption 与长期架构项。
 - **已解决**: 9/9（100%）
   - ✅ 前端提交逻辑
   - ✅ I18n 支持
@@ -273,7 +274,9 @@
   - Refresh token 轮换已通过 `findByTokenHashForUpdate` 悲观写锁与 `AuthRefreshConcurrencyIntegrationTest` 收口；旧的“并发互斥缺失”review finding 已不再适用于当前 main。
   - CodeQL JS/TS `build-mode` 已从 `manual` 修正为 `none`，PR #60 最新 CodeQL run `25148614578` 三个 matrix 均通过；重复 `push` / `pull_request` 触发已在 PR 分支收口。
   - 2026-05-01 merge 后 CodeQL main run `25198280107` 成功，code scanning API 显示 3 个 high alert 均为 `fixed`。
-  - Maven dependency-check main run `25198280108` 成功，artifact `dependency-check-report`（id `6744112430`）可下载；当前摘要仍为 `8 critical / 21 high / 19 moderate`，需修复、升级或形成正式豁免。
+  - Maven dependency-check main run `25215061203` 成功，artifact `dependency-check-report`（id `6749713633`）可下载；PLAN-46 已覆盖 `tomcat-embed-core 10.1.54`、`netty-transport 4.1.132.Final`、`commons-fileupload 1.6.0`，新复扫降至 `0 critical / 1 high / 10 medium`，唯一 high 为 `postgresql-42.6.2.jar` 的 `CVE-2026-42198`。
+  - `Dockerfile.service` 已改为复制宿主机构建好的 jar，不再在 service 镜像内执行 Maven；该路线需要固定 `mvn -f pom.xml -DskipTests package -pl ... -am` 作为 Compose service build 前置门禁。
+  - 真实 compose 栈当前不再被 Maven PKIX 阻塞，但 Nacos 在沙箱 cgroup v2 环境仍出现 `ProcessorMetrics` 启动异常。
   - 最新 main `BOBBuy CI` run `25192905348` 成功；早前 frontend image `ECONNRESET` 已通过 `npm ci` 与 npm fetch retry 收口。
   - Codex Bridge provider 已加入 LLM fallback 路径并经 `/v1/models` 与 `/v1/chat/completions` 最小连通性测试通过；真实 AI 商品 sample gate 仍需在同一套 OCR/LLM/seed 环境复验。
   - `npm run e2e:ai` AI 真实视觉链路未在当前环境执行，需专用环境。
@@ -284,11 +287,12 @@
 
 ## 🚀 下一步行动 (本周重点)
 
-**当前执行入口请参见 [PLAN-46: 依赖高危处置与真实环境证据闭环提示词](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md)、[PLAN-44: 真实环境放行证据与 REPORT-07 复判提示词](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md)、[PLAN-42: 专用环境发版证据执行提示词](PLAN-42-P0-专用环境发版证据执行提示词.md)、[PLAN-41: 发版阻断项处置与安全审计提示词](PLAN-41-P0-发版阻断项处置与安全审计提示词.md)、[PLAN-40: 发版候选门禁与专用环境验收提示词](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md)、[PLAN-24: 稳定上线差距收口优先级](PLAN-24-稳定上线差距收口优先级.md) 与 [CURRENT-STATE-2026-04-28](../reports/CURRENT-STATE-2026-04-28.md)。PLAN-43 至 PLAN-45 已完成，历史 PLAN-03 不再作为当前入口。**
+**当前执行入口请参见 [PLAN-47: 专用环境 Nacos 解阻与真实 AI 证据闭环提示词](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md)、[PLAN-46: 依赖高危处置与真实环境证据闭环提示词](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md)、[PLAN-44: 真实环境放行证据与 REPORT-07 复判提示词](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md)、[PLAN-42: 专用环境发版证据执行提示词](PLAN-42-P0-专用环境发版证据执行提示词.md)、[PLAN-41: 发版阻断项处置与安全审计提示词](PLAN-41-P0-发版阻断项处置与安全审计提示词.md)、[PLAN-40: 发版候选门禁与专用环境验收提示词](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md)、[PLAN-24: 稳定上线差距收口优先级](PLAN-24-稳定上线差距收口优先级.md) 与 [CURRENT-STATE-2026-04-28](../reports/CURRENT-STATE-2026-04-28.md)。PLAN-43 至 PLAN-45 已完成，历史 PLAN-03 不再作为当前入口。**
 
 1. **试运行前手动门禁**:
    - [ ] 真实环境放行证据与 `REPORT-07` 复判：见 [PLAN-44](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md)
    - [ ] 依赖高危处置与真实环境证据闭环：见 [PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md)
+   - [ ] 专用环境 Nacos 解阻与真实 AI 证据闭环：见 [PLAN-47](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md)
    - [x] CodeQL 告警与真实放行证据闭环中的安全扫描部分：见 [PLAN-45](PLAN-45-P0-CodeQL告警与真实放行证据闭环提示词.md)
    - [x] NO-GO 阻断项执行解阻自动化：见 [PLAN-43](PLAN-43-P0-NO-GO阻断项执行解阻提示词.md) 与 [REPORT-07](../reports/REPORT-07-NO-GO阻断项解阻与放行复判.md)
    - [x] 专用环境发版证据执行：已见 [PLAN-42](PLAN-42-P0-专用环境发版证据执行提示词.md) 与 [REPORT-06](../reports/REPORT-06-专用环境发版证据与放行判定.md)；当前结论为 `NO_GO`
@@ -304,7 +308,7 @@
 
 2. **风险登记 / 独立门禁**:
    - [x] CodeQL main run `25198280107` 已成功，3 个 high alert 均为 fixed
-   - [ ] Maven dependency-check main run `25198280108` 已成功且 artifact 可下载，但 `8 critical / 21 high / 19 moderate` 仍需处置或正式豁免
+   - [ ] Maven dependency-check main run `25215061203` 已成功且 artifact 可下载；剩余 `postgresql-42.6.2.jar` / `CVE-2026-42198` high 需升级到 pgjdbc `42.7.11+` 或正式豁免
    - [ ] PostgreSQL Flyway 旧库 adoption 前完成备份、baseline 与回滚演练（本次已完成空库 migrate/validate 与恢复库演练）
    - [ ] 真实告警平台、集中日志、自动化备份、服务级 SLO
 
@@ -319,4 +323,4 @@
 
 **备注**: 
 - 本看板作为索引每日更新，**具体任务描述以各子计划文档和 CURRENT STATE 为准**。
-- 当前执行入口为 [PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md)、[PLAN-44](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md)、[PLAN-42](PLAN-42-P0-专用环境发版证据执行提示词.md)、[PLAN-41](PLAN-41-P0-发版阻断项处置与安全审计提示词.md)、[PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md)、[PLAN-24](PLAN-24-稳定上线差距收口优先级.md) 与 [CURRENT-STATE-2026-04-28](../reports/CURRENT-STATE-2026-04-28.md)，PLAN-43 至 PLAN-45 已完成，历史 PLAN-03 不再作为当前入口。
+- 当前执行入口为 [PLAN-47](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md)、[PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md)、[PLAN-44](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md)、[PLAN-42](PLAN-42-P0-专用环境发版证据执行提示词.md)、[PLAN-41](PLAN-41-P0-发版阻断项处置与安全审计提示词.md)、[PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md)、[PLAN-24](PLAN-24-稳定上线差距收口优先级.md) 与 [CURRENT-STATE-2026-04-28](../reports/CURRENT-STATE-2026-04-28.md)，PLAN-43 至 PLAN-45 已完成，历史 PLAN-03 不再作为当前入口。
