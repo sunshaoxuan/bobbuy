@@ -89,13 +89,12 @@
 **当前状态（2026-05-01 / PLAN-45）**
 
 - `scripts/verify-ai-onboarding-samples.ps1` 的 gate/report-only 分流、`gatePassed` 汇总与失败非零退出码仍保持可用。
-- `.github/workflows/codeql.yml` 继续覆盖 Java/Kotlin、JavaScript/TypeScript、Actions；本轮已在源码层修复 `SecurityConfig` 的 Spring CSRF 告警与 `ui-merchant-framework.js` 的 2 个 DOM XSS 告警。
-- `.github/workflows/dependency-check.yml` 的 main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25193181061> 已成功，artifact `dependency-check-report`（id `6741960133`）可下载，且 HTML/JSON 均已核验存在。
+- `.github/workflows/codeql.yml` 继续覆盖 Java/Kotlin、JavaScript/TypeScript、Actions；main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25198280107> 已成功，`SecurityConfig` 的 Spring CSRF 告警与 `ui-merchant-framework.js` 的 2 个 DOM XSS 告警均已标记 `fixed`。
+- `.github/workflows/dependency-check.yml` 的 main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25198280108> 已成功，artifact `dependency-check-report`（id `6744112430`）可下载，且 HTML/JSON 均已核验存在。
 - dependency-check JSON 摘要（unique CVE 口径）已登记：`8 critical / 21 high / 19 moderate`。
-- 当前分支 `CodeQL` run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25196499021> 与 `Maven dependency-check` run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25196499019> 仍为 `action_required`（0 jobs），需仓库侧放行后才能形成当前分支复扫证据。
 - `.github/workflows/ai-release-evidence.yml` 仍未形成真实 run；本轮检查到 `.env` 中 AI/OCR/seed 为已配置状态，但本机无可用 `/api/health` 入口，且尝试 `docker compose up -d ...` 时 service 镜像 Maven-in-Docker 仍因 `repo.maven.apache.org` `PKIX path building failed` 阻塞。
 - 仓库工作区内未发现真实旧库副本 / 历史 schema dump，因此 adoption / restore drill 仍无可执行输入。
-- 结论：dependency-check artifact blocker 已解阻，但默认分支 CodeQL 清零、真实 AI/OCR、真实 `e2e:ai`、真实旧库 adoption 仍是 release blocker。
+- 结论：CodeQL high alert 与 dependency-check artifact blocker 已解阻，但 dependency-check 的 critical/high 风险、真实 AI/OCR、真实 `e2e:ai`、真实旧库 adoption 仍是 release blocker。
 
 **验收标准**
 
