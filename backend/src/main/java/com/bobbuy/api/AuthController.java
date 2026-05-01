@@ -48,7 +48,12 @@ public class AuthController {
         }
         try {
             AuthService.SessionResult sessionResult = authService.refresh(refreshToken, clientFingerprint(httpServletRequest));
-            authCookieService.writeRefreshAndCsrfCookies(httpServletResponse, sessionResult.refreshToken(), sessionResult.refreshTokenExpiresAt());
+            authCookieService.writeRefreshAndCsrfCookies(
+                httpServletResponse,
+                sessionResult.refreshToken(),
+                sessionResult.refreshTokenExpiresAt(),
+                authCookieService.resolveCsrfCookieToken(httpServletRequest)
+            );
             return ApiResponse.success(sessionResult);
         } catch (RuntimeException ex) {
             authCookieService.clearAuthCookies(httpServletResponse);
