@@ -2,14 +2,13 @@
 
 **日期**: 2026-05-01  
 **分支**: `main`
-**提交**: `d25ef92`
 
 ---
 
 ## 1. 最终结论
 
 - **放行判定**: **NO_GO**
-- **结论原因**: 最新 main 已完成 CodeQL high 修复、主要 Maven 高危依赖升级、pgjdbc 升级、service jar 预构建门禁、Nacos cgroup v2 启动修复、OCR 延迟初始化与 Compose 健康检查修复；但 README / Runbook / TEST-MATRIX / CURRENT STATE / PLAN / REPORT 文档尚未完全拉平，pgjdbc 升级后的 dependency-check 复扫仍需归档，真实 AI/OCR sample、真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 与真实旧库 adoption / restore drill 仍无可信通过证据。
+- **结论原因**: 默认 CI、CodeQL high、服务镜像 Maven-in-Docker PKIX、Nacos cgroup v2、pgjdbc high、Tomcat/Netty/FileUpload high 均已不再作为当前 blocker；但真实 AI/OCR sample gate 仍失败，真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 仍失败，且真实旧库 adoption / restore drill 仍缺少旧库 dump，因此不能放行发版候选。
 
 ---
 
@@ -18,138 +17,113 @@
 ### 2.1 默认 CI 已恢复
 
 - workflow: `.github/workflows/ci.yml`
-- 最新 main run: <https://github.com/sunshaoxuan/bobbuy/actions/runs/25192905348>
-- branch / sha: `main` / `a66d0866cfe805d0c322bc508aa044e493fa48d4`
+- 最新 main success run: <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217655067>
 - 结果: `success`
 - jobs:
   - `backend-test`: success
   - `frontend-quality`: success
   - `docker-build`: success
-  - `playwright-e2e` / `postgres-migration-verify` / `maven-dependency-audit`: skipped（未手动开启）
 
-**复判**: PLAN-44 的首要 blocker“默认 CI 恢复”已完成，frontend Docker image 不再因 `npm install` / `ECONNRESET` 造成默认门禁失败。
-
-### 2.2 CodeQL high alert 已在 main 上清零
+### 2.2 CodeQL high alert 已清零
 
 - workflow: `.github/workflows/codeql.yml`
-- 已修复源码：
-  - `backend/src/main/java/com/bobbuy/SecurityConfig.java`: 移除 `csrf.disable()`，改为 Spring Security 对 cookie-backed `/api/auth/refresh`、`/api/auth/logout` 强制 CSRF 校验，并保留 JSON 403 返回
-  - `docs/design/assets/ui-merchant-framework.js`: 去掉 `pageTitle` / `pageId` 的 HTML 模板插值，改为占位节点 + `textContent`
-- 最新 main success run: <https://github.com/sunshaoxuan/bobbuy/actions/runs/25198280107>
-- branch / sha: `main` / `4b44431b5b13d4b34804014473c795c69774b5c7`
-- code scanning alerts API:
-  - `java/spring-disabled-csrf-protection`: `fixed`
-  - `js/xss-through-dom` x2: `fixed`
+- 最新 main success run: <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217655038>
+- 覆盖语言: Java/Kotlin、JavaScript/TypeScript、Actions
+- 结果: success
+- 已修复并复扫通过的 high:
+  - `java/spring-disabled-csrf-protection`
+  - `js/xss-through-dom` x2
 
-**复判**: CodeQL high alert blocker 已解阻。
-
-### 2.3 Maven dependency-check artifact 已闭环，且 HTML/JSON 可下载
+### 2.3 Maven dependency-check critical/high 已清零
 
 - workflow: `.github/workflows/dependency-check.yml`
-- 最新 main run: <https://github.com/sunshaoxuan/bobbuy/actions/runs/25198280108>
-- branch / sha: `main` / `4b44431b5b13d4b34804014473c795c69774b5c7`
-- 结果: `success`
+- 最新 main run: <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217516557>
 - artifact:
-  - artifact 名: `dependency-check-report`
-  - artifact id: `6744112430`
-  - 已验证可下载，ZIP 内含：
-    - `dependency-check-report.html`
-    - `dependency-check-report.json`
-- JSON 摘要（unique CVE 口径）：
-  - `critical`: 8
-  - `high`: 21
-  - `moderate`(`medium`): 19
+  - name: `dependency-check-report`
+  - id: `6750657743`
+  - 已验证 ZIP 内含 `dependency-check-report.html` 与 `dependency-check-report.json`
+- JSON 摘要:
+  - `critical`: 0
+  - `high`: 0
+  - `medium`: 13
+  - `low`: 2
+- pgjdbc 已解析为 `42.7.11`，此前 `postgresql-42.6.2.jar` / `CVE-2026-42198` high 已清零。
+- 剩余 medium/low 需继续登记和后续升级，但不再按 critical/high 阻断本轮试运行证据收集。
 
-**复判**: “artifact 可下载”这一 blocker 已解阻，但报告中仍存在大量 critical/high/moderate 依赖风险；在完成升级、修复或正式豁免前，安全门禁仍不能视为通过。
+### 2.4 Compose 与服务镜像基础链路已闭环
 
-### 2.3.1 当前分支已完成的依赖与镜像构建处置
-
-- `pom.xml` 与 `backend/pom.xml` 已覆盖解析版本：
-  - `org.apache.tomcat.embed:tomcat-embed-core` -> `10.1.54`
-  - `io.netty:netty-transport` -> `4.1.132.Final`
-  - `commons-fileupload:commons-fileupload` -> `1.6.0`
-- 已用 `mvn -f backend/pom.xml dependency:tree -Dincludes=commons-fileupload:commons-fileupload,io.netty:netty-transport,org.apache.tomcat.embed:tomcat-embed-core` 验证解析结果生效。
-- `Dockerfile.service` 已改为直接复制宿主机构建的 `${MODULE}/target/${MODULE}-*.jar`，并通过 `mvn -f pom.xml -DskipTests package -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am` + `docker compose build core-service ai-service im-service auth-service gateway-service` 验证可构建。
-- 该镜像构建路线要求先在宿主机完成 Maven package；下一轮需把该前置步骤固定到文档、脚本或 CI，避免干净工作区直接 `docker compose build` 因缺 jar 失败。
-- 本地 `mvn ... dependency-check ...` 复扫仍因 `www.cisa.gov` DNS 不可达失败，因此当前仍以 main artifact `6744112430` 作为可信基线，等待 GitHub-hosted 新报告完成正式闭环。
-- 新 GitHub-hosted dependency-check run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25215061203> 已完成，artifact `dependency-check-report`（id `6749713633`）可下载；JSON 摘要已降至 `0 critical / 1 high / 10 medium`。
-- 唯一 high：`postgresql-42.6.2.jar` / `CVE-2026-42198`，建议升级 pgjdbc 到 `42.7.11+` 或形成正式豁免。
-- 当前 main 已将 pgjdbc 升级到 `42.7.11`；下一轮需归档升级后的 dependency-check artifact 并确认该 high 清零。
-
-### 2.4 AI 专用环境执行链路已具备，但真实证据仍缺失
-
-- workflow: `.github/workflows/ai-release-evidence.yml`
-- 当前 run 数: 0
-- 真实 sample gate 命令与 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 已固化到 workflow
-- 本轮沙箱核验：
-  - `.env` 中 `BOBBUY_AI_LLM_MAIN_PROVIDER`、`BOBBUY_AI_LLM_MAIN_URL`、`BOBBUY_OCR_URL`、`BOBBUY_SEED_ENABLED` 为已配置状态
-  - 但 `BOBBUY_API_PROXY_TARGET`、`BOBBUY_WS_PROXY_TARGET`、`BOBBUY_E2E_AGENT_USERNAME`、`BOBBUY_E2E_AGENT_PASSWORD` 未配置
-  - `http://localhost/api/health` / `http://127.0.0.1/api/health` 当前均不可达
-  - 已尝试 `docker compose up -d ...` 拉起真实栈；`Dockerfile.service` 的 Maven PKIX 阻塞已解除，但当前沙箱剩余阻塞变为 `nacos/nacos-server:v2.3.2-slim` 在 cgroup v2 环境启动时触发 `ProcessorMetrics` 空指针，未能进入可执行 sample gate / `e2e:ai` 的状态
-- 当前缺口:
-  - 可访问的真实后端入口
-  - 真实 OCR / LLM / seed 环境联通证明
-  - 可用的 agent 登录凭据或可达 seed 登录入口
-  - sample JSON/Markdown report
-  - Playwright trace / screenshot / video / HTML artifact
-
-### 2.5 真实旧库 adoption / restore drill 仍未执行
-
-- 当前状态: 仓库工作区内未发现真实旧库副本 / 历史 schema dump / restore 备份文件；本轮无法在不引入外部数据的前提下执行真实 adoption drill
-- 当前缺口:
-  - 数据来源与 dump 时间
-  - 脱敏方式
-  - 隔离 PostgreSQL 环境
-  - `baseline` / `migrate` / `validate` / `restore drill` 记录
+- `Dockerfile.service` 当前只复制宿主机预构建 jar，不在镜像内执行 Maven。
+- 推荐入口为 `scripts/build-service-images.sh`；本轮已修复该脚本在 Windows/Git Bash/WSL 下的 LF 与 Maven wrapper 调用问题。
+- 本轮执行 `bash scripts/build-service-images.sh` 通过：
+  - `bobbuy-core`
+  - `bobbuy-ai`
+  - `bobbuy-im`
+  - `bobbuy-auth`
+  - `bobbuy-gateway`
+- `infra/nacos/init-config.sh` 已修复 CRLF，`nacos-init` 可正常发布配置并退出。
+- 本轮以临时本地环境变量提供 `BOBBUY_SECURITY_JWT_SECRET` / `BOBBUY_SECURITY_SERVICE_TOKEN` 后，完整 Compose 栈可收敛到：
+  - `postgres` / `minio` / `redis` / `rabbitmq` / `nacos`: healthy
+  - `core-service` / `ai-service` / `im-service` / `auth-service` / `gateway-service`: healthy
+  - `gateway`: running
+  - `frontend`: running
+  - `ocr-service`: running
+- 健康检查结果:
+  - `GET http://127.0.0.1/api/health` -> `{"status":"ok","service":"gateway-service"}`
+  - `GET http://127.0.0.1/api/actuator/health` -> `{"status":"UP","service":"gateway-service"}`
+  - `GET http://127.0.0.1/api/actuator/health/readiness` -> `{"status":"UP","service":"gateway-service"}`
+  - `GET http://127.0.0.1:8000/health` -> `{"status":"ok"}`
 
 ---
 
 ## 3. 仍阻断发版的事项
 
-| blocker | 当前状态 | 仍缺证据 / 阻塞 | 责任边界 |
+| blocker | 当前状态 | 证据 / 阻塞 | 责任边界 |
 | :-- | :-- | :-- | :-- |
-| 默认 CI | RESOLVED | main run `25192905348` 已 success | 已解阻 |
-| CodeQL 默认分支证据 | RESOLVED | main run `25198280107` 已 success，3 个 high alert 均为 fixed | 已解阻 |
-| Maven dependency-check | BLOCKED | main run `25215061203` artifact 已可下载；新摘要为 `0 critical / 1 high / 10 medium`，唯一 high 为 `postgresql-42.6.2.jar` / `CVE-2026-42198`，仍需升级或正式豁免 | 安全负责人 / 仓库管理员 |
-| 真实 AI sample 实扫 | BLOCKED | service 镜像 Maven PKIX 已解阻，但沙箱内 Nacos 仍因 `ProcessorMetrics` 空指针启动失败，尚无 sample JSON/Markdown 报告 | AI/OCR / 平台负责人 |
-| 真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` | BLOCKED | 同上，真实后端入口与 Playwright artifact 仍未形成 | AI/OCR / 前端负责人 |
-| 真实旧库 adoption / restore drill | BLOCKED | 仓库内未提供真实旧库副本或历史 schema dump，无法执行 adoption / restore | DBA / 发布负责人 |
+| 默认 CI | RESOLVED | main run `25217655067` 已 success | 已解阻 |
+| CodeQL 默认分支证据 | RESOLVED | main run `25217655038` 已 success | 已解阻 |
+| Maven dependency-check critical/high | RESOLVED | main run `25217516557` artifact `6750657743` 为 `0 critical / 0 high / 13 medium / 2 low` | 剩余 medium/low 进入风险登记 |
+| Compose 基础健康 | RESOLVED | 本地临时 secret 下完整栈启动，gateway 与 OCR health 均通过 | 生产仍必须由 secret manager 注入真实 secret |
+| 真实 AI sample 实扫 | BLOCKED | `scripts/verify-ai-onboarding-samples.ps1` 已修复并带 token 打到真实 `/api/ai/onboard/scan`；结果 `0 PASS / 3 SCAN_FAIL`，后端返回 `AI_RECOGNITION`，日志显示 LLM 返回空结果 | AI/OCR / provider 配置负责人 |
+| 真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` | BLOCKED | Windows npm script 已修复并能进入 Playwright；2 个用例均失败，artifact 已生成；失败原因是页面未获得成功 AI 识别结果 | AI/OCR / 前端负责人 |
+| 真实旧库 adoption / restore drill | BLOCKED | 仓库内仍未提供真实旧库副本或历史 schema dump，无法执行 adoption / restore | DBA / 发布负责人 |
 
 ---
 
 ## 4. 本轮本地验证
 
-- `cd /home/runner/work/bobbuy/bobbuy && docker compose config`
-- `cd /home/runner/work/bobbuy/bobbuy/backend && mvn test`
-- `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dtest='AuthControllerIntegrationTest,SecurityAuthorizationIntegrationTest,SecurityAuthorizationProductionModeIntegrationTest,AuthRefreshTokenExpiryIntegrationTest' test`
-- `cd /home/runner/work/bobbuy/bobbuy/frontend && npm ci && npm test`
-- `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run build`
-- `cd /home/runner/work/bobbuy/bobbuy && mvn -f pom.xml -DskipTests package -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am`
-- `cd /home/runner/work/bobbuy/bobbuy && docker compose build core-service ai-service im-service auth-service gateway-service`
-- `cd /home/runner/work/bobbuy/bobbuy && mvn -f backend/pom.xml dependency:tree -Dincludes=commons-fileupload:commons-fileupload,io.netty:netty-transport,org.apache.tomcat.embed:tomcat-embed-core`
-- 下载并校验 dependency-check artifact `6744112430`
-- `cd /home/runner/work/bobbuy/bobbuy && mvn -B org.owasp:dependency-check-maven:12.1.8:check -Dformats=JSON -DoutputDirectory=/tmp/plan46-dependency-check -DskipProvidedScope=true -DskipTestScope=true --file backend/pom.xml`
-- `cd /home/runner/work/bobbuy/bobbuy && docker compose up -d postgres minio redis rabbitmq nacos nacos-init core-service ai-service im-service auth-service gateway-service frontend gateway ocr-service`
-
-结果：
-
-- 默认本地门禁命令通过。
-- 已确认解析版本升级为 `commons-fileupload 1.6.0`、`netty-transport 4.1.132.Final`、`tomcat-embed-core 10.1.54`。
-- `docker compose build core-service ai-service im-service auth-service gateway-service` 已通过，Compose 服务镜像不再在容器内执行 Maven。
-- dependency-check artifact 可下载且含 HTML/JSON；本地复扫仍因 `www.cisa.gov` DNS 不可达失败，新的 GitHub-hosted 复扫尚未形成。
-- 真实 compose 环境拉起已不再出现 Maven PKIX 阻塞；当前新的沙箱阻塞变为 Nacos cgroup v2 / `ProcessorMetrics` 空指针，因此仍未进入真实 sample gate / `e2e:ai` / adoption drill。
+- `docker compose config`: 通过
+- `.\mvnw.cmd -f backend\pom.xml test`: 通过，`173 tests, 0 failures, 0 errors, 2 skipped`
+- `cd frontend && npm ci && npm test && npm run build`: 通过
+- `bash scripts/build-service-images.sh`: 通过
+- `docker compose up -d postgres minio redis rabbitmq nacos nacos-init core-service ai-service im-service auth-service gateway-service frontend gateway ocr-service`: 首次因本机 `.env` 缺少 JWT secret 失败；临时注入本地测试 secret 后通过
+- `curl http://127.0.0.1/api/health`: 通过
+- `curl http://127.0.0.1/api/actuator/health`: 通过
+- `curl http://127.0.0.1/api/actuator/health/readiness`: 通过
+- `curl http://127.0.0.1:8000/health`: 通过
+- `scripts/verify-ai-onboarding-samples.ps1 ... -AuthToken <agent token>`: 执行到真实接口但 gate 失败，`0 PASS / 3 SCAN_FAIL`
+- `RUN_AI_VISION_E2E=1 npm run e2e:ai`: 执行到 Playwright，2 failed，保留 screenshot/video/trace
 
 ---
 
-## 5. 最终复判
+## 5. 本轮发现并已修复的问题
+
+- `scripts/build-service-images.sh` 使用 CRLF 时无法在 bash 中解析 `set -euo pipefail`。
+- `scripts/build-service-images.sh` 在 Windows/Git Bash/WSL 下找不到 `mvn` 或误执行 `mvnw.cmd`，已改为自动回退 Maven wrapper 并转换 WSL 路径。
+- `infra/nacos/init-config.sh` 使用 CRLF 时容器内 `/bin/sh` 解析失败，导致 `nacos-init` exit 2。
+- `scripts/verify-ai-onboarding-samples.ps1` 的 Markdown 报告文案在 Windows PowerShell 5 下因 UTF-8 无 BOM 解析/输出不稳定，已将报告固定文案改为 ASCII，并支持 `-AuthToken`。
+- `frontend` 的 `e2e:ai` npm script 在 Windows 下直接 `spawnSync('npx.cmd')` 返回 `EINVAL`，已改为 `shell: true`。
+- AI E2E 仍使用旧按钮文案 `AI Quick Snap`，已为入口按钮增加 `data-testid="ai-quick-snap-button"` 并更新测试使用稳定选择器。
+
+---
+
+## 6. 最终复判
 
 **NO_GO**
 
-当前已确认的事实：
+当前可以确认：基础 CI、安全 high、Compose/Nacos/OCR/gateway health 已经明显前进；但发版候选仍缺少三类硬证据：
 
-1. 默认 CI 已恢复，全绿证据已具备。
-2. CodeQL 3 个 high 对应源码修复已在 main 上复扫，alerts 均为 `fixed`。
-3. Maven dependency-check 最新 artifact 可下载，且新摘要已降至 `0 critical / 1 high / 10 medium`；唯一 high 为 `postgresql-42.6.2.jar` / `CVE-2026-42198`，仍未处置。
-4. 真实 AI sample、真实 AI E2E、真实旧库 adoption / restore drill 仍无可信证据；本轮已确认 compose 服务镜像 Maven PKIX 已解除，但当前新的专用环境阻塞为 Nacos 在本沙箱 cgroup v2 环境启动失败与缺少真实旧库 dump。
+1. 真实 sample gate 必须从 `SCAN_FAIL` 变为 PASS，至少要解释并修复 `AI_RECOGNITION / LLM returned empty response`。
+2. 真实 `e2e:ai` 必须跑通并归档 Playwright artifact。
+3. 必须提供真实旧库 dump 并完成 Flyway adoption / restore drill。
 
-因此当前仍不能放行发版候选。
+在这三项完成前，发版候选继续维持 `NO_GO`。

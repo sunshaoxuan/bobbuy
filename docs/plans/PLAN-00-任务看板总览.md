@@ -27,7 +27,7 @@
 | [PLAN-21](PLAN-21-参与者档案与线下结算增强-VNext+1.md) | 参与者档案与线下结算增强 | ✅ 已完成 | 100% | 地址/社交档案、线下收款、差额结转 | 全栈团队 |
 | [PLAN-22](PLAN-22-账本精算与配送履约闭环.md) | 账本精算与配送履约闭环 | ✅ 已完成 | 100% | 余额口径、待配送、拣货确认 | 全栈团队 |
 | [PLAN-23](PLAN-23-冻结门禁与履约视图统一.md) | 冻结门禁与履约视图统一 | ✅ 已完成 | 100% | 冻结只读、拣货单一事实源 | 全栈团队 |
-| [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) | 稳定上线差距收口优先级 | 🔄 执行中 | 97% | 默认 CI、dependency-check artifact、CodeQL high 清零、服务镜像 Compose build 收口已落地；剩余为 dependency-check 托管复扫、真实 AI/OCR 证据与真实旧库 adoption | 全栈团队 |
+| [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) | 稳定上线差距收口优先级 | 🔄 执行中 | 98% | 默认 CI、CodeQL high、dependency-check critical/high、服务镜像 Compose build 与 Compose 基础健康已落地；剩余为真实 AI/OCR 证据与真实旧库 adoption | 全栈团队 |
 | [PLAN-25](PLAN-25-P0后端测试基线恢复开发提示词.md) | P0 后端测试基线恢复提示词 | ✅ 已完成 | 100% | `backend mvn test` 已恢复稳定全绿 | 全栈团队 |
 | [PLAN-26](PLAN-26-P0前端测试基线恢复开发提示词.md) | P0 前端测试基线恢复提示词 | ✅ 已完成 | 100% | `frontend npm test` 已恢复稳定完成 | 全栈团队 |
 | [PLAN-27](PLAN-27-P0上线验收矩阵与CI固化开发提示词.md) | P0 上线验收矩阵与 CI 固化提示词 | ✅ 已完成 | 100% | 默认 CI 与手动/专用门禁分层已对齐 | 全栈团队 |
@@ -51,8 +51,8 @@
 | [PLAN-45](PLAN-45-P0-CodeQL告警与真实放行证据闭环提示词.md) | P0 CodeQL 告警与真实放行证据闭环提示词 | ✅ 已完成 | 100% | CodeQL 3 个 high 已在 main 上标记 fixed；dependency-check artifact 已可下载并登记 `8 critical / 21 high / 19 moderate` | 全栈团队 |
 | [PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md) | P0 依赖高危处置与真实环境证据闭环提示词 | ✅ 已完成 | 100% | Tomcat/Netty/FileUpload 与 pgjdbc 高危依赖已升级，Compose Maven PKIX 已解阻 | 全栈团队 |
 | [PLAN-47](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md) | P0 专用环境 Nacos 解阻与真实 AI 证据闭环提示词 | 🔄 进行中 | 70% | pgjdbc 已升级、Nacos cgroup v2 已解阻、service jar 预构建门禁已补；剩余为文档拉平、真实 AI/OCR 与旧库 adoption | 全栈团队 |
-| [PLAN-48](PLAN-48-P0-文档拉平与真实放行证据执行提示词.md) | P0 文档拉平与真实放行证据执行提示词 | ⏳ 待执行 | 0% | 下一轮聚焦 README/Runbook/报告/计划同步、真实 AI sample、真实 `e2e:ai`、真实旧库 adoption 与 REPORT-07 复判 | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 97% | 默认质量门禁与 CodeQL 已恢复，依赖高危与 Compose/Nacos 启动阻塞已基本收口；仍不可放行，剩余为文档拉平与真实环境放行证据 | 全栈团队 |
+| [PLAN-48](PLAN-48-P0-文档拉平与真实放行证据执行提示词.md) | P0 文档拉平与真实放行证据执行提示词 | 🔄 执行中 | 80% | 文档拉平、dependency-check 复扫、Compose health、sample gate 与 `e2e:ai` 已执行；剩余为 AI provider 识别失败修复与真实旧库 adoption | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 98% | 默认质量门禁、CodeQL、依赖 high、Compose/Nacos/OCR/gateway health 已恢复；仍不可放行，剩余为真实 AI 识别成功证据与真实旧库 adoption | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |
@@ -258,7 +258,7 @@
 
 ### 技术债务清偿进度
 
-> 2026-05-01 修正：PLAN-25 到 PLAN-39 已完成，PLAN-43 到 PLAN-45 已把 CodeQL、Maven dependency-check artifact 与 AI evidence workflow 的自动化路径落地并形成 `REPORT-07`。最新 main 默认 CI 成功，CodeQL main push 成功且 3 个 high 均为 fixed，Maven dependency-check artifact 可下载；PLAN-46 已覆盖 Tomcat/Netty/FileUpload 高危解析版本并解除服务镜像 Maven-in-Docker PKIX。当前剩余风险集中在 dependency-check 托管复扫余项、Nacos cgroup v2、真实 AI/OCR、真实旧库 adoption 与长期架构项。
+> 2026-05-01 修正：PLAN-25 到 PLAN-39 已完成，PLAN-43 到 PLAN-48 已把 CodeQL、Maven dependency-check artifact、AI evidence workflow、服务镜像预构建、Nacos/Compose 基础健康与真实 sample/e2e 执行路径落地并形成 `REPORT-07`。最新 main 默认 CI 成功，CodeQL main push 成功，Maven dependency-check 已降至 `0 critical / 0 high / 13 medium / 2 low`；当前剩余风险集中在真实 AI/OCR 识别失败、真实旧库 adoption 与长期架构项。
 - **已解决**: 9/9（100%）
   - ✅ 前端提交逻辑
   - ✅ I18n 支持
@@ -275,13 +275,13 @@
   - Refresh token 轮换已通过 `findByTokenHashForUpdate` 悲观写锁与 `AuthRefreshConcurrencyIntegrationTest` 收口；旧的“并发互斥缺失”review finding 已不再适用于当前 main。
   - CodeQL JS/TS `build-mode` 已从 `manual` 修正为 `none`，PR #60 最新 CodeQL run `25148614578` 三个 matrix 均通过；重复 `push` / `pull_request` 触发已在 PR 分支收口。
   - 2026-05-01 merge 后 CodeQL main run `25198280107` 成功，code scanning API 显示 3 个 high alert 均为 `fixed`。
-  - Maven dependency-check main run `25215061203` 成功，artifact `dependency-check-report`（id `6749713633`）可下载；PLAN-46 已覆盖 `tomcat-embed-core 10.1.54`、`netty-transport 4.1.132.Final`、`commons-fileupload 1.6.0`，新复扫降至 `0 critical / 1 high / 10 medium`，唯一 high 为 `postgresql-42.6.2.jar` 的 `CVE-2026-42198`；PLAN-47 已升级 pgjdbc 到 `42.7.11`，待下一次 dependency-check 复扫归档。
+  - Maven dependency-check main run `25217516557` 成功，artifact `dependency-check-report`（id `6750657743`）可下载；复扫结果为 `0 critical / 0 high / 13 medium / 2 low`，pgjdbc high 已清零。
   - `Dockerfile.service` 已改为复制宿主机构建好的 jar，不再在 service 镜像内执行 Maven；该路线需要固定 `mvn -f pom.xml -DskipTests package -pl ... -am` 作为 Compose service build 前置门禁。
-  - 真实 compose 栈当前不再被 Maven PKIX 阻塞，Nacos cgroup v2 / `ProcessorMetrics` 启动异常已在 PLAN-47 修复；下一轮需把 README/Runbook/报告/计划文档拉平并执行真实 AI/OCR 证据。
+  - 真实 compose 栈当前不再被 Maven PKIX、Nacos cgroup v2 / `ProcessorMetrics`、`nacos-init` CRLF、gateway health 或 OCR `/health` 阻塞；本轮已执行真实 AI sample gate 与 `e2e:ai`，但 AI 识别仍失败。
   - 最新 main `BOBBuy CI` run `25192905348` 成功；早前 frontend image `ECONNRESET` 已通过 `npm ci` 与 npm fetch retry 收口。
   - Codex Bridge provider 已加入 LLM fallback 路径并经 `/v1/models` 与 `/v1/chat/completions` 最小连通性测试通过；真实 AI 商品 sample gate 仍需在同一套 OCR/LLM/seed 环境复验。
-  - `npm run e2e:ai` AI 真实视觉链路未在当前环境执行，需专用环境。
-  - `REPORT-06` 与 `REPORT-07` 的 `NO_GO` 结论仍是正式发版基线；真实 AI/OCR、真实 `e2e:ai` 与真实旧库 adoption 仍未固化为可放行证据。
+  - `npm run e2e:ai` AI 真实视觉链路已在当前环境执行并生成 Playwright artifact，当前 2 个用例失败，原因是未获得成功 AI 识别结果。
+  - `REPORT-06` 与 `REPORT-07` 的 `NO_GO` 结论仍是正式发版基线；真实 AI/OCR PASS 证据与真实旧库 adoption 仍未固化为可放行证据。
   - OAuth/SSO、mTLS/service mesh、独立 schema、契约测试、拆分后独立 CI/CD 仍属于后续架构任务。
 
 ---
@@ -294,7 +294,7 @@
    - [ ] 真实环境放行证据与 `REPORT-07` 复判：见 [PLAN-44](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md)
    - [ ] 依赖高危处置与真实环境证据闭环：见 [PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md)
    - [ ] 专用环境 Nacos 解阻与真实 AI 证据闭环：见 [PLAN-47](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md)
-   - [ ] 文档拉平与真实放行证据执行：见 [PLAN-48](PLAN-48-P0-文档拉平与真实放行证据执行提示词.md)
+   - [x] 文档拉平与真实放行证据执行中的基础证据：见 [PLAN-48](PLAN-48-P0-文档拉平与真实放行证据执行提示词.md)
    - [x] CodeQL 告警与真实放行证据闭环中的安全扫描部分：见 [PLAN-45](PLAN-45-P0-CodeQL告警与真实放行证据闭环提示词.md)
    - [x] NO-GO 阻断项执行解阻自动化：见 [PLAN-43](PLAN-43-P0-NO-GO阻断项执行解阻提示词.md) 与 [REPORT-07](../reports/REPORT-07-NO-GO阻断项解阻与放行复判.md)
    - [x] 专用环境发版证据执行：已见 [PLAN-42](PLAN-42-P0-专用环境发版证据执行提示词.md) 与 [REPORT-06](../reports/REPORT-06-专用环境发版证据与放行判定.md)；当前结论为 `NO_GO`
@@ -305,12 +305,12 @@
    - [x] 浏览器 smoke：`cd frontend && npm run e2e`，当前口径 `46 passed / 2 skipped`
    - [x] Compose 配置渲染：`docker compose config`
    - [x] AI 商品字段级 sample golden、结构化落库与验证脚本：见 [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) 与 [REPORT-03](../reports/REPORT-03-AI商品字段识别样例验证报告.md)
-   - [ ] AI sample 专用实扫：`pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`，需可达 `/api/ai/onboard/scan` 与真实 AI/OCR/seed 环境
-   - [ ] AI 真实视觉：`cd frontend && npm run e2e:ai`，需 `RUN_AI_VISION_E2E=1` 与专用 AI/OCR/seed 环境
+   - [ ] AI sample 专用实扫：`pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken <agent-token>` 已可达 `/api/ai/onboard/scan`，但当前 `0 PASS / 3 SCAN_FAIL`
+   - [ ] AI 真实视觉：`cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai` 已可执行并生成 artifact，但当前 2 failed
 
 2. **风险登记 / 独立门禁**:
    - [x] CodeQL main run `25198280107` 已成功，3 个 high alert 均为 fixed
-   - [ ] Maven dependency-check main run `25215061203` 已成功且 artifact 可下载；剩余 `postgresql-42.6.2.jar` / `CVE-2026-42198` high 需升级到 pgjdbc `42.7.11+` 或正式豁免
+   - [x] Maven dependency-check main run `25217516557` 已成功且 artifact `6750657743` 可下载；critical/high 已清零
    - [ ] PostgreSQL Flyway 旧库 adoption 前完成备份、baseline 与回滚演练（本次已完成空库 migrate/validate 与恢复库演练）
    - [ ] 真实告警平台、集中日志、自动化备份、服务级 SLO
 

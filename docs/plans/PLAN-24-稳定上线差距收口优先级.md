@@ -22,9 +22,9 @@
 
 | 排名 | 优先级 | 任务 | 当前问题 | 上线影响 | 目标状态 |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| 1 | P0 | 处置 dependency-check critical/high | main artifact 仍记录 `8 critical / 21 high / 19 moderate`；当前分支仅完成高危依赖版本覆盖，尚缺新的托管复扫与豁免表 | 无法完成发布安全复判 | GitHub-hosted dependency-check 复扫通过，critical/high 清零或全部正式豁免 |
-| 2 | P0 | 真实 Compose / AI 专用环境解阻 | service 镜像 Maven PKIX 已解除，但专用环境仍未形成可用 AI/OCR / seed 入口；当前沙箱还额外暴露出 Nacos cgroup v2 启动问题 | 无法执行真实 sample gate / `e2e:ai` | Compose 栈可健康启动并形成真实 `/api/health`、sample 与 Playwright artifact |
-| 3 | P0 | 真实旧库 adoption / restore drill | 仓库内仍无脱敏旧库副本 / 历史 schema dump | Flyway 上线缺少真实旧库证据 | 旧库 baseline / migrate / validate / restore drill 全流程留痕 |
+| 1 | P0 | 真实 AI/OCR sample 与 E2E PASS | sample gate 已打到真实 `/api/ai/onboard/scan`，但当前 `0 PASS / 3 SCAN_FAIL`；`e2e:ai` 已进入 Playwright flow 但 2 failed | 无法证明 sample 图片能正确填充商品档案字段 | 修复 provider/识别链路后，sample gate PASS，`RUN_AI_VISION_E2E=1 npm run e2e:ai` PASS 并归档 artifact |
+| 2 | P0 | 真实旧库 adoption / restore drill | 仓库内仍无脱敏旧库副本 / 历史 schema dump | Flyway 上线缺少真实旧库证据 | 旧库 baseline / migrate / validate / restore drill 全流程留痕 |
+| 3 | P1 | 处置 dependency-check medium/low | 最新 artifact 已为 `0 critical / 0 high / 13 medium / 2 low`；仍需按影响面登记 medium/low | 中期安全债务未完全收口 | medium/low 均有升级计划或正式风险登记 |
 | 4 | P1 | 认证与权限生产化 | 已完成 JWT 登录、HttpOnly refresh cookie + CSRF、refresh token 会话治理、header auth 生产禁用、WebSocket 鉴权与最小 service token；mTLS、契约测试与 OAuth/SSO 仍未完成 | 不适合在缺少后续收口的情况下继续外扩或深拆服务 | JWT + cookie-based refresh + gateway/internal service token 稳定，剩余边界风险明确登记 |
 | 5 | P1 | 数据库迁移治理 | 已补 Flyway 基线与空库验证，旧库 adoption/回滚策略仍未完全固化 | 数据结构升级仍需变更审查与备份流程 | Flyway 基线稳定运行，旧库升级手册补齐 |
 | 6 | P1 | 部署与配置收口 | `.env`、Nacos、Compose、backend profile 有重复配置；Codex CLI 只适合本地 | 部署漂移与环境误判 | 试运行配置模板和生产禁用项明确 |
@@ -37,46 +37,29 @@
 
 ## 3. P0: 上线判断门禁
 
-### 3.1 处置 dependency-check critical/high
+### 3.1 真实 AI/OCR sample 与 E2E PASS
 
 **问题**
 
-- main artifact `6744112430` 仍记录 `8 critical / 21 high / 19 moderate`。
-- 当前分支虽已把 `tomcat-embed-core`、`netty-transport`、`commons-fileupload` 覆盖到无告警版本，但尚未形成新的 GitHub-hosted dependency-check 复扫报告。
-- 本地 `dependency-check` 继续受 `www.cisa.gov` DNS 不可达阻塞，无法作为最终证据。
+- Compose、gateway、OCR health 已通过，真实接口可达。
+- `scripts/verify-ai-onboarding-samples.ps1` 带 token 已打到真实 `/api/ai/onboard/scan`，但当前结果为 `0 PASS / 3 SCAN_FAIL`。
+- 后端日志显示 `AI_RECOGNITION` / LLM returned empty response，说明 OCR/LLM provider 或提示词/解析链路仍不能把 sample 图片正确落到商品字段。
+- `RUN_AI_VISION_E2E=1 npm run e2e:ai` 已进入 Playwright flow 并生成 artifact，但 2 个用例失败。
 
 **执行任务**
 
-1. 保持 `pom.xml` / `backend/pom.xml` 的高危版本覆盖生效。
-2. 触发并归档新的 GitHub-hosted dependency-check run。
-3. 若仍有残余项，补依赖/CVE/scope/runtime 影响与豁免表。
+1. 修复真实 AI provider 配置或 LLM fallback，使 `/api/ai/onboard/scan` 返回可解析结构化字段。
+2. 用 `sample/IMG_1484.jpg`、`IMG_1638.jpg`、`IMG_1510.jpg` 复跑 sample gate。
+3. 确认 `basePrice -> price`、`itemNumber`、`categoryId`、`attributes.pricePerUnit` 等关键字段与 golden 对齐。
+4. 复跑 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 并归档 Playwright artifact。
 
 **验收标准**
 
-- 新的 GitHub-hosted dependency-check artifact 可下载。
-- critical/high 清零，或所有剩余项均有正式豁免。
-- `REPORT-07`、`TEST-MATRIX`、README 中的安全结论同步更新。
+- sample gate 返回 `gatePassed=true`。
+- `e2e:ai` 全部通过。
+- JSON/Markdown sample 报告与 Playwright screenshot/video/trace 可回看。
 
-### 3.2 解阻真实 Compose / AI 专用环境
-
-**问题**
-
-- `Dockerfile.service` 的 Maven-in-Docker PKIX 已解除，但真实 AI/OCR / seed 环境入口仍未形成。
-- 当前沙箱额外暴露出 `nacos/nacos-server:v2.3.2-slim` 在 cgroup v2 环境启动时 `ProcessorMetrics` 空指针，阻断本地 Compose 全栈健康检查。
-
-**执行任务**
-
-1. 继续使用宿主机 jar 打包路径构建 `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service`。
-2. 在专用环境复跑 `docker compose build ...`、`docker compose up -d ...` 与 gateway 健康检查。
-3. 获取真实 sample gate 报告与 `RUN_AI_VISION_E2E=1 npm run e2e:ai` artifact。
-
-**验收标准**
-
-- `docker compose build core-service ai-service im-service auth-service gateway-service` 稳定通过。
-- 真实后端 `/api/health` 可达。
-- sample JSON/Markdown 报告与 Playwright artifact 可回看。
-
-### 3.3 真实旧库 adoption / restore drill
+### 3.2 真实旧库 adoption / restore drill
 
 **问题**
 
@@ -95,16 +78,35 @@
 - adoption / restore drill 可复现。
 - 若仍缺输入，发布结论必须继续保持 `NO_GO`。
 
-### 3.4 当前状态（2026-05-01 / PLAN-46）
+### 3.3 dependency-check medium/low 风险登记
+
+**问题**
+
+- 最新 GitHub-hosted dependency-check artifact `6750657743` 已降至 `0 critical / 0 high / 13 medium / 2 low`。
+- medium/low 不再按 P0 阻断当前真实证据收集，但仍需进入后续升级或豁免计划。
+
+**执行任务**
+
+1. 逐项登记 medium/low 的 dependency、CVE、scope、runtime exposure。
+2. 能升级的补版本覆盖；不能升级的形成正式风险接受记录。
+3. 保持后续 dependency-check artifact 可下载。
+
+**验收标准**
+
+- 无 critical/high 回归。
+- medium/low 均有负责人和后续处理计划。
+
+### 3.4 当前状态（2026-05-01 / PLAN-48）
 
 - `backend mvn test`、`frontend npm ci && npm test`、`frontend npm run build` 与默认 Docker build 继续通过。
 - `scripts/verify-ai-onboarding-samples.ps1` 的 gate/report-only 分流、`gatePassed` 汇总与失败非零退出码仍保持可用。
-- `.github/workflows/codeql.yml` main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25198280107> 已成功，3 个 high alert 均已 `fixed`。
-- `.github/workflows/dependency-check.yml` main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25198280108> 已成功，artifact `dependency-check-report`（id `6744112430`）可下载；当前分支已把 `tomcat-embed-core` 升至 `10.1.54`、`netty-transport` 升至 `4.1.132.Final`、`commons-fileupload` 升至 `1.6.0`。
-- `Dockerfile.service` 已改为复制宿主机构建好的 jar，`docker compose build core-service ai-service im-service auth-service gateway-service` 已通过，Compose 不再受 Maven PKIX 阻塞。
-- `.github/workflows/ai-release-evidence.yml` 仍未形成真实 run；当前沙箱继续缺少可用真实 `/api/health`、真实 AI/OCR/seed 凭据与 agent 登录信息。
+- `.github/workflows/codeql.yml` main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217655038> 已成功。
+- `.github/workflows/dependency-check.yml` main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217516557> 已成功，artifact `dependency-check-report`（id `6750657743`）为 `0 critical / 0 high / 13 medium / 2 low`。
+- `bash scripts/build-service-images.sh` 已通过；`Dockerfile.service` 复制宿主机构建好的 jar，Compose 不再受 Maven PKIX 阻塞。
+- 本地临时 secret 下完整 Compose 栈已启动，gateway `/api/health`、`/api/actuator/health`、`/api/actuator/health/readiness` 与 OCR `/health` 均通过。
+- `.github/workflows/ai-release-evidence.yml` 仍未形成真实 run；本地真实 sample gate 和 `e2e:ai` 已执行但失败，当前 blocker 已收敛到 AI provider / 字段识别链路。
 - 仓库工作区内仍未发现真实旧库副本 / 历史 schema dump，因此 adoption / restore drill 仍无可执行输入。
-- 结论：默认门禁与 Compose 镜像构建 blocker 已继续收口；dependency-check 托管复扫已降至 `0 critical / 1 high / 10 medium`。当前剩余 blocker 为 pgjdbc `CVE-2026-42198` high、Nacos cgroup v2 / `ProcessorMetrics` 启动异常、真实 AI/OCR / `e2e:ai` 证据与真实旧库 adoption。
+- 结论：默认门禁、安全 high、Compose/Nacos/OCR/gateway 基础健康已收口；当前剩余 blocker 为真实 AI/OCR sample gate、真实 `e2e:ai` PASS 证据与真实旧库 adoption。
 
 ---
 

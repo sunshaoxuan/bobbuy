@@ -710,7 +710,7 @@ export default function StockMaster() {
                 <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow} block data-testid="stock-master-add-row">
                   {t('stock.master.add_row')}
                 </Button>
-                <Button type="primary" icon={<CameraOutlined />} onClick={() => setIsQuickAddVisible(true)} block>
+                <Button data-testid="ai-quick-snap-button" type="primary" icon={<CameraOutlined />} onClick={() => setIsQuickAddVisible(true)} block>
                   {t('stock.master.quick_snap')}
                 </Button>
               </Space>
@@ -733,7 +733,7 @@ export default function StockMaster() {
                 <Button type="default" icon={<PlusOutlined />} onClick={handleAddRow} data-testid="stock-master-add-row">
                   {t('stock.master.add_row')}
                 </Button>
-                <Button type="primary" icon={<CameraOutlined />} onClick={() => setIsQuickAddVisible(true)}>
+                <Button data-testid="ai-quick-snap-button" type="primary" icon={<CameraOutlined />} onClick={() => setIsQuickAddVisible(true)}>
                   {t('stock.master.quick_snap')}
                 </Button>
               </Space>

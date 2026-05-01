@@ -1,7 +1,7 @@
 # PLAN-48: P0 文档拉平与真实放行证据执行提示词
 
 **生效日期**: 2026-05-01
-**状态**: 待执行
+**状态**: 执行中（基础证据已完成，AI/旧库 blocker 未解）
 **关联计划**:
 - [PLAN-47: P0 专用环境 Nacos 解阻与真实 AI 证据闭环提示词](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md)
 - [PLAN-46: P0 依赖高危处置与真实环境证据闭环提示词](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md)
@@ -11,8 +11,11 @@
 - PLAN-47 可执行部分已完成并推送：pgjdbc 升级到 `42.7.11`，Nacos cgroup v2 启动问题已修复，service jar 预构建门禁脚本 `scripts/build-service-images.sh` 已新增。
 - Compose 在临时 secret 下已可收敛到 `nacos/core/ai/im/auth/gateway-service` healthy，`gateway/frontend` running，`ocr-service` running 且 `/health` 返回 200。
 - OCR 镜像已改为运行时延迟初始化，不再构建期强制拉模型。
-- 本轮文档尚未同步 README、Runbook、TEST-MATRIX、CURRENT STATE、PLAN-00、PLAN-24、REPORT-07。
-- 真实 AI/OCR sample gate、真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai`、真实旧库 adoption / restore drill 仍未完成。
+- README、Runbook、TEST-MATRIX、CURRENT STATE、PLAN-00、PLAN-24、REPORT-07 已同步到 PLAN-48 执行事实。
+- pgjdbc 42.7.11 后的 dependency-check artifact 已归档：run `25217516557` / artifact `6750657743` / `0 critical / 0 high / 13 medium / 2 low`。
+- 真实 Compose 栈在临时本地 secret 下已可通过 gateway/OCR health。
+- 真实 AI/OCR sample gate 与真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 已执行但失败；当前阻塞为 AI provider / 识别链路未返回成功结构化结果。
+- 真实旧库 adoption / restore drill 仍因缺少脱敏旧库 dump 未完成。
 - `REPORT-07` 当前仍应保持 **NO_GO**。
 
 ---

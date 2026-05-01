@@ -4,6 +4,7 @@ param(
     [string]$ScanEndpoint = "http://localhost/api/ai/onboard/scan",
     [string]$JsonReportPath = "/tmp/ai-onboarding-sample-report.json",
     [string]$MarkdownReportPath = "/tmp/ai-onboarding-sample-report.md",
+    [string]$AuthToken,
     [switch]$IncludeNeedsHumanGolden,
     [string]$MockScanResponsePath,
     [string[]]$SampleIds,
@@ -280,7 +281,11 @@ try {
                     base64Image = "data:image/jpeg;base64,$([Convert]::ToBase64String($bytes))"
                     sampleId = $entry.sampleId
                 } | ConvertTo-Json -Depth 10
-                $scanResponse = Invoke-RestMethod -Uri $ScanEndpoint -Method Post -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 180
+                $headers = @{}
+                if (-not [string]::IsNullOrWhiteSpace($AuthToken)) {
+                    $headers["Authorization"] = "Bearer $AuthToken"
+                }
+                $scanResponse = Invoke-RestMethod -Uri $ScanEndpoint -Method Post -ContentType "application/json; charset=utf-8" -Headers $headers -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 180
             }
 
             if ($scanResponse.status -and $scanResponse.status -ne "success") {
@@ -348,16 +353,17 @@ try {
     $report | ConvertTo-Json -Depth 10 | Set-Content -Path $JsonReportPath -Encoding UTF8
 
     $markdown = @()
-    $markdown += "# AI 商品字段识别样例验证报告"
+    $markdown += "# AI onboarding sample field verification report"
     $markdown += ""
-    $markdown += "- 模式：$(if ($ReportOnly) { 'report-only（仅人工报告，不能作为 release gate）' } else { 'gate（默认阻断模式）' })"
-    $markdown += "- 样例总数：$($summary.total)"
-    $markdown += "- PASS：$($summary.pass)"
-    $markdown += "- FAIL：$($summary.fail)"
-    $markdown += "- SCAN_FAIL：$($summary.scanFail)"
-    $markdown += "- MISSING_FILE：$($summary.missingFile)"
-    $markdown += "- SKIPPED(NEEDS_HUMAN_GOLDEN)：$($summary.skipped)"
-    $markdown += "- gatePassed：$($summary.gatePassed)"
+    $modeLabel = if ($ReportOnly) { "report-only (manual report; not a release gate)" } else { "gate (default blocking mode)" }
+    $markdown += "- Mode: $modeLabel"
+    $markdown += "- Total samples: $($summary.total)"
+    $markdown += "- PASS: $($summary.pass)"
+    $markdown += "- FAIL: $($summary.fail)"
+    $markdown += "- SCAN_FAIL: $($summary.scanFail)"
+    $markdown += "- MISSING_FILE: $($summary.missingFile)"
+    $markdown += "- SKIPPED(NEEDS_HUMAN_GOLDEN): $($summary.skipped)"
+    $markdown += "- gatePassed: $($summary.gatePassed)"
     $markdown += ""
     $markdown += "| Sample | Status | Trace Stage | OCR/LLM | Fallback |"
     $markdown += "| :-- | :-- | :-- | :-- | :-- |"
@@ -369,11 +375,11 @@ try {
     foreach ($result in $results) {
         $markdown += "## $($result.sampleId)"
         $markdown += ""
-        $markdown += "- 状态：$($result.status)"
-        $markdown += "- 说明：$($result.detail)"
+        $markdown += "- Status: $($result.status)"
+        $markdown += "- Detail: $($result.detail)"
         if ($result.fieldResults.Count -gt 0) {
             $markdown += ""
-            $markdown += "| 字段 | 实际读取路径 | 期望 | 实际 | 结果 | 原因 |"
+            $markdown += "| Expected Path | Actual Path | Expected | Actual | Result | Reason |"
             $markdown += "| :-- | :-- | :-- | :-- | :-- | :-- |"
             foreach ($fieldResult in $result.fieldResults) {
                 $markdown += "| $($fieldResult.expectedPath) | $($fieldResult.actualPath) | $(Convert-ToReportCellValue $fieldResult.expected) | $(Convert-ToReportCellValue $fieldResult.actual) | $(if ($fieldResult.passed) { 'PASS' } else { 'FAIL' }) | $($fieldResult.reason) |"

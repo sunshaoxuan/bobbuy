@@ -1,6 +1,6 @@
 # 本地 / CI 测试执行矩阵
 
-> 2026-05-01 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 与服务 jar 预构建 / Compose build 校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论仍为 `NO_GO`：当前分支已覆盖高危依赖版本并解除 Compose Maven PKIX 阻塞，但新的 dependency-check 托管复扫、真实 AI/OCR 与真实旧库 adoption 证据仍未完成。
+> 2026-05-01 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 与服务 jar 预构建 / Compose build 校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论仍为 `NO_GO`：dependency-check critical/high、Compose Maven PKIX、Nacos cgroup v2 与 gateway/OCR health 已解阻，但真实 AI sample gate、真实 `e2e:ai` 与真实旧库 adoption 证据仍未完成。
 
 ## 1. 默认门禁（每个 PR / `main` push 必跑）
 
@@ -16,12 +16,12 @@
 
 | 验证项 | 本地命令 | CI 触发方式 | 默认门禁 | 环境要求 |
 | :-- | :-- | :-- | :-- | :-- |
-| 服务镜像 Compose build | `cd /home/runner/work/bobbuy/bobbuy && mvn -f pom.xml -DskipTests package -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am && docker compose build core-service ai-service im-service auth-service gateway-service` | 当前仅本地 / 手动执行 | 否 | 先在宿主机构建 jar，再由 `Dockerfile.service` 复制产物打包；本轮已验证可避免 Maven-in-Docker PKIX 问题 |
+| 服务镜像 Compose build | `bash scripts/build-service-images.sh` | 当前仅本地 / 手动执行 | 否 | 先在宿主机构建 jar，再由 `Dockerfile.service` 复制产物打包；脚本已验证可避免 Maven-in-Docker PKIX 问题，并支持 Windows/Git Bash/WSL Maven wrapper 回退 |
 | PostgreSQL 空库 migration | `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate` | `workflow_dispatch` + `postgres-migration-verify` job（输入 `run_postgres_migration_verify=true`） | 否 | 需要可写 PostgreSQL 空库；默认由 Flyway 插件验证 `backend/src/main/resources/db/migration` |
 | 服务壳 smoke test | `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test` | 当前仅本地 / 手动执行 | 否 | 使用 H2 与关闭 Nacos 的测试配置，验证 `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` 最小启动以及 gateway 内部 header 清理 |
 | Playwright 页面回归 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e` | `workflow_dispatch` + `playwright-e2e` job（输入 `run_playwright_e2e=true`） | 否 | GitHub Hosted Runner 可执行；使用 Vite dev server + 前端共享 mock 浏览器 smoke，覆盖 agent/customer 登录态、角色门禁、订单/账单/聊天、采购/拣货/库存人工接管，不依赖真实 AI / MinIO |
-| AI 真实视觉链路 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 必须提供真实后端 URL、`SPRING_PROFILES_ACTIVE=dev,ai-hermes`、可访问的 AI 模型、MinIO、seed 数据、样本图片，以及 `BOBBUY_E2E_AGENT_USERNAME` / `BOBBUY_E2E_AGENT_PASSWORD` |
-| AI sample 字段级对比（gate 模式） | `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 需要真实 `/api/ai/onboard/scan`、样本图片目录与 `docs/fixtures/ai-onboarding-sample-golden.json`；输出 `/tmp/ai-onboarding-sample-report.json` + `/tmp/ai-onboarding-sample-report.md`；遇到 `FAIL` / `SCAN_FAIL` / `MISSING_FILE` 返回非零 |
+| AI 真实视觉链路 | `cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 必须提供真实后端 URL、可访问的 AI/OCR provider、MinIO、seed 数据、样本图片，以及 `BOBBUY_E2E_AGENT_USERNAME` / `BOBBUY_E2E_AGENT_PASSWORD`；本轮 Windows npm script 已修复，可进入 Playwright 并生成 artifact，但真实识别仍失败 |
+| AI sample 字段级对比（gate 模式） | `pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken <agent-token>` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 需要真实 `/api/ai/onboard/scan`、样本图片目录与 `docs/fixtures/ai-onboarding-sample-golden.json`；输出 JSON + Markdown；遇到 `FAIL` / `SCAN_FAIL` / `MISSING_FILE` 返回非零；本轮真实接口结果为 `0 PASS / 3 SCAN_FAIL` |
 | AI sample 脚本 dry-run 自检（gate 模式） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"` | 当前仅本地执行 | 否 | 不依赖真实 `/api/ai/onboard/scan`；用于验证字段别名映射、optional path 规范化、报告格式与 gate 退出码 |
 | AI sample 报告生成（report-only） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"` | 当前仅本地执行 | 否 | 仅用于人工生成 JSON/Markdown 报告；即使 `gatePassed=false` 也返回 `0`，不得作为 release gate |
 | Compose 配置渲染 | `cd /home/runner/work/bobbuy/bobbuy && docker compose config` | 当前未纳入默认 CI；作为试运行部署前置校验执行 | 否 | 要求 `.env` / 默认变量可成功渲染 Compose，且不得依赖未声明变量 |
@@ -31,8 +31,8 @@
 
 | 验证项 | 默认状态 | 执行要求 | 备注 |
 | :-- | :-- | :-- | :-- |
-| CodeQL / 安全扫描 | 不纳入默认 `ci.yml` | `.github/workflows/codeql.yml` 当前支持 `push` / `pull_request` / `workflow_dispatch`；需归档默认分支 push analysis 与 code scanning alerts 数 | 覆盖 Java/Kotlin、JavaScript/TypeScript、Actions；本轮 3 个 high 对应源码已修复，但默认分支清零仍待 merge + 复扫 |
-| 依赖审计 | 不纳入默认 `ci.yml` | 前端使用 `npm audit --json`；后端优先执行 `.github/workflows/dependency-check.yml` 或等价 Maven 扫描 | main run `25198280108` artifact 已可下载；当前分支已完成 Tomcat/Netty/commons-fileupload 版本覆盖，但 GitHub-hosted 复扫尚未生成，本地复扫仍受 `www.cisa.gov` DNS 不可达阻塞 |
+| CodeQL / 安全扫描 | 不纳入默认 `ci.yml` | `.github/workflows/codeql.yml` 当前支持 `push` / `pull_request` / `workflow_dispatch`；需归档默认分支 push analysis 与 code scanning alerts 数 | 最新 main success run `25217655038` 已通过 |
+| 依赖审计 | 不纳入默认 `ci.yml` | 前端使用 `npm audit --json`；后端优先执行 `.github/workflows/dependency-check.yml` 或等价 Maven 扫描 | 最新 main run `25217516557` artifact `6750657743` 为 `0 critical / 0 high / 13 medium / 2 low`；medium/low 进入风险登记 |
 
 ## 4. 执行约束与已知噪声
 
@@ -99,15 +99,13 @@
 - [x] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm audit --json`
   - 结果：`0 critical / 0 high / 6 moderate`
 - [x] `.github/workflows/codeql.yml`
-  - 最新 main success run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25193181071>
+  - 最新 main success run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217655038>
   - `actions` / `javascript-typescript` / `java-kotlin` matrix 全部成功
-  - 当前分支验证 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25196499021> 仍为 `action_required`（0 jobs）
-  - 本沙箱访问 code scanning alerts API 返回 `403 Resource not accessible by integration`，默认分支 high alert 清零仍待 merge + 复扫归档
+  - CodeQL high blocker 已解阻
 - [x] `.github/workflows/dependency-check.yml`
-  - GitHub-hosted main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25193181061> 已成功
-  - artifact `dependency-check-report`（id `6741960133`）已验证可下载，且 ZIP 内同时包含 HTML/JSON
-  - 摘要（unique CVE）：`8 critical / 21 high / 19 moderate`
-  - 当前分支验证 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25196499019> 仍为 `action_required`（0 jobs）
+  - GitHub-hosted main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217516557> 已成功
+  - artifact `dependency-check-report`（id `6750657743`）已验证可下载，且 ZIP 内同时包含 HTML/JSON
+  - 摘要：`0 critical / 0 high / 13 medium / 2 low`
 - [x] 本地 PostgreSQL 15 Flyway 与恢复演练
   - `docker compose up -d postgres`
   - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`

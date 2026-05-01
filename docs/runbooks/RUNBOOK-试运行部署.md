@@ -123,11 +123,20 @@ cd /home/runner/work/bobbuy/bobbuy
 docker compose config
 ```
 
+构建服务壳镜像：
+
+```bash
+cd /home/runner/work/bobbuy/bobbuy
+bash scripts/build-service-images.sh
+```
+
+`Dockerfile.service` 只复制宿主机预构建 jar；不要直接在干净工作区跳过 jar 构建后执行 `docker compose build core-service ...`。该脚本会先构建 `bobbuy-core`、`bobbuy-ai`、`bobbuy-im`、`bobbuy-auth`、`bobbuy-gateway`，再构建对应 Compose 镜像。
+
 首次启动：
 
 ```bash
 cd /home/runner/work/bobbuy/bobbuy
-docker compose up -d --build
+docker compose up -d postgres minio redis rabbitmq nacos nacos-init core-service ai-service im-service auth-service gateway-service frontend gateway ocr-service
 ```
 
 观察关键服务：
@@ -226,12 +235,15 @@ Flyway 旧库 adoption / 回滚演练：
 默认仅绑定到宿主机 `127.0.0.1`：
 
 - 网关入口: `http://127.0.0.1:${GATEWAY_HOST_PORT:-80}`
-- API 健康检查: `http://127.0.0.1:${GATEWAY_HOST_PORT:-80}/api/actuator/health`
-- Core readiness: `http://127.0.0.1:${GATEWAY_HOST_PORT:-80}/api/actuator/health/readiness`
+- API 健康检查: `http://127.0.0.1:${GATEWAY_HOST_PORT:-80}/api/health`
+- Gateway actuator: `http://127.0.0.1:${GATEWAY_HOST_PORT:-80}/api/actuator/health`
+- Gateway readiness: `http://127.0.0.1:${GATEWAY_HOST_PORT:-80}/api/actuator/health/readiness`
 - Nacos Console: `http://127.0.0.1:${NACOS_HOST_PORT:-8848}/nacos`
 - MinIO API: `http://127.0.0.1:${MINIO_API_HOST_PORT:-9000}`
 - MinIO Console: `http://127.0.0.1:${MINIO_CONSOLE_HOST_PORT:-9001}`
 - OCR Service: `http://127.0.0.1:${OCR_HOST_PORT:-8000}`
+
+2026-05-01 本地证据：在临时本地 secret 下，`postgres`、`minio`、`redis`、`rabbitmq`、`nacos`、`core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` 均可进入 healthy；`gateway` 与 `frontend` running；`ocr-service` `/health` 返回 `{"status":"ok"}`。生产/试运行环境仍必须用 secret manager 或 `.env` 注入真实 `BOBBUY_SECURITY_JWT_SECRET` / `BOBBUY_SECURITY_SERVICE_TOKEN`，不得把临时测试 secret 写入 git。
 
 容器内健康检查重点：
 

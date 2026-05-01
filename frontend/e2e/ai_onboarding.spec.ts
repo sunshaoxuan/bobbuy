@@ -18,8 +18,9 @@ const extractData = async <T>(response: any): Promise<T> => {
 };
 
 async function openQuickAddAndUpload(page: any, sampleFilename: string) {
-    await expect(page.locator('button:has-text("AI Quick Snap")')).toBeVisible();
-    await page.click('button:has-text("AI Quick Snap")');
+    const quickSnapButton = page.locator('[data-testid="ai-quick-snap-button"]').first();
+    await expect(quickSnapButton).toBeVisible();
+    await quickSnapButton.click();
     const fileChooserPromise = page.waitForEvent('filechooser');
     await page.locator('.ant-upload-drag').click();
     const fileChooser = await fileChooserPromise;
