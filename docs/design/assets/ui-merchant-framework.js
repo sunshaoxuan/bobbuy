@@ -67,14 +67,14 @@ const MERCHANT_FRAMEWORK = {
                 </div>
             </aside>
         `,
-        header: (title) => `
+        header: () => `
             <header class="h-20 bg-white/80 backdrop-blur-md border-b border-surface flex items-center justify-between px-8 sticky top-0 z-40 shrink-0">
                 <!-- Breadcrumbs & Search -->
                 <div class="flex items-center gap-8">
                     <div class="flex items-center gap-2 text-xs font-bold text-text-sub">
                         <span data-i18n="NAV_BREADCRUMB_HOME">主页</span>
                         <span class="material-symbols-outlined text-[10px]">chevron_right</span>
-                        <span class="text-primary">${title}</span>
+                        <span class="text-primary" data-framework-page-title></span>
                     </div>
                     <!-- Search Bar -->
                     <div class="relative w-80 group">
@@ -114,13 +114,13 @@ const MERCHANT_FRAMEWORK = {
                 </div>
             </header>
         `,
-        footer: (pageId) => `
+        footer: () => `
             <footer class="h-12 bg-white border-t border-surface flex items-center justify-between px-8 text-[10px] font-bold text-text-sub uppercase tracking-wider shrink-0">
                 <p>© 2024 BOBBUY GLOBAL. ALL RIGHTS RESERVED.</p>
                 <div class="flex gap-4">
                     <a href="#" class="hover:text-primary">Support</a>
                     <a href="#" class="hover:text-primary">API Docs</a>
-                    <a href="#" class="hover:text-primary opacity-50">${pageId}</a>
+                    <a href="#" class="hover:text-primary opacity-50" data-framework-page-id></a>
                 </div>
             </footer>
         `
@@ -162,12 +162,20 @@ const MERCHANT_FRAMEWORK = {
 
         const headerPlaceholder = document.querySelector('header-placeholder');
         if (headerPlaceholder) {
-            headerPlaceholder.outerHTML = this.templates.header(pageTitle);
+            headerPlaceholder.outerHTML = this.templates.header();
+            const pageTitleNode = document.querySelector('[data-framework-page-title]');
+            if (pageTitleNode) {
+                pageTitleNode.textContent = pageTitle;
+            }
         }
 
         const footerPlaceholder = document.querySelector('footer-placeholder');
         if (footerPlaceholder) {
-            footerPlaceholder.outerHTML = this.templates.footer(pageId);
+            footerPlaceholder.outerHTML = this.templates.footer();
+            const pageIdNode = document.querySelector('[data-framework-page-id]');
+            if (pageIdNode) {
+                pageIdNode.textContent = pageId;
+            }
         }
     },
 

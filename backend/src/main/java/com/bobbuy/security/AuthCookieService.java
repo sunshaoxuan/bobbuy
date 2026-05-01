@@ -86,6 +86,14 @@ public class AuthCookieService {
         return csrfHeaderName;
     }
 
+    public String getCsrfCookiePath() {
+        return csrfCookiePath;
+    }
+
+    public boolean isSecureCookie() {
+        return secureCookie;
+    }
+
     private ResponseCookie buildRefreshCookie(String value, long maxAgeSeconds) {
         return ResponseCookie.from(refreshCookieName, value)
             .httpOnly(true)
