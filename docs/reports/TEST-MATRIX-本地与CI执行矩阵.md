@@ -1,6 +1,6 @@
 # 本地 / CI 测试执行矩阵
 
-> 2026-05-01 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 与服务 jar 预构建 / Compose build 校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论仍为 `NO_GO`：dependency-check critical/high、Compose Maven PKIX、Nacos cgroup v2 与 gateway/OCR health 已解阻，但真实 AI sample gate、真实 `e2e:ai` 与真实旧库 adoption 证据仍未完成。
+> 2026-05-02 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 与服务 jar 预构建 / Compose build 校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论仍为 `NO_GO`：dependency-check critical/high、Compose Maven PKIX、Nacos cgroup v2 与 gateway/OCR health 已解阻；本轮修复了 LLM 空响应 fallback、OpenAI-compatible content-part 解析与 Compose/Nacos Codex Bridge 配置入口，但真实 AI sample gate 仍为 `0 PASS / 3 SCAN_FAIL`，真实 `e2e:ai` 与真实旧库 adoption 证据仍未完成。
 
 ## 1. 默认门禁（每个 PR / `main` push 必跑）
 
@@ -20,8 +20,8 @@
 | PostgreSQL 空库 migration | `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate` | `workflow_dispatch` + `postgres-migration-verify` job（输入 `run_postgres_migration_verify=true`） | 否 | 需要可写 PostgreSQL 空库；默认由 Flyway 插件验证 `backend/src/main/resources/db/migration` |
 | 服务壳 smoke test | `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test` | 当前仅本地 / 手动执行 | 否 | 使用 H2 与关闭 Nacos 的测试配置，验证 `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` 最小启动以及 gateway 内部 header 清理 |
 | Playwright 页面回归 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e` | `workflow_dispatch` + `playwright-e2e` job（输入 `run_playwright_e2e=true`） | 否 | GitHub Hosted Runner 可执行；使用 Vite dev server + 前端共享 mock 浏览器 smoke，覆盖 agent/customer 登录态、角色门禁、订单/账单/聊天、采购/拣货/库存人工接管，不依赖真实 AI / MinIO |
-| AI 真实视觉链路 | `cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 必须提供真实后端 URL、可访问的 AI/OCR provider、MinIO、seed 数据、样本图片，以及 `BOBBUY_E2E_AGENT_USERNAME` / `BOBBUY_E2E_AGENT_PASSWORD`；本轮 Windows npm script 已修复，可进入 Playwright 并生成 artifact，但真实识别仍失败 |
-| AI sample 字段级对比（gate 模式） | `pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken <agent-token>` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 需要真实 `/api/ai/onboard/scan`、样本图片目录与 `docs/fixtures/ai-onboarding-sample-golden.json`；输出 JSON + Markdown；遇到 `FAIL` / `SCAN_FAIL` / `MISSING_FILE` 返回非零；本轮真实接口结果为 `0 PASS / 3 SCAN_FAIL` |
+| AI 真实视觉链路 | `cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 必须提供真实后端 URL、可访问的 AI/OCR provider、MinIO、seed 数据、样本图片，以及 `BOBBUY_E2E_AGENT_USERNAME` / `BOBBUY_E2E_AGENT_PASSWORD`；应在 sample gate 通过后再作为放行证据执行 |
+| AI sample 字段级对比（gate 模式） | `pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken <agent-token>` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 需要真实 `/api/ai/onboard/scan`、样本图片目录与 `docs/fixtures/ai-onboarding-sample-golden.json`；输出 JSON + Markdown；遇到 `FAIL` / `SCAN_FAIL` / `MISSING_FILE` 返回非零；本轮真实接口结果为 `0 PASS / 3 SCAN_FAIL`，证据见 `docs/reports/evidence/ai-onboarding-real-sample-2026-05-02.*` |
 | AI sample 脚本 dry-run 自检（gate 模式） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"` | 当前仅本地执行 | 否 | 不依赖真实 `/api/ai/onboard/scan`；用于验证字段别名映射、optional path 规范化、报告格式与 gate 退出码 |
 | AI sample 报告生成（report-only） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"` | 当前仅本地执行 | 否 | 仅用于人工生成 JSON/Markdown 报告；即使 `gatePassed=false` 也返回 `0`，不得作为 release gate |
 | Compose 配置渲染 | `cd /home/runner/work/bobbuy/bobbuy && docker compose config` | 当前未纳入默认 CI；作为试运行部署前置校验执行 | 否 | 要求 `.env` / 默认变量可成功渲染 Compose，且不得依赖未声明变量 |
@@ -55,7 +55,35 @@
   - 预期失败路径中的 `Delete failed: Error: Server error` console 输出。
   以上噪声目前不阻断默认门禁，但应继续在后续清理项中跟踪。
 
-## 5. 2026-04-30 最新验证结果
+## 5. 2026-05-02 最新验证结果
+
+- [x] `docker compose config --quiet`
+- [x] `.\mvnw.cmd -f backend\pom.xml "-Dtest=LlmGatewayTest,AiProductOnboardingServiceTest" test`
+  - 新增覆盖：Ollama 返回空文本时 fallback 到 `codex-bridge`；OpenAI-compatible content-part 数组解析；不可执行 `codex` 命令不再被误判为可用 provider。
+- [x] `.\mvnw.cmd -f backend\pom.xml test`
+  - 结果：`174 tests, 0 failures, 0 errors, 2 skipped`
+- [x] `npm test --prefix frontend`
+  - 结果：`22 files / 74 tests` 通过
+- [x] `npm run build --prefix frontend`
+- [x] `bash scripts/build-service-images.sh`
+- [x] 使用本地临时 `BOBBUY_SECURITY_JWT_SECRET` / `BOBBUY_SECURITY_SERVICE_TOKEN` 拉起并重建 `core-service`、`auth-service`、`im-service`、`ai-service`、`gateway-service`
+  - `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` healthy
+  - `GET http://127.0.0.1/api/health` 返回 `{"status":"ok","service":"gateway-service"}`
+  - `GET http://127.0.0.1/api/actuator/health`、`/api/actuator/health/readiness` 与 OCR `/health` 已验证通过
+- [x] `scripts\verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken <agent-token>`
+  - 结果：`0 PASS / 3 SCAN_FAIL`，`gatePassed=false`
+  - 报告：`docs/reports/evidence/ai-onboarding-real-sample-2026-05-02.json`、`docs/reports/evidence/ai-onboarding-real-sample-2026-05-02.md`
+  - ai-service 日志显示当前 active provider 为 `unconfigured`，Ollama 主 URL `http://ccnode.briconbric.com:22545` 请求失败，且 Codex Bridge URL/API key 未注入。
+- [x] 旧库 dump 搜索
+  - 仓库工作区仅发现 Flyway migration SQL，未发现可用于 adoption / restore drill 的真实旧库 dump、历史 schema dump 或脱敏备份。
+- [ ] `RUN_AI_VISION_E2E=1 npm run e2e:ai`
+  - 本轮未作为放行证据重跑；前置 sample gate 仍失败，应先修 provider 可用性与字段识别链路。
+- [ ] 真实旧库 adoption / restore drill
+  - 缺输入，仍为发版 blocker。
+
+## 6. 历史验证记录
+
+### 2026-04-30
 
 - [x] `cd /home/runner/work/bobbuy/bobbuy && docker compose config`
 - [x] GitHub Actions `BOBBuy CI` run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25178072203>
@@ -113,9 +141,10 @@
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -B org.owasp:dependency-check-maven:12.1.8:check -Dformat=HTML,JSON -DoutputDirectory=/tmp/plan42-dependency-check -DskipProvidedScope=true -DskipTestScope=true`
   - 本地仍不稳定；当前以 GitHub-hosted main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25198280108> artifact 作为可信报告来源，本次失败原因为 `www.cisa.gov` DNS 不可达
 - [ ] `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e:ai`
-  - 本轮前置阻塞：service 镜像 Maven PKIX 已解阻，但沙箱内 `nacos/nacos-server:v2.3.2-slim` 仍在 cgroup v2 环境启动失败，且未形成真实 AI/OCR / seed 入口
+  - 历史阻塞：真实 AI/OCR / seed 入口未形成；2026-05-02 复判后，前置阻塞收敛为 sample gate 仍失败。
 - [ ] `pwsh /home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden`
-  - 本轮前置阻塞：本机 `http://localhost/api/health` / `http://127.0.0.1/api/health` 仍不可达；当前剩余阻塞为 Nacos 启动异常与真实 AI/OCR / seed 凭据缺失
-- [ ] CodeQL 默认分支实跑与 code scanning 结果归档（当前分支验证 run `25196499021` 仍为 `action_required`，需仓库管理员放行并等待默认分支形成新基线）
+  - 历史阻塞：本机健康入口曾不可达；2026-05-02 复判后健康入口已恢复，当前剩余阻塞为 LLM provider 未形成可用响应。
+- [x] CodeQL 默认分支实跑与 code scanning 结果归档
+  - 最新 main success run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217655038>
 - [ ] 真实旧库 adoption / restore drill（仓库工作区内未提供真实旧库副本 / 历史 schema dump）
 - [ ] mTLS / service mesh / 契约测试（本阶段未实现，需继续登记风险）

@@ -1,0 +1,45 @@
+﻿{
+    "generatedAt":  "2026-05-02T01:24:41.2204923+09:00",
+    "goldenPath":  "docs\\fixtures\\ai-onboarding-sample-golden.json",
+    "sampleDir":  "sample",
+    "scanEndpoint":  "http://localhost/api/ai/onboard/scan",
+    "reportOnly":  false,
+    "summary":  {
+                    "total":  3,
+                    "pass":  0,
+                    "fail":  0,
+                    "skipped":  0,
+                    "scanFail":  3,
+                    "missingFile":  0,
+                    "gatePassed":  false
+                },
+    "results":  [
+                    {
+                        "sampleId":  "IMG_1484.jpg",
+                        "status":  "SCAN_FAIL",
+                        "needsHumanGolden":  false,
+                        "detail":  "The remote server returned an error: (400) Bad Request.",
+                        "fieldResults":  [
+
+                                         ]
+                    },
+                    {
+                        "sampleId":  "IMG_1638.jpg",
+                        "status":  "SCAN_FAIL",
+                        "needsHumanGolden":  true,
+                        "detail":  "The remote server returned an error: (400) Bad Request.",
+                        "fieldResults":  [
+
+                                         ]
+                    },
+                    {
+                        "sampleId":  "IMG_1510.jpg",
+                        "status":  "SCAN_FAIL",
+                        "needsHumanGolden":  true,
+                        "detail":  "The remote server returned an error: (400) Bad Request.",
+                        "fieldResults":  [
+
+                                         ]
+                    }
+                ]
+}

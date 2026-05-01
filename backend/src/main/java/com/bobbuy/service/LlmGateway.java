@@ -17,6 +17,7 @@ import org.springframework.web.client.RestClient;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -223,7 +224,8 @@ public class LlmGateway {
                     .body(new ParameterizedTypeReference<Map<String, Object>>() {});
             
             if (raw == null || !(raw.get("response") instanceof String response) || response.isBlank()) {
-                return Optional.empty();
+                log.warn("LLM Gateway at {} returned an empty response.", url);
+                return failoverFromMainEmptyResponse(prompt, targetModel, isVision);
             }
             return Optional.of(response);
         } catch (Exception e) {
@@ -240,6 +242,23 @@ public class LlmGateway {
             }
             return Optional.empty();
         }
+    }
+
+    private Optional<String> failoverFromMainEmptyResponse(String prompt, String targetModel, boolean isVision) {
+        if (isVision) {
+            return Optional.empty();
+        }
+        if (!"codex-bridge".equals(activeMainProvider) && isCodexBridgeConfigured()) {
+            activeMainProvider = "codex-bridge";
+            log.info("Main LLM returned an empty response; switching active main LLM provider to Codex Bridge.");
+            return generateWithCodexBridge(prompt, targetModel);
+        }
+        if (!"codex".equals(activeMainProvider) && isCodexConfigured()) {
+            activeMainProvider = "codex";
+            log.info("Main LLM returned an empty response; switching active main LLM provider to Codex CLI.");
+            return generateWithCodex(prompt);
+        }
+        return Optional.empty();
     }
 
     private boolean isMainLlmConfigured() {
@@ -286,7 +305,39 @@ public class LlmGateway {
     }
 
     private boolean isCodexConfigured() {
-        return codexCommand != null && !codexCommand.isBlank();
+        return isCodexCommandAvailable();
+    }
+
+    private boolean isCodexCommandAvailable() {
+        if (codexCommand == null || codexCommand.isBlank()) {
+            return false;
+        }
+        String commandName = codexCommand.trim().split("\\s+")[0];
+        Path commandPath = Path.of(commandName);
+        if (commandPath.isAbsolute() || commandName.contains("/") || commandName.contains("\\")) {
+            return Files.isExecutable(commandPath);
+        }
+        String path = System.getenv("PATH");
+        if (path == null || path.isBlank()) {
+            return false;
+        }
+        for (String entry : path.split(java.io.File.pathSeparator)) {
+            if (entry == null || entry.isBlank()) {
+                continue;
+            }
+            Path candidate = Path.of(entry, commandName);
+            if (Files.isExecutable(candidate)) {
+                return true;
+            }
+            if (System.getProperty("os.name", "").toLowerCase().contains("win")) {
+                Path cmdCandidate = Path.of(entry, commandName + ".cmd");
+                Path exeCandidate = Path.of(entry, commandName + ".exe");
+                if (Files.isExecutable(cmdCandidate) || Files.isExecutable(exeCandidate)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private boolean isCodexBridgeConfigured() {
@@ -303,11 +354,10 @@ public class LlmGateway {
             requestFactory.setConnectTimeout(codexBridgeTimeout);
             requestFactory.setReadTimeout(codexBridgeTimeout);
             Map<String, Object> raw = RestClient.builder()
-                    .baseUrl(trimTrailingSlash(codexBridgeUrl))
                     .requestFactory(requestFactory)
                     .build()
                     .get()
-                    .uri("models")
+                    .uri(URI.create(trimTrailingSlash(codexBridgeUrl) + "/models"))
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.get())
                     .retrieve()
                     .body(new ParameterizedTypeReference<Map<String, Object>>() {});
@@ -429,11 +479,10 @@ public class LlmGateway {
             requestFactory.setReadTimeout(codexBridgeTimeout);
             log.info("Dispatching LLM task to Codex Bridge at {} (model: {})", codexBridgeUrl, model);
             Map<String, Object> raw = RestClient.builder()
-                    .baseUrl(trimTrailingSlash(codexBridgeUrl))
                     .requestFactory(requestFactory)
                     .build()
                     .post()
-                    .uri("chat/completions")
+                    .uri(URI.create(trimTrailingSlash(codexBridgeUrl) + "/chat/completions"))
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.get())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(payload)
@@ -461,12 +510,39 @@ public class LlmGateway {
             return Optional.empty();
         }
         Object message = choice.get("message");
-        if (message instanceof Map<?, ?> messageMap && messageMap.get("content") instanceof String content && !content.isBlank()) {
-            return Optional.of(content);
+        if (message instanceof Map<?, ?> messageMap) {
+            Optional<String> content = extractOpenAiContentValue(messageMap.get("content"));
+            if (content.isPresent()) {
+                return content;
+            }
         }
         Object text = choice.get("text");
         if (text instanceof String content && !content.isBlank()) {
             return Optional.of(content);
+        }
+        return Optional.empty();
+    }
+
+    private Optional<String> extractOpenAiContentValue(Object contentValue) {
+        if (contentValue instanceof String content && !content.isBlank()) {
+            return Optional.of(content);
+        }
+        if (contentValue instanceof List<?> parts && !parts.isEmpty()) {
+            StringBuilder text = new StringBuilder();
+            for (Object part : parts) {
+                if (part instanceof Map<?, ?> partMap) {
+                    Object textValue = partMap.get("text");
+                    if (textValue instanceof String partText && !partText.isBlank()) {
+                        if (!text.isEmpty()) {
+                            text.append('\n');
+                        }
+                        text.append(partText);
+                    }
+                }
+            }
+            if (!text.isEmpty()) {
+                return Optional.of(text.toString());
+            }
         }
         return Optional.empty();
     }

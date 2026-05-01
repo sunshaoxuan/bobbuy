@@ -22,7 +22,7 @@
 
 | 排名 | 优先级 | 任务 | 当前问题 | 上线影响 | 目标状态 |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| 1 | P0 | 真实 AI/OCR sample 与 E2E PASS | sample gate 已打到真实 `/api/ai/onboard/scan`，但当前 `0 PASS / 3 SCAN_FAIL`；`e2e:ai` 已进入 Playwright flow 但 2 failed | 无法证明 sample 图片能正确填充商品档案字段 | 修复 provider/识别链路后，sample gate PASS，`RUN_AI_VISION_E2E=1 npm run e2e:ai` PASS 并归档 artifact |
+| 1 | P0 | 真实 AI/OCR sample 与 E2E PASS | sample gate 已打到真实 `/api/ai/onboard/scan`，但当前 `0 PASS / 3 SCAN_FAIL`；本轮已修复 LLM 空响应兜底和 bridge 配置传递，剩余为注入可用 Codex Bridge key 或修复主 Ollama endpoint；`e2e:ai` 需在 sample PASS 后复跑 | 无法证明 sample 图片能正确填充商品档案字段 | 修复 provider/识别链路后，sample gate PASS，`RUN_AI_VISION_E2E=1 npm run e2e:ai` PASS 并归档 artifact |
 | 2 | P0 | 真实旧库 adoption / restore drill | 仓库内仍无脱敏旧库副本 / 历史 schema dump | Flyway 上线缺少真实旧库证据 | 旧库 baseline / migrate / validate / restore drill 全流程留痕 |
 | 3 | P1 | 处置 dependency-check medium/low | 最新 artifact 已为 `0 critical / 0 high / 13 medium / 2 low`；仍需按影响面登记 medium/low | 中期安全债务未完全收口 | medium/low 均有升级计划或正式风险登记 |
 | 4 | P1 | 认证与权限生产化 | 已完成 JWT 登录、HttpOnly refresh cookie + CSRF、refresh token 会话治理、header auth 生产禁用、WebSocket 鉴权与最小 service token；mTLS、契约测试与 OAuth/SSO 仍未完成 | 不适合在缺少后续收口的情况下继续外扩或深拆服务 | JWT + cookie-based refresh + gateway/internal service token 稳定，剩余边界风险明确登记 |
@@ -43,12 +43,13 @@
 
 - Compose、gateway、OCR health 已通过，真实接口可达。
 - `scripts/verify-ai-onboarding-samples.ps1` 带 token 已打到真实 `/api/ai/onboard/scan`，但当前结果为 `0 PASS / 3 SCAN_FAIL`。
-- 后端日志显示 `AI_RECOGNITION` / LLM returned empty response，说明 OCR/LLM provider 或提示词/解析链路仍不能把 sample 图片正确落到商品字段。
-- `RUN_AI_VISION_E2E=1 npm run e2e:ai` 已进入 Playwright flow 并生成 artifact，但 2 个用例失败。
+- 本轮已修复主 LLM 空响应时不触发 fallback、OpenAI-compatible `message.content` 数组无法解析、Compose/Nacos 未传递 Codex Bridge 配置、服务器容器误选不可执行 Codex CLI 等问题。
+- 最新真实 sample gate 仍失败，日志显示主 Ollama endpoint `http://ccnode.briconbric.com:22545/api/generate` 请求失败，且当前环境未配置 `BOBBUY_AI_LLM_CODEX_BRIDGE_URL/API_KEY`。
+- `RUN_AI_VISION_E2E=1 npm run e2e:ai` 入口已可执行；在 sample gate PASS 前，不再把失败 e2e:ai 复跑当作放行证据。
 
 **执行任务**
 
-1. 修复真实 AI provider 配置或 LLM fallback，使 `/api/ai/onboard/scan` 返回可解析结构化字段。
+1. 给试运行环境注入可用 `BOBBUY_AI_LLM_CODEX_BRIDGE_URL` 与 API key，或修复 `BOBBUY_AI_LLM_MAIN_URL` 指向的 Ollama-compatible endpoint，使 `/api/ai/onboard/scan` 返回可解析结构化字段。
 2. 用 `sample/IMG_1484.jpg`、`IMG_1638.jpg`、`IMG_1510.jpg` 复跑 sample gate。
 3. 确认 `basePrice -> price`、`itemNumber`、`categoryId`、`attributes.pricePerUnit` 等关键字段与 golden 对齐。
 4. 复跑 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 并归档 Playwright artifact。
@@ -96,15 +97,17 @@
 - 无 critical/high 回归。
 - medium/low 均有负责人和后续处理计划。
 
-### 3.4 当前状态（2026-05-01 / PLAN-48）
+### 3.4 当前状态（2026-05-02 / PLAN-48）
 
 - `backend mvn test`、`frontend npm ci && npm test`、`frontend npm run build` 与默认 Docker build 继续通过。
 - `scripts/verify-ai-onboarding-samples.ps1` 的 gate/report-only 分流、`gatePassed` 汇总与失败非零退出码仍保持可用。
+- `LlmGateway` 已补主 Ollama 空响应后的 Codex Bridge / Codex CLI fallback，OpenAI-compatible `message.content` 字符串/数组解析，以及不可执行 Codex CLI 不参与 provider 选择。
+- Compose 与 Nacos `ai-service` 已补 `BOBBUY_AI_LLM_CODEX_BRIDGE_*` 与 `BOBBUY_AI_SECRET_MASTER_PASSWORD` 配置传递；仓库 `.env` 默认不再设置 `BOBBUY_AI_LLM_CODEX_COMMAND=codex`。
 - `.github/workflows/codeql.yml` main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217655038> 已成功。
 - `.github/workflows/dependency-check.yml` main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217516557> 已成功，artifact `dependency-check-report`（id `6750657743`）为 `0 critical / 0 high / 13 medium / 2 low`。
 - `bash scripts/build-service-images.sh` 已通过；`Dockerfile.service` 复制宿主机构建好的 jar，Compose 不再受 Maven PKIX 阻塞。
 - 本地临时 secret 下完整 Compose 栈已启动，gateway `/api/health`、`/api/actuator/health`、`/api/actuator/health/readiness` 与 OCR `/health` 均通过。
-- `.github/workflows/ai-release-evidence.yml` 仍未形成真实 run；本地真实 sample gate 和 `e2e:ai` 已执行但失败，当前 blocker 已收敛到 AI provider / 字段识别链路。
+- `.github/workflows/ai-release-evidence.yml` 仍未形成真实 PASS run；本地真实 sample gate 已执行但失败，当前 blocker 已收敛到 AI provider 可用性：主 Ollama endpoint 请求失败且当前环境未注入 Codex Bridge key。
 - 仓库工作区内仍未发现真实旧库副本 / 历史 schema dump，因此 adoption / restore drill 仍无可执行输入。
 - 结论：默认门禁、安全 high、Compose/Nacos/OCR/gateway 基础健康已收口；当前剩余 blocker 为真实 AI/OCR sample gate、真实 `e2e:ai` PASS 证据与真实旧库 adoption。
 

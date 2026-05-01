@@ -10,11 +10,24 @@ bobbuy:
       codex:
         command: ${BOBBUY_AI_LLM_CODEX_COMMAND:}
         timeout-seconds: ${BOBBUY_AI_LLM_CODEX_TIMEOUT_SECONDS:120}
+      codex-bridge:
+        url: ${BOBBUY_AI_LLM_CODEX_BRIDGE_URL:}
+        model: ${BOBBUY_AI_LLM_CODEX_BRIDGE_MODEL:gpt-5.3-codex}
+        api-key: ${BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY:}
+        timeout-seconds: ${BOBBUY_AI_LLM_CODEX_BRIDGE_TIMEOUT_SECONDS:120}
+        secret:
+          salt: ${BOBBUY_AI_LLM_CODEX_BRIDGE_SECRET_SALT:}
+          nonce: ${BOBBUY_AI_LLM_CODEX_BRIDGE_SECRET_NONCE:}
+          ciphertext: ${BOBBUY_AI_LLM_CODEX_BRIDGE_SECRET_CIPHERTEXT:}
+          tag: ${BOBBUY_AI_LLM_CODEX_BRIDGE_SECRET_TAG:}
+          iterations: ${BOBBUY_AI_LLM_CODEX_BRIDGE_SECRET_ITERATIONS:200000}
       ollama:
         health-timeout-seconds: ${BOBBUY_AI_LLM_OLLAMA_HEALTH_TIMEOUT_SECONDS:3}
       edge:
         url: ${BOBBUY_AI_LLM_EDGE_URL:}
         model: ${BOBBUY_AI_LLM_EDGE_MODEL:llama3.2-vision:11b}
+    secret:
+      master-password: ${BOBBUY_AI_SECRET_MASTER_PASSWORD:}
   persistence:
     schema: public
 
