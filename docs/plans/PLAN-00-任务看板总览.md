@@ -45,23 +45,24 @@
 | [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) | P1 Sample 图片 AI 商品字段识别与档案落库优化提示词 | ✅ 已完成 | 100% | 已建立 sample golden、Product.attributes 落库、字段级验证脚本与 AI 专用验收口径 | 全栈团队 |
 | [PLAN-40](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md) | P1 发版候选门禁与专用环境验收提示词 | ✅ 已完成 | 100% | 历史 NO-GO 收口任务，已由 REPORT-07、PLAN-50~55、REPORT-10/11/12 覆盖关闭 | 全栈团队 |
 | [PLAN-41](PLAN-41-P0-发版阻断项处置与安全审计提示词.md) | P0 发版阻断项处置与安全审计提示词 | ✅ 已完成 | 100% | CodeQL high 与 dependency-check critical/high 已清零，剩余 medium/low 进入风险登记；由 REPORT-07 覆盖关闭 | 全栈团队 |
-| [PLAN-42](PLAN-42-P0-专用环境发版证据执行提示词.md) | P0 专用环境发版证据执行提示词 | ✅ 已完成 | 100% | 专用环境证据口径已迁移到 REPORT-07 与 PLAN-57，历史 NO-GO 任务关闭 | 全栈团队 |
+| [PLAN-42](PLAN-42-P0-专用环境发版证据执行提示词.md) | P0 专用环境发版证据执行提示词 | ✅ 已完成 | 100% | 专用环境证据口径已迁移到 REPORT-07 与 PLAN-58，历史 NO-GO 任务关闭 | 全栈团队 |
 | [PLAN-43](PLAN-43-P0-NO-GO阻断项执行解阻提示词.md) | P0 NO-GO 阻断项执行解阻提示词 | ✅ 已完成 | 100% | CodeQL JS/TS build mode、重复触发、Maven dependency-check workflow 与 AI evidence workflow 已落地，并形成 `REPORT-07` NO_GO 复判 | 全栈团队 |
 | [PLAN-44](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md) | P0 真实环境放行证据与 REPORT-07 复判提示词 | ✅ 已完成 | 100% | 真实 AI/OCR、CodeQL、dependency-check 与 Compose 基础证据已由 REPORT-07/10/12 覆盖关闭 | 全栈团队 |
 | [PLAN-45](PLAN-45-P0-CodeQL告警与真实放行证据闭环提示词.md) | P0 CodeQL 告警与真实放行证据闭环提示词 | ✅ 已完成 | 100% | CodeQL 3 个 high 已在 main 上标记 fixed；dependency-check artifact 已可下载并登记 `8 critical / 21 high / 19 moderate` | 全栈团队 |
 | [PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md) | P0 依赖高危处置与真实环境证据闭环提示词 | ✅ 已完成 | 100% | Tomcat/Netty/FileUpload 与 pgjdbc 高危依赖已升级，Compose Maven PKIX 已解阻 | 全栈团队 |
 | [PLAN-47](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md) | P0 专用环境 Nacos 解阻与真实 AI 证据闭环提示词 | ✅ 已完成 | 100% | Nacos、service jar、Compose 与真实 AI 证据已由 REPORT-07/09/10 覆盖关闭 | 全栈团队 |
 | [PLAN-48](PLAN-48-P0-文档拉平与真实放行证据执行提示词.md) | P0 文档拉平与真实放行证据执行提示词 | ✅ 已完成 | 100% | 文档拉平、真实 AI、Compose health 与真实栈黑盒已由 REPORT-07/10/11/12 覆盖关闭 | 全栈团队 |
-| [PLAN-49](PLAN-49-P0-双角色移动端黑盒走查提示词.md) | P0 双角色移动端黑盒走查提示词 | ✅ 已完成 | 100% | mock 与本地真实栈双角色移动端黑盒均已通过；服务器窗口复跑转入 PLAN-57 | 全栈团队 |
+| [PLAN-49](PLAN-49-P0-双角色移动端黑盒走查提示词.md) | P0 双角色移动端黑盒走查提示词 | ✅ 已完成 | 100% | mock 与本地真实栈双角色移动端黑盒均已通过；服务器窗口复跑转入 PLAN-58 | 全栈团队 |
 | [PLAN-50](PLAN-50-P0-真实AI放行链路与真实栈复验提示词.md) | P0 真实 AI/OCR 放行链路与真实栈复验提示词 | ✅ 已完成 | 100% | 真实 Codex Bridge provider、sample gate、字段级识别、真实 e2e:ai 已通过；结果见 REPORT-09 | 全栈团队 |
 | PLAN-51 | 真实栈双角色全流程黑盒验收 | ✅ 已完成 | 100% | 本地 Compose 真实后端 API 下客户/采购者 `390x844` 与 `360x800` 黑盒任务流 `4 passed`；修复客户首页越权钱包请求导致的会话清空 | 全栈团队 |
 | PLAN-52 | 功能清单与文档功能逐项对账 | ✅ 已完成 | 100% | 已形成 `REPORT-11` 功能承诺与验收矩阵，核心文档承诺均有验证入口或降级说明 | 全栈团队 |
 | PLAN-53 | 可用性与移动端体验集中收口 | ✅ 已完成 | 100% | 客户与采购者移动端 P0/P1 卡点已修复，黑盒测试加固真实登录和真实栈模式 | 全栈团队 |
-| [PLAN-56](PLAN-56-P0-服务器试运行证据封口与PLAN00关闭提示词.md) | 服务器试运行证据封口与 PLAN-00 关闭 | 🔄 执行中 | 40% | 已被 PLAN-57 接管为执行版入口；缺少 `SSH_TARGET` 与 `APP_DIR`，服务器窗口尚未执行 | 全栈团队 |
-| [PLAN-57](PLAN-57-P0-关闭剩余执行中任务与服务器放行复判提示词.md) | 关闭剩余执行中任务与服务器放行复判 | 🔄 执行中 | 20% | 已建立服务器放行复判执行入口；当前阻塞为未提供 `SSH_TARGET` 与 `APP_DIR` | 全栈团队 |
-| PLAN-54 | 空库上线、备份恢复与运维最小闭环 | 🔄 执行中 | 80% | 旧库 adoption 因无历史数据标记 N/A；空库真实栈、seed 与黑盒已验证，等待 PLAN-57 服务器备份恢复演练 | 全栈团队 |
-| PLAN-55 | 放行复判与试运行包封版 | 🔄 执行中 | 85% | `REPORT-07` 保持 `GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW`；等待 PLAN-57 服务器窗口证据后关闭 | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 99% | 默认质量门禁、CodeQL、依赖 high、Compose/Nacos/OCR/gateway health、真实 AI PASS、mock 与本地真实栈移动端黑盒已恢复；剩余为 PLAN-57 服务器部署窗口复跑、备份恢复演练与 artifact 归档 | 全栈团队 |
+| [PLAN-56](PLAN-56-P0-服务器试运行证据封口与PLAN00关闭提示词.md) | 服务器试运行证据封口与 PLAN-00 关闭 | 🔄 执行中 | 40% | 已被 PLAN-58 接管为服务器输入预检查与执行入口；缺少 `SSH_TARGET` 与 `APP_DIR`，服务器窗口尚未执行 | 全栈团队 |
+| [PLAN-57](PLAN-57-P0-关闭剩余执行中任务与服务器放行复判提示词.md) | 关闭剩余执行中任务与服务器放行复判 | 🔄 执行中 | 20% | 已被 PLAN-58 接管服务器输入预检查与放行窗口执行；当前阻塞为未提供 `SSH_TARGET` 与 `APP_DIR` | 全栈团队 |
+| [PLAN-58](PLAN-58-P0-服务器输入接入与放行窗口执行提示词.md) | 服务器输入接入与放行窗口执行 | 🔄 执行中 | 15% | 已建立服务器输入预检查与执行包；当前 `SSH_TARGET` / `APP_DIR` 缺失，未执行 SSH | 全栈团队 |
+| PLAN-54 | 空库上线、备份恢复与运维最小闭环 | 🔄 执行中 | 80% | 旧库 adoption 因无历史数据标记 N/A；空库真实栈、seed 与黑盒已验证，等待 PLAN-58 服务器备份恢复演练 | 全栈团队 |
+| PLAN-55 | 放行复判与试运行包封版 | 🔄 执行中 | 85% | `REPORT-07` 保持 `GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW`；等待 PLAN-58 服务器窗口证据后关闭 | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 99% | 默认质量门禁、CodeQL、依赖 high、Compose/Nacos/OCR/gateway health、真实 AI PASS、mock 与本地真实栈移动端黑盒已恢复；剩余为 PLAN-58 服务器部署窗口复跑、备份恢复演练与 artifact 归档 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |
@@ -70,7 +71,7 @@
 ### 📖 计划体系说明
 - **PLAN-01 (战略)**: 业务功能的宏观路线图，定义 Sprint 1-3 的业务目标。
 - **PLAN-02 (专项)**: 针对 AUDIT-04 提出的质量赤字，制定的中长期技术债务清偿方案。
-- **PLAN-03 (战术)**: 历史执行入口。当前唯一执行入口为 PLAN-57；PLAN-40/41/42/44/47/48/49 已作为历史覆盖项关闭。
+- **PLAN-03 (战术)**: 历史执行入口。当前唯一执行入口为 PLAN-58；PLAN-40/41/42/44/47/48/49 已作为历史覆盖项关闭。
 
 ---
 
@@ -297,10 +298,10 @@
 
 ## 🚀 下一步行动 (本周重点)
 
-**当前唯一执行入口为 [PLAN-57: 关闭剩余执行中任务与服务器放行复判](PLAN-57-P0-关闭剩余执行中任务与服务器放行复判提示词.md)，执行结果写入 [REPORT-13](../reports/REPORT-13-服务器试运行证据与PLAN00关闭报告.md)。PLAN-40/41/42/44/47/48/49 已作为历史覆盖项关闭，历史 PLAN-03 不再作为当前入口。**
+**当前唯一执行入口为 [PLAN-58: 服务器输入接入与放行窗口执行](PLAN-58-P0-服务器输入接入与放行窗口执行提示词.md)，执行结果写入 [REPORT-13](../reports/REPORT-13-服务器试运行证据与PLAN00关闭报告.md)。PLAN-40/41/42/44/47/48/49 已作为历史覆盖项关闭，历史 PLAN-03 不再作为当前入口。**
 
 1. **试运行前手动门禁**:
-   - [ ] 服务器放行复判与 PLAN-00 剩余任务关闭：见 [PLAN-57](PLAN-57-P0-关闭剩余执行中任务与服务器放行复判提示词.md) 与 [REPORT-13](../reports/REPORT-13-服务器试运行证据与PLAN00关闭报告.md)
+   - [ ] 服务器输入预检查、放行复判与 PLAN-00 剩余任务关闭：见 [PLAN-58](PLAN-58-P0-服务器输入接入与放行窗口执行提示词.md) 与 [REPORT-13](../reports/REPORT-13-服务器试运行证据与PLAN00关闭报告.md)
    - [ ] 服务器 Compose health、真实 AI sample、真实 e2e:ai、真实栈双角色黑盒、PostgreSQL / MinIO / Nacos 备份恢复演练
    - [x] 历史 NO-GO 收口计划 PLAN-40/41/42/44/47/48/49 已由 REPORT-07、PLAN-50~55、REPORT-10/11/12 覆盖关闭
    - [x] 后端：`cd backend && mvn test`
@@ -310,12 +311,12 @@
    - [x] AI 商品字段级 sample golden、结构化落库与验证脚本：见 [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) 与 [REPORT-03](../reports/REPORT-03-AI商品字段识别样例验证报告.md)
    - [x] AI sample 专用实扫：`pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken <agent-token>` 已通过，`3 PASS / 0 FAIL / 0 SCAN_FAIL`
    - [x] AI 真实视觉：`cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai` 已通过，`2 passed`
-   - [x] 双角色移动端真实栈黑盒：mock 与本地 Compose 真实后端 API 均已通过；服务器部署窗口需按 PLAN-57 复跑并归档 artifact
+   - [x] 双角色移动端真实栈黑盒：mock 与本地 Compose 真实后端 API 均已通过；服务器部署窗口需按 PLAN-58 复跑并归档 artifact
 
 2. **风险登记 / 独立门禁**:
    - [x] CodeQL main run `25198280107` 已成功，3 个 high alert 均为 fixed
    - [x] Maven dependency-check main run `25217516557` 已成功且 artifact `6750657743` 可下载；critical/high 已清零
-   - [ ] 服务器 PostgreSQL / MinIO / Nacos 备份恢复演练：本地空库 migrate/validate 与恢复库演练已完成，服务器窗口按 PLAN-57 复跑
+   - [ ] 服务器 PostgreSQL / MinIO / Nacos 备份恢复演练：本地空库 migrate/validate 与恢复库演练已完成，服务器窗口按 PLAN-58 复跑
    - [ ] 真实告警平台、集中日志、自动化备份、服务级 SLO
 
 3. **长期演进**:
@@ -329,4 +330,4 @@
 
 **备注**: 
 - 本看板作为索引每日更新，**具体任务描述以各子计划文档和 CURRENT STATE 为准**。
-- 当前唯一执行入口为 [PLAN-57](PLAN-57-P0-关闭剩余执行中任务与服务器放行复判提示词.md)；服务器窗口结果写入 [REPORT-13](../reports/REPORT-13-服务器试运行证据与PLAN00关闭报告.md)。在 `SSH_TARGET` / `APP_DIR` 提供并通过服务器 P0 门禁前，PLAN-24/54/55/56/57/CURRENT 不关闭。
+- 当前唯一执行入口为 [PLAN-58](PLAN-58-P0-服务器输入接入与放行窗口执行提示词.md)；服务器窗口结果写入 [REPORT-13](../reports/REPORT-13-服务器试运行证据与PLAN00关闭报告.md)。在 `SSH_TARGET` / `APP_DIR` 提供并通过服务器 P0 门禁前，PLAN-24/54/55/56/57/58/CURRENT 不关闭。
