@@ -4,7 +4,7 @@
 
 目标是把 PLAN-57 从“等待服务器输入”推进到“服务器窗口可执行”。本计划不新增业务研发任务，只接入服务器连接输入、执行非敏感预检查，并在输入有效时执行 PLAN-57 全部门禁。若输入缺失或任一 P0 门禁失败，只更新 REPORT-13 的阻塞证据，不关闭 PLAN-24 / PLAN-54 / PLAN-55 / PLAN-56 / PLAN-57 / CURRENT。
 
-当前状态：本地执行环境未提供 `SSH_TARGET` 与 `APP_DIR`，服务器预检查未执行。
+当前状态：已新增 `scripts/run-server-release-window.ps1` 作为服务器放行窗口执行入口。本地执行环境仍未提供 `SSH_TARGET`、`APP_DIR` 与 `BOBBUY_AGENT_AUTH_TOKEN`，因此脚本只能完成非敏感输入检查并以缺少输入失败退出，服务器 SSH 预检查尚未执行。
 
 ## Required Inputs
 
@@ -14,9 +14,31 @@
 $env:SSH_TARGET = "user@server"
 $env:APP_DIR = "/opt/bobbuy"
 $env:BRANCH = "main"
+$env:BOBBUY_AGENT_AUTH_TOKEN = "<agent access token>"
 ```
 
-`BRANCH` 未设置时固定按 `main` 执行。不得把服务器 `.env`、JWT secret、service token、Codex Bridge key、数据库或中间件密码写入仓库。
+`BRANCH` 未设置时固定按 `main` 执行。`BOBBUY_AGENT_AUTH_TOKEN` 仅用于真实 AI sample gate 的认证，不得写入仓库。不得把服务器 `.env`、JWT secret、service token、Codex Bridge key、数据库或中间件密码写入仓库。
+
+## Execution Wrapper
+
+本地推荐入口：
+
+```powershell
+pwsh scripts/run-server-release-window.ps1
+```
+
+仅执行服务器输入与 SSH 预检查：
+
+```powershell
+pwsh scripts/run-server-release-window.ps1 -PrecheckOnly
+```
+
+脚本行为：
+
+- 缺少 `SSH_TARGET` 或 `APP_DIR` 时退出码为 `2`，只输出 `present/missing` 摘要。
+- 缺少 `BOBBUY_AGENT_AUTH_TOKEN` 时退出码为 `3`，不执行 AI sample gate。
+- 预检查通过后按本计划的服务器窗口顺序执行，不输出 `.env` 内容或任何 secret 值。
+- 执行结果仍需由执行者整理到 REPORT-13；敏感原始日志不得入库。
 
 ## Server Precheck
 
