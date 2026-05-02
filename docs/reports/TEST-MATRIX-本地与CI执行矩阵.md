@@ -1,6 +1,6 @@
 # 本地 / CI 测试执行矩阵
 
-> 2026-05-02 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 与服务 jar 预构建 / Compose build 校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论为 `GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW`：dependency-check critical/high、Compose Maven PKIX、Nacos cgroup v2、gateway/OCR health、真实 AI sample gate、真实 `e2e:ai`、mock 与本地 Compose 真实栈双角色移动端黑盒均已解阻；用户确认无历史数据，旧库 adoption 改为空库上线与备份恢复验收。
+> 2026-05-02 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 与服务 jar 预构建 / Compose build 校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论为 `GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW`：dependency-check critical/high、Compose Maven PKIX、Nacos cgroup v2、gateway/OCR health、真实 AI sample gate、真实 `e2e:ai`、mock 与本地 Compose 真实栈双角色移动端黑盒均已解阻；用户确认无历史数据，旧库 adoption 改为空库上线与备份恢复验收。PLAN-56 已创建服务器封口门禁，但当前缺少 `SSH_TARGET` / `APP_DIR`，服务器窗口未执行。
 
 ## 1. 默认门禁（每个 PR / `main` push 必跑）
 
@@ -28,6 +28,7 @@
 | AI sample 报告生成（report-only） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"` | 当前仅本地执行 | 否 | 仅用于人工生成 JSON/Markdown 报告；即使 `gatePassed=false` 也返回 `0`，不得作为 release gate |
 | Compose 配置渲染 | `cd /home/runner/work/bobbuy/bobbuy && docker compose config` | 当前未纳入默认 CI；作为试运行部署前置校验执行 | 否 | 要求 `.env` / 默认变量可成功渲染 Compose，且不得依赖未声明变量 |
 | 空库上线与备份恢复演练 | 见 `docs/runbooks/RUNBOOK-备份恢复演练.md` 与 `docs/reports/REPORT-12-空库上线与备份恢复演练报告.md` | 不纳入默认 CI；按试运行变更窗口手工执行并记录结果 | 否 | 当前无历史数据，旧库 adoption 不适用；需要验证空库 Flyway、首启 seed 策略、PostgreSQL / MinIO / Nacos 恢复 |
+| PLAN-56 服务器封口门禁 | 见 `docs/plans/PLAN-56-P0-服务器试运行证据封口与PLAN00关闭提示词.md` | SSH 到 Linux 服务器手工执行 | 否 | 需要提供 `SSH_TARGET`、`APP_DIR` 与服务器 `.env`；通过后才能将 REPORT-07 改为 `GO_INTERNAL_TRIAL` |
 
 ## 3. 风险登记 / 独立安全门禁
 
