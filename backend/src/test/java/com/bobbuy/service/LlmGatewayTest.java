@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,9 +37,12 @@ class LlmGatewayTest {
     mainServer.createContext("/api/generate", exchange -> writeJson(exchange, 200, "{\"response\":\"\"}"));
     mainServer.start();
 
+    AtomicReference<String> bridgeRequestBody = new AtomicReference<>();
     bridgeServer = HttpServer.create(new InetSocketAddress(0), 0);
     bridgeServer.createContext("/v1/models", exchange -> writeJson(exchange, 200, "{\"data\":[]}"));
-    bridgeServer.createContext("/v1/chat/completions", exchange -> writeJson(exchange, 200, """
+    bridgeServer.createContext("/v1/chat/completions", exchange -> {
+      bridgeRequestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+      writeJson(exchange, 200, """
         {
           "choices": [
             {
@@ -50,7 +54,8 @@ class LlmGatewayTest {
             }
           ]
         }
-        """));
+        """);
+    });
     bridgeServer.start();
 
     LlmGateway gateway = new LlmGateway(
@@ -81,6 +86,9 @@ class LlmGatewayTest {
 
     assertThat(response).contains("{\"name\":\"Mixed Seafood\",\"basePrice\":2698}");
     assertThat(gateway.getActiveMainProvider()).isEqualTo("codex-bridge");
+    assertThat(bridgeRequestBody.get()).contains("\"messages\"");
+    assertThat(new ObjectMapper().readTree(bridgeRequestBody.get()).path("messages").get(0).path("content").asText())
+        .isEqualTo("Return JSON");
   }
 
   @Test

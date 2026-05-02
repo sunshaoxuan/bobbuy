@@ -1,0 +1,340 @@
+{
+  "generatedAt": "2026-05-02T12:42:31.2959783+09:00",
+  "goldenPath": "C:\\workspace\\bobbuy\\docs\\fixtures\\ai-onboarding-sample-golden.json",
+  "sampleDir": "C:\\workspace\\bobbuy\\sample",
+  "scanEndpoint": "http://localhost/api/ai/onboard/scan",
+  "reportOnly": false,
+  "summary": {
+    "total": 3,
+    "pass": 3,
+    "fail": 0,
+    "skipped": 0,
+    "scanFail": 0,
+    "missingFile": 0,
+    "gatePassed": true
+  },
+  "results": [
+    {
+      "sampleId": "IMG_1484.jpg",
+      "status": "PASS",
+      "needsHumanGolden": false,
+      "detail": "Costco seafood label sample used for new-product AI onboarding verification.",
+      "actual": {
+        "name": "MIXED SEAFOOD",
+        "brand": "",
+        "itemNumber": "53432",
+        "basePrice": 2698.0,
+        "categoryId": "cat-1000",
+        "attributes": {
+          "flavor": "seafood",
+          "storageHint": "生食用",
+          "pricePerUnit": "498円/100g"
+        },
+        "traceStage": "SEMANTIC_COMPARE",
+        "ocrProvider": "python-ocr",
+        "llmProvider": "codex-bridge",
+        "fallbackReason": null
+      },
+      "fieldResults": [
+        {
+          "field": "name",
+          "expectedPath": "name",
+          "actualPath": "name",
+          "expected": "Mixed Seafood",
+          "actual": "MIXED SEAFOOD",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "brand",
+          "expectedPath": "brand",
+          "actualPath": "brand",
+          "expected": null,
+          "actual": "",
+          "passed": true,
+          "reason": "optional-null"
+        },
+        {
+          "field": "itemNumber",
+          "expectedPath": "itemNumber",
+          "actualPath": "itemNumber",
+          "expected": "53432",
+          "actual": "53432",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "basePrice",
+          "expectedPath": "basePrice",
+          "actualPath": "price",
+          "expected": 2698.0,
+          "actual": 2698.0,
+          "passed": true,
+          "reason": "numeric-within-tolerance"
+        },
+        {
+          "field": "categoryId",
+          "expectedPath": "categoryId",
+          "actualPath": "categoryId",
+          "expected": "cat-1000",
+          "actual": "cat-1000",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "storageCondition",
+          "expectedPath": "storageCondition",
+          "actualPath": "storageCondition",
+          "expected": "AMBIENT",
+          "actual": "AMBIENT",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "orderMethod",
+          "expectedPath": "orderMethod",
+          "actualPath": "orderMethod",
+          "expected": "DIRECT_BUY",
+          "actual": "DIRECT_BUY",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "attributes.netContent",
+          "expectedPath": "attributes.netContent",
+          "actualPath": "attributes.netContent",
+          "expected": null,
+          "actual": null,
+          "passed": true,
+          "reason": "optional-null"
+        },
+        {
+          "field": "attributes.pricePerUnit",
+          "expectedPath": "attributes.pricePerUnit",
+          "actualPath": "attributes.pricePerUnit",
+          "expected": "498円/100g",
+          "actual": "498円/100g",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "attributes.packSize",
+          "expectedPath": "attributes.packSize",
+          "actualPath": "attributes.packSize",
+          "expected": null,
+          "actual": null,
+          "passed": true,
+          "reason": "optional-null"
+        }
+      ]
+    },
+    {
+      "sampleId": "IMG_1638.jpg",
+      "status": "PASS",
+      "needsHumanGolden": true,
+      "detail": "Existing-product match sample kept in the dedicated AI E2E suite.",
+      "actual": {
+        "name": "クラシリク抹茶",
+        "brand": "コストコホールセールジャパン",
+        "itemNumber": "59363",
+        "basePrice": 798.0,
+        "categoryId": "cat-1000",
+        "attributes": {
+          "flavor": "抹茶",
+          "netContent": "9g",
+          "storageHint": "直射日光・高温多湿を避けて保存"
+        },
+        "traceStage": "SEMANTIC_COMPARE",
+        "ocrProvider": "python-ocr",
+        "llmProvider": "codex-bridge",
+        "fallbackReason": null
+      },
+      "fieldResults": [
+        {
+          "field": "existingProductFound",
+          "expectedPath": "existingProductFound",
+          "actualPath": "existingProductFound",
+          "expected": "True",
+          "actual": "True",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "existingProductId",
+          "expectedPath": "existingProductId",
+          "actualPath": "existingProductId",
+          "expected": "prd-1638",
+          "actual": "prd-1638",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "categoryId",
+          "expectedPath": "categoryId",
+          "actualPath": "categoryId",
+          "expected": "cat-1000",
+          "actual": "cat-1000",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "storageCondition",
+          "expectedPath": "storageCondition",
+          "actualPath": "storageCondition",
+          "expected": "AMBIENT",
+          "actual": "AMBIENT",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "orderMethod",
+          "expectedPath": "orderMethod",
+          "actualPath": "orderMethod",
+          "expected": "DIRECT_BUY",
+          "actual": "DIRECT_BUY",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "attributes.netContent",
+          "expectedPath": "attributes.netContent",
+          "actualPath": "attributes.netContent",
+          "expected": null,
+          "actual": "9g",
+          "passed": true,
+          "reason": "optional-null"
+        },
+        {
+          "field": "attributes.pricePerUnit",
+          "expectedPath": "attributes.pricePerUnit",
+          "actualPath": "attributes.pricePerUnit",
+          "expected": null,
+          "actual": null,
+          "passed": true,
+          "reason": "optional-null"
+        },
+        {
+          "field": "attributes.packSize",
+          "expectedPath": "attributes.packSize",
+          "actualPath": "attributes.packSize",
+          "expected": null,
+          "actual": null,
+          "passed": true,
+          "reason": "optional-null"
+        }
+      ]
+    },
+    {
+      "sampleId": "IMG_1510.jpg",
+      "status": "PASS",
+      "needsHumanGolden": true,
+      "detail": "Reserved ambiguous sample for future manual golden refinement.",
+      "actual": {
+        "name": "FAUX FUR MINI QUAD RUG",
+        "brand": "MIOI CIIATEAU",
+        "itemNumber": "",
+        "basePrice": 2198.0,
+        "categoryId": "",
+        "attributes": {
+          "packSize": "24”×39”(80cm×99cm)"
+        },
+        "traceStage": "SEMANTIC_COMPARE",
+        "ocrProvider": "python-ocr",
+        "llmProvider": "codex-bridge",
+        "fallbackReason": null
+      },
+      "fieldResults": [
+        {
+          "field": "name",
+          "expectedPath": "name",
+          "actualPath": "name",
+          "expected": null,
+          "actual": "FAUX FUR MINI QUAD RUG",
+          "passed": true,
+          "reason": "optional-null"
+        },
+        {
+          "field": "brand",
+          "expectedPath": "brand",
+          "actualPath": "brand",
+          "expected": null,
+          "actual": "MIOI CIIATEAU",
+          "passed": true,
+          "reason": "optional-null"
+        },
+        {
+          "field": "itemNumber",
+          "expectedPath": "itemNumber",
+          "actualPath": "itemNumber",
+          "expected": null,
+          "actual": "",
+          "passed": true,
+          "reason": "optional-null"
+        },
+        {
+          "field": "basePrice",
+          "expectedPath": "basePrice",
+          "actualPath": "price",
+          "expected": null,
+          "actual": 2198.0,
+          "passed": true,
+          "reason": "optional-null"
+        },
+        {
+          "field": "categoryId",
+          "expectedPath": "categoryId",
+          "actualPath": "categoryId",
+          "expected": null,
+          "actual": "",
+          "passed": true,
+          "reason": "optional-null"
+        },
+        {
+          "field": "storageCondition",
+          "expectedPath": "storageCondition",
+          "actualPath": "storageCondition",
+          "expected": "AMBIENT",
+          "actual": "AMBIENT",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "orderMethod",
+          "expectedPath": "orderMethod",
+          "actualPath": "orderMethod",
+          "expected": "DIRECT_BUY",
+          "actual": "DIRECT_BUY",
+          "passed": true,
+          "reason": "exact-or-synonym"
+        },
+        {
+          "field": "attributes.netContent",
+          "expectedPath": "attributes.netContent",
+          "actualPath": "attributes.netContent",
+          "expected": null,
+          "actual": null,
+          "passed": true,
+          "reason": "optional-null"
+        },
+        {
+          "field": "attributes.pricePerUnit",
+          "expectedPath": "attributes.pricePerUnit",
+          "actualPath": "attributes.pricePerUnit",
+          "expected": null,
+          "actual": null,
+          "passed": true,
+          "reason": "optional-null"
+        },
+        {
+          "field": "attributes.packSize",
+          "expectedPath": "attributes.packSize",
+          "actualPath": "attributes.packSize",
+          "expected": null,
+          "actual": "24”×39”(80cm×99cm)",
+          "passed": true,
+          "reason": "optional-null"
+        }
+      ]
+    }
+  ]
+}

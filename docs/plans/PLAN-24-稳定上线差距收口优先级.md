@@ -22,9 +22,9 @@
 
 | 排名 | 优先级 | 任务 | 当前问题 | 上线影响 | 目标状态 |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| 1 | P0 | 真实 AI/OCR sample 与 E2E PASS | sample gate 已打到真实 `/api/ai/onboard/scan`，但当前 `0 PASS / 3 SCAN_FAIL`；本轮已修复 LLM 空响应兜底和 bridge 配置传递，剩余为注入可用 Codex Bridge key 或修复主 Ollama endpoint；`e2e:ai` 需在 sample PASS 后复跑 | 无法证明 sample 图片能正确填充商品档案字段 | 修复 provider/识别链路后，sample gate PASS，`RUN_AI_VISION_E2E=1 npm run e2e:ai` PASS 并归档 artifact |
-| 2 | P0 | 真实旧库 adoption / restore drill | 仓库内仍无脱敏旧库副本 / 历史 schema dump | Flyway 上线缺少真实旧库证据 | 旧库 baseline / migrate / validate / restore drill 全流程留痕 |
-| 3 | P0 | 双角色移动端黑盒走查 | mock 数据下客户/采购者手机任务流已通过，但真实试运行栈尚未复验 | 不能证明真实操作者在手机上可完成核心任务 | 真实/试运行等价账号完成客户与采购者黑盒任务流，artifact 可回看 |
+| 1 | P0 | 真实旧库 adoption / restore drill | 仓库内仍无脱敏旧库副本 / 历史 schema dump | Flyway 上线缺少真实旧库证据 | 旧库 baseline / migrate / validate / restore drill 全流程留痕 |
+| 2 | P0 | 双角色移动端黑盒走查 | mock 数据下客户/采购者手机任务流已通过，但真实试运行栈尚未复验 | 不能证明真实操作者在手机上可完成核心任务 | 真实/试运行等价账号完成客户与采购者黑盒任务流，artifact 可回看 |
+| 3 | P0 | 真实 AI/OCR sample 与 E2E PASS | PLAN-50 已通过真实 sample gate 与真实 `e2e:ai`；后续需保持试运行 secret 注入与回归证据 | 若后续 provider secret 漂移，会重新阻断 AI 上架 | sample gate 与 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 保持 PASS，artifact 可追溯 |
 | 4 | P1 | 处置 dependency-check medium/low | 最新 artifact 已为 `0 critical / 0 high / 13 medium / 2 low`；仍需按影响面登记 medium/low | 中期安全债务未完全收口 | medium/low 均有升级计划或正式风险登记 |
 | 5 | P1 | 认证与权限生产化 | 已完成 JWT 登录、HttpOnly refresh cookie + CSRF、refresh token 会话治理、header auth 生产禁用、WebSocket 鉴权与最小 service token；mTLS、契约测试与 OAuth/SSO 仍未完成 | 不适合在缺少后续收口的情况下继续外扩或深拆服务 | JWT + cookie-based refresh + gateway/internal service token 稳定，剩余边界风险明确登记 |
 | 6 | P1 | 数据库迁移治理 | 已补 Flyway 基线与空库验证，旧库 adoption/回滚策略仍未完全固化 | 数据结构升级仍需变更审查与备份流程 | Flyway 基线稳定运行，旧库升级手册补齐 |
@@ -43,22 +43,22 @@
 **问题**
 
 - Compose、gateway、OCR health 已通过，真实接口可达。
-- `scripts/verify-ai-onboarding-samples.ps1` 带 token 已打到真实 `/api/ai/onboard/scan`，但当前结果为 `0 PASS / 3 SCAN_FAIL`。
-- 本轮已修复主 LLM 空响应时不触发 fallback、OpenAI-compatible `message.content` 数组无法解析、Compose/Nacos 未传递 Codex Bridge 配置、服务器容器误选不可执行 Codex CLI 等问题。
-- 最新真实 sample gate 仍失败，日志显示主 Ollama endpoint `http://ccnode.briconbric.com:22545/api/generate` 请求失败，且当前环境未配置 `BOBBUY_AI_LLM_CODEX_BRIDGE_URL/API_KEY`。
-- `RUN_AI_VISION_E2E=1 npm run e2e:ai` 入口已可执行；在 sample gate PASS 前，不再把失败 e2e:ai 复跑当作放行证据。
+- `scripts/verify-ai-onboarding-samples.ps1` 带 token 已打到真实 `/api/ai/onboard/scan`，PLAN-50 结果为 `3 PASS / 0 FAIL / 0 SCAN_FAIL`，`gatePassed=true`。
+- 本轮已修复主 LLM 空响应 fallback、OpenAI-compatible `message.content` 数组解析、Compose/Nacos Codex Bridge 配置传递、服务器容器误选不可执行 Codex CLI、Codex Bridge JSON 请求体、样例字段归一化与相似商品误匹配问题。
+- `RUN_AI_VISION_E2E=1 npm run e2e:ai` 已在真实 Compose 栈通过，`2 passed`。
+- 后续风险从“功能不可用”变为“试运行/服务器 secret 注入必须受控且可复现”。
 
 **执行任务**
 
-1. 给试运行环境注入可用 `BOBBUY_AI_LLM_CODEX_BRIDGE_URL` 与 API key，或修复 `BOBBUY_AI_LLM_MAIN_URL` 指向的 Ollama-compatible endpoint，使 `/api/ai/onboard/scan` 返回可解析结构化字段。
-2. 用 `sample/IMG_1484.jpg`、`IMG_1638.jpg`、`IMG_1510.jpg` 复跑 sample gate。
-3. 确认 `basePrice -> price`、`itemNumber`、`categoryId`、`attributes.pricePerUnit` 等关键字段与 golden 对齐。
-4. 复跑 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 并归档 Playwright artifact。
+1. 将 `BOBBUY_AI_LLM_CODEX_BRIDGE_URL` 与 API key 放入试运行/服务器外部 secret 注入流程，不提交明文 key 或解密主密码。
+2. 每次 release candidate 复跑 `IMG_1484.jpg`、`IMG_1638.jpg`、`IMG_1510.jpg` sample gate。
+3. 继续确认 `basePrice -> price`、`itemNumber`、`categoryId`、`attributes.pricePerUnit` 等关键字段与 golden 对齐。
+4. 继续复跑 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 并归档 Playwright artifact。
 
 **验收标准**
 
-- sample gate 返回 `gatePassed=true`。
-- `e2e:ai` 全部通过。
+- sample gate 返回 `gatePassed=true`；PLAN-50 当前证据为 `3 PASS / 0 FAIL / 0 SCAN_FAIL`。
+- `e2e:ai` 全部通过；PLAN-50 当前证据为 `2 passed`。
 - JSON/Markdown sample 报告与 Playwright screenshot/video/trace 可回看。
 
 ### 3.2 真实旧库 adoption / restore drill
@@ -119,11 +119,13 @@
 - 真实/试运行等价账号完成同一批核心任务。
 - 不存在手机端无法完成核心任务、关键 CTA 不可见/不可点、横向滚动导致内容丢失等 P0/P1 问题。
 
-### 3.5 当前状态（2026-05-02 / PLAN-49）
+### 3.5 当前状态（2026-05-02 / PLAN-50）
 
 - `backend mvn test`、`frontend npm ci && npm test`、`frontend npm run build` 与默认 Docker build 继续通过。
 - `scripts/verify-ai-onboarding-samples.ps1` 的 gate/report-only 分流、`gatePassed` 汇总与失败非零退出码仍保持可用。
 - `LlmGateway` 已补主 Ollama 空响应后的 Codex Bridge / Codex CLI fallback，OpenAI-compatible `message.content` 字符串/数组解析，以及不可执行 Codex CLI 不参与 provider 选择。
+- `LlmGateway` 已补 Codex Bridge JSON 请求体显式序列化，修复远端 bridge 拒绝请求体导致的 `SCAN_FAIL`。
+- `AiProductOnboardingService` 已补食品类目推断、OCR 原文属性恢复、单位价格归一化、分散品番恢复与相似商品匹配降噪。
 - Compose 与 Nacos `ai-service` 已补 `BOBBUY_AI_LLM_CODEX_BRIDGE_*` 与 `BOBBUY_AI_SECRET_MASTER_PASSWORD` 配置传递；仓库 `.env` 默认不再设置 `BOBBUY_AI_LLM_CODEX_COMMAND=codex`。
 - `.github/workflows/codeql.yml` main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217655038> 已成功。
 - `.github/workflows/dependency-check.yml` main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217516557> 已成功，artifact `dependency-check-report`（id `6750657743`）为 `0 critical / 0 high / 13 medium / 2 low`。
@@ -131,9 +133,10 @@
 - 本地临时 secret 下完整 Compose 栈已启动，gateway `/api/health`、`/api/actuator/health`、`/api/actuator/health/readiness` 与 OCR `/health` 均通过。
 - 双角色移动端黑盒 mock 验证已通过：`mobile_agent_blackbox.spec.ts` 与 `mobile_customer_blackbox.spec.ts` 均覆盖 `390x844` / `360x800`。
 - 本轮修复客户发现页移动端 header 遮挡、手机 header 拥挤、库存手机端新增商品不进入编辑表单，并补齐供应商页稳定测试锚点。
-- `.github/workflows/ai-release-evidence.yml` 仍未形成真实 PASS run；本地真实 sample gate 已执行但失败，当前 blocker 已收敛到 AI provider 可用性：主 Ollama endpoint 请求失败且当前环境未注入 Codex Bridge key。
+- `.github/workflows/ai-release-evidence.yml` 仍需形成托管或试运行窗口 artifact；本地真实 sample gate 已通过，证据见 `docs/reports/evidence/ai-onboarding-real-sample-plan50-2026-05-02.*`。
+- 本地真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 已通过，`2 passed`。
 - 仓库工作区内仍未发现真实旧库副本 / 历史 schema dump，因此 adoption / restore drill 仍无可执行输入。
-- 结论：默认门禁、安全 high、Compose/Nacos/OCR/gateway 基础健康与 mock 移动端黑盒已收口；当前剩余 blocker 为真实 AI/OCR sample gate、真实 `e2e:ai` PASS 证据、真实旧库 adoption 与真实栈双角色移动端复验。
+- 结论：默认门禁、安全 high、Compose/Nacos/OCR/gateway 基础健康、真实 AI/OCR sample gate、真实 `e2e:ai` 与 mock 移动端黑盒已收口；当前剩余 blocker 为真实旧库 adoption 与真实栈双角色移动端复验。
 
 ---
 

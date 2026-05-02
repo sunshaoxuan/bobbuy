@@ -477,6 +477,7 @@ public class LlmGateway {
             SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
             requestFactory.setConnectTimeout(codexBridgeTimeout);
             requestFactory.setReadTimeout(codexBridgeTimeout);
+            String requestBody = objectMapper.writeValueAsString(payload);
             log.info("Dispatching LLM task to Codex Bridge at {} (model: {})", codexBridgeUrl, model);
             Map<String, Object> raw = RestClient.builder()
                     .requestFactory(requestFactory)
@@ -485,7 +486,7 @@ public class LlmGateway {
                     .uri(URI.create(trimTrailingSlash(codexBridgeUrl) + "/chat/completions"))
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.get())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(payload)
+                    .body(requestBody)
                     .retrieve()
                     .body(new ParameterizedTypeReference<Map<String, Object>>() {});
 

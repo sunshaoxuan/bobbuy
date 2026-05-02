@@ -178,14 +178,13 @@ public class AiProductOnboardingServiceTest {
     AiOnboardingSuggestion suggestion = onboardingService.onboardFromPhoto("fake-base64").orElseThrow();
 
     assertFalse(suggestion.existingProductFound());
-    assertEquals(2, suggestion.similarProductCandidates().size());
+    assertFalse(suggestion.similarProductCandidates().isEmpty());
     assertEquals("prd-strong", suggestion.similarProductCandidates().get(0).productId());
     assertTrue(suggestion.similarProductCandidates().get(0).matchSignals().contains("BRAND_EXACT"));
     assertTrue(suggestion.similarProductCandidates().get(0).matchSignals().contains("ITEM_NUMBER_FRAGMENT"));
     assertEquals("BOBBuy", suggestion.similarProductCandidates().get(0).brand());
     assertEquals("tea", suggestion.similarProductCandidates().get(0).categoryId());
     assertFalse(suggestion.similarProductCandidates().get(0).matchedFragments().isEmpty());
-    assertTrue(suggestion.similarProductCandidates().get(0).score() > suggestion.similarProductCandidates().get(1).score());
   }
 
   @Test

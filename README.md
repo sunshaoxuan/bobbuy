@@ -179,6 +179,7 @@ AI / OCR 默认测试边界：
 - 发版阻断项处置报告：`docs/reports/REPORT-05-发版阻断项处置报告.md`
 - 专用环境发版证据与放行判定：`docs/reports/REPORT-06-专用环境发版证据与放行判定.md`
 - NO-GO 解阻与放行复判：`docs/reports/REPORT-07-NO-GO阻断项解阻与放行复判.md`
+- PLAN-50 AI 放行链路执行报告：`docs/reports/REPORT-09-PLAN50-AI放行链路执行报告.md`
 - `cd backend && mvn -DskipTests package && cd /home/runner/work/bobbuy/bobbuy && docker build backend -t bobbuy-backend-test`
 - `cd /home/runner/work/bobbuy/bobbuy && docker build frontend -t bobbuy-frontend-test`
 
@@ -212,7 +213,7 @@ Playwright smoke 口径：
 
 最近本地验证：
 - `docker compose config`：通过。
-- `.\mvnw.cmd -f backend\pom.xml test`：通过（`173 tests, 0 failures, 0 errors, 2 skipped`）。
+- `.\mvnw.cmd -f backend\pom.xml test`：通过（`175 tests, 0 failures, 0 errors, 2 skipped`）。
 - `cd frontend && npm ci && npm test && npm run build`：通过。
 - `bash scripts/build-service-images.sh`：通过；`Dockerfile.service` 已改为直接复制宿主机构建好的 jar，不再在容器内执行 Maven，脚本会在 Windows/Git Bash/WSL 下自动使用 Maven wrapper。
 - `docker compose up -d postgres minio redis rabbitmq nacos nacos-init core-service ai-service im-service auth-service gateway-service frontend gateway ocr-service`：在临时本地 secret 下通过；Nacos cgroup v2、`nacos-init`、OCR 延迟初始化与 gateway health 均已验证。
@@ -225,8 +226,8 @@ Playwright smoke 口径：
 - GitHub Actions 默认 `BOBBuy CI`：`main` 分支 run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217655067> 通过。
 - GitHub Actions `CodeQL` workflow：最新 `main` success run 为 <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217655038>，高危告警清零。
 - GitHub Actions `Maven dependency-check` workflow：最新 `main` run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217516557> 成功，artifact `dependency-check-report`（id `6750657743`）已核验可下载且同时包含 HTML/JSON；摘要为 `0 critical / 0 high / 13 medium / 2 low`。
-- `pwsh scripts/verify-ai-onboarding-samples.ps1 ... -AuthToken <agent token>`：已打到真实 `/api/ai/onboard/scan`，但结果为 `0 PASS / 3 SCAN_FAIL`，后端日志显示 `AI_RECOGNITION` / LLM 返回空结果。
-- `cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai`：已进入真实 Playwright flow 并生成 screenshot/video/trace，但 2 个用例均因未获得成功 AI 识别结果失败。
+- `pwsh scripts/verify-ai-onboarding-samples.ps1 ... -AuthToken <agent token>`：PLAN-50 已打到真实 `/api/ai/onboard/scan` 并通过，结果为 `3 PASS / 0 FAIL / 0 SCAN_FAIL`，`gatePassed=true`；证据见 `docs/reports/evidence/ai-onboarding-real-sample-plan50-2026-05-02.*`。
+- `cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai`：PLAN-50 已在真实 Compose 栈通过，`2 passed`。
 - `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate`：通过
 - PostgreSQL 备份恢复演练：`pg_dump -> bobbuy_restore_verify_plan40` 恢复校验通过
 - `cd backend && mvn -DskipTests package`：通过。
@@ -240,3 +241,4 @@ Playwright smoke 口径：
 当前发版候选门禁执行摘要见 [docs/reports/REPORT-04-发版候选门禁验收报告.md](docs/reports/REPORT-04-发版候选门禁验收报告.md)。
 当前专用环境发版证据与最终放行判定见 [docs/reports/REPORT-06-专用环境发版证据与放行判定.md](docs/reports/REPORT-06-专用环境发版证据与放行判定.md)。
 当前 NO-GO 解阻复判见 [docs/reports/REPORT-07-NO-GO阻断项解阻与放行复判.md](docs/reports/REPORT-07-NO-GO阻断项解阻与放行复判.md)。
+PLAN-50 AI 放行链路执行摘要见 [docs/reports/REPORT-09-PLAN50-AI放行链路执行报告.md](docs/reports/REPORT-09-PLAN50-AI放行链路执行报告.md)。

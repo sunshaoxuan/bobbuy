@@ -27,7 +27,7 @@
 | [PLAN-21](PLAN-21-参与者档案与线下结算增强-VNext+1.md) | 参与者档案与线下结算增强 | ✅ 已完成 | 100% | 地址/社交档案、线下收款、差额结转 | 全栈团队 |
 | [PLAN-22](PLAN-22-账本精算与配送履约闭环.md) | 账本精算与配送履约闭环 | ✅ 已完成 | 100% | 余额口径、待配送、拣货确认 | 全栈团队 |
 | [PLAN-23](PLAN-23-冻结门禁与履约视图统一.md) | 冻结门禁与履约视图统一 | ✅ 已完成 | 100% | 冻结只读、拣货单一事实源 | 全栈团队 |
-| [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) | 稳定上线差距收口优先级 | 🔄 执行中 | 98% | 默认 CI、CodeQL high、dependency-check critical/high、服务镜像 Compose build、Compose 基础健康与 mock 双角色移动端黑盒走查已落地；剩余为可用 AI provider 注入、真实 AI/OCR PASS 证据、真实旧库 adoption 与真实栈移动端复验 | 全栈团队 |
+| [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) | 稳定上线差距收口优先级 | 🔄 执行中 | 99% | 默认 CI、CodeQL high、dependency-check critical/high、服务镜像 Compose build、Compose 基础健康、真实 AI sample、真实 e2e:ai 与 mock 双角色移动端黑盒走查已落地；剩余为真实旧库 adoption 与真实栈移动端复验 | 全栈团队 |
 | [PLAN-25](PLAN-25-P0后端测试基线恢复开发提示词.md) | P0 后端测试基线恢复提示词 | ✅ 已完成 | 100% | `backend mvn test` 已恢复稳定全绿 | 全栈团队 |
 | [PLAN-26](PLAN-26-P0前端测试基线恢复开发提示词.md) | P0 前端测试基线恢复提示词 | ✅ 已完成 | 100% | `frontend npm test` 已恢复稳定完成 | 全栈团队 |
 | [PLAN-27](PLAN-27-P0上线验收矩阵与CI固化开发提示词.md) | P0 上线验收矩阵与 CI 固化提示词 | ✅ 已完成 | 100% | 默认 CI 与手动/专用门禁分层已对齐 | 全栈团队 |
@@ -51,9 +51,10 @@
 | [PLAN-45](PLAN-45-P0-CodeQL告警与真实放行证据闭环提示词.md) | P0 CodeQL 告警与真实放行证据闭环提示词 | ✅ 已完成 | 100% | CodeQL 3 个 high 已在 main 上标记 fixed；dependency-check artifact 已可下载并登记 `8 critical / 21 high / 19 moderate` | 全栈团队 |
 | [PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md) | P0 依赖高危处置与真实环境证据闭环提示词 | ✅ 已完成 | 100% | Tomcat/Netty/FileUpload 与 pgjdbc 高危依赖已升级，Compose Maven PKIX 已解阻 | 全栈团队 |
 | [PLAN-47](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md) | P0 专用环境 Nacos 解阻与真实 AI 证据闭环提示词 | 🔄 进行中 | 70% | pgjdbc 已升级、Nacos cgroup v2 已解阻、service jar 预构建门禁已补；剩余为文档拉平、真实 AI/OCR 与旧库 adoption | 全栈团队 |
-| [PLAN-48](PLAN-48-P0-文档拉平与真实放行证据执行提示词.md) | P0 文档拉平与真实放行证据执行提示词 | 🔄 执行中 | 85% | 文档拉平、dependency-check 复扫、Compose health、sample gate、LLM 空响应兜底与 bridge 配置传递已执行；剩余为注入可用 Codex Bridge/Ollama provider、AI gate PASS 与真实旧库 adoption | 全栈团队 |
+| [PLAN-48](PLAN-48-P0-文档拉平与真实放行证据执行提示词.md) | P0 文档拉平与真实放行证据执行提示词 | 🔄 执行中 | 95% | 文档拉平、dependency-check 复扫、Compose health、LLM fallback、Codex Bridge 配置、真实 sample gate 与真实 e2e:ai 已执行；剩余为真实旧库 adoption 与真实栈移动端复验 | 全栈团队 |
 | [PLAN-49](PLAN-49-P0-双角色移动端黑盒走查提示词.md) | P0 双角色移动端黑盒走查提示词 | 🔄 执行中 | 75% | 客户/采购者 mock 数据手机任务流已通过，并修复导航遮挡、header 拥挤、库存新增不进入编辑等 UX 卡点；剩余为真实试运行栈复验 | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 98% | 默认质量门禁、CodeQL、依赖 high、Compose/Nacos/OCR/gateway health 与 mock 移动端黑盒走查已恢复；仍不可放行，剩余为可用 AI provider 注入后的真实 AI PASS 证据、真实旧库 adoption 与真实栈双角色黑盒复验 | 全栈团队 |
+| [PLAN-50](PLAN-50-P0-真实AI放行链路与真实栈复验提示词.md) | P0 真实 AI/OCR 放行链路与真实栈复验提示词 | ✅ 已完成 | 100% | 真实 Codex Bridge provider、sample gate、字段级识别、真实 e2e:ai 已通过；结果见 REPORT-09 | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 99% | 默认质量门禁、CodeQL、依赖 high、Compose/Nacos/OCR/gateway health、真实 AI PASS 证据与 mock 移动端黑盒走查已恢复；仍不可放行，剩余为真实旧库 adoption 与真实栈双角色黑盒复验 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |
@@ -259,7 +260,7 @@
 
 ### 技术债务清偿进度
 
-> 2026-05-02 修正：PLAN-25 到 PLAN-39 已完成，PLAN-43 到 PLAN-48 已把 CodeQL、Maven dependency-check artifact、AI evidence workflow、服务镜像预构建、Nacos/Compose 基础健康与真实 sample/e2e 执行路径落地并形成 `REPORT-07`。最新 main 默认 CI 成功，CodeQL main push 成功，Maven dependency-check 已降至 `0 critical / 0 high / 13 medium / 2 low`；本轮补齐 LLM 空响应兜底、OpenAI-compatible content 数组解析、Compose/Nacos Codex Bridge 配置传递与服务器禁用不可执行 Codex CLI 的保护。当前剩余风险集中在可用 AI provider 注入、真实 AI/OCR PASS 证据、真实旧库 adoption 与长期架构项。
+> 2026-05-02 修正：PLAN-25 到 PLAN-39 已完成，PLAN-43 到 PLAN-50 已把 CodeQL、Maven dependency-check artifact、AI evidence workflow、服务镜像预构建、Nacos/Compose 基础健康、真实 sample/e2e 执行路径、Codex Bridge provider 与双角色移动端 mock 黑盒落地并形成 `REPORT-07` / `REPORT-09`。最新 main 默认 CI 成功，CodeQL main push 成功，Maven dependency-check 已降至 `0 critical / 0 high / 13 medium / 2 low`；本轮补齐 LLM 空响应兜底、OpenAI-compatible content 数组解析、Compose/Nacos Codex Bridge 配置传递、服务器禁用不可执行 Codex CLI 的保护、Codex Bridge JSON 请求体、样例字段归一化与相似商品匹配修正。当前剩余风险集中在真实旧库 adoption、真实栈移动端复验与长期架构项。
 - **已解决**: 9/9（100%）
   - ✅ 前端提交逻辑
   - ✅ I18n 支持
@@ -272,29 +273,29 @@
   - ✅ AI 商品字段级识别、结构化落库与 sample golden 验证脚本
 
 - **仍需风险登记**:
-  - sample 验证脚本已修复 `basePrice -> price` 字段别名漂移与失败非零退出码；真实 `/api/ai/onboard/scan` 专用环境实扫仍未完成。
+  - sample 验证脚本已修复 `basePrice -> price` 字段别名漂移与失败非零退出码；PLAN-50 真实 `/api/ai/onboard/scan` sample gate 已通过，`3 PASS / 0 FAIL / 0 SCAN_FAIL`。
   - Refresh token 轮换已通过 `findByTokenHashForUpdate` 悲观写锁与 `AuthRefreshConcurrencyIntegrationTest` 收口；旧的“并发互斥缺失”review finding 已不再适用于当前 main。
   - CodeQL JS/TS `build-mode` 已从 `manual` 修正为 `none`，PR #60 最新 CodeQL run `25148614578` 三个 matrix 均通过；重复 `push` / `pull_request` 触发已在 PR 分支收口。
   - 2026-05-01 merge 后 CodeQL main run `25198280107` 成功，code scanning API 显示 3 个 high alert 均为 `fixed`。
   - Maven dependency-check main run `25217516557` 成功，artifact `dependency-check-report`（id `6750657743`）可下载；复扫结果为 `0 critical / 0 high / 13 medium / 2 low`，pgjdbc high 已清零。
   - `Dockerfile.service` 已改为复制宿主机构建好的 jar，不再在 service 镜像内执行 Maven；该路线需要固定 `mvn -f pom.xml -DskipTests package -pl ... -am` 作为 Compose service build 前置门禁。
-  - 真实 compose 栈当前不再被 Maven PKIX、Nacos cgroup v2 / `ProcessorMetrics`、`nacos-init` CRLF、gateway health 或 OCR `/health` 阻塞；本轮已执行真实 AI sample gate，仍为 `0 PASS / 3 SCAN_FAIL`，直接原因收敛为主 Ollama endpoint 请求失败且当前环境未注入 Codex Bridge key。
+  - 真实 compose 栈当前不再被 Maven PKIX、Nacos cgroup v2 / `ProcessorMetrics`、`nacos-init` CRLF、gateway health 或 OCR `/health` 阻塞；PLAN-50 已用临时环境变量注入可用 Codex Bridge，真实 AI sample gate 已通过，证据见 `docs/reports/evidence/ai-onboarding-real-sample-plan50-2026-05-02.*`。
   - 最新 main `BOBBuy CI` run `25192905348` 成功；早前 frontend image `ECONNRESET` 已通过 `npm ci` 与 npm fetch retry 收口。
-  - Codex Bridge provider 已加入 LLM fallback 路径；当前代码已支持主 LLM 空响应后切换到 bridge，并能解析 OpenAI-compatible `message.content` 字符串/数组响应。真实 AI 商品 sample gate 仍需在注入可用 bridge key 或修复 Ollama endpoint 后复验。
-  - `npm run e2e:ai` AI 真实视觉链路入口已可执行；本轮因 sample gate 仍失败未复跑为放行证据，上一轮 2 个用例失败的原因仍是未获得成功 AI 识别结果。
-  - `REPORT-06` 与 `REPORT-07` 的 `NO_GO` 结论仍是正式发版基线；真实 AI/OCR PASS 证据与真实旧库 adoption 仍未固化为可放行证据。
+  - Codex Bridge provider 已加入 LLM fallback 路径；当前代码已支持主 LLM 空响应后切换到 bridge，并能解析 OpenAI-compatible `message.content` 字符串/数组响应。PLAN-50 进一步修复 bridge JSON 请求体，避免远端拒绝非标准 JSON body。
+  - `npm run e2e:ai` AI 真实视觉链路已在本地真实栈通过，`2 passed`。
+  - `REPORT-06` 与 `REPORT-07` 的 `NO_GO` 结论仍是正式发版基线；真实 AI/OCR PASS 证据已固化，剩余发版 blocker 为真实旧库 adoption 与真实栈双角色黑盒复验。
   - OAuth/SSO、mTLS/service mesh、独立 schema、契约测试、拆分后独立 CI/CD 仍属于后续架构任务。
 
 ---
 
 ## 🚀 下一步行动 (本周重点)
 
-**当前执行入口请参见 [PLAN-48: 文档拉平与真实放行证据执行提示词](PLAN-48-P0-文档拉平与真实放行证据执行提示词.md)、[PLAN-47: 专用环境 Nacos 解阻与真实 AI 证据闭环提示词](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md)、[PLAN-44: 真实环境放行证据与 REPORT-07 复判提示词](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md)、[PLAN-42: 专用环境发版证据执行提示词](PLAN-42-P0-专用环境发版证据执行提示词.md)、[PLAN-41: 发版阻断项处置与安全审计提示词](PLAN-41-P0-发版阻断项处置与安全审计提示词.md)、[PLAN-40: 发版候选门禁与专用环境验收提示词](PLAN-40-P1-发版候选门禁与专用环境验收提示词.md)、[PLAN-24: 稳定上线差距收口优先级](PLAN-24-稳定上线差距收口优先级.md) 与 [CURRENT-STATE-2026-04-28](../reports/CURRENT-STATE-2026-04-28.md)。PLAN-43 至 PLAN-46 已完成，历史 PLAN-03 不再作为当前入口。**
+**当前执行入口请参见 [PLAN-24: 稳定上线差距收口优先级](PLAN-24-稳定上线差距收口优先级.md)、[CURRENT-STATE-2026-04-28](../reports/CURRENT-STATE-2026-04-28.md)、[REPORT-07](../reports/REPORT-07-NO-GO阻断项解阻与放行复判.md) 与 [REPORT-09](../reports/REPORT-09-PLAN50-AI放行链路执行报告.md)。PLAN-43 至 PLAN-50 已完成其可执行部分，历史 PLAN-03 不再作为当前入口。**
 
 1. **试运行前手动门禁**:
    - [ ] 真实环境放行证据与 `REPORT-07` 复判：见 [PLAN-44](PLAN-44-P0-真实环境放行证据与REPORT07复判提示词.md)
    - [ ] 依赖高危处置与真实环境证据闭环：见 [PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md)
-   - [ ] 专用环境 Nacos 解阻与真实 AI 证据闭环：见 [PLAN-47](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md)
+   - [x] 专用环境 Nacos 解阻与真实 AI 证据闭环：见 [PLAN-47](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md) 与 [REPORT-09](../reports/REPORT-09-PLAN50-AI放行链路执行报告.md)
    - [x] 文档拉平与真实放行证据执行中的基础证据：见 [PLAN-48](PLAN-48-P0-文档拉平与真实放行证据执行提示词.md)
    - [x] CodeQL 告警与真实放行证据闭环中的安全扫描部分：见 [PLAN-45](PLAN-45-P0-CodeQL告警与真实放行证据闭环提示词.md)
    - [x] NO-GO 阻断项执行解阻自动化：见 [PLAN-43](PLAN-43-P0-NO-GO阻断项执行解阻提示词.md) 与 [REPORT-07](../reports/REPORT-07-NO-GO阻断项解阻与放行复判.md)
@@ -306,8 +307,9 @@
    - [x] 浏览器 smoke：`cd frontend && npm run e2e`，当前口径 `46 passed / 2 skipped`
    - [x] Compose 配置渲染：`docker compose config`
    - [x] AI 商品字段级 sample golden、结构化落库与验证脚本：见 [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) 与 [REPORT-03](../reports/REPORT-03-AI商品字段识别样例验证报告.md)
-   - [ ] AI sample 专用实扫：`pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken <agent-token>` 已可达 `/api/ai/onboard/scan`，但当前 `0 PASS / 3 SCAN_FAIL`；下一步先注入可用 `BOBBUY_AI_LLM_CODEX_BRIDGE_URL/API_KEY` 或修复 `BOBBUY_AI_LLM_MAIN_URL`
-   - [ ] AI 真实视觉：`cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai` 仅在 sample gate PASS 后作为放行证据复跑
+   - [x] AI sample 专用实扫：`pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken <agent-token>` 已通过，`3 PASS / 0 FAIL / 0 SCAN_FAIL`
+   - [x] AI 真实视觉：`cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai` 已通过，`2 passed`
+   - [ ] 双角色移动端真实栈黑盒：mock 已通过，仍需真实/试运行等价账号与非 mock API 复验
 
 2. **风险登记 / 独立门禁**:
    - [x] CodeQL main run `25198280107` 已成功，3 个 high alert 均为 fixed
