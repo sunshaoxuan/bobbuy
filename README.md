@@ -19,6 +19,8 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
 - **AI 商品上架**：支持 OCR-first 识别、LLM 结构化、供应商规则、来源治理、既有商品匹配与人工确认；返回 provider/model/stage/latency/error/fallback trace，并在失败时支持人工补录为草稿；结构化字段（净含量/单位价格/包装规格/储存提示）会进入 `Product.attributes` JSONB 并可在前端继续修正。
 - **数据库迁移治理**：已引入 Flyway；`backend/src/main/resources/db/migration` 提供 PostgreSQL 基线 schema，`backend` / `core-service` 通过 migration 初始化空库，生产/试运行不再依赖 Hibernate `ddl-auto=update`。
 - **LLM 兜底**：主文本 LLM 支持 `auto` 路由，优先 Ollama，不可用时可切换到 OpenAI-compatible `codex-bridge`，最后才使用本地 Codex CLI；服务器生产环境不假定 Codex CLI 可用。
+- **移动端真实栈验收**：客户与采购者核心路径已在本地 Compose 真实后端 API 下通过 `390x844` 与 `360x800` 黑盒任务流；发现并修复客户首页越权请求采购者钱包导致 401 清空登录态的问题。
+- **空库试运行口径**：当前确认无历史业务数据，旧库 adoption 不适用；上线验收改为空库 Flyway、seed、真实栈黑盒与 PostgreSQL / MinIO / Nacos 备份恢复演练。
 
 ## 当前未实现 / 不宣称
 - 消息队列驱动的非聊天业务闭环
@@ -80,7 +82,7 @@ BOBBuy 当前是一套以 **Spring Boot + React + PostgreSQL/MinIO + WebSocket(S
     ```bash
     cd /home/runner/work/bobbuy/bobbuy
     docker compose config
-    mvn -f pom.xml -DskipTests package -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am
+    bash scripts/build-service-images.sh
     docker compose up -d --build
     ```
 

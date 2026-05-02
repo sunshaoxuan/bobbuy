@@ -22,8 +22,8 @@
 
 | 排名 | 优先级 | 任务 | 当前问题 | 上线影响 | 目标状态 |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| 1 | P0 | 真实旧库 adoption / restore drill | 仓库内仍无脱敏旧库副本 / 历史 schema dump | Flyway 上线缺少真实旧库证据 | 旧库 baseline / migrate / validate / restore drill 全流程留痕 |
-| 2 | P0 | 双角色移动端黑盒走查 | mock 数据下客户/采购者手机任务流已通过，但真实试运行栈尚未复验 | 不能证明真实操作者在手机上可完成核心任务 | 真实/试运行等价账号完成客户与采购者黑盒任务流，artifact 可回看 |
+| 1 | P0 | 空库上线与备份恢复演练 | 用户确认无历史数据，旧库 adoption 不适用；仍需服务器窗口复跑空库与恢复 | 试运行数据安全与可恢复性 | 空库 Flyway、seed、登录、备份恢复与真实栈黑盒全流程留痕 |
+| 2 | P0 | 双角色移动端黑盒走查 | mock 与本地 Compose 真实栈均已通过；服务器试运行窗口仍需复跑 artifact | 证明真实操作者在手机上可完成核心任务 | 服务器试运行环境复跑客户与采购者黑盒任务流，artifact 可回看 |
 | 3 | P0 | 真实 AI/OCR sample 与 E2E PASS | PLAN-50 已通过真实 sample gate 与真实 `e2e:ai`；后续需保持试运行 secret 注入与回归证据 | 若后续 provider secret 漂移，会重新阻断 AI 上架 | sample gate 与 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 保持 PASS，artifact 可追溯 |
 | 4 | P1 | 处置 dependency-check medium/low | 最新 artifact 已为 `0 critical / 0 high / 13 medium / 2 low`；仍需按影响面登记 medium/low | 中期安全债务未完全收口 | medium/low 均有升级计划或正式风险登记 |
 | 5 | P1 | 认证与权限生产化 | 已完成 JWT 登录、HttpOnly refresh cookie + CSRF、refresh token 会话治理、header auth 生产禁用、WebSocket 鉴权与最小 service token；mTLS、契约测试与 OAuth/SSO 仍未完成 | 不适合在缺少后续收口的情况下继续外扩或深拆服务 | JWT + cookie-based refresh + gateway/internal service token 稳定，剩余边界风险明确登记 |
@@ -61,24 +61,25 @@
 - `e2e:ai` 全部通过；PLAN-50 当前证据为 `2 passed`。
 - JSON/Markdown sample 报告与 Playwright screenshot/video/trace 可回看。
 
-### 3.2 真实旧库 adoption / restore drill
+### 3.2 空库上线与备份恢复演练
 
 **问题**
 
-- 旧库基线、迁移与恢复仍缺真实输入。
-- 空库 Flyway 验证不能替代真实旧库 adoption 证据。
+- 用户确认当前无历史业务数据，旧库 adoption / restore drill 不再适用。
+- 内部试运行仍必须证明空库初始化、seed 策略、备份恢复与健康检查可复现。
 
 **执行任务**
 
-1. 获取脱敏旧库副本或历史 schema dump，并登记来源/时间/脱敏方式。
-2. 在隔离 PostgreSQL 环境执行 baseline / migrate / validate / restore drill。
-3. 把 `flyway_schema_history` 状态与恢复结果写入 `REPORT-07`。
+1. 以空库启动完整 Compose 栈，验证 Flyway migrate / validate。
+2. 显式开启试运行 seed 时，确认 customer、agent、trip、confirmed order、reviewed receipt、picking checklist 可支撑双角色黑盒。
+3. 执行 PostgreSQL `pg_dump -> restore`、MinIO 独立 bucket 恢复、Nacos 配置归档恢复。
+4. 把恢复结果写入 `REPORT-12` 并同步 `REPORT-07`。
 
 **验收标准**
 
-- 有可审计的旧库来源与恢复记录。
-- adoption / restore drill 可复现。
-- 若仍缺输入，发布结论必须继续保持 `NO_GO`。
+- 空库上线可复现，`flyway_schema_history` 正常。
+- 备份恢复可在隔离目标中校验。
+- 如果未来导入历史数据，必须重新启用旧库 adoption 门禁。
 
 ### 3.3 dependency-check medium/low 风险登记
 
@@ -103,20 +104,22 @@
 **问题**
 
 - 仅靠页面 smoke、CI 和功能门禁不能证明真实操作者在手机尺寸下能顺畅完成客户/采购者核心链路。
-- 本轮新增 mock 数据黑盒任务流后，已发现并修复客户发现页 sticky 导航遮挡 header、手机 header 信息拥挤、库存手机端新增商品不进入编辑表单等 UX 卡点。
-- 当前 mock 数据任务流已通过，但真实试运行栈复验仍未执行。
+- mock 数据黑盒任务流已发现并修复客户发现页 sticky 导航遮挡 header、手机 header 信息拥挤、库存手机端新增商品不进入编辑表单等 UX 卡点。
+- 本轮真实 Compose 栈黑盒又发现并修复客户首页越权请求采购者钱包导致 401 清空登录态的问题。
+- 当前 mock 与本地 Compose 真实栈任务流均已通过；服务器试运行窗口仍需复跑同一批任务流并上传 artifact。
 
 **执行任务**
 
 1. 保留 `frontend/e2e/mobile_customer_blackbox.spec.ts` 与 `frontend/e2e/mobile_agent_blackbox.spec.ts` 作为快速 UX 回归。
-2. 在真实/试运行等价环境用真实账号复验客户与采购者手机路径。
+2. 在服务器真实/试运行等价环境用真实账号复验客户与采购者手机路径。
 3. 若真实栈发现 P0/P1 可用性问题，优先修复并复跑对应黑盒任务流。
 4. 将 artifact、账号类型、视口和修复记录写入 `REPORT-07` / `REPORT-08`。
 
 **验收标准**
 
 - mock 数据下 `390x844` 与 `360x800` 客户/采购者任务流全部通过。
-- 真实/试运行等价账号完成同一批核心任务。
+- 本地 Compose 真实栈已完成同一批核心任务，`4 passed`。
+- 服务器试运行环境复跑同一批核心任务并归档 artifact。
 - 不存在手机端无法完成核心任务、关键 CTA 不可见/不可点、横向滚动导致内容丢失等 P0/P1 问题。
 
 ### 3.5 当前状态（2026-05-02 / PLAN-50）
@@ -135,8 +138,10 @@
 - 本轮修复客户发现页移动端 header 遮挡、手机 header 拥挤、库存手机端新增商品不进入编辑表单，并补齐供应商页稳定测试锚点。
 - `.github/workflows/ai-release-evidence.yml` 仍需形成托管或试运行窗口 artifact；本地真实 sample gate 已通过，证据见 `docs/reports/evidence/ai-onboarding-real-sample-plan50-2026-05-02.*`。
 - 本地真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` 已通过，`2 passed`。
-- 仓库工作区内仍未发现真实旧库副本 / 历史 schema dump，因此 adoption / restore drill 仍无可执行输入。
-- 结论：默认门禁、安全 high、Compose/Nacos/OCR/gateway 基础健康、真实 AI/OCR sample gate、真实 `e2e:ai` 与 mock 移动端黑盒已收口；当前剩余 blocker 为真实旧库 adoption 与真实栈双角色移动端复验。
+- 用户确认当前无历史数据，因此旧库 adoption 不适用；后续以空库上线与备份恢复演练作为数据安全门禁。
+- 本地 Compose 真实栈双角色移动端黑盒已通过：`RUN_REAL_MOBILE_BLACKBOX=1 ... mobile_customer_blackbox.spec.ts mobile_agent_blackbox.spec.ts` 返回 `4 passed`。
+- 本轮修复客户首页越权请求采购者钱包导致 401 清空登录态的问题，并加固真实登录等待。
+- 结论：默认门禁、安全 high、Compose/Nacos/OCR/gateway 基础健康、真实 AI/OCR sample gate、真实 `e2e:ai`、mock 与本地真实栈移动端黑盒已收口；当前剩余工作为服务器部署窗口复跑完整门禁、备份恢复演练与 artifact 归档。
 
 ---
 

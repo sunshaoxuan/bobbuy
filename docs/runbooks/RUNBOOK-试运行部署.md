@@ -66,6 +66,7 @@
 - 原因：避免继续承受 PostgreSQL 18 与 Flyway 10.15.2 的“高于已验证范围”提示风险。
 - 如后续要升级 PostgreSQL 大版本，需先单独验证 Flyway 兼容性并更新本文档。
 - 若旧环境已有 `./data/postgres_v18` 数据目录，切换到当前 Compose 前必须先停服务并把数据迁移 / 备份到 `./data/postgres`，不要在未迁移数据目录的情况下直接覆盖启动。
+- 当前内部试运行确认无历史业务数据，旧库 adoption / restore drill 不适用；上线按空库 Flyway 初始化、可选 seed、真实栈黑盒与备份恢复演练执行。若未来导入历史数据，必须重新启用旧库 adoption 门禁。
 
 ---
 
@@ -120,8 +121,24 @@
 
 ```bash
 cd /home/runner/work/bobbuy/bobbuy
-docker compose config
+    docker compose config
+    ```
+
+推荐先构建服务壳 jar 与镜像：
+
+```bash
+bash scripts/build-service-images.sh
+docker compose build core-service ai-service im-service auth-service gateway-service
 ```
+
+空库试运行验收如需 demo 数据，可显式设置：
+
+```bash
+BOBBUY_SEED_ENABLED=true
+BOBBUY_SEED_PICKING_FIXTURE_ENABLED=true
+```
+
+该 seed 仅用于本地/试运行验收。`BOBBUY_SEED_ENABLED=true` 生成客户、采购者、行程与基础订单；`BOBBUY_SEED_PICKING_FIXTURE_ENABLED=true` 额外生成已确认订单、已复核小票与拣货 checklist 所需数据。生产共享环境默认仍应保持两个开关均为 `false`。
 
 构建服务壳镜像：
 

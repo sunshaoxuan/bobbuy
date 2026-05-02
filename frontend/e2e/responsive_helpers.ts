@@ -116,10 +116,16 @@ export async function loginAsRole(page: Page, role: 'CUSTOMER' | 'AGENT') {
     window.localStorage.setItem('bobbuy_disable_chat_websocket', 'true');
   });
   await page.goto('/login');
+  await expect(page.locator('input#username')).toBeVisible();
   await page.locator('input#username').fill(username);
   await page.locator('input#password').fill(password);
+  const loginResponse = page.waitForResponse(
+    (response) => response.url().includes('/api/auth/login') && response.request().method() === 'POST'
+  );
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL(role === 'AGENT' ? '**/dashboard' : '**/');
+  expect((await loginResponse).ok()).toBe(true);
+  await page.waitForURL((url) => url.pathname === (role === 'AGENT' ? '/dashboard' : '/'));
+  await expect(page.locator(role === 'AGENT' ? '.dashboard-grid' : '.zen-page')).toBeVisible();
 }
 
 async function setAuthenticatedContext(page: Page, role: MockRole) {

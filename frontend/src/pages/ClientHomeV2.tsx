@@ -125,14 +125,16 @@ export default function ClientHomeV2() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.trips(), api.products(), api.getWallet('PURCHASER')])
-      .then(async ([tripList, productList, wallet]) => {
+    Promise.all([api.trips(), api.products()])
+      .then(async ([tripList, productList]) => {
         if (cancelled) {
           return;
         }
         setTrips(tripList);
         setProducts(productList.slice(0, 6));
-        setPartnerWallet(wallet);
+        if (!isCustomer) {
+          api.getWallet('PURCHASER').then(setPartnerWallet).catch(() => undefined);
+        }
         if (tripList.length > 0) {
           setSelectedTripId(tripList[0].id);
           await refreshTripData(tripList[0].id, false);
@@ -150,7 +152,7 @@ export default function ClientHomeV2() {
     return () => {
       cancelled = true;
     };
-  }, [refreshTripData]);
+  }, [isCustomer, refreshTripData]);
 
   useEffect(() => {
     if (!selectedTripId) {
@@ -164,11 +166,13 @@ export default function ClientHomeV2() {
       refreshTripData(selectedTripId, true);
     };
     window.addEventListener('procurement:reconciled', onReconciled);
-    api.getWallet('PURCHASER').then(setPartnerWallet).catch(() => undefined);
+    if (!isCustomer) {
+      api.getWallet('PURCHASER').then(setPartnerWallet).catch(() => undefined);
+    }
     return () => {
       window.removeEventListener('procurement:reconciled', onReconciled);
     };
-  }, [refreshTripData, selectedTripId]);
+  }, [isCustomer, refreshTripData, selectedTripId]);
 
   usePollingTask(
     async () => {
@@ -245,10 +249,10 @@ export default function ClientHomeV2() {
       // For Zen 1-click buy, we use a generic or customer-mapped businessId
       await api.quickOrder(selectedTripId, { skuId, quantity: 1, businessId: 'ZEN-1-CLICK' });
       message.success(t('zen.buy_success'), 1.5);
-      await Promise.all([
-        refreshTripData(selectedTripId, true),
-        api.getWallet('PURCHASER').then(setPartnerWallet)
-      ]);
+      await refreshTripData(selectedTripId, true);
+      if (!isCustomer) {
+        await api.getWallet('PURCHASER').then(setPartnerWallet);
+      }
     } catch {
       message.error(t('errors.request_failed'));
     }

@@ -16,6 +16,7 @@ import com.bobbuy.model.OrderStatus;
 import com.bobbuy.model.PaymentStatus;
 import com.bobbuy.model.Product;
 import com.bobbuy.model.ProductPatch;
+import com.bobbuy.model.ProcurementReceipt;
 import com.bobbuy.model.Role;
 import com.bobbuy.model.StockStatus;
 import com.bobbuy.model.StorageCondition;
@@ -96,6 +97,9 @@ public class BobbuyStore {
 
     @Value("${bobbuy.seed.force-reset-on-invoke:false}")
     private boolean forceResetOnSeedInvoke;
+
+    @Value("${bobbuy.seed.picking-fixture.enabled:false}")
+    private boolean seedPickingFixtureEnabled;
 
     public BobbuyStore(
             UserRepository userRepository,
@@ -213,6 +217,49 @@ public class BobbuyStore {
         header.addLine(line);
         header.setTotalAmount(65.0);
         orderHeaderRepository.save(header);
+
+        if (seedPickingFixtureEnabled) {
+            OrderHeader pickingHeader = new OrderHeader("20260117002", customer.getId(), trip.getId());
+            pickingHeader.setId(3001L);
+            pickingHeader.setStatus(OrderStatus.CONFIRMED);
+            OrderLine pickingLine = new OrderLine("SKU001", "Matcha Kit", null, 2, 32.5);
+            pickingHeader.addLine(pickingLine);
+            pickingHeader.setTotalAmount(65.0);
+            orderHeaderRepository.save(pickingHeader);
+
+            Map<String, Object> reviewedReceiptResult = new LinkedHashMap<>();
+            reviewedReceiptResult.put("reviewStatus", "REVIEWED");
+            reviewedReceiptResult.put("recognitionMode", "SEED");
+            reviewedReceiptResult.put("receiptItems", List.of(Map.of(
+                    "name", "Matcha Kit",
+                    "quantity", 2,
+                    "unitPrice", 32.5
+            )));
+            reviewedReceiptResult.put("matchedOrderLines", List.of(Map.of(
+                    "businessId", pickingHeader.getBusinessId(),
+                    "skuId", "SKU001",
+                    "itemName", "Matcha Kit",
+                    "matchedQuantity", 2,
+                    "disposition", "MATCHED"
+            )));
+            reviewedReceiptResult.put("unmatchedReceiptItems", List.of());
+            reviewedReceiptResult.put("missingOrderedItems", List.of());
+            reviewedReceiptResult.put("selfUseItems", List.of());
+            ProcurementReceipt reviewedReceipt = new ProcurementReceipt(
+                    trip.getId(),
+                    "seed-reviewed-receipt.jpg",
+                    "seed/receipt/original.jpg",
+                    "https://cdn.bobbuy.example/receipts/seed-reviewed-receipt.jpg",
+                    "seed/receipt/thumb.jpg",
+                    "https://cdn.bobbuy.example/receipts/seed-reviewed-receipt-thumb.jpg",
+                    "RECONCILED",
+                    LocalDateTime.now(),
+                    LocalDateTime.now(),
+                    "",
+                    reviewedReceiptResult);
+            reviewedReceipt.setManualReconciliationResult(new LinkedHashMap<>(reviewedReceiptResult));
+            procurementReceiptRepository.save(reviewedReceipt);
+        }
 
         Category foodCategory = new Category(
                 "cat-1000",

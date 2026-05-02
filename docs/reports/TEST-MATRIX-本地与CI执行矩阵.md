@@ -1,6 +1,6 @@
 # 本地 / CI 测试执行矩阵
 
-> 2026-05-02 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 与服务 jar 预构建 / Compose build 校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论仍为 `NO_GO`：dependency-check critical/high、Compose Maven PKIX、Nacos cgroup v2、gateway/OCR health、真实 AI sample gate 与真实 `e2e:ai` 已解阻；剩余 blocker 为真实旧库 adoption / restore drill 缺输入，以及双角色移动端黑盒尚未在真实栈以非 mock API 复验。
+> 2026-05-02 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 与服务 jar 预构建 / Compose build 校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论为 `GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW`：dependency-check critical/high、Compose Maven PKIX、Nacos cgroup v2、gateway/OCR health、真实 AI sample gate、真实 `e2e:ai`、mock 与本地 Compose 真实栈双角色移动端黑盒均已解阻；用户确认无历史数据，旧库 adoption 改为空库上线与备份恢复验收。
 
 ## 1. 默认门禁（每个 PR / `main` push 必跑）
 
@@ -21,13 +21,13 @@
 | 服务壳 smoke test | `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test` | 当前仅本地 / 手动执行 | 否 | 使用 H2 与关闭 Nacos 的测试配置，验证 `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` 最小启动以及 gateway 内部 header 清理 |
 | Playwright 页面回归 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e` | `workflow_dispatch` + `playwright-e2e` job（输入 `run_playwright_e2e=true`） | 否 | GitHub Hosted Runner 可执行；使用 Vite dev server + 前端共享 mock 浏览器 smoke，覆盖 agent/customer 登录态、角色门禁、订单/账单/聊天、采购/拣货/库存人工接管，不依赖真实 AI / MinIO |
 | 双角色移动端黑盒走查（mock） | `npm run e2e --prefix frontend -- e2e/mobile_customer_blackbox.spec.ts` 与 `npm run e2e --prefix frontend -- e2e/mobile_agent_blackbox.spec.ts` | 当前仅本地 / 手动执行；后续可纳入 `playwright-e2e` 手动门禁 | 否 | 使用真实前端交互 + mock API 数据，覆盖客户/采购者在 `390x844` 与 `360x800` 下的核心任务；不替代真实试运行栈复验 |
-| 双角色移动端黑盒走查（真实栈） | 同上，指向真实/试运行等价前后端与账号 | 当前仅试运行窗口手工执行 | 否 | 必须在 Compose/试运行健康后执行；若未通过或未执行，`REPORT-07` 继续 `NO_GO` |
+| 双角色移动端黑盒走查（真实栈） | `RUN_REAL_MOBILE_BLACKBOX=1 npm run e2e --prefix frontend -- e2e/mobile_customer_blackbox.spec.ts e2e/mobile_agent_blackbox.spec.ts` | 当前仅试运行窗口手工执行 | 否 | 必须在 Compose/试运行健康后执行；本地 Compose 真实栈已通过 `4 passed`，服务器部署窗口仍需复跑并上传 artifact |
 | AI 真实视觉链路 | `cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 必须提供真实后端 URL、可访问的 AI/OCR provider、MinIO、seed 数据、样本图片，以及 `BOBBUY_E2E_AGENT_USERNAME` / `BOBBUY_E2E_AGENT_PASSWORD`；应在 sample gate 通过后再作为放行证据执行 |
 | AI sample 字段级对比（gate 模式） | `pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken <agent-token>` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 需要真实 `/api/ai/onboard/scan`、样本图片目录与 `docs/fixtures/ai-onboarding-sample-golden.json`；输出 JSON + Markdown；遇到 `FAIL` / `SCAN_FAIL` / `MISSING_FILE` 返回非零；PLAN-50 真实接口结果为 `3 PASS / 0 FAIL / 0 SCAN_FAIL`，证据见 `docs/reports/evidence/ai-onboarding-real-sample-plan50-2026-05-02.*` |
 | AI sample 脚本 dry-run 自检（gate 模式） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"` | 当前仅本地执行 | 否 | 不依赖真实 `/api/ai/onboard/scan`；用于验证字段别名映射、optional path 规范化、报告格式与 gate 退出码 |
 | AI sample 报告生成（report-only） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"` | 当前仅本地执行 | 否 | 仅用于人工生成 JSON/Markdown 报告；即使 `gatePassed=false` 也返回 `0`，不得作为 release gate |
 | Compose 配置渲染 | `cd /home/runner/work/bobbuy/bobbuy && docker compose config` | 当前未纳入默认 CI；作为试运行部署前置校验执行 | 否 | 要求 `.env` / 默认变量可成功渲染 Compose，且不得依赖未声明变量 |
-| 备份恢复演练 | 见 `docs/runbooks/RUNBOOK-备份恢复演练.md` | 不纳入默认 CI；按试运行变更窗口手工执行并记录结果 | 否 | 需要 Docker / PostgreSQL / MinIO / Nacos 可访问，且恢复验证必须在新库 / 独立 bucket / 独立目录进行 |
+| 空库上线与备份恢复演练 | 见 `docs/runbooks/RUNBOOK-备份恢复演练.md` 与 `docs/reports/REPORT-12-空库上线与备份恢复演练报告.md` | 不纳入默认 CI；按试运行变更窗口手工执行并记录结果 | 否 | 当前无历史数据，旧库 adoption 不适用；需要验证空库 Flyway、首启 seed 策略、PostgreSQL / MinIO / Nacos 恢复 |
 
 ## 3. 风险登记 / 独立安全门禁
 
@@ -71,6 +71,9 @@
   - 结果：`2 passed`，覆盖 `390x844` 与 `360x800`
 - [x] `npm run e2e --prefix frontend -- e2e/mobile_customer_blackbox.spec.ts`
   - 结果：`2 passed`，覆盖 `390x844` 与 `360x800`
+- [x] `RUN_REAL_MOBILE_BLACKBOX=1 npm run e2e --prefix frontend -- e2e/mobile_customer_blackbox.spec.ts e2e/mobile_agent_blackbox.spec.ts`
+  - 结果：`4 passed`，覆盖 `390x844` 与 `360x800`
+  - 使用本地 Compose 真实后端 API，不注册 mock route；发现并修复客户首页越权请求采购者钱包导致 401 清空登录态的问题。
 - [x] `bash scripts/build-service-images.sh`
 - [x] 使用本地临时 `BOBBUY_SECURITY_JWT_SECRET` / `BOBBUY_SECURITY_SERVICE_TOKEN` 拉起并重建 `core-service`、`auth-service`、`im-service`、`ai-service`、`gateway-service`
   - `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` healthy
@@ -80,13 +83,13 @@
   - 结果：`3 PASS / 0 FAIL / 0 SCAN_FAIL`，`gatePassed=true`
   - 报告：`docs/reports/evidence/ai-onboarding-real-sample-plan50-2026-05-02.json`、`docs/reports/evidence/ai-onboarding-real-sample-plan50-2026-05-02.md`
   - ai-service 日志确认 active provider 为 `codex-bridge`；本轮 key 仅通过临时环境变量注入，未写入仓库。
-- [x] 旧库 dump 搜索
-  - 仓库工作区仅发现 Flyway migration SQL，未发现可用于 adoption / restore drill 的真实旧库 dump、历史 schema dump 或脱敏备份。
+- [x] 旧库 adoption 复判
+  - 用户确认当前无历史业务数据；旧库 adoption 不适用，替代为空库上线与备份恢复验收。
 - [x] `RUN_AI_VISION_E2E=1 npm run e2e:ai`
   - 结果：`2 passed`
   - 覆盖 `IMG_1484.jpg` 商品识别确认路径与 `IMG_1638.jpg` existing product 路径。
-- [ ] 真实旧库 adoption / restore drill
-  - 缺输入，仍为发版 blocker。
+- [ ] 服务器部署窗口空库上线与备份恢复演练
+  - 本地空库/seed/真实栈黑盒已通过；服务器卷、bucket、Nacos 配置恢复仍需在试运行窗口复跑并归档。
 
 ## 6. 历史验证记录
 

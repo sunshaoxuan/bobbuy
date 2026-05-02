@@ -27,7 +27,7 @@
 | [PLAN-21](PLAN-21-参与者档案与线下结算增强-VNext+1.md) | 参与者档案与线下结算增强 | ✅ 已完成 | 100% | 地址/社交档案、线下收款、差额结转 | 全栈团队 |
 | [PLAN-22](PLAN-22-账本精算与配送履约闭环.md) | 账本精算与配送履约闭环 | ✅ 已完成 | 100% | 余额口径、待配送、拣货确认 | 全栈团队 |
 | [PLAN-23](PLAN-23-冻结门禁与履约视图统一.md) | 冻结门禁与履约视图统一 | ✅ 已完成 | 100% | 冻结只读、拣货单一事实源 | 全栈团队 |
-| [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) | 稳定上线差距收口优先级 | 🔄 执行中 | 99% | 默认 CI、CodeQL high、dependency-check critical/high、服务镜像 Compose build、Compose 基础健康、真实 AI sample、真实 e2e:ai 与 mock 双角色移动端黑盒走查已落地；剩余为真实旧库 adoption 与真实栈移动端复验 | 全栈团队 |
+| [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) | 稳定上线差距收口优先级 | 🔄 执行中 | 99% | 默认 CI、CodeQL high、dependency-check critical/high、服务镜像 Compose build、Compose 基础健康、真实 AI sample、真实 e2e:ai、mock 与本地真实栈双角色移动端黑盒已落地；旧库 adoption 因无历史数据改为空库上线与备份恢复演练 | 全栈团队 |
 | [PLAN-25](PLAN-25-P0后端测试基线恢复开发提示词.md) | P0 后端测试基线恢复提示词 | ✅ 已完成 | 100% | `backend mvn test` 已恢复稳定全绿 | 全栈团队 |
 | [PLAN-26](PLAN-26-P0前端测试基线恢复开发提示词.md) | P0 前端测试基线恢复提示词 | ✅ 已完成 | 100% | `frontend npm test` 已恢复稳定完成 | 全栈团队 |
 | [PLAN-27](PLAN-27-P0上线验收矩阵与CI固化开发提示词.md) | P0 上线验收矩阵与 CI 固化提示词 | ✅ 已完成 | 100% | 默认 CI 与手动/专用门禁分层已对齐 | 全栈团队 |
@@ -54,7 +54,12 @@
 | [PLAN-48](PLAN-48-P0-文档拉平与真实放行证据执行提示词.md) | P0 文档拉平与真实放行证据执行提示词 | 🔄 执行中 | 95% | 文档拉平、dependency-check 复扫、Compose health、LLM fallback、Codex Bridge 配置、真实 sample gate 与真实 e2e:ai 已执行；剩余为真实旧库 adoption 与真实栈移动端复验 | 全栈团队 |
 | [PLAN-49](PLAN-49-P0-双角色移动端黑盒走查提示词.md) | P0 双角色移动端黑盒走查提示词 | 🔄 执行中 | 75% | 客户/采购者 mock 数据手机任务流已通过，并修复导航遮挡、header 拥挤、库存新增不进入编辑等 UX 卡点；剩余为真实试运行栈复验 | 全栈团队 |
 | [PLAN-50](PLAN-50-P0-真实AI放行链路与真实栈复验提示词.md) | P0 真实 AI/OCR 放行链路与真实栈复验提示词 | ✅ 已完成 | 100% | 真实 Codex Bridge provider、sample gate、字段级识别、真实 e2e:ai 已通过；结果见 REPORT-09 | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 99% | 默认质量门禁、CodeQL、依赖 high、Compose/Nacos/OCR/gateway health、真实 AI PASS 证据与 mock 移动端黑盒走查已恢复；仍不可放行，剩余为真实旧库 adoption 与真实栈双角色黑盒复验 | 全栈团队 |
+| PLAN-51 | 真实栈双角色全流程黑盒验收 | ✅ 已完成 | 100% | 本地 Compose 真实后端 API 下客户/采购者 `390x844` 与 `360x800` 黑盒任务流 `4 passed`；修复客户首页越权钱包请求导致的会话清空 | 全栈团队 |
+| PLAN-52 | 功能清单与文档功能逐项对账 | ✅ 已完成 | 100% | 已形成 `REPORT-11` 功能承诺与验收矩阵，核心文档承诺均有验证入口或降级说明 | 全栈团队 |
+| PLAN-53 | 可用性与移动端体验集中收口 | ✅ 已完成 | 100% | 客户与采购者移动端 P0/P1 卡点已修复，黑盒测试加固真实登录和真实栈模式 | 全栈团队 |
+| PLAN-54 | 空库上线、备份恢复与运维最小闭环 | 🔄 执行中 | 80% | 旧库 adoption 因无历史数据标记 N/A；空库真实栈、seed 与黑盒已验证，服务器备份恢复演练仍需部署窗口复跑 | 全栈团队 |
+| PLAN-55 | 放行复判与试运行包封版 | 🔄 执行中 | 85% | `REPORT-07` 更新为 `GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW`；服务器窗口复跑完整门禁与 artifact 归档后可进入内部试运行 | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 99% | 默认质量门禁、CodeQL、依赖 high、Compose/Nacos/OCR/gateway health、真实 AI PASS、mock 与本地真实栈移动端黑盒已恢复；剩余为服务器部署窗口复跑、备份恢复演练与 artifact 归档 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |

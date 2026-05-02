@@ -1,6 +1,8 @@
 import { expect, type Page } from '@playwright/test';
 import { assertNoHorizontalOverflow } from './responsive_helpers';
 
+export const RUN_REAL_MOBILE_BLACKBOX = process.env.RUN_REAL_MOBILE_BLACKBOX === '1';
+
 export async function assertMobileUsableCheckpoint(page: Page, label: string) {
   await assertNoHorizontalOverflow(page);
   const blockedByOpenDrawer = await page.locator('.ant-drawer-content-wrapper:visible').count();
