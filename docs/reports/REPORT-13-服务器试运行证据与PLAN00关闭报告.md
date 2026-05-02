@@ -14,13 +14,12 @@
 - PLAN-24 / PLAN-40~57 / CURRENT 已被 REPORT-07、PLAN-50~58、REPORT-10/11/12 覆盖，按历史覆盖项关闭或归档。
 - PLAN-58 是当前唯一执行中入口，仍依赖服务器输入与服务器部署窗口证据。
 - 已新增 `scripts/run-server-release-window.ps1` 作为服务器放行窗口执行脚本。脚本会先做非敏感输入检查，再在输入有效时执行服务器预检查、Compose health、AI sample gate、AI E2E、双角色真实栈黑盒与 PostgreSQL / MinIO / Nacos 恢复演练。
+- 缺少 `BOBBUY_AGENT_AUTH_TOKEN` 时，脚本会在服务健康检查通过后使用试运行 agent 测试账号登录，临时生成 access token；该 token 只存在于本次执行进程内，不写入 git。
 
 服务器窗口未执行，原因是当前执行环境没有提供：
 
 - `SSH_TARGET`
 - `APP_DIR`
-- `BOBBUY_AGENT_AUTH_TOKEN`
-
 因此本报告不能给出服务器 `GO` 证据，REPORT-07 仍保持 `GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW`。
 
 ---
@@ -45,7 +44,7 @@
 | `SSH_TARGET` | missing | 当前执行环境未提供 |
 | `APP_DIR` | missing | 当前执行环境未提供 |
 | `BRANCH` | default `main` | 未提供时按 `main` 执行 |
-| `BOBBUY_AGENT_AUTH_TOKEN` | missing | 当前执行环境未提供；真实 AI sample gate 需要 |
+| `BOBBUY_AGENT_AUTH_TOKEN` | optional missing | 未提供时脚本在健康检查后临时登录生成 |
 | SSH 连通性 | not_run | 缺少 `SSH_TARGET`，未执行 SSH |
 | 仓库目录存在性 | not_run | 缺少 `APP_DIR`，未执行远端目录检查 |
 | 服务器 `.env` 存在性 | not_run | 缺少 `APP_DIR`，未执行远端文件检查 |
@@ -69,7 +68,7 @@ pwsh scripts/run-server-release-window.ps1 -PrecheckOnly
 | `SSH_TARGET` | missing |
 | `APP_DIR` | missing |
 | `BRANCH` | `main` |
-| `BOBBUY_AGENT_AUTH_TOKEN` | missing |
+| `BOBBUY_AGENT_AUTH_TOKEN` | optional missing，will try login after health checks |
 | 退出码 | `2`，缺少 `SSH_TARGET` 或 `APP_DIR` |
 
 底层预检查命令模板：
@@ -138,8 +137,9 @@ ssh "$SSH_TARGET" "hostname; date; test -d '$APP_DIR'; test -f '$APP_DIR/.env'"
 SSH_TARGET=<user@server>
 APP_DIR=<server repo path>
 BRANCH=main
-BOBBUY_AGENT_AUTH_TOKEN=<agent access token>
 ```
+
+`BOBBUY_AGENT_AUTH_TOKEN` 可选；若不提供，脚本会用 `BOBBUY_E2E_AGENT_USERNAME` / `BOBBUY_E2E_AGENT_PASSWORD` 或默认 `agent` / `agent-pass` 临时登录生成。
 
 提供后执行：
 

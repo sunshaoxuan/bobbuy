@@ -3,6 +3,8 @@ param(
   [string]$AppDir = $env:APP_DIR,
   [string]$Branch = $(if ($env:BRANCH) { $env:BRANCH } else { "main" }),
   [string]$AgentAuthToken = $env:BOBBUY_AGENT_AUTH_TOKEN,
+  [string]$AgentUsername = $(if ($env:BOBBUY_E2E_AGENT_USERNAME) { $env:BOBBUY_E2E_AGENT_USERNAME } else { "agent" }),
+  [string]$AgentPassword = $(if ($env:BOBBUY_E2E_AGENT_PASSWORD) { $env:BOBBUY_E2E_AGENT_PASSWORD } else { "agent-pass" }),
   [switch]$PrecheckOnly
 )
 
@@ -31,7 +33,9 @@ Write-Section "Server release window inputs"
 Write-Host ("SSH_TARGET: " + $(if ($SshTarget) { "present" } else { "missing" }))
 Write-Host ("APP_DIR: " + $(if ($AppDir) { "present" } else { "missing" }))
 Write-Host ("BRANCH: " + $Branch)
-Write-Host ("BOBBUY_AGENT_AUTH_TOKEN: " + $(if ($AgentAuthToken) { "present" } else { "missing" }))
+Write-Host ("BOBBUY_AGENT_AUTH_TOKEN: " + $(if ($AgentAuthToken) { "present" } else { "missing; will try login after health checks" }))
+Write-Host ("BOBBUY_E2E_AGENT_USERNAME: " + $(if ($AgentUsername) { "present" } else { "missing" }))
+Write-Host ("BOBBUY_E2E_AGENT_PASSWORD: " + $(if ($AgentPassword) { "present" } else { "missing" }))
 
 if (-not $SshTarget -or -not $AppDir) {
   Write-Host "ERROR: Missing required SSH_TARGET or APP_DIR. Set them in the current shell and rerun."
@@ -58,16 +62,13 @@ if ($PrecheckOnly) {
   exit 0
 }
 
-if (-not $AgentAuthToken) {
-  Write-Host "ERROR: Missing BOBBUY_AGENT_AUTH_TOKEN. It is required for the authenticated AI sample gate."
-  exit 3
-}
-
 $releaseWindow = @'
 set -euo pipefail
 APP_DIR="$1"
 BRANCH="$2"
 AGENT_AUTH_TOKEN="$3"
+AGENT_USERNAME="$4"
+AGENT_PASSWORD="$5"
 
 cd "$APP_DIR"
 echo "step=git_update"
@@ -118,6 +119,39 @@ curl -fsS http://127.0.0.1/api/actuator/health
 curl -fsS http://127.0.0.1/api/actuator/health/readiness
 curl -fsS http://127.0.0.1:8000/health
 
+if [ -z "$AGENT_AUTH_TOKEN" ]; then
+  echo "step=agent_token_login"
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN=python3
+  elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN=python
+  else
+    echo "python=missing"
+    exit 40
+  fi
+  login_payload=$("$PYTHON_BIN" - "$AGENT_USERNAME" "$AGENT_PASSWORD" <<'PY'
+import json
+import sys
+print(json.dumps({"username": sys.argv[1], "password": sys.argv[2]}))
+PY
+)
+  login_response=$(curl -fsS -H 'Content-Type: application/json' -d "$login_payload" http://127.0.0.1/api/auth/login)
+  AGENT_AUTH_TOKEN=$("$PYTHON_BIN" - <<'PY' "$login_response"
+import json
+import sys
+payload = json.loads(sys.argv[1])
+data = payload.get("data") or {}
+token = data.get("accessToken") or data.get("token")
+if not token:
+    raise SystemExit("login response did not contain access token")
+print(token)
+PY
+)
+  echo "agent_auth_token=generated"
+else
+  echo "agent_auth_token=provided"
+fi
+
 echo "step=ai_sample_gate"
 if command -v pwsh >/dev/null 2>&1; then
   pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken "$AGENT_AUTH_TOKEN"
@@ -158,4 +192,4 @@ echo "release_window=pass"
 '@
 
 Write-Section "Full server release window"
-Invoke-RemoteScript -Script $releaseWindow -Arguments @($AppDir, $Branch, $AgentAuthToken)
+Invoke-RemoteScript -Script $releaseWindow -Arguments @($AppDir, $Branch, $AgentAuthToken, $AgentUsername, $AgentPassword)
