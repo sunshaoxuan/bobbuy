@@ -143,13 +143,13 @@ export default function App() {
               </Title>
             </Space>
             <Space size="small">
-              {isAuthenticated ? (
+              {isAuthenticated && !isMobile ? (
                 <>
                   <Text type="secondary">{user?.name}</Text>
                   <Text type="secondary">{t(`enum.role.${role}`)}</Text>
                 </>
               ) : (
-                <Text type="secondary">{t('auth.login_title')}</Text>
+                !isAuthenticated ? <Text type="secondary">{t('auth.login_title')}</Text> : null
               )}
               {!isMobile ? <Text type="secondary">{t('language.label')}</Text> : null}
               <Select

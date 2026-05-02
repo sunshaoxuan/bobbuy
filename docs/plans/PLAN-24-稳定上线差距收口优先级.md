@@ -24,14 +24,15 @@
 | :-- | :-- | :-- | :-- | :-- | :-- |
 | 1 | P0 | 真实 AI/OCR sample 与 E2E PASS | sample gate 已打到真实 `/api/ai/onboard/scan`，但当前 `0 PASS / 3 SCAN_FAIL`；本轮已修复 LLM 空响应兜底和 bridge 配置传递，剩余为注入可用 Codex Bridge key 或修复主 Ollama endpoint；`e2e:ai` 需在 sample PASS 后复跑 | 无法证明 sample 图片能正确填充商品档案字段 | 修复 provider/识别链路后，sample gate PASS，`RUN_AI_VISION_E2E=1 npm run e2e:ai` PASS 并归档 artifact |
 | 2 | P0 | 真实旧库 adoption / restore drill | 仓库内仍无脱敏旧库副本 / 历史 schema dump | Flyway 上线缺少真实旧库证据 | 旧库 baseline / migrate / validate / restore drill 全流程留痕 |
-| 3 | P1 | 处置 dependency-check medium/low | 最新 artifact 已为 `0 critical / 0 high / 13 medium / 2 low`；仍需按影响面登记 medium/low | 中期安全债务未完全收口 | medium/low 均有升级计划或正式风险登记 |
-| 4 | P1 | 认证与权限生产化 | 已完成 JWT 登录、HttpOnly refresh cookie + CSRF、refresh token 会话治理、header auth 生产禁用、WebSocket 鉴权与最小 service token；mTLS、契约测试与 OAuth/SSO 仍未完成 | 不适合在缺少后续收口的情况下继续外扩或深拆服务 | JWT + cookie-based refresh + gateway/internal service token 稳定，剩余边界风险明确登记 |
-| 5 | P1 | 数据库迁移治理 | 已补 Flyway 基线与空库验证，旧库 adoption/回滚策略仍未完全固化 | 数据结构升级仍需变更审查与备份流程 | Flyway 基线稳定运行，旧库升级手册补齐 |
-| 6 | P1 | 部署与配置收口 | `.env`、Nacos、Compose、backend profile 有重复配置；Codex CLI 只适合本地 | 部署漂移与环境误判 | 试运行配置模板和生产禁用项明确 |
-| 7 | P1 | AI/OCR 可靠性治理 | AI 上架/小票识别依赖多服务，fallback 多但观测不足 | 业务可用性和人工复核压力不稳定 | 可观测、可重试、可人工接管 |
-| 8 | P2 | 微服务边界决策 | 单体 backend 与多模块服务壳并存 | 长期维护成本和部署边界不清 | 已通过 ADR 固定“主业务单体优先稳定”；后续拆分需满足额外门禁 |
-| 9 | P2 | 生产运维基础 | 缺少完整日志、指标、告警、备份恢复文档和演练 | 故障不可控 | 最小运维手册与备份恢复演练 |
-| 10 | P3 | 后续商业能力 | 支付、OAuth、地图路径规划仍未实现 | 不影响内部试运行，但影响商业化 | 独立里程碑推进 |
+| 3 | P0 | 双角色移动端黑盒走查 | mock 数据下客户/采购者手机任务流已通过，但真实试运行栈尚未复验 | 不能证明真实操作者在手机上可完成核心任务 | 真实/试运行等价账号完成客户与采购者黑盒任务流，artifact 可回看 |
+| 4 | P1 | 处置 dependency-check medium/low | 最新 artifact 已为 `0 critical / 0 high / 13 medium / 2 low`；仍需按影响面登记 medium/low | 中期安全债务未完全收口 | medium/low 均有升级计划或正式风险登记 |
+| 5 | P1 | 认证与权限生产化 | 已完成 JWT 登录、HttpOnly refresh cookie + CSRF、refresh token 会话治理、header auth 生产禁用、WebSocket 鉴权与最小 service token；mTLS、契约测试与 OAuth/SSO 仍未完成 | 不适合在缺少后续收口的情况下继续外扩或深拆服务 | JWT + cookie-based refresh + gateway/internal service token 稳定，剩余边界风险明确登记 |
+| 6 | P1 | 数据库迁移治理 | 已补 Flyway 基线与空库验证，旧库 adoption/回滚策略仍未完全固化 | 数据结构升级仍需变更审查与备份流程 | Flyway 基线稳定运行，旧库升级手册补齐 |
+| 7 | P1 | 部署与配置收口 | `.env`、Nacos、Compose、backend profile 有重复配置；Codex CLI 只适合本地 | 部署漂移与环境误判 | 试运行配置模板和生产禁用项明确 |
+| 8 | P1 | AI/OCR 可靠性治理 | AI 上架/小票识别依赖多服务，fallback 多但观测不足 | 业务可用性和人工复核压力不稳定 | 可观测、可重试、可人工接管 |
+| 9 | P2 | 微服务边界决策 | 单体 backend 与多模块服务壳并存 | 长期维护成本和部署边界不清 | 已通过 ADR 固定“主业务单体优先稳定”；后续拆分需满足额外门禁 |
+| 10 | P2 | 生产运维基础 | 缺少完整日志、指标、告警、备份恢复文档和演练 | 故障不可控 | 最小运维手册与备份恢复演练 |
+| 11 | P3 | 后续商业能力 | 支付、OAuth、地图路径规划仍未实现 | 不影响内部试运行，但影响商业化 | 独立里程碑推进 |
 
 ---
 
@@ -97,7 +98,28 @@
 - 无 critical/high 回归。
 - medium/low 均有负责人和后续处理计划。
 
-### 3.4 当前状态（2026-05-02 / PLAN-48）
+### 3.4 双角色移动端黑盒走查
+
+**问题**
+
+- 仅靠页面 smoke、CI 和功能门禁不能证明真实操作者在手机尺寸下能顺畅完成客户/采购者核心链路。
+- 本轮新增 mock 数据黑盒任务流后，已发现并修复客户发现页 sticky 导航遮挡 header、手机 header 信息拥挤、库存手机端新增商品不进入编辑表单等 UX 卡点。
+- 当前 mock 数据任务流已通过，但真实试运行栈复验仍未执行。
+
+**执行任务**
+
+1. 保留 `frontend/e2e/mobile_customer_blackbox.spec.ts` 与 `frontend/e2e/mobile_agent_blackbox.spec.ts` 作为快速 UX 回归。
+2. 在真实/试运行等价环境用真实账号复验客户与采购者手机路径。
+3. 若真实栈发现 P0/P1 可用性问题，优先修复并复跑对应黑盒任务流。
+4. 将 artifact、账号类型、视口和修复记录写入 `REPORT-07` / `REPORT-08`。
+
+**验收标准**
+
+- mock 数据下 `390x844` 与 `360x800` 客户/采购者任务流全部通过。
+- 真实/试运行等价账号完成同一批核心任务。
+- 不存在手机端无法完成核心任务、关键 CTA 不可见/不可点、横向滚动导致内容丢失等 P0/P1 问题。
+
+### 3.5 当前状态（2026-05-02 / PLAN-49）
 
 - `backend mvn test`、`frontend npm ci && npm test`、`frontend npm run build` 与默认 Docker build 继续通过。
 - `scripts/verify-ai-onboarding-samples.ps1` 的 gate/report-only 分流、`gatePassed` 汇总与失败非零退出码仍保持可用。
@@ -107,9 +129,11 @@
 - `.github/workflows/dependency-check.yml` main run <https://github.com/sunshaoxuan/bobbuy/actions/runs/25217516557> 已成功，artifact `dependency-check-report`（id `6750657743`）为 `0 critical / 0 high / 13 medium / 2 low`。
 - `bash scripts/build-service-images.sh` 已通过；`Dockerfile.service` 复制宿主机构建好的 jar，Compose 不再受 Maven PKIX 阻塞。
 - 本地临时 secret 下完整 Compose 栈已启动，gateway `/api/health`、`/api/actuator/health`、`/api/actuator/health/readiness` 与 OCR `/health` 均通过。
+- 双角色移动端黑盒 mock 验证已通过：`mobile_agent_blackbox.spec.ts` 与 `mobile_customer_blackbox.spec.ts` 均覆盖 `390x844` / `360x800`。
+- 本轮修复客户发现页移动端 header 遮挡、手机 header 拥挤、库存手机端新增商品不进入编辑表单，并补齐供应商页稳定测试锚点。
 - `.github/workflows/ai-release-evidence.yml` 仍未形成真实 PASS run；本地真实 sample gate 已执行但失败，当前 blocker 已收敛到 AI provider 可用性：主 Ollama endpoint 请求失败且当前环境未注入 Codex Bridge key。
 - 仓库工作区内仍未发现真实旧库副本 / 历史 schema dump，因此 adoption / restore drill 仍无可执行输入。
-- 结论：默认门禁、安全 high、Compose/Nacos/OCR/gateway 基础健康已收口；当前剩余 blocker 为真实 AI/OCR sample gate、真实 `e2e:ai` PASS 证据与真实旧库 adoption。
+- 结论：默认门禁、安全 high、Compose/Nacos/OCR/gateway 基础健康与 mock 移动端黑盒已收口；当前剩余 blocker 为真实 AI/OCR sample gate、真实 `e2e:ai` PASS 证据、真实旧库 adoption 与真实栈双角色移动端复验。
 
 ---
 

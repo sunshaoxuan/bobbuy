@@ -27,7 +27,7 @@
 | [PLAN-21](PLAN-21-参与者档案与线下结算增强-VNext+1.md) | 参与者档案与线下结算增强 | ✅ 已完成 | 100% | 地址/社交档案、线下收款、差额结转 | 全栈团队 |
 | [PLAN-22](PLAN-22-账本精算与配送履约闭环.md) | 账本精算与配送履约闭环 | ✅ 已完成 | 100% | 余额口径、待配送、拣货确认 | 全栈团队 |
 | [PLAN-23](PLAN-23-冻结门禁与履约视图统一.md) | 冻结门禁与履约视图统一 | ✅ 已完成 | 100% | 冻结只读、拣货单一事实源 | 全栈团队 |
-| [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) | 稳定上线差距收口优先级 | 🔄 执行中 | 98% | 默认 CI、CodeQL high、dependency-check critical/high、服务镜像 Compose build 与 Compose 基础健康已落地；LLM fallback/bridge 配置链路已加固，剩余为可用 AI provider 注入、真实 AI/OCR PASS 证据与真实旧库 adoption | 全栈团队 |
+| [PLAN-24](PLAN-24-稳定上线差距收口优先级.md) | 稳定上线差距收口优先级 | 🔄 执行中 | 98% | 默认 CI、CodeQL high、dependency-check critical/high、服务镜像 Compose build、Compose 基础健康与 mock 双角色移动端黑盒走查已落地；剩余为可用 AI provider 注入、真实 AI/OCR PASS 证据、真实旧库 adoption 与真实栈移动端复验 | 全栈团队 |
 | [PLAN-25](PLAN-25-P0后端测试基线恢复开发提示词.md) | P0 后端测试基线恢复提示词 | ✅ 已完成 | 100% | `backend mvn test` 已恢复稳定全绿 | 全栈团队 |
 | [PLAN-26](PLAN-26-P0前端测试基线恢复开发提示词.md) | P0 前端测试基线恢复提示词 | ✅ 已完成 | 100% | `frontend npm test` 已恢复稳定完成 | 全栈团队 |
 | [PLAN-27](PLAN-27-P0上线验收矩阵与CI固化开发提示词.md) | P0 上线验收矩阵与 CI 固化提示词 | ✅ 已完成 | 100% | 默认 CI 与手动/专用门禁分层已对齐 | 全栈团队 |
@@ -52,7 +52,8 @@
 | [PLAN-46](PLAN-46-P0-依赖高危处置与真实环境证据闭环提示词.md) | P0 依赖高危处置与真实环境证据闭环提示词 | ✅ 已完成 | 100% | Tomcat/Netty/FileUpload 与 pgjdbc 高危依赖已升级，Compose Maven PKIX 已解阻 | 全栈团队 |
 | [PLAN-47](PLAN-47-P0-专用环境Nacos解阻与真实AI证据闭环提示词.md) | P0 专用环境 Nacos 解阻与真实 AI 证据闭环提示词 | 🔄 进行中 | 70% | pgjdbc 已升级、Nacos cgroup v2 已解阻、service jar 预构建门禁已补；剩余为文档拉平、真实 AI/OCR 与旧库 adoption | 全栈团队 |
 | [PLAN-48](PLAN-48-P0-文档拉平与真实放行证据执行提示词.md) | P0 文档拉平与真实放行证据执行提示词 | 🔄 执行中 | 85% | 文档拉平、dependency-check 复扫、Compose health、sample gate、LLM 空响应兜底与 bridge 配置传递已执行；剩余为注入可用 Codex Bridge/Ollama provider、AI gate PASS 与真实旧库 adoption | 全栈团队 |
-| CURRENT | 当前试运行收口 | 🔄 进行中 | 98% | 默认质量门禁、CodeQL、依赖 high、Compose/Nacos/OCR/gateway health 已恢复；仍不可放行，剩余为可用 AI provider 注入后的真实 AI PASS 证据与真实旧库 adoption | 全栈团队 |
+| [PLAN-49](PLAN-49-P0-双角色移动端黑盒走查提示词.md) | P0 双角色移动端黑盒走查提示词 | 🔄 执行中 | 75% | 客户/采购者 mock 数据手机任务流已通过，并修复导航遮挡、header 拥挤、库存新增不进入编辑等 UX 卡点；剩余为真实试运行栈复验 | 全栈团队 |
+| CURRENT | 当前试运行收口 | 🔄 进行中 | 98% | 默认质量门禁、CodeQL、依赖 high、Compose/Nacos/OCR/gateway health 与 mock 移动端黑盒走查已恢复；仍不可放行，剩余为可用 AI provider 注入后的真实 AI PASS 证据、真实旧库 adoption 与真实栈双角色黑盒复验 | 全栈团队 |
 | [WALKTHROUGH-07](walkthrough.md) | V7.0 交付报告 | ✅ 已发布 | 100% | 自动结算闭环与钱包体系验证 | 架构师 |
 
 | [PROD-03](../requirements/PROD-03-订单业务幂等与合并需求详细规格说明书.md) | 业务需求规约 | ✅ 已发布 | 100% | 独立业务合并与幂等判准 | 产品经理 |

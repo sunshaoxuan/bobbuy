@@ -128,10 +128,10 @@ const Suppliers: React.FC = () => {
     <div className="page-card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <div className="section-title">供应商檔案与 AI 規範</div>
+          <div className="section-title" data-testid="suppliers-title">供应商檔案与 AI 規範</div>
           <Text type="secondary">定義不同商家的商品識別規則，例如 Costco 的 5 位數品番規範。</Text>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} data-testid="suppliers-submit">
           新增供应商
         </Button>
       </div>

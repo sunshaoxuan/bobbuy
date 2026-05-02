@@ -78,6 +78,11 @@ export const VIEWPORTS = [
   { label: '1280 (desktop)', width: 1280, height: 800 }
 ] as const;
 
+export const MOBILE_BLACKBOX_VIEWPORTS = [
+  { label: '390x844', width: 390, height: 844 },
+  { label: '360x800', width: 360, height: 800 }
+] as const;
+
 export async function setCustomerContext(page: Page) {
   await setAuthenticatedContext(page, 'CUSTOMER');
 }
@@ -87,14 +92,34 @@ export async function setAgentContext(page: Page) {
 }
 
 export async function loginAsAgent(page: Page) {
-  const username = process.env.BOBBUY_E2E_AGENT_USERNAME?.trim() || 'agent';
-  const password = process.env.BOBBUY_E2E_AGENT_PASSWORD?.trim() || 'agent-pass';
+  await loginAsRole(page, 'AGENT');
+}
 
+export async function loginAsCustomer(page: Page) {
+  await loginAsRole(page, 'CUSTOMER');
+}
+
+export async function loginAsRole(page: Page, role: 'CUSTOMER' | 'AGENT') {
+  const defaultUsername = role === 'AGENT' ? 'agent' : 'customer';
+  const defaultPassword = role === 'AGENT' ? 'agent-pass' : 'customer-pass';
+  const username =
+    role === 'AGENT'
+      ? process.env.BOBBUY_E2E_AGENT_USERNAME?.trim() || defaultUsername
+      : process.env.BOBBUY_E2E_CUSTOMER_USERNAME?.trim() || defaultUsername;
+  const password =
+    role === 'AGENT'
+      ? process.env.BOBBUY_E2E_AGENT_PASSWORD?.trim() || defaultPassword
+      : process.env.BOBBUY_E2E_CUSTOMER_PASSWORD?.trim() || defaultPassword;
+
+  await page.addInitScript(() => {
+    window.localStorage.setItem('bobbuy_locale', 'en-US');
+    window.localStorage.setItem('bobbuy_disable_chat_websocket', 'true');
+  });
   await page.goto('/login');
   await page.locator('input#username').fill(username);
   await page.locator('input#password').fill(password);
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL('**/dashboard');
+  await page.waitForURL(role === 'AGENT' ? '**/dashboard' : '**/');
 }
 
 async function setAuthenticatedContext(page: Page, role: MockRole) {
@@ -174,6 +199,35 @@ export async function setupCommonMocks(page: Page) {
     await route.fulfill({
       status: 200,
       body: JSON.stringify({ status: 'success', data: session.user })
+    });
+  });
+
+  await page.route('**/api/auth/login', async (route) => {
+    let payload: { username?: string } = {};
+    try {
+      payload = route.request().postDataJSON() as { username?: string };
+    } catch {
+      payload = {};
+    }
+    const role: MockRole = payload.username === 'agent' ? 'AGENT' : 'CUSTOMER';
+    const user = MOCK_USERS[role];
+    await route.fulfill({
+      status: 200,
+      headers: {
+        'Set-Cookie': [
+          `bobbuy_refresh_token=${REFRESH_TOKEN_BY_ROLE[role]}; Path=/api/auth; HttpOnly; SameSite=Lax`,
+          `bobbuy_csrf_token=${CSRF_TOKEN_BY_ROLE[role]}; Path=/; SameSite=Lax`
+        ].join(', ')
+      },
+      body: JSON.stringify({
+        status: 'success',
+        data: {
+          accessToken: ACCESS_TOKEN_BY_ROLE[role],
+          accessTokenExpiresAt: '2099-12-31T23:59:59Z',
+          refreshTokenExpiresAt: '2099-12-31T23:59:59Z',
+          user
+        }
+      })
     });
   });
 
@@ -399,6 +453,33 @@ export async function setupCommonMocks(page: Page) {
     })
   );
 
+  await page.route('**/api/procurement/*/delivery-preparations/export', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'text/csv',
+      body: 'businessId,customerName,deliveryStatus,addressSummary\nBIZ-1001,Alice Wang,PENDING_DELIVERY,Shanghai Pudong Century Ave 88\n'
+    })
+  );
+
+  await page.route('**/api/procurement/*/delivery-preparations', (route) =>
+    route.fulfill({
+      status: 200,
+      body: JSON.stringify({
+        status: 'success',
+        data: [{
+          businessId: 'BIZ-1001',
+          customerId: 1001,
+          customerName: 'Alice Wang',
+          deliveryStatus: 'PENDING_DELIVERY',
+          addressSummary: 'Shanghai Pudong Century Ave 88',
+          routeCoordinates: '31.2304,121.4737',
+          totalPickItems: 1,
+          pickedItems: 0
+        }]
+      })
+    })
+  );
+
   await page.route('**/api/procurement/*/receipts', (route) =>
     route.fulfill({
       status: 200,
@@ -472,7 +553,33 @@ export async function setupCommonMocks(page: Page) {
   );
 
   await page.route('**/api/mobile/products**', (route) =>
-    route.fulfill({ status: 200, body: JSON.stringify({ status: 'success', data: [], meta: { total: 0 } }) })
+    route.fulfill({
+      status: 200,
+      body: JSON.stringify({
+        status: 'success',
+        data: [
+          {
+            product: {
+              id: 'SKU-001',
+              name: { 'en-US': 'Matcha Kit', 'zh-CN': '抹茶套装', 'ja-JP': '抹茶セット' },
+              description: { 'en-US': 'Ready-to-buy matcha set' },
+              brand: 'BOBBuy',
+              basePrice: 32.5,
+              categoryId: 'cat-1000',
+              itemNumber: 'SKU-001',
+              isRecommended: true,
+              visibilityStatus: 'PUBLIC',
+              mediaGallery: [{ url: '/assets/products/milk.png', type: 'image' }],
+              attributes: { netContent: '120g', storageHint: 'Ambient' },
+              priceTiers: []
+            },
+            displayName: 'Matcha Kit',
+            displayDescription: 'Ready-to-buy matcha set'
+          }
+        ],
+        meta: { total: 1 }
+      })
+    })
   );
 
   await page.route('**/api/mobile/categories**', (route) =>

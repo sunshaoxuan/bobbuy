@@ -100,7 +100,7 @@ body {
 .app-header-desktop {
   position: sticky;
   top: 0;
-  z-index: 11;
+  z-index: 30;
   background: rgba(250, 249, 246, 0.78);
   backdrop-filter: blur(var(--blur-glass));
   border-bottom: var(--zen-line);
@@ -306,6 +306,13 @@ body {
   z-index: 20;
   background: rgba(250, 249, 246, 0);
   transition: background-color 180ms ease-out, backdrop-filter 180ms ease-out;
+}
+
+@media (max-width: 47.99rem) {
+  .zen-home-nav {
+    top: 4rem;
+    z-index: 9;
+  }
 }
 
 .zen-home-nav.is-scrolled {

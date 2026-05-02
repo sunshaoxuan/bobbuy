@@ -20,6 +20,8 @@
 | PostgreSQL 空库 migration | `cd /home/runner/work/bobbuy/bobbuy/backend && mvn -Dflyway.url=jdbc:postgresql://localhost:5432/bobbuy -Dflyway.user=bobbuy -Dflyway.password=bobbuypassword -Dflyway.cleanDisabled=false flyway:clean flyway:migrate flyway:validate` | `workflow_dispatch` + `postgres-migration-verify` job（输入 `run_postgres_migration_verify=true`） | 否 | 需要可写 PostgreSQL 空库；默认由 Flyway 插件验证 `backend/src/main/resources/db/migration` |
 | 服务壳 smoke test | `cd /home/runner/work/bobbuy/bobbuy && mvn -pl bobbuy-core,bobbuy-ai,bobbuy-im,bobbuy-auth,bobbuy-gateway -am -Dsurefire.failIfNoSpecifiedTests=false -Dtest='*SmokeTest,*InternalServiceHeaderFilterTest' test` | 当前仅本地 / 手动执行 | 否 | 使用 H2 与关闭 Nacos 的测试配置，验证 `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` 最小启动以及 gateway 内部 header 清理 |
 | Playwright 页面回归 | `cd /home/runner/work/bobbuy/bobbuy/frontend && npm run e2e` | `workflow_dispatch` + `playwright-e2e` job（输入 `run_playwright_e2e=true`） | 否 | GitHub Hosted Runner 可执行；使用 Vite dev server + 前端共享 mock 浏览器 smoke，覆盖 agent/customer 登录态、角色门禁、订单/账单/聊天、采购/拣货/库存人工接管，不依赖真实 AI / MinIO |
+| 双角色移动端黑盒走查（mock） | `npm run e2e --prefix frontend -- e2e/mobile_customer_blackbox.spec.ts` 与 `npm run e2e --prefix frontend -- e2e/mobile_agent_blackbox.spec.ts` | 当前仅本地 / 手动执行；后续可纳入 `playwright-e2e` 手动门禁 | 否 | 使用真实前端交互 + mock API 数据，覆盖客户/采购者在 `390x844` 与 `360x800` 下的核心任务；不替代真实试运行栈复验 |
+| 双角色移动端黑盒走查（真实栈） | 同上，指向真实/试运行等价前后端与账号 | 当前仅试运行窗口手工执行 | 否 | 必须在 Compose/试运行健康后执行；若未通过或未执行，`REPORT-07` 继续 `NO_GO` |
 | AI 真实视觉链路 | `cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 必须提供真实后端 URL、可访问的 AI/OCR provider、MinIO、seed 数据、样本图片，以及 `BOBBUY_E2E_AGENT_USERNAME` / `BOBBUY_E2E_AGENT_PASSWORD`；应在 sample gate 通过后再作为放行证据执行 |
 | AI sample 字段级对比（gate 模式） | `pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken <agent-token>` | `workflow_dispatch` + `.github/workflows/ai-release-evidence.yml` | 否 | 需要真实 `/api/ai/onboard/scan`、样本图片目录与 `docs/fixtures/ai-onboarding-sample-golden.json`；输出 JSON + Markdown；遇到 `FAIL` / `SCAN_FAIL` / `MISSING_FILE` 返回非零；本轮真实接口结果为 `0 PASS / 3 SCAN_FAIL`，证据见 `docs/reports/evidence/ai-onboarding-real-sample-2026-05-02.*` |
 | AI sample 脚本 dry-run 自检（gate 模式） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock.json' -SampleIds @('IMG_1484.jpg','IMG_1638.jpg') -IncludeNeedsHumanGolden"` | 当前仅本地执行 | 否 | 不依赖真实 `/api/ai/onboard/scan`；用于验证字段别名映射、optional path 规范化、报告格式与 gate 退出码 |
@@ -65,6 +67,10 @@
 - [x] `npm test --prefix frontend`
   - 结果：`22 files / 74 tests` 通过
 - [x] `npm run build --prefix frontend`
+- [x] `npm run e2e --prefix frontend -- e2e/mobile_agent_blackbox.spec.ts`
+  - 结果：`2 passed`，覆盖 `390x844` 与 `360x800`
+- [x] `npm run e2e --prefix frontend -- e2e/mobile_customer_blackbox.spec.ts`
+  - 结果：`2 passed`，覆盖 `390x844` 与 `360x800`
 - [x] `bash scripts/build-service-images.sh`
 - [x] 使用本地临时 `BOBBUY_SECURITY_JWT_SECRET` / `BOBBUY_SECURITY_SERVICE_TOKEN` 拉起并重建 `core-service`、`auth-service`、`im-service`、`ai-service`、`gateway-service`
   - `core-service`、`ai-service`、`im-service`、`auth-service`、`gateway-service` healthy

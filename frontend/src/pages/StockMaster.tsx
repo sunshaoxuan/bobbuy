@@ -322,6 +322,9 @@ export default function StockMaster() {
       isNew: true
     };
     setDataSource([...dataSource, newData]);
+    if (isMobile) {
+      openDrawer(newData);
+    }
   };
 
   const handleDelete = async (key: string) => {
