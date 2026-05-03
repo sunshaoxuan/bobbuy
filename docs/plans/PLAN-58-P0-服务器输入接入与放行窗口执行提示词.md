@@ -4,13 +4,26 @@
 
 目标是把 PLAN-57 从“等待服务器输入”推进到“服务器窗口可执行”。本计划不新增业务研发任务，只接入服务器连接输入、执行非敏感预检查，并在输入有效时执行 PLAN-57 全部门禁。若输入缺失或任一 P0 门禁失败，只更新 REPORT-13 的阻塞证据，不关闭 PLAN-24 / PLAN-54 / PLAN-55 / PLAN-56 / PLAN-57 / CURRENT。
 
-当前状态：已新增 `scripts/run-server-release-window.ps1` 作为服务器放行窗口执行入口。本地执行环境仍未提供 `SSH_TARGET` 与 `APP_DIR`，因此脚本只能完成非敏感输入检查并以缺少服务器位置失败退出，服务器 SSH 预检查尚未执行。`BOBBUY_AGENT_AUTH_TOKEN` 不再是硬性输入；缺失时脚本会在服务健康检查通过后使用试运行 agent 测试账号登录，临时生成 access token 供 AI sample gate 使用。
+当前状态：已新增 `scripts/run-server-release-window.ps1` 作为放行窗口执行入口。脚本默认优先使用本机 WSL 作为真实部署窗口；如果显式设置 `SSH_TARGET`，则切换到外部 SSH 服务器窗口。本机 WSL 预检查已通过：仓库目录 `/mnt/c/workspace/bobbuy` 存在，`.env` 存在。脚本已能为本机测试临时生成 `BOBBUY_SECURITY_JWT_SECRET` 与 `BOBBUY_SECURITY_SERVICE_TOKEN`，也能在服务健康检查通过后临时登录生成 agent access token。当前完整窗口阻塞于 AI Bridge 配置缺失：`BOBBUY_AI_LLM_CODEX_BRIDGE_URL` 与 `BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY` 必须来自 `.env` 或运行时环境，不能生成。
 
 ## Required Inputs
 
-执行前在本地 shell 临时提供：
+本机优先执行方式：
 
 ```powershell
+pwsh scripts/run-server-release-window.ps1
+```
+
+本机会自动选择 `local-wsl`，并把当前 Windows 仓库路径转换为 WSL 路径作为 `APP_DIR`。仅预检查：
+
+```powershell
+pwsh scripts/run-server-release-window.ps1 -PrecheckOnly
+```
+
+外部 SSH 服务器执行时，才需要在本地 shell 临时提供：
+
+```powershell
+$env:RELEASE_WINDOW_TARGET = "ssh"
 $env:SSH_TARGET = "user@server"
 $env:APP_DIR = "/opt/bobbuy"
 $env:BRANCH = "main"
@@ -18,9 +31,16 @@ $env:BRANCH = "main"
 
 `BRANCH` 未设置时固定按 `main` 执行。可选提供 `BOBBUY_AGENT_AUTH_TOKEN`；如果不提供，脚本会使用 `BOBBUY_E2E_AGENT_USERNAME` / `BOBBUY_E2E_AGENT_PASSWORD`，或默认 `agent` / `agent-pass`，在服务器健康检查通过后调用 `/api/auth/login` 生成临时 access token。不得把服务器 `.env`、JWT secret、service token、Codex Bridge key、数据库或中间件密码写入仓库。
 
+本机 WSL 测试可临时生成 JWT secret 与 service token，但仍必须提供真实 AI Bridge：
+
+```powershell
+$env:BOBBUY_AI_LLM_CODEX_BRIDGE_URL = "<openai-compatible bridge url>"
+$env:BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY = "<bridge api key>"
+```
+
 ## Execution Wrapper
 
-本地推荐入口：
+推荐入口：
 
 ```powershell
 pwsh scripts/run-server-release-window.ps1
@@ -34,8 +54,11 @@ pwsh scripts/run-server-release-window.ps1 -PrecheckOnly
 
 脚本行为：
 
-- 缺少 `SSH_TARGET` 或 `APP_DIR` 时退出码为 `2`，只输出 `present/missing` 摘要。
+- `auto` 模式下优先选择 `local-wsl`；只有显式 `-Target ssh` 或设置 `SSH_TARGET` 时才要求 SSH。
+- SSH 模式缺少 `SSH_TARGET` 或任一模式缺少 `APP_DIR` 时退出码为 `2`，只输出 `present/missing` 摘要。
 - 缺少 `BOBBUY_AGENT_AUTH_TOKEN` 时不退出；脚本会尝试通过 `/api/auth/login` 临时生成 agent access token。
+- 本机 WSL 模式下缺少 JWT secret 或 service token 时不写文件，脚本只在当前执行进程中临时生成。
+- 缺少 AI Bridge URL/API key 时退出码为 `30`，因为真实 AI sample gate 不能用伪 key 闭环。
 - 预检查通过后按本计划的服务器窗口顺序执行，不输出 `.env` 内容或任何 secret 值。
 - 执行结果仍需由执行者整理到 REPORT-13；敏感原始日志不得入库。
 

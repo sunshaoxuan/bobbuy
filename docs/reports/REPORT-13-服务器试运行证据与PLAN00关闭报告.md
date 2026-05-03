@@ -2,7 +2,7 @@
 
 **日期**: 2026-05-03
 **分支**: `main`
-**结论**: `PENDING_SERVER_INPUT`
+**结论**: `PENDING_LOCAL_WSL_RELEASE_WINDOW`
 **当前执行入口**: `PLAN-58-P0-服务器输入接入与放行窗口执行提示词.md`
 
 ---
@@ -12,15 +12,11 @@
 本轮已完成 PLAN-58 服务器输入预检查入口与 PLAN-00 历史收口任务的归档准备：
 
 - PLAN-24 / PLAN-40~57 / CURRENT 已被 REPORT-07、PLAN-50~58、REPORT-10/11/12 覆盖，按历史覆盖项关闭或归档。
-- PLAN-58 是当前唯一执行中入口，仍依赖服务器输入与服务器部署窗口证据。
+- PLAN-58 是当前唯一执行中入口，执行口径调整为优先使用本机 WSL 作为真实部署窗口，外部 SSH 服务器作为可选复跑窗口。
 - 已新增 `scripts/run-server-release-window.ps1` 作为服务器放行窗口执行脚本。脚本会先做非敏感输入检查，再在输入有效时执行服务器预检查、Compose health、AI sample gate、AI E2E、双角色真实栈黑盒与 PostgreSQL / MinIO / Nacos 恢复演练。
 - 缺少 `BOBBUY_AGENT_AUTH_TOKEN` 时，脚本会在服务健康检查通过后使用试运行 agent 测试账号登录，临时生成 access token；该 token 只存在于本次执行进程内，不写入 git。
 
-服务器窗口未执行，原因是当前执行环境没有提供：
-
-- `SSH_TARGET`
-- `APP_DIR`
-因此本报告不能给出服务器 `GO` 证据，REPORT-07 仍保持 `GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW`。
+本机 WSL 预检查已执行并通过；完整放行窗口已执行到 `.env` / 环境变量必需项校验。脚本已为本机测试临时生成 `BOBBUY_SECURITY_JWT_SECRET` 与 `BOBBUY_SECURITY_SERVICE_TOKEN`，但 AI Bridge URL / API key 仍缺失，无法继续执行真实 AI sample gate。因此本报告暂不能给出最终 `GO` 证据，REPORT-07 仍保持 `GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW`。
 
 ---
 
@@ -41,13 +37,18 @@
 
 | 输入 / 检查项 | 当前状态 | 说明 |
 | :-- | :-- | :-- |
-| `SSH_TARGET` | missing | 当前执行环境未提供 |
-| `APP_DIR` | missing | 当前执行环境未提供 |
+| `TARGET` | `local-wsl` | auto 模式下优先选择本机 WSL |
+| `SSH_TARGET` | missing / optional | 外部 SSH 复跑才需要 |
+| `APP_DIR` | `/mnt/c/workspace/bobbuy` | 由当前 Windows 仓库路径自动转换 |
 | `BRANCH` | default `main` | 未提供时按 `main` 执行 |
 | `BOBBUY_AGENT_AUTH_TOKEN` | optional missing | 未提供时脚本在健康检查后临时登录生成 |
-| SSH 连通性 | not_run | 缺少 `SSH_TARGET`，未执行 SSH |
-| 仓库目录存在性 | not_run | 缺少 `APP_DIR`，未执行远端目录检查 |
-| 服务器 `.env` 存在性 | not_run | 缺少 `APP_DIR`，未执行远端文件检查 |
+| `BOBBUY_SECURITY_JWT_SECRET` | temporary pass | 本机 WSL 测试由脚本临时生成，不写入 git |
+| `BOBBUY_SECURITY_SERVICE_TOKEN` | temporary pass | 本机 WSL 测试由脚本临时生成，不写入 git |
+| `BOBBUY_AI_LLM_CODEX_BRIDGE_URL` | missing | 不能生成，需来自 `.env` 或运行时环境 |
+| `BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY` | missing | 不能生成，需来自 `.env` 或运行时环境 |
+| WSL 连通性 | pass | Ubuntu-22.04 可用 |
+| 仓库目录存在性 | pass | `/mnt/c/workspace/bobbuy` |
+| `.env` 存在性 | pass | `/mnt/c/workspace/bobbuy/.env` |
 
 推荐执行入口：
 
@@ -65,16 +66,20 @@ pwsh scripts/run-server-release-window.ps1 -PrecheckOnly
 
 | 检查项 | 结果 |
 | :-- | :-- |
-| `SSH_TARGET` | missing |
-| `APP_DIR` | missing |
+| `TARGET` | `local-wsl` |
+| `SSH_TARGET` | missing / optional |
+| `APP_DIR` | `/mnt/c/workspace/bobbuy` |
 | `BRANCH` | `main` |
 | `BOBBUY_AGENT_AUTH_TOKEN` | optional missing，will try login after health checks |
-| 退出码 | `2`，缺少 `SSH_TARGET` 或 `APP_DIR` |
+| WSL hostname | `OHR0067` |
+| 仓库目录 | pass |
+| `.env` | pass |
+| 完整窗口最近退出码 | `30`，必需 AI Bridge 配置缺失 |
 
 底层预检查命令模板：
 
 ```bash
-ssh "$SSH_TARGET" "hostname; date; test -d '$APP_DIR'; test -f '$APP_DIR/.env'"
+pwsh scripts/run-server-release-window.ps1 -PrecheckOnly
 ```
 
 该命令只允许输出主机名、时间与 pass/fail 摘要，不得输出 `.env` 内容。
@@ -85,7 +90,8 @@ ssh "$SSH_TARGET" "hostname; date; test -d '$APP_DIR'; test -f '$APP_DIR/.env'"
 
 | 验证项 | 当前状态 | 关闭条件 |
 | :-- | :-- | :-- |
-| SSH 部署窗口 | BLOCKED | 提供 `SSH_TARGET` 与 `APP_DIR` |
+| 本机 WSL 部署窗口 | BLOCKED | 缺少 `BOBBUY_AI_LLM_CODEX_BRIDGE_URL` / `BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY` |
+| 外部 SSH 部署窗口 | OPTIONAL | 提供 `SSH_TARGET` 与 `APP_DIR` |
 | 服务器 `.env` secret 存在性校验 | NOT_RUN | 只输出变量 present/missing，不输出值 |
 | 服务器 Compose health | NOT_RUN | gateway / service / OCR health 通过 |
 | 服务器真实 AI sample gate | NOT_RUN | `gatePassed=true` |
@@ -131,9 +137,25 @@ ssh "$SSH_TARGET" "hostname; date; test -d '$APP_DIR'; test -f '$APP_DIR/.env'"
 
 ## 7. 下一步输入
 
-执行 PLAN-58 需要提供：
+本机 WSL 执行 PLAN-58：
+
+```powershell
+pwsh scripts/run-server-release-window.ps1
+```
+
+当前必须先在本机 `.env` 或临时环境中提供：
 
 ```text
+BOBBUY_AI_LLM_CODEX_BRIDGE_URL=<openai-compatible bridge url>
+BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY=<bridge api key>
+```
+
+JWT secret 与 service token 可由脚本为本机 WSL 测试临时生成；AI Bridge URL/API key 不能生成。
+
+外部 SSH 复跑时才需要提供：
+
+```text
+RELEASE_WINDOW_TARGET=ssh
 SSH_TARGET=<user@server>
 APP_DIR=<server repo path>
 BRANCH=main

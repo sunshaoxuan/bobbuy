@@ -1,10 +1,15 @@
 param(
+  [ValidateSet("auto", "local-wsl", "ssh")]
+  [string]$Target = $(if ($env:RELEASE_WINDOW_TARGET) { $env:RELEASE_WINDOW_TARGET } else { "auto" }),
   [string]$SshTarget = $env:SSH_TARGET,
   [string]$AppDir = $env:APP_DIR,
   [string]$Branch = $(if ($env:BRANCH) { $env:BRANCH } else { "main" }),
   [string]$AgentAuthToken = $env:BOBBUY_AGENT_AUTH_TOKEN,
   [string]$AgentUsername = $(if ($env:BOBBUY_E2E_AGENT_USERNAME) { $env:BOBBUY_E2E_AGENT_USERNAME } else { "agent" }),
   [string]$AgentPassword = $(if ($env:BOBBUY_E2E_AGENT_PASSWORD) { $env:BOBBUY_E2E_AGENT_PASSWORD } else { "agent-pass" }),
+  [string]$CodexBridgeUrl = $env:BOBBUY_AI_LLM_CODEX_BRIDGE_URL,
+  [string]$CodexBridgeApiKey = $env:BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY,
+  [switch]$NoTemporaryLocalSecrets,
   [switch]$PrecheckOnly
 )
 
@@ -20,7 +25,7 @@ function Write-Section {
 function Invoke-RemoteScript {
   param(
     [Parameter(Mandatory = $true)][string]$Script,
-    [Parameter(Mandatory = $true)][string[]]$Arguments
+    [Parameter(Mandatory = $true)][AllowEmptyString()][string[]]$Arguments
   )
 
   $Script | & ssh $SshTarget "bash" "-s" "--" @Arguments
@@ -29,16 +34,65 @@ function Invoke-RemoteScript {
   }
 }
 
-Write-Section "Server release window inputs"
+function Test-WslAvailable {
+  & wsl.exe --status *> $null
+  return $LASTEXITCODE -eq 0
+}
+
+function Convert-ToWslPath {
+  param([Parameter(Mandatory = $true)][string]$WindowsPath)
+  if ($WindowsPath -match '^([A-Za-z]):\\(.*)$') {
+    $drive = $Matches[1].ToLowerInvariant()
+    $rest = $Matches[2] -replace '\\', '/'
+    return "/mnt/$drive/$rest"
+  }
+  return $WindowsPath
+}
+
+function Invoke-WslScript {
+  param(
+    [Parameter(Mandatory = $true)][string]$Script,
+    [Parameter(Mandatory = $true)][AllowEmptyString()][string[]]$Arguments
+  )
+
+  $Script | & wsl.exe bash "-s" "--" @Arguments
+  if ($LASTEXITCODE -ne 0) {
+    throw "WSL step failed with exit code $LASTEXITCODE"
+  }
+}
+
+if ($Target -eq "auto") {
+  if ($SshTarget) {
+    $Target = "ssh"
+  } elseif (Test-WslAvailable) {
+    $Target = "local-wsl"
+  } else {
+    $Target = "ssh"
+  }
+}
+
+if ($Target -eq "local-wsl" -and -not $AppDir) {
+  $AppDir = Convert-ToWslPath -WindowsPath (Get-Location).Path
+}
+
+Write-Section "Release window inputs"
+Write-Host ("TARGET: " + $Target)
 Write-Host ("SSH_TARGET: " + $(if ($SshTarget) { "present" } else { "missing" }))
-Write-Host ("APP_DIR: " + $(if ($AppDir) { "present" } else { "missing" }))
+Write-Host ("APP_DIR: " + $(if ($AppDir) { $AppDir } else { "missing" }))
 Write-Host ("BRANCH: " + $Branch)
 Write-Host ("BOBBUY_AGENT_AUTH_TOKEN: " + $(if ($AgentAuthToken) { "present" } else { "missing; will try login after health checks" }))
 Write-Host ("BOBBUY_E2E_AGENT_USERNAME: " + $(if ($AgentUsername) { "present" } else { "missing" }))
 Write-Host ("BOBBUY_E2E_AGENT_PASSWORD: " + $(if ($AgentPassword) { "present" } else { "missing" }))
+Write-Host ("BOBBUY_AI_LLM_CODEX_BRIDGE_URL: " + $(if ($CodexBridgeUrl) { "present" } else { "missing" }))
+Write-Host ("BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY: " + $(if ($CodexBridgeApiKey) { "present" } else { "missing" }))
+Write-Host ("TEMPORARY_LOCAL_SECRETS: " + $(if ($Target -eq "local-wsl" -and -not $NoTemporaryLocalSecrets) { "enabled" } else { "disabled" }))
 
-if (-not $SshTarget -or -not $AppDir) {
-  Write-Host "ERROR: Missing required SSH_TARGET or APP_DIR. Set them in the current shell and rerun."
+if ($Target -eq "ssh" -and -not $SshTarget) {
+  Write-Host "ERROR: Missing required SSH_TARGET for ssh target. Set SSH_TARGET or use -Target local-wsl."
+  exit 2
+}
+if (-not $AppDir) {
+  Write-Host "ERROR: Missing required APP_DIR. Set APP_DIR or run from the repository root with WSL available."
   exit 2
 }
 
@@ -54,7 +108,11 @@ echo "branch=${BRANCH:-main}"
 '@
 
 Write-Section "Precheck"
-Invoke-RemoteScript -Script $precheck -Arguments @($AppDir, $Branch)
+if ($Target -eq "local-wsl") {
+  Invoke-WslScript -Script $precheck -Arguments @($AppDir, $Branch)
+} else {
+  Invoke-RemoteScript -Script $precheck -Arguments @($AppDir, $Branch)
+}
 
 if ($PrecheckOnly) {
   Write-Section "Precheck-only mode"
@@ -69,16 +127,39 @@ BRANCH="$2"
 AGENT_AUTH_TOKEN="$3"
 AGENT_USERNAME="$4"
 AGENT_PASSWORD="$5"
+ALLOW_TEMP_LOCAL_SECRETS="$6"
+CODEX_BRIDGE_URL="$7"
+CODEX_BRIDGE_API_KEY="$8"
 
 cd "$APP_DIR"
 echo "step=git_update"
 git fetch origin
-git checkout "${BRANCH:-main}"
-git pull --ff-only
+git checkout -q "${BRANCH:-main}"
+git pull --ff-only -q
 echo "commit=$(git rev-parse HEAD)"
 echo "server_time=$(date -Is)"
 
 echo "step=env_required_keys"
+if [ -n "$CODEX_BRIDGE_URL" ]; then
+  export BOBBUY_AI_LLM_CODEX_BRIDGE_URL="$CODEX_BRIDGE_URL"
+  echo "BOBBUY_AI_LLM_CODEX_BRIDGE_URL=provided_by_runner"
+fi
+if [ -n "$CODEX_BRIDGE_API_KEY" ]; then
+  export BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY="$CODEX_BRIDGE_API_KEY"
+  echo "BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY=provided_by_runner"
+fi
+
+if [ "$ALLOW_TEMP_LOCAL_SECRETS" = "true" ]; then
+  if ! grep -q "^BOBBUY_SECURITY_JWT_SECRET=" .env || [ -z "$(grep "^BOBBUY_SECURITY_JWT_SECRET=" .env | tail -n1 | cut -d= -f2-)" ]; then
+    export BOBBUY_SECURITY_JWT_SECRET="$(openssl rand -base64 48)"
+    echo "BOBBUY_SECURITY_JWT_SECRET=temporary"
+  fi
+  if ! grep -q "^BOBBUY_SECURITY_SERVICE_TOKEN=" .env || [ -z "$(grep "^BOBBUY_SECURITY_SERVICE_TOKEN=" .env | tail -n1 | cut -d= -f2-)" ]; then
+    export BOBBUY_SECURITY_SERVICE_TOKEN="$(openssl rand -hex 32)"
+    echo "BOBBUY_SECURITY_SERVICE_TOKEN=temporary"
+  fi
+fi
+
 required_keys="
 BOBBUY_SECURITY_JWT_SECRET
 BOBBUY_SECURITY_SERVICE_TOKEN
@@ -90,7 +171,12 @@ BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY
 "
 missing=0
 for key in $required_keys; do
+  env_value="${!key:-}"
+  file_value=""
   if grep -q "^${key}=" .env; then
+    file_value="$(grep "^${key}=" .env | tail -n1 | cut -d= -f2-)"
+  fi
+  if [ -n "$env_value" ] || [ -n "$file_value" ]; then
     echo "${key}=present"
   else
     echo "${key}=missing"
@@ -192,4 +278,9 @@ echo "release_window=pass"
 '@
 
 Write-Section "Full server release window"
-Invoke-RemoteScript -Script $releaseWindow -Arguments @($AppDir, $Branch, $AgentAuthToken, $AgentUsername, $AgentPassword)
+if ($Target -eq "local-wsl") {
+  $allowTemporaryLocalSecrets = if ($NoTemporaryLocalSecrets) { "false" } else { "true" }
+  Invoke-WslScript -Script $releaseWindow -Arguments @($AppDir, $Branch, $AgentAuthToken, $AgentUsername, $AgentPassword, $allowTemporaryLocalSecrets, $CodexBridgeUrl, $CodexBridgeApiKey)
+} else {
+  Invoke-RemoteScript -Script $releaseWindow -Arguments @($AppDir, $Branch, $AgentAuthToken, $AgentUsername, $AgentPassword, "false", $CodexBridgeUrl, $CodexBridgeApiKey)
+}
