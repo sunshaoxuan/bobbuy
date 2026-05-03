@@ -9,6 +9,7 @@ param(
   [string]$AgentPassword = $(if ($env:BOBBUY_E2E_AGENT_PASSWORD) { $env:BOBBUY_E2E_AGENT_PASSWORD } else { "agent-pass" }),
   [string]$CodexBridgeUrl = $env:BOBBUY_AI_LLM_CODEX_BRIDGE_URL,
   [string]$CodexBridgeApiKey = $env:BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY,
+  [string]$AiSecretMasterPassword = $(if ($env:BOBBUY_AI_SECRET_MASTER_PASSWORD) { $env:BOBBUY_AI_SECRET_MASTER_PASSWORD } else { [Environment]::GetEnvironmentVariable("BOBBUY_AI_SECRET_MASTER_PASSWORD", "User") }),
   [switch]$NoTemporaryLocalSecrets,
   [switch]$PrecheckOnly
 )
@@ -85,6 +86,7 @@ Write-Host ("BOBBUY_E2E_AGENT_USERNAME: " + $(if ($AgentUsername) { "present" } 
 Write-Host ("BOBBUY_E2E_AGENT_PASSWORD: " + $(if ($AgentPassword) { "present" } else { "missing" }))
 Write-Host ("BOBBUY_AI_LLM_CODEX_BRIDGE_URL: " + $(if ($CodexBridgeUrl) { "present" } else { "missing" }))
 Write-Host ("BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY: " + $(if ($CodexBridgeApiKey) { "present" } else { "missing" }))
+Write-Host ("BOBBUY_AI_SECRET_MASTER_PASSWORD: " + $(if ($AiSecretMasterPassword) { "present" } else { "missing" }))
 Write-Host ("TEMPORARY_LOCAL_SECRETS: " + $(if ($Target -eq "local-wsl" -and -not $NoTemporaryLocalSecrets) { "enabled" } else { "disabled" }))
 
 if ($Target -eq "ssh" -and -not $SshTarget) {
@@ -130,6 +132,7 @@ AGENT_PASSWORD="$5"
 ALLOW_TEMP_LOCAL_SECRETS="$6"
 CODEX_BRIDGE_URL="$7"
 CODEX_BRIDGE_API_KEY="$8"
+AI_SECRET_MASTER_PASSWORD="$9"
 
 cd "$APP_DIR"
 echo "step=git_update"
@@ -147,6 +150,10 @@ fi
 if [ -n "$CODEX_BRIDGE_API_KEY" ]; then
   export BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY="$CODEX_BRIDGE_API_KEY"
   echo "BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY=provided_by_runner"
+fi
+if [ -n "$AI_SECRET_MASTER_PASSWORD" ]; then
+  export BOBBUY_AI_SECRET_MASTER_PASSWORD="$AI_SECRET_MASTER_PASSWORD"
+  echo "BOBBUY_AI_SECRET_MASTER_PASSWORD=provided_by_runner"
 fi
 
 if [ "$ALLOW_TEMP_LOCAL_SECRETS" = "true" ]; then
@@ -167,7 +174,6 @@ POSTGRES_PASSWORD
 MINIO_ROOT_PASSWORD
 RABBITMQ_DEFAULT_PASS
 BOBBUY_AI_LLM_CODEX_BRIDGE_URL
-BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY
 "
 missing=0
 for key in $required_keys; do
@@ -183,6 +189,34 @@ for key in $required_keys; do
     missing=1
   fi
 done
+api_key_file_value=""
+if grep -q "^BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY=" .env; then
+  api_key_file_value="$(grep "^BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY=" .env | tail -n1 | cut -d= -f2-)"
+fi
+encrypted_secret_complete=1
+for key in \
+  BOBBUY_AI_LLM_CODEX_BRIDGE_SECRET_SALT \
+  BOBBUY_AI_LLM_CODEX_BRIDGE_SECRET_NONCE \
+  BOBBUY_AI_LLM_CODEX_BRIDGE_SECRET_CIPHERTEXT \
+  BOBBUY_AI_LLM_CODEX_BRIDGE_SECRET_TAG
+do
+  value="${!key:-}"
+  file_value=""
+  if grep -q "^${key}=" .env; then
+    file_value="$(grep "^${key}=" .env | tail -n1 | cut -d= -f2-)"
+  fi
+  if [ -z "$value" ] && [ -z "$file_value" ]; then
+    encrypted_secret_complete=0
+  fi
+done
+if [ -n "${BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY:-}" ] || [ -n "$api_key_file_value" ]; then
+  echo "BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY=present"
+elif [ "$encrypted_secret_complete" -eq 1 ] && [ -n "${BOBBUY_AI_SECRET_MASTER_PASSWORD:-}" ]; then
+  echo "BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY=encrypted_present"
+else
+  echo "BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY=missing"
+  missing=1
+fi
 if [ "$missing" -ne 0 ]; then
   echo "required_env=fail"
   exit 30
@@ -193,11 +227,11 @@ echo "step=compose_config"
 docker compose config --quiet
 
 echo "step=build_service_images"
-bash scripts/build-service-images.sh
+bash scripts/build-service-images.sh </dev/null
 
 echo "step=compose_up"
-docker compose up -d --build postgres minio redis rabbitmq nacos nacos-init core-service ai-service im-service auth-service gateway-service frontend gateway ocr-service
-docker compose ps
+docker compose up -d --build postgres minio redis rabbitmq nacos nacos-init core-service ai-service im-service auth-service gateway-service frontend gateway ocr-service </dev/null
+docker compose ps </dev/null
 
 echo "step=health_checks"
 curl -fsS http://127.0.0.1/api/health
@@ -240,32 +274,54 @@ fi
 
 echo "step=ai_sample_gate"
 if command -v pwsh >/dev/null 2>&1; then
-  pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken "$AGENT_AUTH_TOKEN"
+  pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken "$AGENT_AUTH_TOKEN" </dev/null
+elif command -v pwsh.exe >/dev/null 2>&1; then
+  pwsh.exe -NoProfile -File "$(wslpath -w scripts/verify-ai-onboarding-samples.ps1)" -IncludeNeedsHumanGolden -AuthToken "$AGENT_AUTH_TOKEN" </dev/null
+elif command -v powershell.exe >/dev/null 2>&1; then
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w scripts/verify-ai-onboarding-samples.ps1)" -IncludeNeedsHumanGolden -AuthToken "$AGENT_AUTH_TOKEN" </dev/null
 else
-  powershell scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken "$AGENT_AUTH_TOKEN"
+  powershell scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken "$AGENT_AUTH_TOKEN" </dev/null
 fi
 
 echo "step=ai_e2e"
-(cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai)
+if command -v node >/dev/null 2>&1; then
+  (cd frontend && PLAYWRIGHT_BASE_URL=http://127.0.0.1 PLAYWRIGHT_SKIP_WEB_SERVER=1 RUN_AI_VISION_E2E=1 npm run e2e:ai)
+elif command -v pwsh.exe >/dev/null 2>&1; then
+  pwsh.exe -NoProfile -File "$(wslpath -w scripts/run-frontend-release-evidence.ps1)" -Mode ai-e2e </dev/null
+elif command -v powershell.exe >/dev/null 2>&1; then
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w scripts/run-frontend-release-evidence.ps1)" -Mode ai-e2e </dev/null
+else
+  echo "node_not_found=fail"
+  exit 60
+fi
 
 echo "step=mobile_blackbox"
-(cd frontend && RUN_REAL_MOBILE_BLACKBOX=1 npm run e2e -- e2e/mobile_customer_blackbox.spec.ts e2e/mobile_agent_blackbox.spec.ts)
+if command -v node >/dev/null 2>&1; then
+  (cd frontend && PLAYWRIGHT_BASE_URL=http://127.0.0.1 PLAYWRIGHT_SKIP_WEB_SERVER=1 RUN_REAL_MOBILE_BLACKBOX=1 npm run e2e -- e2e/mobile_customer_blackbox.spec.ts e2e/mobile_agent_blackbox.spec.ts)
+elif command -v pwsh.exe >/dev/null 2>&1; then
+  pwsh.exe -NoProfile -File "$(wslpath -w scripts/run-frontend-release-evidence.ps1)" -Mode mobile-blackbox </dev/null
+elif command -v powershell.exe >/dev/null 2>&1; then
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w scripts/run-frontend-release-evidence.ps1)" -Mode mobile-blackbox </dev/null
+else
+  echo "node_not_found=fail"
+  exit 61
+fi
 
 echo "step=postgres_restore_drill"
 backup_dir="${APP_DIR}/scratch/server-release-window"
 mkdir -p "$backup_dir"
-docker compose exec -T postgres pg_dump -U bobbuy bobbuy > "$backup_dir/postgres-release-window.sql"
-docker compose exec -T postgres psql -U bobbuy -d postgres -c "DROP DATABASE IF EXISTS bobbuy_restore_verify;"
-docker compose exec -T postgres psql -U bobbuy -d postgres -c "CREATE DATABASE bobbuy_restore_verify;"
+docker compose exec -T postgres pg_dump -U bobbuy bobbuy </dev/null > "$backup_dir/postgres-release-window.sql"
+docker compose exec -T postgres psql -U bobbuy -d postgres -c "DROP DATABASE IF EXISTS bobbuy_restore_verify;" </dev/null
+docker compose exec -T postgres psql -U bobbuy -d postgres -c "CREATE DATABASE bobbuy_restore_verify;" </dev/null
 docker compose exec -T postgres psql -U bobbuy -d bobbuy_restore_verify < "$backup_dir/postgres-release-window.sql"
-docker compose exec -T postgres psql -U bobbuy -d bobbuy_restore_verify -c "SELECT COUNT(*) AS flyway_rows FROM flyway_schema_history;"
-docker compose exec -T postgres psql -U bobbuy -d bobbuy_restore_verify -c "SELECT COUNT(*) AS products FROM products;"
+docker compose exec -T postgres psql -U bobbuy -d bobbuy_restore_verify -c "SELECT COUNT(*) AS flyway_rows FROM flyway_schema_history;" </dev/null
+docker compose exec -T postgres psql -U bobbuy -d bobbuy_restore_verify -c "SELECT COUNT(*) AS products FROM bb_product;" </dev/null
 
 echo "step=minio_restore_probe"
 probe_file="$backup_dir/minio-probe.txt"
 echo "server-release-window $(date -Is)" > "$probe_file"
-docker compose cp "$probe_file" minio:/tmp/minio-probe.txt
-docker compose exec -T minio sh -lc 'mc alias set local http://127.0.0.1:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null && mc mb --ignore-existing local/bobbuy-restore-verify >/dev/null && mc cp /tmp/minio-probe.txt local/bobbuy-restore-verify/minio-probe.txt >/dev/null && mc stat local/bobbuy-restore-verify/minio-probe.txt >/dev/null'
+docker compose cp "$probe_file" minio:/tmp/minio-probe.txt </dev/null
+docker compose exec -T minio sh -lc 'mc alias set local http://127.0.0.1:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null && mc mb --ignore-existing local/bobbuy-restore-verify >/dev/null && mc cp /tmp/minio-probe.txt local/bobbuy-restore-verify/minio-probe.txt >/dev/null && mc stat local/bobbuy-restore-verify/minio-probe.txt >/dev/null' </dev/null
 echo "minio_restore_probe=pass"
 
 echo "step=nacos_archive_probe"
@@ -280,7 +336,7 @@ echo "release_window=pass"
 Write-Section "Full server release window"
 if ($Target -eq "local-wsl") {
   $allowTemporaryLocalSecrets = if ($NoTemporaryLocalSecrets) { "false" } else { "true" }
-  Invoke-WslScript -Script $releaseWindow -Arguments @($AppDir, $Branch, $AgentAuthToken, $AgentUsername, $AgentPassword, $allowTemporaryLocalSecrets, $CodexBridgeUrl, $CodexBridgeApiKey)
+  Invoke-WslScript -Script $releaseWindow -Arguments @($AppDir, $Branch, $AgentAuthToken, $AgentUsername, $AgentPassword, $allowTemporaryLocalSecrets, $CodexBridgeUrl, $CodexBridgeApiKey, $AiSecretMasterPassword)
 } else {
-  Invoke-RemoteScript -Script $releaseWindow -Arguments @($AppDir, $Branch, $AgentAuthToken, $AgentUsername, $AgentPassword, "false", $CodexBridgeUrl, $CodexBridgeApiKey)
+  Invoke-RemoteScript -Script $releaseWindow -Arguments @($AppDir, $Branch, $AgentAuthToken, $AgentUsername, $AgentPassword, "false", $CodexBridgeUrl, $CodexBridgeApiKey, $AiSecretMasterPassword)
 }

@@ -1,6 +1,6 @@
 # PLAN-00: 任务看板总览
 
-**最后更新**: 2026-05-03
+**最后更新**: 2026-05-04
 **状态图例**: ✅ 已完成 | 🔄 进行中 | ⏳ 待开始
 
 ---
@@ -59,7 +59,7 @@
 | PLAN-53 | 可用性与移动端体验集中收口 | ✅ 已完成 | 100% | 客户与采购者移动端 P0/P1 卡点已修复，黑盒测试加固真实登录和真实栈模式 | 全栈团队 |
 | [PLAN-56](PLAN-56-P0-服务器试运行证据封口与PLAN00关闭提示词.md) | 服务器试运行证据封口与 PLAN-00 关闭 | ✅ 已完成 | 100% | 历史封口计划已被 PLAN-58 接管并归档 | 全栈团队 |
 | [PLAN-57](PLAN-57-P0-关闭剩余执行中任务与服务器放行复判提示词.md) | 关闭剩余执行中任务与服务器放行复判 | ✅ 已完成 | 100% | 历史放行复判计划已被 PLAN-58 接管并归档 | 全栈团队 |
-| [PLAN-58](PLAN-58-P0-服务器输入接入与放行窗口执行提示词.md) | 服务器输入接入与放行窗口执行 | 🔄 执行中 | 55% | 本机 WSL 预检查已通过，JWT/service token/agent token 可临时生成；完整窗口当前阻塞于 AI Bridge URL/API key 缺失 | 全栈团队 |
+| [PLAN-58](PLAN-58-P0-服务器输入接入与放行窗口执行提示词.md) | 服务器输入接入与放行窗口执行 | ✅ 已完成 | 100% | 本机 WSL 真实部署窗口已通过：Compose health、AI sample gate、真实 e2e:ai、双角色移动端黑盒、PostgreSQL / MinIO / Nacos 恢复演练全部闭环 | 全栈团队 |
 | PLAN-54 | 空库上线、备份恢复与运维最小闭环 | ✅ 已完成 | 100% | 本地空库、seed、真实栈、备份恢复口径已闭环；服务器复跑转入 PLAN-58 | 全栈团队 |
 | PLAN-55 | 放行复判与试运行包封版 | ✅ 已完成 | 100% | 试运行包封版复判口径已归档到 REPORT-07/13；服务器最终窗口转入 PLAN-58 | 全栈团队 |
 | CURRENT | 当前试运行收口 | ✅ 已完成 | 100% | 当前事实基线已拉平；动态服务器窗口状态由 PLAN-58 与 REPORT-13 维护 | 全栈团队 |
@@ -290,18 +290,18 @@
   - 最新 main `BOBBuy CI` run `25192905348` 成功；早前 frontend image `ECONNRESET` 已通过 `npm ci` 与 npm fetch retry 收口。
   - Codex Bridge provider 已加入 LLM fallback 路径；当前代码已支持主 LLM 空响应后切换到 bridge，并能解析 OpenAI-compatible `message.content` 字符串/数组响应。PLAN-50 进一步修复 bridge JSON 请求体，避免远端拒绝非标准 JSON body。
   - `npm run e2e:ai` AI 真实视觉链路已在本地真实栈通过，`2 passed`。
-  - `REPORT-07` 的 `GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW` 结论是当前试运行基线；真实 AI/OCR PASS 证据已固化，剩余 blocker 收敛为 PLAN-58 的服务器输入与服务器窗口复跑。
+  - `REPORT-07` 已复判为 `GO_INTERNAL_TRIAL`；真实 AI/OCR PASS 证据与本机 WSL 放行窗口已固化，PLAN-00 不再保留执行中任务。
   - OAuth/SSO、mTLS/service mesh、独立 schema、契约测试、拆分后独立 CI/CD 仍属于后续架构任务。
 
 ---
 
 ## 🚀 下一步行动 (本周重点)
 
-**当前唯一执行入口为 [PLAN-58: 服务器输入接入与放行窗口执行](PLAN-58-P0-服务器输入接入与放行窗口执行提示词.md)，执行结果写入 [REPORT-13](../reports/REPORT-13-服务器试运行证据与PLAN00关闭报告.md)。PLAN-40/41/42/44/47/48/49 已作为历史覆盖项关闭，历史 PLAN-03 不再作为当前入口。**
+**当前 PLAN-00 已无执行中任务。PLAN-58 本机 WSL 放行窗口结果已写入 [REPORT-13](../reports/REPORT-13-服务器试运行证据与PLAN00关闭报告.md)，REPORT-07 复判为 `GO_INTERNAL_TRIAL`。后续如迁移到外部 Linux 服务器，应复用 PLAN-58 脚本作为运维复跑，而不是重新打开历史 PLAN-40~58。**
 
 1. **试运行前手动门禁**:
-   - 服务器输入预检查与放行窗口执行：见 [PLAN-58](PLAN-58-P0-服务器输入接入与放行窗口执行提示词.md) 与 [REPORT-13](../reports/REPORT-13-服务器试运行证据与PLAN00关闭报告.md)。
-   - 服务器 Compose health、真实 AI sample、真实 e2e:ai、真实栈双角色黑盒、PostgreSQL / MinIO / Nacos 备份恢复演练均纳入 PLAN-58，不再拆成独立执行中任务。
+   - [x] PLAN-58 本机 WSL 放行窗口：见 [REPORT-13](../reports/REPORT-13-服务器试运行证据与PLAN00关闭报告.md)，`release_window=pass`。
+   - [x] 服务器/本机部署窗口 Compose health、真实 AI sample、真实 e2e:ai、真实栈双角色黑盒、PostgreSQL / MinIO / Nacos 备份恢复演练已一次性闭环。
    - [x] 历史 NO-GO 收口计划 PLAN-40/41/42/44/47/48/49 已由 REPORT-07、PLAN-50~55、REPORT-10/11/12 覆盖关闭
    - [x] 后端：`cd backend && mvn test`
    - [x] 前端：`cd frontend && npm test && npm run build`
@@ -310,12 +310,12 @@
    - [x] AI 商品字段级 sample golden、结构化落库与验证脚本：见 [PLAN-39](PLAN-39-P1-Sample图片AI商品字段识别与档案落库优化提示词.md) 与 [REPORT-03](../reports/REPORT-03-AI商品字段识别样例验证报告.md)
    - [x] AI sample 专用实扫：`pwsh scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken <agent-token>` 已通过，`3 PASS / 0 FAIL / 0 SCAN_FAIL`
    - [x] AI 真实视觉：`cd frontend && RUN_AI_VISION_E2E=1 npm run e2e:ai` 已通过，`2 passed`
-   - [x] 双角色移动端真实栈黑盒：mock 与本地 Compose 真实后端 API 均已通过；服务器部署窗口需按 PLAN-58 复跑并归档 artifact
+   - [x] 双角色移动端真实栈黑盒：mock、本地 Compose 真实后端 API、PLAN-58 WSL 放行窗口均已通过
 
 2. **风险登记 / 独立门禁**:
    - [x] CodeQL main run `25198280107` 已成功，3 个 high alert 均为 fixed
    - [x] Maven dependency-check main run `25217516557` 已成功且 artifact `6750657743` 可下载；critical/high 已清零
-   - 服务器 PostgreSQL / MinIO / Nacos 备份恢复演练：本地空库 migrate/validate 与恢复库演练已完成，服务器窗口按 PLAN-58 复跑
+   - [x] PostgreSQL / MinIO / Nacos 备份恢复演练：PLAN-58 WSL 放行窗口已通过，PostgreSQL 恢复库 `flyway_rows=3`、`bb_product=4`，MinIO 探针对象与 Nacos 配置归档均通过
    - 真实告警平台、集中日志、自动化备份、服务级 SLO：后续运维增强项，不作为当前 PLAN-00 关闭口径
 
 3. **长期演进（不纳入当前 PLAN-00 关闭口径）**:
@@ -329,4 +329,4 @@
 
 **备注**: 
 - 本看板作为索引每日更新，**具体任务描述以各子计划文档和 CURRENT STATE 为准**。
-- 当前唯一执行入口为 [PLAN-58](PLAN-58-P0-服务器输入接入与放行窗口执行提示词.md)；服务器窗口结果写入 [REPORT-13](../reports/REPORT-13-服务器试运行证据与PLAN00关闭报告.md)。PLAN-00 中只有 PLAN-58 保持执行中，其余历史项已关闭或归档。
+- PLAN-00 当前无 `执行中` / `进行中` 任务；后续新增工作应另开新计划，不再复用历史 NO-GO 收口计划。

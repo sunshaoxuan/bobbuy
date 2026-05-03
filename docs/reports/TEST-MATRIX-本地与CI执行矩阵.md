@@ -1,6 +1,6 @@
 # 本地 / CI 测试执行矩阵
 
-> 2026-05-03 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 与服务 jar 预构建 / Compose build 校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论为 `GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW`：dependency-check critical/high、Compose Maven PKIX、Nacos cgroup v2、gateway/OCR health、真实 AI sample gate、真实 `e2e:ai`、mock 与本地 Compose 真实栈双角色移动端黑盒均已解阻；用户确认无历史数据，旧库 adoption 改为空库上线与备份恢复验收。PLAN-58 已接管服务器输入预检查、放行复判与 PLAN-00 剩余任务关闭，但当前缺少 `SSH_TARGET` / `APP_DIR`，服务器窗口未执行。
+> 2026-05-04 更新：默认上线门禁以 `.github/workflows/ci.yml` 为准。后端 `mvn test`、前端 `npm ci && npm test`、前端 `npm run build`、后端/前端 Docker build 已恢复为默认门禁；部署前还需额外执行 `docker compose config` 与服务 jar 预构建 / Compose build 校验；Flyway PostgreSQL migration 验证、服务壳 smoke test、Playwright、AI 真实视觉链路与安全扫描按分层策略执行。`REPORT-07` 的最新结论为 `GO_INTERNAL_TRIAL`：dependency-check critical/high、Compose Maven PKIX、Nacos cgroup v2、gateway/OCR health、真实 AI sample gate、真实 `e2e:ai`、真实栈双角色移动端黑盒、PostgreSQL / MinIO / Nacos 备份恢复演练均已解阻；用户确认无历史数据，旧库 adoption 改为空库上线与备份恢复验收。PLAN-58 本机 WSL 放行窗口已通过，PLAN-00 无执行中任务。
 
 ## 1. 默认门禁（每个 PR / `main` push 必跑）
 
@@ -28,7 +28,7 @@
 | AI sample 报告生成（report-only） | `pwsh -NoProfile -Command "& '/home/runner/work/bobbuy/bobbuy/scripts/verify-ai-onboarding-samples.ps1' -MockScanResponsePath '/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-scan-mock-fail.json' -SampleIds @('IMG_1484.jpg') -ReportOnly"` | 当前仅本地执行 | 否 | 仅用于人工生成 JSON/Markdown 报告；即使 `gatePassed=false` 也返回 `0`，不得作为 release gate |
 | Compose 配置渲染 | `cd /home/runner/work/bobbuy/bobbuy && docker compose config` | 当前未纳入默认 CI；作为试运行部署前置校验执行 | 否 | 要求 `.env` / 默认变量可成功渲染 Compose，且不得依赖未声明变量 |
 | 空库上线与备份恢复演练 | 见 `docs/runbooks/RUNBOOK-备份恢复演练.md` 与 `docs/reports/REPORT-12-空库上线与备份恢复演练报告.md` | 不纳入默认 CI；按试运行变更窗口手工执行并记录结果 | 否 | 当前无历史数据，旧库 adoption 不适用；需要验证空库 Flyway、首启 seed 策略、PostgreSQL / MinIO / Nacos 恢复 |
-| PLAN-58 服务器输入预检查与放行复判门禁 | 见 `docs/plans/PLAN-58-P0-服务器输入接入与放行窗口执行提示词.md` | SSH 到 Linux 服务器手工执行 | 否 | 需要提供 `SSH_TARGET`、`APP_DIR` 与服务器 `.env`；通过后才能将 REPORT-07 改为 `GO_INTERNAL_TRIAL` 并关闭 PLAN-24/54/55/56/57/58/CURRENT |
+| PLAN-58 服务器 / 本机部署窗口放行门禁 | `pwsh scripts/run-server-release-window.ps1` | 本机 WSL 默认执行；外部 Linux 服务器可用 `RELEASE_WINDOW_TARGET=ssh` 复跑 | 否 | 本机 WSL 放行窗口已通过并关闭 PLAN-00；外部服务器上线时仍需提供 `SSH_TARGET`、`APP_DIR` 与服务器 `.env` 复跑 |
 
 ## 3. 风险登记 / 独立安全门禁
 
@@ -89,8 +89,10 @@
 - [x] `RUN_AI_VISION_E2E=1 npm run e2e:ai`
   - 结果：`2 passed`
   - 覆盖 `IMG_1484.jpg` 商品识别确认路径与 `IMG_1638.jpg` existing product 路径。
-- [ ] 服务器部署窗口空库上线与备份恢复演练
-  - 本地空库/seed/真实栈黑盒已通过；服务器卷、bucket、Nacos 配置恢复仍需在试运行窗口复跑并归档。
+- [x] PLAN-58 本机 WSL 放行窗口
+  - `pwsh scripts/run-server-release-window.ps1`
+  - 结果：`release_window=pass`
+  - 覆盖：Compose health、AI sample gate、真实 `e2e:ai`、真实栈双角色移动端黑盒、PostgreSQL / MinIO / Nacos 恢复演练。
 
 ## 6. 历史验证记录
 

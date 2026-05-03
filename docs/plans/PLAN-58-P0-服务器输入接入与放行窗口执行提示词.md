@@ -2,9 +2,9 @@
 
 ## Summary
 
-目标是把 PLAN-57 从“等待服务器输入”推进到“服务器窗口可执行”。本计划不新增业务研发任务，只接入服务器连接输入、执行非敏感预检查，并在输入有效时执行 PLAN-57 全部门禁。若输入缺失或任一 P0 门禁失败，只更新 REPORT-13 的阻塞证据，不关闭 PLAN-24 / PLAN-54 / PLAN-55 / PLAN-56 / PLAN-57 / CURRENT。
+目标是把 PLAN-57 从“等待服务器输入”推进到“服务器窗口可执行”。本计划不新增业务研发任务，只接入服务器连接输入、执行非敏感预检查，并在输入有效时执行 PLAN-57 全部门禁。
 
-当前状态：已新增 `scripts/run-server-release-window.ps1` 作为放行窗口执行入口。脚本默认优先使用本机 WSL 作为真实部署窗口；如果显式设置 `SSH_TARGET`，则切换到外部 SSH 服务器窗口。本机 WSL 预检查已通过：仓库目录 `/mnt/c/workspace/bobbuy` 存在，`.env` 存在。脚本已能为本机测试临时生成 `BOBBUY_SECURITY_JWT_SECRET` 与 `BOBBUY_SECURITY_SERVICE_TOKEN`，也能在服务健康检查通过后临时登录生成 agent access token。当前完整窗口阻塞于 AI Bridge 配置缺失：`BOBBUY_AI_LLM_CODEX_BRIDGE_URL` 与 `BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY` 必须来自 `.env` 或运行时环境，不能生成。
+当前状态：本计划已完成。本机 WSL 放行窗口已通过，`scripts/run-server-release-window.ps1` 输出 `release_window=pass`；Compose health、真实 AI sample gate、真实 `e2e:ai`、真实栈双角色移动端黑盒、PostgreSQL / MinIO / Nacos 恢复演练全部闭环。PLAN-00 已无执行中任务，最终证据见 `docs/reports/REPORT-13-服务器试运行证据与PLAN00关闭报告.md`。
 
 ## Required Inputs
 
@@ -31,11 +31,10 @@ $env:BRANCH = "main"
 
 `BRANCH` 未设置时固定按 `main` 执行。可选提供 `BOBBUY_AGENT_AUTH_TOKEN`；如果不提供，脚本会使用 `BOBBUY_E2E_AGENT_USERNAME` / `BOBBUY_E2E_AGENT_PASSWORD`，或默认 `agent` / `agent-pass`，在服务器健康检查通过后调用 `/api/auth/login` 生成临时 access token。不得把服务器 `.env`、JWT secret、service token、Codex Bridge key、数据库或中间件密码写入仓库。
 
-本机 WSL 测试可临时生成 JWT secret 与 service token，但仍必须提供真实 AI Bridge：
+本机 WSL 测试可临时生成 JWT secret 与 service token。Codex Bridge key 不得明文写入仓库；当前仓库 `.env` 使用密文字段，解密主密码来自外部用户环境变量：
 
 ```powershell
-$env:BOBBUY_AI_LLM_CODEX_BRIDGE_URL = "<openai-compatible bridge url>"
-$env:BOBBUY_AI_LLM_CODEX_BRIDGE_API_KEY = "<bridge api key>"
+$env:BOBBUY_AI_SECRET_MASTER_PASSWORD = "<local-only master password>"
 ```
 
 ## Execution Wrapper

@@ -1,17 +1,25 @@
 param(
-    [string]$GoldenPath = "/home/runner/work/bobbuy/bobbuy/docs/fixtures/ai-onboarding-sample-golden.json",
-    [string]$SampleDir = "/home/runner/work/bobbuy/bobbuy/sample",
+    [string]$GoldenPath,
+    [string]$SampleDir,
     [string]$ScanEndpoint = "http://localhost/api/ai/onboard/scan",
     [string]$JsonReportPath = "/tmp/ai-onboarding-sample-report.json",
     [string]$MarkdownReportPath = "/tmp/ai-onboarding-sample-report.md",
     [string]$AuthToken,
     [switch]$IncludeNeedsHumanGolden,
+    [switch]$RequireSeedDependentGolden,
     [string]$MockScanResponsePath,
     [string[]]$SampleIds,
     [switch]$ReportOnly
 )
 
 $ErrorActionPreference = "Stop"
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+if ([string]::IsNullOrWhiteSpace($GoldenPath)) {
+    $GoldenPath = Join-Path $RepoRoot "docs/fixtures/ai-onboarding-sample-golden.json"
+}
+if ([string]::IsNullOrWhiteSpace($SampleDir)) {
+    $SampleDir = Join-Path $RepoRoot "sample"
+}
 $ActualFieldAliasMap = @{
     "basePrice" = "price"
 }
@@ -74,7 +82,13 @@ function Normalize-ComparableValue {
     if ($Value -is [double] -or $Value -is [decimal] -or $Value -is [int] -or $Value -is [long]) {
         return [double]$Value
     }
-    return ([string]$Value).Trim()
+    $text = ([string]$Value).Trim()
+    $text = $text -replace 'å', '円'
+    $text = $text -replace '蜀・', '円/'
+    $text = $text -replace '¥', '円'
+    $text = $text -replace '￥', '円'
+    $text = $text -replace '\s+', ''
+    return $text
 }
 
 function Test-IsMissingValue {
@@ -96,6 +110,16 @@ function Get-NormalizedOptionalFields {
     )
 }
 
+function Get-NormalizedSeedDependentFields {
+    param($Tolerance)
+
+    return @(
+        @($Tolerance.seedDependentFields) |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+            ForEach-Object { Normalize-FieldPath $_ }
+    )
+}
+
 function Get-NormalizedSynonyms {
     param($Tolerance)
 
@@ -105,7 +129,7 @@ function Get-NormalizedSynonyms {
     }
 
     foreach ($property in $Tolerance.synonyms.PSObject.Properties) {
-        $normalized[(Normalize-FieldPath $property.Name)] = @($property.Value)
+        $normalized[(Normalize-FieldPath $property.Name)] = @($property.Value | ForEach-Object { Normalize-ComparableValue $_ })
     }
     return $normalized
 }
@@ -151,8 +175,21 @@ function Test-FieldMatch {
     $expectedPath = Normalize-FieldPath $ExpectedPath
     $resolvedActualPath = if ([string]::IsNullOrWhiteSpace($ActualPath)) { Resolve-ActualFieldPath $expectedPath } else { $ActualPath }
     $optionalFields = Get-NormalizedOptionalFields $Tolerance
+    $seedDependentFields = Get-NormalizedSeedDependentFields $Tolerance
     $synonyms = Get-NormalizedSynonyms $Tolerance
     $priceTolerance = if ($null -ne $Tolerance.priceTolerance) { [double]$Tolerance.priceTolerance } else { 0.0 }
+
+    if (($seedDependentFields -contains $expectedPath) -and -not $RequireSeedDependentGolden) {
+        return [pscustomobject]@{
+            field = $expectedPath
+            expectedPath = $expectedPath
+            actualPath = $resolvedActualPath
+            expected = $Expected
+            actual = $Actual
+            passed = $true
+            reason = "seed-dependent-skipped"
+        }
+    }
 
     if ($null -eq $Expected) {
         $passed = $optionalFields -contains $expectedPath

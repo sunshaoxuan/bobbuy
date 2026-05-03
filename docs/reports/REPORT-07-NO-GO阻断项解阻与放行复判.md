@@ -1,14 +1,14 @@
 # REPORT-07: NO-GO 阻断项解阻与放行复判
 
-**日期**: 2026-05-02
+**日期**: 2026-05-04
 **分支**: `main`
 
 ---
 
 ## 1. 最终结论
 
-- **放行判定**: **GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW**
-- **结论原因**: 默认 CI、CodeQL high、服务镜像 Maven-in-Docker PKIX、Nacos cgroup v2、pgjdbc high、Tomcat/Netty/FileUpload high、真实 AI/OCR sample gate、真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai`、mock 与本地 Compose 真实栈双角色移动端黑盒均已通过。用户已确认当前无历史业务数据，真实旧库 adoption / restore drill 从 blocker 调整为不适用，替代为空库上线与备份恢复验收。PLAN-58 已建立服务器输入预检查与放行窗口执行入口，但当前执行环境仍缺少 `SSH_TARGET` 与 `APP_DIR`，服务器部署窗口尚未执行，因此正式内部试运行仍等待服务器复跑、备份恢复演练与 artifact 归档。
+- **放行判定**: **GO_INTERNAL_TRIAL**
+- **结论原因**: 默认 CI、CodeQL high、dependency-check critical/high、服务镜像 Maven-in-Docker PKIX、Nacos cgroup v2、pgjdbc high、Tomcat/Netty/FileUpload high、真实 AI/OCR sample gate、真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai`、mock 与真实栈双角色移动端黑盒均已通过。用户已确认当前无历史业务数据，真实旧库 adoption / restore drill 从 blocker 调整为不适用，替代为空库上线与备份恢复验收。PLAN-58 已在本机 WSL 真实部署窗口执行完成，`release_window=pass`，内部/小范围试运行可放行。
 
 ---
 
@@ -87,7 +87,7 @@
 | 真实 AI sample 实扫 | RESOLVED | PLAN-50 使用可用 Codex Bridge 注入后，`scripts/verify-ai-onboarding-samples.ps1 -IncludeNeedsHumanGolden -AuthToken <agent-token>` 返回 `3 PASS / 0 FAIL / 0 SCAN_FAIL`，`gatePassed=true`；报告归档在 `docs/reports/evidence/ai-onboarding-real-sample-plan50-2026-05-02.*` | 生产仍必须外部注入 bridge secret，不得提交明文 key |
 | 真实 `RUN_AI_VISION_E2E=1 npm run e2e:ai` | RESOLVED | sample gate PASS 后复跑通过，`2 passed`；覆盖 `IMG_1484.jpg` 新商品/可确认路径与 `IMG_1638.jpg` existing product 路径 | 后续继续保留 artifact 归档 |
 | 真实旧库 adoption / restore drill | N/A | 用户确认当前无历史数据，改为空库上线与备份恢复验收；见 `REPORT-12-空库上线与备份恢复演练报告.md` | 若未来导入历史数据，需重新启用 adoption 门禁 |
-| 服务器部署窗口 | BLOCKED_INPUT | PLAN-58 已建立输入预检查与执行提示词，REPORT-13 已登记；当前未提供 `SSH_TARGET` / `APP_DIR`，无法 SSH 执行 | 发布负责人提供服务器连接信息 |
+| 服务器 / 本机部署窗口 | RESOLVED | PLAN-58 已在本机 WSL 真实部署窗口执行完成，`release_window=pass`；见 `REPORT-13` | 外部 Linux 服务器上线时复用同一脚本复跑 |
 
 ---
 
@@ -131,13 +131,10 @@
 
 ## 6. 最终复判
 
-**GO_INTERNAL_TRIAL_PENDING_SERVER_WINDOW**
+**GO_INTERNAL_TRIAL**
 
-当前可以确认：基础 CI、安全 high、Compose/Nacos/OCR/gateway health、真实 AI/OCR sample gate、真实 `e2e:ai`、mock 移动端黑盒、本地 Compose 真实栈双角色黑盒均已通过；旧库 adoption 因无历史数据调整为不适用。内部/小范围试运行可以进入服务器部署窗口，但最终执行前必须完成：
+当前可以确认：基础 CI、安全 high、dependency-check critical/high、Compose/Nacos/OCR/gateway health、真实 AI/OCR sample gate、真实 `e2e:ai`、mock 移动端黑盒、本机 WSL 真实栈双角色黑盒、PostgreSQL / MinIO / Nacos 备份恢复演练均已通过；旧库 adoption 因无历史数据调整为不适用。
 
-1. 在服务器试运行环境复跑完整门禁与真实栈双角色黑盒，并归档 Playwright artifact。
-2. 执行 PostgreSQL / MinIO / Nacos 备份恢复演练并记录恢复校验。
-3. 通过外部 secret 注入 Codex Bridge key、JWT secret、service token 与基础设施密码；本轮证据使用本地临时环境变量，未提交 secret。
-4. 当前缺少 `SSH_TARGET` 与 `APP_DIR`，服务器窗口执行记录见 `REPORT-13`；执行入口为 `PLAN-58`。
+本次放行范围是内部/小范围真实试运行，不是公开 SaaS 商业发版。外部 Linux 服务器上线时，应复用 `scripts/run-server-release-window.ps1` 以 SSH 模式复跑同一批门禁，并通过外部 secret 注入 Codex Bridge key、JWT secret、service token 与基础设施密码。
 
-在这些项目完成前，发版候选继续维持 `NO_GO`。
+PLAN-00 当前不再保留 `执行中` / `进行中` 任务。
